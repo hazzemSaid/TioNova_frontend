@@ -1,0 +1,93 @@
+part of 'chapter_cubit.dart';
+
+abstract class ChapterState extends Equatable {
+  const ChapterState();
+
+  @override
+  List<Object> get props => [];
+}
+
+class ChapterInitial extends ChapterState {}
+
+class ChapterLoading extends ChapterState {}
+
+class ChapterLoaded extends ChapterState {
+  final List<ChapterModel> chapters;
+  const ChapterLoaded(this.chapters);
+  @override
+  List<Object> get props => [chapters];
+}
+
+class ChapterError extends ChapterState {
+  final Failure message;
+  const ChapterError(this.message);
+  @override
+  List<Object> get props => [message];
+}
+
+class CreateChapterLoading extends ChapterState {}
+
+class CreateChapterSuccess extends ChapterState {}
+
+class CreateChapterError extends ChapterState {
+  final Failure message;
+  const CreateChapterError(this.message);
+}
+
+class GetChapterContentPdfLoading extends ChapterState {}
+
+class GetChapterContentPdfSuccess extends ChapterState {
+  final Uint8List pdfData;
+  final bool forDownload;
+  const GetChapterContentPdfSuccess(this.pdfData, {this.forDownload = false});
+  @override
+  List<Object> get props => [pdfData, forDownload];
+}
+
+class GetChapterContentPdfError extends ChapterState {
+  final Failure message;
+  final bool forDownload;
+  const GetChapterContentPdfError(this.message, {this.forDownload = false});
+  @override
+  List<Object> get props => [message, forDownload];
+}
+
+class GenerateSummaryLoading extends ChapterState {}
+
+class GenerateSummarySuccess extends ChapterState {
+  final String summary;
+  const GenerateSummarySuccess(this.summary);
+  @override
+  List<Object> get props => [summary];
+}
+
+class GenerateSummaryStructuredSuccess extends ChapterState {
+  final SummaryModel summaryData;
+  const GenerateSummaryStructuredSuccess(this.summaryData);
+  @override
+  List<Object> get props => [summaryData];
+}
+
+class GenerateSummaryError extends ChapterState {
+  final Failure message;
+  const GenerateSummaryError(this.message);
+  @override
+  List<Object> get props => [message];
+}
+
+class SummaryCachedFound extends ChapterState {
+  final SummaryModel summaryData;
+  final String cacheAge;
+  const SummaryCachedFound(this.summaryData, this.cacheAge);
+  @override
+  List<Object> get props => [summaryData, cacheAge];
+}
+
+class SummaryRegenerateLoading extends ChapterState {}
+
+class SummaryRegenerateSuccess extends ChapterState {
+  final SummaryModel summaryData;
+  const SummaryRegenerateSuccess(this.summaryData);
+  @override
+  List<Object> get props => [summaryData];
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "187048592726",
+    "project_id": "tionova-c566b",
+    "storage_bucket": "tionova-c566b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:187048592726:android:24724b2055759ee39402f7",
+        "android_client_info": {
+          "package_name": "com.example.tionova"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_YeKXSSo15C4zt7qCBjjp39hts6sQPB8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

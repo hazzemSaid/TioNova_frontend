@@ -1,0 +1,757 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:tionova/core/services/download_service.dart';
+import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
+import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/utils/no_glow_scroll_behavior.dart';
+
+class PDFViewerScreen extends StatefulWidget {
+  final String chapterId;
+  final String chapterTitle;
+
+  const PDFViewerScreen({
+    super.key,
+    required this.chapterId,
+    required this.chapterTitle,
+  });
+
+  @override
+  State<PDFViewerScreen> createState() => _PDFViewerScreenState();
+}
+
+class _PDFViewerScreenState extends State<PDFViewerScreen> {
+  String? localPath;
+  PDFViewController? controller;
+  int currentPage = 0;
+  int totalPages = 0;
+  bool isReady = false;
+  bool _isInitialized = false;
+  bool _showNoPdfView = false;
+  Uint8List? pdfBytes; // Store PDF bytes for download
+
+  @override
+  void initState() {
+    super.initState();
+    // Use post-frame callback to ensure widget tree is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+        _loadPDF();
+      }
+    });
+  }
+
+  void _loadPDF() async {
+    try {
+      setState(() {
+        isReady = false;
+      });
+
+      // Check if PDF is already cached and show it first
+      if (DownloadService.isPDFCached(widget.chapterId)) {
+        print('Loading PDF from cache for chapter: ${widget.chapterId}');
+        final cachedPdfBytes = DownloadService.getCachedPDF(widget.chapterId);
+
+        if (cachedPdfBytes != null) {
+          pdfBytes = cachedPdfBytes;
+          final path = await _createFileFromBytes(cachedPdfBytes);
+          if (mounted) {
+            setState(() {
+              localPath = path;
+              _showNoPdfView = false;
+            });
+          }
+          // View from cache only; do not make a network request
+          return;
+        }
+      }
+
+      // Not cached: fetch from API for viewing (without caching)
+      print(
+        'PDF not cached, fetching from API for viewing: ${widget.chapterId}',
+      );
+      await _downloadPDFFromAPIForViewing();
+    } catch (e) {
+      if (mounted && context.mounted && _isInitialized) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadPDFFromAPIForViewing() async {
+    try {
+      print(
+        'Fetching PDF from API for viewing (no caching): ${widget.chapterId}',
+      );
+      final token = await TokenStorage.getAccessToken();
+      if (token == null) {
+        if (mounted && context.mounted && _isInitialized) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Authentication required'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      context.read<ChapterCubit>().getChapterContentPdf(
+        token: token,
+        chapterId: widget.chapterId,
+        forDownload: false, // For viewing only
+      );
+    } catch (e) {
+      if (mounted && context.mounted && _isInitialized) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error downloading PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadPDFFromAPI() async {
+    try {
+      print(
+        'Fetching PDF from API for download (will cache): ${widget.chapterId}',
+      );
+
+      final token = await TokenStorage.getAccessToken();
+      if (token == null) {
+        if (mounted && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Authentication required'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      context.read<ChapterCubit>().getChapterContentPdf(
+        token: token,
+        chapterId: widget.chapterId,
+        forDownload: true, // For download (will cache)
+      );
+    } catch (e) {
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error downloading PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<String> _createFileFromBytes(Uint8List bytes) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/chapter_${widget.chapterId}.pdf');
+      await file.writeAsBytes(bytes);
+      return file.path;
+    } catch (e) {
+      throw Exception('Failed to create PDF file: $e');
+    }
+  }
+
+  Future<void> _downloadPDF() async {
+    // First check if PDF is already cached
+    if (DownloadService.isPDFCached(widget.chapterId)) {
+      final cachedPDF = DownloadService.getCachedPDF(widget.chapterId);
+      if (cachedPDF != null) {
+        print('Downloading cached PDF for chapter: ${widget.chapterId}');
+        final fileName = DownloadService.sanitizeFileName(widget.chapterTitle);
+        await DownloadService.downloadPDF(
+          pdfBytes: cachedPDF,
+          fileName: fileName,
+          context: context,
+        );
+        return;
+      }
+    }
+
+    // If not cached and not currently loaded, download from API first
+    if (pdfBytes == null) {
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Downloading PDF from server...'),
+            backgroundColor: Colors.blue,
+            action: SnackBarAction(
+              label: 'Cancel',
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
+          ),
+        );
+      }
+
+      // Download from API (this will cache since it's forDownload=true)
+      await _downloadPDFFromAPI();
+      return;
+    }
+
+    // If PDF is loaded in memory, download it
+    final fileName = DownloadService.sanitizeFileName(widget.chapterTitle);
+    await DownloadService.downloadPDF(
+      pdfBytes: pdfBytes!,
+      fileName: fileName,
+      context: context,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 768;
+
+    return BlocListener<ChapterCubit, ChapterState>(
+      listener: (context, state) {
+        if (state is GetChapterContentPdfSuccess) {
+          // Store PDF bytes
+          pdfBytes = state.pdfData;
+
+          print('BlocListener: forDownload = ${state.forDownload}');
+
+          // Only cache if this is a download operation
+          if (state.forDownload) {
+            DownloadService.cachePDF(
+              widget.chapterId,
+              state.pdfData,
+              fileName:
+                  DownloadService.sanitizeFileName(widget.chapterTitle) +
+                  '.pdf',
+              chapterTitle: widget.chapterTitle,
+            );
+            print(
+              'PDF cached for chapter: ${widget.chapterId}, size: ${state.pdfData.length} bytes',
+            );
+          } else {
+            print(
+              'PDF loaded for viewing only (not cached): ${widget.chapterId}, size: ${state.pdfData.length} bytes',
+            );
+          }
+
+          _createFileFromBytes(state.pdfData)
+              .then((path) {
+                if (mounted) {
+                  setState(() {
+                    localPath = path;
+                    _showNoPdfView = false;
+                  });
+                }
+              })
+              .catchError((error) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error loading PDF: $error'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              });
+        } else if (state is GetChapterContentPdfError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${state.message.errMessage}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.chapterTitle,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isTablet ? 20 : 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (totalPages > 0)
+                Text(
+                  'Page ${currentPage + 1} of $totalPages',
+                  style: const TextStyle(
+                    color: Color(0xFF8E8E93),
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+            ],
+          ),
+          centerTitle: false,
+          actions: [
+            if (localPath != null && isReady)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                color: const Color(0xFF1C1C1E),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'download':
+                      _downloadPDF();
+                      break;
+                    case 'refresh':
+                      // Clear cache and force reload from API
+                      DownloadService.clearCachedPDF(widget.chapterId);
+                      setState(() {
+                        localPath = null;
+                        pdfBytes = null;
+                        isReady = false;
+                        _showNoPdfView = false;
+                      });
+                      // Force download from API for viewing (without caching)
+                      _downloadPDFFromAPIForViewing();
+                      break;
+                    case 'first':
+                      controller?.setPage(0);
+                      break;
+                    case 'last':
+                      if (totalPages > 0) {
+                        controller?.setPage(totalPages - 1);
+                      }
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'download',
+                    child: Row(
+                      children: [
+                        Icon(Icons.download, color: Colors.white, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Download PDF',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'refresh',
+                    child: Row(
+                      children: [
+                        Icon(Icons.refresh, color: Colors.white, size: 20),
+                        SizedBox(width: 12),
+                        Text('Refresh', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'first',
+                    child: Row(
+                      children: [
+                        Icon(Icons.first_page, color: Colors.white, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'First Page',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'last',
+                    child: Row(
+                      children: [
+                        Icon(Icons.last_page, color: Colors.white, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Last Page',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        body: BlocBuilder<ChapterCubit, ChapterState>(
+          builder: (context, state) {
+            if (state is GetChapterContentPdfLoading) {
+              return _buildLoadingView(isTablet);
+            }
+
+            if (state is GetChapterContentPdfError) {
+              return _buildErrorView(state.message.errMessage, isTablet);
+            }
+
+            if (_showNoPdfView) {
+              return _buildNoPdfView(isTablet);
+            }
+
+            if (localPath == null) {
+              return _buildLoadingView(isTablet);
+            }
+
+            return _buildPDFView(isTablet);
+          },
+        ),
+        bottomNavigationBar: localPath != null && isReady && totalPages > 1
+            ? _buildNavigationBar(isTablet)
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildLoadingView(bool isTablet) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: isTablet ? 80 : 60,
+            height: isTablet ? 80 : 60,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.circular(isTablet ? 40 : 30),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            ),
+          ),
+          SizedBox(height: isTablet ? 24 : 16),
+          Text(
+            'Loading PDF...',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: isTablet ? 18 : 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: isTablet ? 12 : 8),
+          Text(
+            'Please wait while we prepare your document',
+            style: TextStyle(
+              color: const Color(0xFF8E8E93),
+              fontSize: isTablet ? 16 : 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorView(String errorMessage, bool isTablet) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 32 : 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: isTablet ? 80 : 60,
+              height: isTablet ? 80 : 60,
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(isTablet ? 40 : 30),
+              ),
+              child: Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: isTablet ? 40 : 30,
+              ),
+            ),
+            SizedBox(height: isTablet ? 24 : 16),
+            Text(
+              'Failed to Load PDF',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: isTablet ? 20 : 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: isTablet ? 12 : 8),
+            Text(
+              errorMessage,
+              style: TextStyle(
+                color: const Color(0xFF8E8E93),
+                fontSize: isTablet ? 16 : 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: isTablet ? 32 : 24),
+            SizedBox(
+              width: isTablet ? 200 : 160,
+              child: GestureDetector(
+                onTap: _loadPDF,
+                child: Container(
+                  height: isTablet ? 50 : 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(isTablet ? 25 : 22),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Try Again',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: isTablet ? 16 : 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoPdfView(bool isTablet) {
+    return Container(
+      decoration: const BoxDecoration(color: Color(0xFF1C1C1E)),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.picture_as_pdf,
+              size: isTablet ? 80 : 64,
+              color: Colors.white.withOpacity(0.3),
+            ),
+            SizedBox(height: isTablet ? 24 : 20),
+            Text(
+              'PDF Not Downloaded',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: isTablet ? 24 : 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: isTablet ? 16 : 12),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 64 : 48),
+              child: Text(
+                'This PDF is not downloaded yet. Click the download button to get it from the server.',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: isTablet ? 16 : 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(height: isTablet ? 32 : 24),
+            SizedBox(
+              width: isTablet ? 200 : 160,
+              child: GestureDetector(
+                onTap: () {
+                  _downloadPDFFromAPI();
+                },
+                child: Container(
+                  height: isTablet ? 50 : 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(isTablet ? 25 : 22),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Download PDF',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: isTablet ? 16 : 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPDFView(bool isTablet) {
+    return ScrollConfiguration(
+      behavior: NoGlowScrollBehavior(),
+      child: Container(
+        decoration: const BoxDecoration(color: Color(0xFF1C1C1E)),
+        child: PDFView(
+          filePath: localPath!,
+          enableSwipe: true,
+          swipeHorizontal: false,
+          autoSpacing: false,
+          pageFling: true,
+          pageSnap: true,
+          defaultPage: currentPage,
+          fitPolicy: FitPolicy.BOTH,
+          preventLinkNavigation: false,
+          onRender: (pages) {
+            setState(() {
+              totalPages = pages ?? 0;
+              isReady = true;
+            });
+          },
+          onError: (error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('PDF Error: $error'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          },
+          onPageError: (page, error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Page $page Error: $error'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          },
+          onViewCreated: (PDFViewController pdfViewController) {
+            controller = pdfViewController;
+          },
+          onLinkHandler: (uri) {
+            // Handle PDF links if needed
+          },
+          onPageChanged: (int? page, int? total) {
+            if (page != null) {
+              setState(() {
+                currentPage = page;
+              });
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationBar(bool isTablet) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1C1E),
+        border: Border(top: BorderSide(color: Color(0xFF2C2C2E), width: 0.5)),
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 24 : 16,
+        vertical: isTablet ? 16 : 12,
+      ),
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Previous page
+            GestureDetector(
+              onTap: currentPage > 0
+                  ? () => controller?.setPage(currentPage - 1)
+                  : null,
+              child: Container(
+                width: isTablet ? 50 : 44,
+                height: isTablet ? 50 : 44,
+                decoration: BoxDecoration(
+                  color: currentPage > 0
+                      ? const Color(0xFF2C2C2E)
+                      : const Color(0xFF2C2C2E).withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(isTablet ? 25 : 22),
+                ),
+                child: Icon(
+                  Icons.chevron_left,
+                  color: currentPage > 0
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.3),
+                  size: isTablet ? 28 : 24,
+                ),
+              ),
+            ),
+
+            // Page info
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isTablet ? 20 : 16,
+                vertical: isTablet ? 12 : 10,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2E),
+                borderRadius: BorderRadius.circular(isTablet ? 20 : 18),
+              ),
+              child: Text(
+                '${currentPage + 1} / $totalPages',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isTablet ? 16 : 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+
+            // Next page
+            GestureDetector(
+              onTap: currentPage < totalPages - 1
+                  ? () => controller?.setPage(currentPage + 1)
+                  : null,
+              child: Container(
+                width: isTablet ? 50 : 44,
+                height: isTablet ? 50 : 44,
+                decoration: BoxDecoration(
+                  color: currentPage < totalPages - 1
+                      ? const Color(0xFF2C2C2E)
+                      : const Color(0xFF2C2C2E).withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(isTablet ? 25 : 22),
+                ),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: currentPage < totalPages - 1
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.3),
+                  size: isTablet ? 28 : 24,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    // Clean up temporary file
+    if (localPath != null) {
+      File(localPath!).delete().catchError((e) {
+        // Ignore deletion errors
+        return File(''); // Return a dummy file to satisfy the return type
+      });
+    }
+    super.dispose();
+  }
+}

@@ -1,0 +1,161 @@
+import 'package:dio/dio.dart';
+import 'package:either_dart/either.dart';
+import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/features/folder/data/models/FolderModel.dart';
+import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
+
+class FolderRemoteDataSource implements IFolderRepository {
+  final Dio _dio;
+
+  FolderRemoteDataSource(this._dio);
+  @override
+  Future<Either<Failure, List<Foldermodel>>> getAllFolders({
+    required String token,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/getfolders',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $token",
+          },
+        ),
+      );
+      if (response.statusCode == 200) {
+        // Assuming response.data is a List<String>
+        List<Foldermodel> folders = (response.data['folders'] as List)
+            .map((folderJson) => Foldermodel.fromJson(folderJson))
+            .toList();
+        return Right(folders);
+      } else {
+        return Left(ServerFailure('Failed to fetch folders'));
+      }
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Foldermodel>>> searchFolders(String query) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<Failure, void>> createFolder({
+    required String title,
+    String? description,
+    String? category,
+    List<String>? sharedWith,
+    required Status status,
+    required String token,
+    String? color,
+    String? icon,
+  }) async {
+    try {
+      final data = {
+        'title': title,
+        'description': description,
+        'category': category,
+        'sharedWith': sharedWith,
+        'status': status.toString().split('.').last,
+        'icon': icon,
+        'color': color,
+      };
+
+      final response = await _dio.post(
+        '/createfolder',
+        data: data,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $token",
+          },
+        ),
+      );
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return const Right(null);
+      } else {
+        return Left(ServerFailure('Failed to create folder'));
+      }
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deletefolder({
+    required String id,
+    required String token,
+  }) async {
+    try {
+      final response = await _dio.delete(
+        '/deletefolder/$id',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $token",
+          },
+        ),
+      );
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return const Right(null);
+      } else {
+        return Left(ServerFailure('Failed to delete folder'));
+      }
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Foldermodel>> updatefolder({
+    required String id,
+    required String title,
+    String? description,
+    required String token,
+    List<String>? sharedWith,
+    required Status status,
+    String? icon,
+    String? color,
+  }) async {
+    try {
+      final data = {
+        'folderId': id,
+        'title': title,
+        'description': description,
+        'sharedWith': sharedWith,
+        'status': status.toString().split('.').last,
+        'icon': icon,
+        'color': color,
+      };
+
+      print('Updating folder with data: $data');
+
+      final response = await _dio.patch(
+        '/updatefolder',
+        data: data,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $token",
+          },
+        ),
+      );
+      if (response.statusCode == 200) {
+        // Parse the updated folder from the response
+        final responseData = response.data;
+        if (responseData != null && responseData['folder'] != null) {
+          final updatedFolder = Foldermodel.fromJson(responseData['folder']);
+          return Right(updatedFolder);
+        } else {
+          return Left(ServerFailure('Invalid response format'));
+        }
+      } else {
+        return Left(ServerFailure('Failed to update folder'));
+      }
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+}
