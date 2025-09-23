@@ -69,7 +69,7 @@ class _MainLayoutState extends State<MainLayout> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
-      height: screenHeight * 0.12, // Slightly increased for better touch area
+      height: screenHeight * 0.08, // More compact height
       decoration: const BoxDecoration(
         color: Colors.black,
         border: Border(top: BorderSide(color: Color(0xFF1C1C1E), width: 0.5)),

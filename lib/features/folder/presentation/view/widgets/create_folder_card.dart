@@ -1,4 +1,6 @@
+// features/folder/presentation/view/widgets/create_folder_card.dart
 import 'package:flutter/material.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/DashedBorderPainter.dart';
 
 class CreateFolderCard extends StatelessWidget {
   final VoidCallback? onTap;
@@ -7,60 +9,87 @@ class CreateFolderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final isTablet = screenSize.width > 600;
+    final double padding = isTablet ? 48.0 : 40.0;
+    final double horizontalPadding = isTablet ? 32.0 : 24.0;
+    final double iconSize = isTablet ? 32.0 : 28.0;
+    final double titleSize = isTablet ? 20.0 : 18.0;
+    final double subtitleSize = isTablet ? 16.0 : 14.0;
+    final double buttonHeight = isTablet ? 52.0 : 44.0;
+    final double buttonIconSize = isTablet ? 20.0 : 18.0;
+    final double buttonTextSize = isTablet ? 18.0 : 16.0;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: CustomPaint(
           painter: DashedBorderPainter(),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+            padding: EdgeInsets.symmetric(
+              vertical: padding,
+              horizontal: horizontalPadding,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: isTablet ? 64 : 56,
+                  height: isTablet ? 64 : 56,
                   decoration: BoxDecoration(
                     color: const Color(0xFF1C1C1E),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 28),
+                  child: Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: iconSize,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Create New Folder',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
-                    fontSize: 18,
+                    fontSize: titleSize,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Organize your study materials into folders',
-                  style: TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+                  style: TextStyle(
+                    color: const Color(0xFF8E8E93),
+                    fontSize: subtitleSize,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 Container(
                   width: double.infinity,
-                  height: 44,
+                  height: buttonHeight,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.add, color: Colors.black, size: 18),
-                      SizedBox(width: 8),
+                      Icon(
+                        Icons.add,
+                        color: Colors.black,
+                        size: buttonIconSize,
+                      ),
+                      SizedBox(width: isTablet ? 10 : 8),
                       Text(
                         'New Folder',
                         style: TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                          fontSize: buttonTextSize,
                         ),
                       ),
                     ],
@@ -73,41 +102,4 @@ class CreateFolderCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class DashedBorderPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF1C1C1E)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    const dashWidth = 10.0;
-    const dashSpace = 8.0;
-
-    final path = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(0, 0, size.width, size.height),
-          const Radius.circular(16),
-        ),
-      );
-
-    final pathMetrics = path.computeMetrics();
-    for (final pathMetric in pathMetrics) {
-      double distance = 0.0;
-      while (distance < pathMetric.length) {
-        final end = distance + dashWidth;
-        if (end > pathMetric.length) break;
-
-        final extractPath = pathMetric.extractPath(distance, end);
-        canvas.drawPath(extractPath, paint);
-        distance = end + dashSpace;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

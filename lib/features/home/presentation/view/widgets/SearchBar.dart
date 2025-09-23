@@ -5,33 +5,42 @@ class CustomSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenSize = MediaQuery.sizeOf(context);
+    final isTablet = screenSize.width > 600;
+
+    // Responsive dimensions
+    final double height = isTablet ? 56.0 : 48.0;
+    final double fontSize = isTablet ? 18.0 : 16.0;
+    final double iconSize = isTablet ? 24.0 : 20.0;
+    final double borderRadius = isTablet ? 16.0 : 12.0;
+    final EdgeInsets contentPadding = isTablet
+        ? const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0)
+        : const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0);
 
     return Container(
-      height: screenHeight * 0.05,
+      height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        color: const Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.circular(borderRadius),
       ),
       child: TextField(
-        style: TextStyle(color: Colors.white, fontSize: screenWidth * 0.04),
+        style: TextStyle(color: Colors.white, fontSize: fontSize, height: 1.2),
         decoration: InputDecoration(
-          hintText: 'Search folders and chapters...',
+          hintText: 'Search folders, chapters...',
           hintStyle: TextStyle(
             color: const Color(0xFF8E8E93),
-            fontSize: screenWidth * 0.04,
+            fontSize: fontSize,
           ),
           border: InputBorder.none,
           prefixIcon: Icon(
             Icons.search,
             color: const Color(0xFF8E8E93),
-            size: screenWidth * 0.055,
+            size: iconSize,
           ),
-          contentPadding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+          contentPadding: contentPadding,
           filled: true,
-          fillColor: const Color(0xFF0E0E10),
+          fillColor: Colors.transparent,
+          isDense: true,
         ),
       ),
     );

@@ -10,6 +10,7 @@ import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.
 import 'package:tionova/features/folder/presentation/view/screens/RawSummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
+import 'package:tionova/features/quiz/presentation/view/quiz_screen.dart';
 
 class ChapterDetailScreen extends StatefulWidget {
   final ChapterModel chapter;
@@ -140,7 +141,12 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           // Quiz Buttons
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => QuizScreen()),
+              );
+            },
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 52),
               backgroundColor: quizAccentColor,

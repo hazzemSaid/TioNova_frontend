@@ -14,7 +14,12 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenSize = MediaQuery.sizeOf(context);
+    final isTablet = screenSize.width > 600;
+    final double titleSize = isTablet ? 20.0 : screenSize.width * 0.045;
+    final double actionTextSize = isTablet ? 16.0 : screenSize.width * 0.035;
+    final double iconSize = isTablet ? 20.0 : screenSize.width * 0.04;
+    final double spacing = isTablet ? 12.0 : screenSize.width * 0.015;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -22,7 +27,7 @@ class SectionHeader extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
-            fontSize: screenWidth * 0.045,
+            fontSize: titleSize,
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
@@ -33,24 +38,24 @@ class SectionHeader extends StatelessWidget {
               Icon(
                 actionIcon,
                 color: const Color(0xFF8E8E93),
-                size: screenWidth * 0.04,
+                size: iconSize,
               ),
-              SizedBox(width: screenWidth * 0.015),
+              SizedBox(width: spacing / 2),
             ],
             Text(
               actionText,
               style: TextStyle(
                 color: const Color(0xFF8E8E93),
-                fontSize: screenWidth * 0.035,
+                fontSize: actionTextSize,
                 fontWeight: FontWeight.w400,
               ),
             ),
             if (actionIcon == Icons.arrow_forward_ios) ...[
-              SizedBox(width: screenWidth * 0.01),
+              SizedBox(width: spacing / 2),
               Icon(
                 actionIcon,
                 color: const Color(0xFF8E8E93),
-                size: screenWidth * 0.03,
+                size: isTablet ? 16.0 : screenSize.width * 0.03,
               ),
             ],
           ],

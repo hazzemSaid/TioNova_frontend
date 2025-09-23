@@ -1,4 +1,3 @@
-// features/folder/presentation/view/screens/folder_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
@@ -174,20 +173,34 @@ class _FolderScreenState extends State<FolderScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        padding: EdgeInsets.symmetric(
+          vertical: isTablet ? 16 : 12,
+          horizontal: isTablet ? 32 : 24,
+        ),
         decoration: BoxDecoration(
           color: color.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 12)),
+            Icon(icon, color: color, size: isTablet ? 28 : 24),
+            SizedBox(height: isTablet ? 6 : 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: isTablet ? 14 : 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
@@ -305,78 +318,30 @@ class _FolderScreenState extends State<FolderScreen> {
         : folders.where((f) => f.category == categoryFilter).toList();
 
     final isTablet = screenWidth > 600;
-    final isDesktop = screenWidth > 1200;
-    final horizontalPadding =
-        screenWidth *
-        (isDesktop
-            ? 0.12
-            : isTablet
-            ? 0.08
-            : 0.05);
-    final crossAxisCount = isDesktop
-        ? 3
-        : isTablet
-        ? 2
-        : 1;
-    final aspectRatio = isDesktop
-        ? 1.8
-        : isTablet
-        ? 2.0
-        : 1.9;
+    final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
+    final crossAxisCount = isTablet ? 2 : 1;
+    final aspectRatio = isTablet ? 2.0 : 1.9;
 
     if (filteredFolders.isEmpty) {
-      return SliverFillRemaining(
+      return const SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.folder_open_outlined,
-                  size: 64,
-                  color: Color(0xFF8E8E93),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  categoryFilter == 'All'
-                      ? 'No folders yet'
-                      : 'No folders in "$categoryFilter" category',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  categoryFilter == 'All'
-                      ? 'Create your first folder to start organizing your study materials'
-                      : 'Try selecting a different category or create a new folder',
-                  style: TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 24),
-              ],
-            ),
+          child: Text(
+            'No folders found',
+            style: TextStyle(color: Color(0xFF8E8E93), fontSize: 16),
           ),
         ),
       );
     }
+
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       sliver: SliverGrid(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
-          crossAxisSpacing: isDesktop
-              ? 20
-              : isTablet
-              ? 16
-              : 0,
-          mainAxisSpacing: isDesktop ? 20 : 16,
-          childAspectRatio: aspectRatio,
+          crossAxisSpacing: isTablet ? 16 : 0,
+          mainAxisSpacing: 16,
+          childAspectRatio: 2.5,
         ),
         delegate: SliverChildBuilderDelegate((context, index) {
           final folder = filteredFolders[index];
@@ -411,17 +376,12 @@ class _FolderScreenState extends State<FolderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
     final isTablet = screenWidth > 600;
-    final isDesktop = screenWidth > 1200;
-    final horizontalPadding =
-        screenWidth *
-        (isDesktop
-            ? 0.12
-            : isTablet
-            ? 0.08
-            : 0.05);
+    final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
+    final verticalSpacing = screenHeight * 0.02;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -436,16 +396,16 @@ class _FolderScreenState extends State<FolderScreen> {
                     content: Row(
                       children: [
                         SizedBox(
-                          width: 16,
-                          height: 16,
+                          width: isTablet ? 20 : 16,
+                          height: isTablet ? 20 : 16,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                            strokeWidth: isTablet ? 2.5 : 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Colors.white,
                             ),
                           ),
                         ),
-                        SizedBox(width: 12),
+                        SizedBox(width: isTablet ? 16 : 12),
                         Text('Updating folder...'),
                       ],
                     ),
@@ -456,7 +416,7 @@ class _FolderScreenState extends State<FolderScreen> {
                 );
               }
               if (state is UpdateFolderSuccess) {
-                // Show success message
+                _fetchFolders();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Row(
@@ -473,9 +433,6 @@ class _FolderScreenState extends State<FolderScreen> {
                 );
               }
               if (state is UpdateFolderError) {
-                // Refresh folders to ensure UI is synchronized with server state
-                _fetchFolders();
-
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Row(
@@ -494,6 +451,13 @@ class _FolderScreenState extends State<FolderScreen> {
                     behavior: SnackBarBehavior.floating,
                     backgroundColor: Colors.red,
                     duration: Duration(seconds: 4),
+                    action: SnackBarAction(
+                      label: 'Retry',
+                      textColor: Colors.white,
+                      onPressed: () {
+                        // Optionally implement retry logic here
+                      },
+                    ),
                   ),
                 );
               }
@@ -502,21 +466,20 @@ class _FolderScreenState extends State<FolderScreen> {
               return CustomScrollView(
                 physics: const ClampingScrollPhysics(),
                 slivers: [
-                  // Header Section
                   SliverPadding(
                     padding: EdgeInsets.symmetric(
                       horizontal: horizontalPadding,
                     ),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        SizedBox(height: screenHeight * 0.02),
+                        SizedBox(height: verticalSpacing * 1.5),
                         const PageHeader(
                           title: 'Folders',
                           subtitle: 'Organize and manage your study folders',
                         ),
-                        SizedBox(height: screenHeight * 0.02),
+                        SizedBox(height: verticalSpacing * 1.5),
                         const AppSearchBar(hintText: 'Search folders'),
-                        SizedBox(height: screenHeight * 0.02),
+                        SizedBox(height: verticalSpacing * 1.5),
                         CategoryFilter(
                           categories:
                               (state is FolderLoaded ||
@@ -527,24 +490,13 @@ class _FolderScreenState extends State<FolderScreen> {
                           selectedCategory: selectedCategory,
                           onCategorySelected: onCategorySelected,
                         ),
-                        SizedBox(height: screenHeight * 0.02),
+                        SizedBox(height: verticalSpacing),
                         FolderTabs(
                           tabs: const ['My Folders', 'Public Folders'],
                           selectedTab: selectedTab,
                           onTabSelected: onTabSelected,
                         ),
-                        SizedBox(height: screenHeight * 0.02),
-                      ]),
-                    ),
-                  ),
-
-                  // Create Folder Section
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
+                        SizedBox(height: verticalSpacing),
                         CreateFolderCard(
                           onTap: () async {
                             final result = await showDialog<dynamic>(
@@ -582,14 +534,12 @@ class _FolderScreenState extends State<FolderScreen> {
                             }
                           },
                         ),
-                        SizedBox(height: screenHeight * 0.02),
-                        LongPressHint(),
-                        SizedBox(height: screenHeight * 0.02),
+                        SizedBox(height: verticalSpacing * 1.5),
+                        const LongPressHint(),
+                        SizedBox(height: verticalSpacing * 1.5),
                       ]),
                     ),
                   ),
-
-                  // Folders List Section
                   if (state is FolderLoading)
                     const SliverFillRemaining(
                       child: Center(
@@ -597,13 +547,10 @@ class _FolderScreenState extends State<FolderScreen> {
                       ),
                     )
                   else if (state is FolderError)
-                    SliverToBoxAdapter(
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.6, // 60% of screen height
-                        padding: const EdgeInsets.all(20.0),
+                    SliverFillRemaining(
+                      child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
                               Icons.error_outline,
@@ -613,21 +560,11 @@ class _FolderScreenState extends State<FolderScreen> {
                             const SizedBox(height: 16),
                             const Text(
                               'Failed to load folders',
-                              style: TextStyle(color: Colors.white, fontSize: 16),
-                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white),
                             ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: 120,
-                              child: ElevatedButton(
-                                onPressed: _fetchFolders,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                                child: const Text('Retry'),
-                              ),
+                            TextButton(
+                              onPressed: _fetchFolders,
+                              child: const Text('Retry'),
                             ),
                           ],
                         ),
@@ -645,25 +582,19 @@ class _FolderScreenState extends State<FolderScreen> {
                   else
                     const SliverFillRemaining(
                       child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: Text(
-                            'No folders available',
-                            style: TextStyle(color: Colors.white70),
-                            textAlign: TextAlign.center,
-                          ),
+                        child: Text(
+                          'No folders available',
+                          style: TextStyle(color: Colors.white70),
                         ),
                       ),
                     ),
-
-                  // Study Stats Section - Moved to bottom
                   SliverPadding(
                     padding: EdgeInsets.symmetric(
                       horizontal: horizontalPadding,
                     ),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        SizedBox(height: screenHeight * 0.02),
+                        SizedBox(height: verticalSpacing * 1.5),
                         if (state is FolderLoaded ||
                             state is UpdateFolderSuccess ||
                             state is UpdateFolderError)
@@ -681,7 +612,7 @@ class _FolderScreenState extends State<FolderScreen> {
                             myFoldersCount: 0,
                             totalChaptersCount: 0,
                           ),
-                        SizedBox(height: screenHeight * 0.02),
+                        SizedBox(height: isTablet ? 24 : 16),
                       ]),
                     ),
                   ),
@@ -780,10 +711,35 @@ class _EditFolderDialogState extends State<_EditFolderDialog> {
               duration: Duration(seconds: 2),
             ),
           );
-          Navigator.pop(context, true);
+          // Fetch fresh data before closing dialog
+          final authState = context.read<AuthCubit>().state;
+          if (authState is AuthSuccess) {
+            // Fetch data and wait for completion before popping
+            Navigator.pop(context, true);
+          } else {
+            // If no auth state, just pop
+            Navigator.pop(context, true);
+          }
+        }
+        if (state is UpdateFolderSuccess) {
+          // Show success message only, do not pop here
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 16),
+                  SizedBox(width: 8),
+                  Text('Folder updated successfully!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // Do not pop here; let parent handle navigation
         }
         if (state is UpdateFolderError) {
-          // Show error message and pop back
+          // Show error with retry option
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -801,250 +757,195 @@ class _EditFolderDialogState extends State<_EditFolderDialog> {
               ),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 4),
-              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: () => _updateFolder(),
+              ),
             ),
           );
-
-          // Pop back to previous screen after showing error
-          Navigator.pop(context, false);
         }
       },
-      child: BlocBuilder<FolderCubit, FolderState>(
-        builder: (context, state) {
-          final isLoading = state is UpdateFolderLoading;
-          return Stack(
+      child: AlertDialog(
+        backgroundColor: const Color(0xFF0E0E10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF1C1C1E)),
+        ),
+        title: const Text(
+          'Edit Folder',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AlertDialog(
-                backgroundColor: const Color(0xFF0E0E10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Color(0xFF1C1C1E)),
+              const SizedBox(height: 16),
+              TextField(
+                maxLines: 2,
+                controller: _titleController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.all(12),
+                  labelText: 'Title',
+                  labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Color(0xFF1C1C1E)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.red),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFF1C1C1E),
                 ),
-                title: const Text(
-                  'Edit Folder',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                content: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.7,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
-                        TextField(
-                          maxLines: 2,
-                          controller: _titleController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            contentPadding: const EdgeInsets.all(12),
-                            labelText: 'Title',
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF8E8E93),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1C1C1E),
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.blue),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.red),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFF1C1C1E),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _descriptionController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: 'Description',
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF8E8E93),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1C1C1E),
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.blue),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFF1C1C1E),
-                          ),
-                          maxLines: 3,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Choose Icon',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _iconGrid(),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Choose Color',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _colorRow(),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<Status>(
-                          value: _selectedStatus,
-                          style: const TextStyle(color: Colors.white),
-                          dropdownColor: const Color(0xFF1C1C1E),
-                          decoration: InputDecoration(
-                            labelText: 'Privacy',
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF8E8E93),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1C1C1E),
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.blue),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFF1C1C1E),
-                          ),
-                          items: Status.values.map((status) {
-                            return DropdownMenuItem(
-                              value: status,
-                              child: Text(
-                                status == Status.private ? 'Private' : 'Public',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _selectedStatus = value;
-                              });
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Color(0xFF8E8E93)),
-                    ),
-                  ),
-                  BlocBuilder<FolderCubit, FolderState>(
-                    builder: (context, state) {
-                      final isLoading = state is UpdateFolderLoading;
-                      return ElevatedButton(
-                        onPressed: isLoading ? null : _updateFolder,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: isLoading
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text('Updating...'),
-                                ],
-                              )
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.save, size: 16),
-                                  SizedBox(width: 4),
-                                  Text('Update'),
-                                ],
-                              ),
-                      );
-                    },
-                  ),
-                ],
               ),
-              if (isLoading)
-                Container(
-                  color: Colors.black.withOpacity(0.5),
-                  child: Center(
-                    child: Container(
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF1C1C1E),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
+              const SizedBox(height: 16),
+              TextField(
+                controller: _descriptionController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Color(0xFF1C1C1E)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFF1C1C1E),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Choose Icon',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _iconGrid(),
+              const SizedBox(height: 20),
+              Text(
+                'Choose Color',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _colorRow(),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<Status>(
+                value: _selectedStatus,
+                style: const TextStyle(color: Colors.white),
+                dropdownColor: const Color(0xFF1C1C1E),
+                decoration: InputDecoration(
+                  labelText: 'Privacy',
+                  labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Color(0xFF1C1C1E)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFF1C1C1E),
+                ),
+                items: Status.values.map((status) {
+                  return DropdownMenuItem(
+                    value: status,
+                    child: Text(
+                      status == Status.private ? 'Private' : 'Public',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedStatus = value;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF8E8E93)),
+            ),
+          ),
+          BlocBuilder<FolderCubit, FolderState>(
+            builder: (context, state) {
+              final isLoading = state is UpdateFolderLoading;
+              return ElevatedButton(
+                onPressed: isLoading ? null : _updateFolder,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: isLoading
+                    ? Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(
-                            color: Colors.blue,
-                            strokeWidth: 2,
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Updating folder...',
-                            style: TextStyle(color: Colors.white, fontSize: 16),
-                          ),
+                          SizedBox(width: 8),
+                          Text('Updating...'),
+                        ],
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.save, size: 16),
+                          SizedBox(width: 4),
+                          Text('Update'),
                         ],
                       ),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ],
       ),
     );
   }

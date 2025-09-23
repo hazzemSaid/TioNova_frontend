@@ -18,14 +18,21 @@ class ChapterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenSize = MediaQuery.sizeOf(context);
+    final isTablet = screenSize.width > 600;
+    
+    // Responsive dimensions
+    final double padding = isTablet ? 20.0 : 16.0;
+    final double titleSize = isTablet ? 18.0 : 16.0;
+    final double subjectSize = isTablet ? 15.0 : 13.0;
+    final double metaSize = isTablet ? 13.0 : 11.0;
+    final double spacing = isTablet ? 12.0 : 8.0;
 
     return Container(
-      padding: EdgeInsets.all(screenWidth * 0.045),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: const Color(0xFF0E0E10),
-        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        borderRadius: BorderRadius.circular(isTablet ? 16.0 : 14.0),
         border: Border.all(color: const Color(0xFF1C1C1E)),
       ),
       child: Column(
@@ -41,37 +48,37 @@ class ChapterCard extends StatelessWidget {
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
-                    fontSize: screenWidth * 0.04,
-                    height: 1.3,
+                    fontSize: titleSize,
+                    height: 1.2,
                   ),
                 ),
               ),
-              SizedBox(width: screenWidth * 0.03),
+              SizedBox(width: spacing),
               Row(
                 children: [
                   Container(
-                    width: screenWidth * 0.025,
-                    height: screenWidth * 0.025,
+                    width: isTablet ? 10.0 : 8.0,
+                    height: isTablet ? 10.0 : 8.0,
                     decoration: BoxDecoration(
                       color: statusColor,
                       shape: BoxShape.circle,
                     ),
                   ),
-                  SizedBox(width: screenWidth * 0.02),
+                  SizedBox(width: spacing / 2),
                   Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.03,
-                      vertical: screenHeight * 0.008,
+                      horizontal: isTablet ? 12.0 : 10.0,
+                      vertical: isTablet ? 6.0 : 4.0,
                     ),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
                     child: Text(
                       status,
                       style: TextStyle(
                         color: statusColor,
-                        fontSize: screenWidth * 0.03,
+                        fontSize: isTablet ? 12.0 : 10.0,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -80,16 +87,16 @@ class ChapterCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: screenHeight * 0.01),
+          SizedBox(height: spacing / 2),
           Text(
             subject,
             style: TextStyle(
               color: const Color(0xFF8E8E93),
-              fontSize: screenWidth * 0.035,
+              fontSize: subjectSize,
               fontWeight: FontWeight.w400,
             ),
           ),
-          SizedBox(height: screenHeight * 0.015),
+          SizedBox(height: spacing),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -97,7 +104,7 @@ class ChapterCard extends StatelessWidget {
                 days,
                 style: TextStyle(
                   color: const Color(0xFF636366),
-                  fontSize: screenWidth * 0.03,
+                  fontSize: metaSize,
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -106,14 +113,14 @@ class ChapterCard extends StatelessWidget {
                   Icon(
                     Icons.menu_book_outlined,
                     color: const Color(0xFF636366),
-                    size: screenWidth * 0.035,
+                    size: isTablet ? 16.0 : 14.0,
                   ),
-                  SizedBox(width: screenWidth * 0.01),
+                  SizedBox(width: spacing / 2),
                   Text(
                     "Chapter",
                     style: TextStyle(
                       color: const Color(0xFF636366),
-                      fontSize: screenWidth * 0.03,
+                      fontSize: metaSize,
                       fontWeight: FontWeight.w400,
                     ),
                   ),

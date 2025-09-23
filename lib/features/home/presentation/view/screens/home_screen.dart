@@ -15,9 +15,13 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
     final topPadding = MediaQuery.of(context).padding.top;
+    final bool isTablet = screenWidth > 600;
+    final double horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
+    final double verticalSpacing = screenHeight * 0.02;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -29,26 +33,34 @@ class HomeScreen extends StatelessWidget {
             // Custom Header using SliverPersistentHeader
             SliverPersistentHeader(
               delegate: CustomHeaderDelegate(
-                minHeight: topPadding + 80,
-                maxHeight: topPadding + 80,
+                minHeight:
+                    topPadding +
+                    (isTablet
+                        ? 60
+                        : 80), // Further reduced min height for tablet
+                maxHeight:
+                    topPadding +
+                    (isTablet
+                        ? 70
+                        : 100), // Further reduced max height for tablet
                 screenWidth: screenWidth,
               ),
             ),
 
             // Main Content
             SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  SizedBox(height: screenHeight * 0.025),
+                  SizedBox(height: verticalSpacing * 1.5),
 
                   // Search Bar
                   CustomSearchBar(),
-                  SizedBox(height: screenHeight * 0.025),
+                  SizedBox(height: verticalSpacing * 1.5),
 
                   // Create Folder Button
                   CreateFolderButton(),
-                  SizedBox(height: screenHeight * 0.04),
+                  SizedBox(height: verticalSpacing * 2),
 
                   // Recent Chapters Section
                   SectionHeader(
@@ -56,7 +68,7 @@ class HomeScreen extends StatelessWidget {
                     actionText: "Continue studying",
                     actionIcon: Icons.access_time,
                   ),
-                  SizedBox(height: screenHeight * 0.02),
+                  SizedBox(height: verticalSpacing),
                 ]),
               ),
             ),
@@ -106,38 +118,35 @@ class HomeScreen extends StatelessWidget {
 
             // Recent Folders Section
             SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  SizedBox(height: screenHeight * 0.04),
+                  SizedBox(height: verticalSpacing * 2),
                   SectionHeader(
                     title: "Recent Folders",
                     actionText: "View All",
                     actionIcon: Icons.arrow_forward_ios,
                   ),
-                  SizedBox(height: screenHeight * 0.02),
+                  SizedBox(height: verticalSpacing),
                 ]),
               ),
             ),
 
             // Folder Grid using SliverGrid for better performance
             SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               sliver: SliverLayoutBuilder(
                 builder: (context, constraints) {
-                  final crossAxisCount = constraints.crossAxisExtent > 600
-                      ? 3
-                      : 2;
-                  final childAspectRatio = constraints.crossAxisExtent > 600
-                      ? 1.2
-                      : 1.0;
+                  final crossAxisCount = isTablet ? 3 : 2;
+                  final childAspectRatio = isTablet ? 1.2 : 1.0;
 
                   return SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
-                      crossAxisSpacing: screenWidth * 0.04,
+                      crossAxisSpacing: screenWidth * (isTablet ? 0.03 : 0.04),
                       mainAxisSpacing: screenHeight * 0.02,
                       childAspectRatio: childAspectRatio,
+                      mainAxisExtent: isTablet ? 180 : 160,
                     ),
                     delegate: SliverChildBuilderDelegate((context, index) {
                       final folders = [

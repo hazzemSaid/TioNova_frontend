@@ -55,12 +55,13 @@ Future<void> setupServiceLocator() async {
           if (refreshToken != null) {
             try {
               final refreshResponse = await dio.post(
-                '/refresh-token',
+                '/auth/refresh-token',
                 data: {'refreshToken': refreshToken},
               );
               final newAccessToken = refreshResponse.data['token'];
+              final newRefreshToken = refreshResponse.data['refreshToken'];
               // Save both tokens
-              await TokenStorage.saveTokens(newAccessToken, refreshToken);
+              await TokenStorage.saveTokens(newAccessToken, newRefreshToken);
 
               // Retry the original request with new token
               final opts = error.requestOptions;

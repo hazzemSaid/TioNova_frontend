@@ -7,7 +7,11 @@ import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/presentation/view/screens/EditChapterDialog.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/DashedBorderPainter.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/create_folder_card.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
+import 'package:tionova/utils/static.dart';
 
 import 'chapter_detail_screen.dart';
 import 'create_chapter_screen.dart';
@@ -193,21 +197,31 @@ class FolderDetailScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        child: Container(
-                          height: 44,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0E0E10),
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(color: const Color(0xFF1C1C1E)),
+                        child: CustomPaint(
+                          size: Size(double.infinity, 44),
+                          isComplex: true,
+                          willChange: true,
+                          painter: DashedBorderPainter(
+                            color: color.withValues(alpha: 0.22),
                           ),
-                          child: const Center(
-                            child: Text(
-                              'Add Chapter',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                          child: Container(
+                            height: 44,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0E0E10),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: const Color(0xFF1C1C1E),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Add Chapter',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ),
@@ -306,6 +320,9 @@ class FolderDetailScreen extends StatelessWidget {
                 ChapterDetailScreen(chapter: chapter, folderColor: color),
           ),
         );
+      },
+      onLongPress: () {
+        ShowChapterOptionsBottomSheet(chapter: chapter).show(context);
       },
       child: Container(
         margin: EdgeInsets.fromLTRB(
@@ -440,5 +457,138 @@ class FolderDetailScreen extends StatelessWidget {
     } catch (e) {
       return 'Unknown';
     }
+  }
+}
+
+class ShowChapterOptionsBottomSheet {
+  final ChapterModel chapter;
+
+  ShowChapterOptionsBottomSheet({required this.chapter});
+
+  void show(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0E0E10),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bottomSheetContext) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF636366),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text(
+              chapter.title ?? 'Untitled Chapter',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                buildActionButton(
+                  chapter: chapter,
+                  context: context,
+                  color: Colors.blue,
+                  icon: Icons.edit,
+                  label: 'Edit',
+                  onTap: () {
+                    Navigator.pop(bottomSheetContext);
+                    _showEditChapterDialog(chapter, context);
+                  },
+                ),
+                buildActionButton(
+                  chapter: chapter,
+                  context: context,
+                  color: Colors.red,
+                  icon: Icons.delete,
+                  label: 'Delete',
+                  onTap: () {
+                    Navigator.pop(bottomSheetContext);
+                    _showDeleteChapterDialog(chapter, context);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditChapterDialog(ChapterModel chapter, BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(
+        alpha: 153,
+        red: 0,
+        green: 0,
+        blue: 0,
+      ), // 0.6 opacity
+      builder: (dialogContext) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: context.read<ChapterCubit>()),
+          BlocProvider.value(value: context.read<AuthCubit>()),
+        ],
+        child: EditChapterDialog(
+          titleController: TextEditingController(text: chapter.title),
+          descriptionController: TextEditingController(
+            text: chapter.description,
+          ),
+          chapter: chapter,
+          defaultcolors: Static.defaultColors,
+          icons: Static.defaultIcons,
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteChapterDialog(ChapterModel chapter, BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Container(child: Text('Delete Chapter')),
+    );
+  }
+
+  Widget buildActionButton({
+    required ChapterModel chapter,
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(color: color, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
   }
 }
