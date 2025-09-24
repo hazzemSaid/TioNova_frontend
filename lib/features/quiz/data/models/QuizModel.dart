@@ -7,7 +7,7 @@ class QuizModel extends Equatable {
   final int totalQuestions;
   final List<QuestionModel> questions;
 
-  QuizModel({
+  const QuizModel({
     required this.id,
     required this.title,
     required this.totalQuestions,
@@ -16,11 +16,11 @@ class QuizModel extends Equatable {
 
   factory QuizModel.fromJson(Map<String, dynamic> json) {
     return QuizModel(
-      id: json['_id'],
-      title: json['title'],
+      id: json['quiz']['_id'],
+      title: json['quiz']['title'],
       totalQuestions: json['totalQuestions'],
       questions: List<QuestionModel>.from(
-        json['questions'].map((x) => QuestionModel.fromJson(x)),
+        json['quiz']['questions'].map((x) => QuestionModel.fromJson(x)),
       ),
     );
   }

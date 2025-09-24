@@ -28,6 +28,11 @@ import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
+import 'package:tionova/features/quiz/data/datasources/remotequizdatasource.dart';
+import 'package:tionova/features/quiz/data/repo/Quizrepoimp.dart';
+import 'package:tionova/features/quiz/domain/repo/Quizrepo.dart';
+import 'package:tionova/features/quiz/domain/usecases/CreateQuizUseCase.dart';
+import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -205,5 +210,22 @@ Future<void> setupServiceLocator() async {
       updateFolderUseCase: getIt<UpdateFolderUseCase>(),
       deleteFolderUseCase: getIt<DeleteFolderUseCase>(),
     ),
+  );
+
+  //quiz
+  getIt.registerLazySingleton<RemoteQuizDataSource>(
+    () => RemoteQuizDataSource(dio: getIt<Dio>()),
+  );
+
+  getIt.registerLazySingleton<QuizRepo>(
+    () => QuizRepoImp(remoteQuizDataSource: getIt<RemoteQuizDataSource>()),
+  );
+
+  getIt.registerLazySingleton<CreateQuizUseCase>(
+    () => CreateQuizUseCase(quizRepo: getIt<QuizRepo>()),
+  );
+
+  getIt.registerFactory(
+    () => QuizCubit(createQuizUseCase: getIt<CreateQuizUseCase>()),
   );
 }

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:either_dart/either.dart' show Either, Left;
+import 'package:either_dart/either.dart' show Either, Left, Right;
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/quiz/data/datasources/IRemoteQuizDataSource.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
@@ -27,7 +27,13 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
         ),
       );
 
-      return response.data.map((quiz) => QuizModel.fromJson(quiz)).toList();
+      if (response.data['success'] == true) {
+        return Right(QuizModel.fromJson(response.data));
+      } else {
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Failed to create quiz'),
+        );
+      }
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

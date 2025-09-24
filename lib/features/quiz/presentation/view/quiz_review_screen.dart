@@ -1,21 +1,26 @@
-import 'package:flutter/material.dart';
-import 'package:tionova/features/quiz/presentation/view/quiz_results_screen.dart';
+/*import 'package:flutter/material.dart';
+import 'package:tionova/features/quiz/data/models/QuizModel.dart';
 import 'package:tionova/features/quiz/presentation/widgets/quiz_header.dart';
 
-class QuizReviewScreen extends StatelessWidget {
-  final List<Map<String, Object>> questions;
-  final List<int?> answers;
+class QuizResultsScreen extends StatelessWidget {
+  final QuizModel quiz;
+  final List<String?> userAnswers;
+  final int score;
+  final int totalQuestions;
+  final List<bool> isCorrectList;
 
-  const QuizReviewScreen({
+  const QuizResultsScreen({
     super.key,
-    required this.questions,
-    required this.answers,
+    required this.quiz,
+    required this.userAnswers,
+    required this.score,
+    required this.totalQuestions,
+    required this.isCorrectList,
   });
 
   @override
   Widget build(BuildContext context) {
-    final answeredCount = answers.where((answer) => answer != null).length;
-    final unansweredCount = questions.length - answeredCount;
+    final scorePercentage = (score / totalQuestions * 100).round();
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -28,19 +33,20 @@ class QuizReviewScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   children: [
-                    QuizHeader(title: 'Review Answers', timer: '14:58'),
+                    QuizHeader(title: 'Quiz Results', timer: '14:40'),
                     const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
 
-            // Stats Section
+            // Score Card Section
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Container(
-                  padding: const EdgeInsets.all(20.0),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24.0),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1C1C1E),
                     borderRadius: BorderRadius.circular(16.0),
@@ -49,60 +55,71 @@ class QuizReviewScreen extends StatelessWidget {
                       width: 1,
                     ),
                   ),
-                  child: Row(
+                  child: Column(
                     children: [
-                      // Answered Section
-                      Expanded(
-                        child: Column(
+                      // Circular progress indicator
+                      SizedBox(
+                        width: 120,
+                        height: 120,
+                        child: Stack(
                           children: [
-                            Text(
-                              '$answeredCount/$answeredCount',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
+                            SizedBox(
+                              width: 120,
+                              height: 120,
+                              child: CircularProgressIndicator(
+                                value: scorePercentage / 100,
+                                strokeWidth: 6,
+                                backgroundColor: Colors.grey.withOpacity(0.3),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  scorePercentage == 0
+                                      ? Colors.red
+                                      : const Color(0xFF34C759),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Answered',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 14,
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '$scorePercentage%',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-
-                      // Divider
-                      Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.grey.withOpacity(0.3),
+                      const SizedBox(height: 24),
+                      Text(
+                        scorePercentage == 0
+                            ? 'Keep Practicing!'
+                            : 'Great Job!',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-
-                      // Unanswered Section
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              '$unansweredCount',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Unanswered',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 8),
+                      Text(
+                        '$score out of $totalQuestions questions correct',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Time: 0m  •  Score: $scorePercentage%',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -111,19 +128,33 @@ class QuizReviewScreen extends StatelessWidget {
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            // Question Breakdown Header
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 32.0, 16.0, 16.0),
+                child: const Text(
+                  'Question Breakdown',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
 
             // Questions List
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               sliver: SliverList.builder(
-                itemCount: questions.length,
+                itemCount: quiz.questions.length,
                 itemBuilder: (context, index) {
-                  final isAnswered = answers[index] != null;
+                  final isCorrect = isCorrectList[index];
+                  final wasAnswered = userAnswers[index] != null;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12.0),
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1C1C1E),
                       borderRadius: BorderRadius.circular(12.0),
@@ -132,56 +163,74 @@ class QuizReviewScreen extends StatelessWidget {
                         width: 1,
                       ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Question ${index + 1}',
-                                style: const TextStyle(
-                                  color: Color(0xFFFE9500),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${index + 1}. ${quiz.questions[index].question}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (wasAnswered)
+                                    Text(
+                                      'Your answer: ${userAnswers[index]}',
+                                      style: TextStyle(
+                                        color: isCorrect
+                                            ? const Color(0xFF34C759)
+                                            : const Color(0xFFFF453A),
+                                        fontSize: 12,
+                                      ),
+                                    )
+                                  else
+                                    const Text(
+                                      'Your answer: No answer',
+                                      style: TextStyle(
+                                        color: Color(0xFFFF453A),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  if (!isCorrect || !wasAnswered)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        'Correct: ${quiz.questions[index].correctAnswer}',
+                                        style: const TextStyle(
+                                          color: Color(0xFF34C759),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                questions[index]['question']! as String,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isAnswered
-                                  ? const Color(0xFF34C759)
-                                  : Colors.grey,
-                              width: isAnswered ? 0 : 2,
                             ),
-                            color: isAnswered
-                                ? const Color(0xFF34C759)
-                                : Colors.transparent,
-                          ),
-                          child: isAnswered
-                              ? const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 16,
-                                )
-                              : null,
+                            const SizedBox(width: 12),
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isCorrect
+                                    ? const Color(0xFF34C759)
+                                    : const Color(0xFFFF453A),
+                              ),
+                              child: Icon(
+                                isCorrect ? Icons.check : Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -196,25 +245,77 @@ class QuizReviewScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   children: [
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
-                    // Submit Quiz Button
+                    // Share Results Button
                     Container(
                       width: double.infinity,
-                      height: 52,
+                      height: 48,
                       margin: const EdgeInsets.only(bottom: 12),
+                      child: ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(
+                          Icons.share,
+                          color: Colors.black,
+                          size: 20,
+                        ),
+                        label: const Text(
+                          'Share Results',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+
+                    // Retry Quiz Button
+                    Container(
+                      width: double.infinity,
+                      height: 48,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(
+                          Icons.refresh,
+                          color: Colors.black,
+                          size: 20,
+                        ),
+                        label: const Text(
+                          'Retry Quiz',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+
+                    // Continue Learning Button
+                    Container(
+                      width: double.infinity,
+                      height: 48,
+                      margin: const EdgeInsets.only(bottom: 24),
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => QuizResultsScreen(
-                                questions: questions,
-                                answers: answers,
-                              ),
-                            ),
-                          );
-                        },
+                        onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
@@ -224,41 +325,11 @@ class QuizReviewScreen extends StatelessWidget {
                           elevation: 0,
                         ),
                         child: const Text(
-                          'Submit Quiz',
+                          'Continue Learning',
                           style: TextStyle(
                             color: Colors.black,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Continue Answering Button
-                    Container(
-                      width: double.infinity,
-                      height: 52,
-                      margin: const EdgeInsets.only(bottom: 32),
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1C1C1E),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
-                            side: BorderSide(
-                              color: Colors.grey.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Continue Answering',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -273,3 +344,4 @@ class QuizReviewScreen extends StatelessWidget {
     );
   }
 }
+*/

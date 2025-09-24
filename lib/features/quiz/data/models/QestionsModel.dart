@@ -22,12 +22,13 @@ class QuestionModel extends Equatable {
   final String question;
   final List<String> options;
   final String answer;
-
+  final String? explanation;
   QuestionModel({
     required this.id,
     required this.question,
     required this.options,
     required this.answer,
+    this.explanation,
   });
 
   factory QuestionModel.fromJson(Map<String, dynamic> json) {
@@ -36,15 +37,16 @@ class QuestionModel extends Equatable {
       question: json['question'],
       options: List<String>.from(json['options']),
       answer: json['answer'],
+      explanation: json['explanation'],
     );
   }
 
   @override
-  List<Object?> get props => [id, question, options, answer];
+  List<Object?> get props => [id, question, options, answer, explanation];
 
   @override
   String toString() {
-    return 'QuestionModel(id: $id, question: $question, options: $options, answer: $answer)';
+    return 'QuestionModel(id: $id, question: $question, options: $options, answer: $answer, explanation: $explanation)';
   }
 
   QuestionModel copyWith({
@@ -52,12 +54,14 @@ class QuestionModel extends Equatable {
     String? question,
     List<String>? options,
     String? answer,
+    String? explanation,
   }) {
     return QuestionModel(
       id: id ?? this.id,
       question: question ?? this.question,
       options: options ?? this.options,
       answer: answer ?? this.answer,
+      explanation: explanation ?? this.explanation,
     );
   }
 }

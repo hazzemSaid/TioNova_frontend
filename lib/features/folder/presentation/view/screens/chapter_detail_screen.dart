@@ -10,6 +10,9 @@ import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.
 import 'package:tionova/features/folder/presentation/view/screens/RawSummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_screen.dart';
 
 class ChapterDetailScreen extends StatefulWidget {
@@ -141,11 +144,30 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           // Quiz Buttons
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => QuizScreen()),
-              );
+            onPressed: () async {
+              final token = await TokenStorage.getAccessToken();
+              if (!mounted) return;
+              
+              if (token != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Provider<QuizCubit>(
+                      create: (context) => getIt<QuizCubit>(),
+                      child: QuizScreen(
+                        token: token,
+                        chapterId: widget.chapter.id ?? '',
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                // Handle case where token is not available
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please login to take the quiz')),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 52),
