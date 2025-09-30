@@ -1,7 +1,6 @@
-// main.dart
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:tionova/firebase_options.dart';
+// // main.dart
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -24,25 +23,25 @@ import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 // import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart'; // DISABLED
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_bloc.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_state.dart';
-import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 
 import 'core/services/notification/notification_service.dart';
 
 // Create an instance of NotificationService
 final notificationService = NotificationService();
 
-// Background message handler
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await NotificationService.backgroundMessageHandler(message);
-}
+// // Background message handler
+// @pragma('vm:entry-point')
+// Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+//   await NotificationService.backgroundMessageHandler(message);
+// }
 
 Future<void> main() async {
   // Initialize Flutter bindings and services
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await HiveManager.initializeHive();
 
