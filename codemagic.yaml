@@ -7,9 +7,7 @@ workflows:
       xcode: 16.2
       # Set APPETIZE_API_TOKEN securely in Codemagic UI (do not hardcode here)
       # APPETIZE_API_TOKEN should be set in the Codemagic UI environment variables, not here.
-      # Remove the line below if present, or leave it commented out.
-      vars:
-        APPETIZE_API_TOKEN: "code"
+      vars: {}
     scripts:
       - name: Install and pin Flutter SDK 3.35.5
         script: |
@@ -32,17 +30,36 @@ workflows:
           dart --version
       - name: Show Flutter/Dart versions
         script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
+          which flutter || true
           flutter --version
           dart --version
+      - name: Flutter clean
+        script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
+          flutter clean
       - name: Flutter pub get
-        script: flutter pub get
+        script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
+          which flutter
+          flutter --version
+          dart --version
+          flutter pub get
       - name: Update CocoaPods and install
         script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
           cd ios
           pod repo update
           pod install
       - name: Build iOS simulator app (no signing required)
-        script: flutter build ios --debug --simulator
+        script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
+          flutter build ios --debug --simulator
       - name: Zip Runner.app
         script: |
           cd build/ios/iphonesimulator
@@ -68,6 +85,8 @@ workflows:
     cache:
       cache_paths:
         - $CM_BUILD_DIR/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+        - ios/Pods
     artifacts:
       - build/ios/iphonesimulator/Runner.app
       - build/ios/iphonesimulator/Runner.zip
@@ -99,17 +118,36 @@ workflows:
           dart --version
       - name: Show Flutter/Dart versions
         script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
+          which flutter || true
           flutter --version
           dart --version
+      - name: Flutter clean
+        script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
+          flutter clean
       - name: Flutter pub get
-        script: flutter pub get
+        script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
+          which flutter
+          flutter --version
+          dart --version
+          flutter pub get
       - name: Update CocoaPods and install
         script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
           cd ios
           pod repo update
           pod install
       - name: Build iOS (no codesign)
-        script: flutter build ios --release --no-codesign
+        script: |
+          set -euo pipefail
+          source "$CM_ENV" || true
+          flutter build ios --release --no-codesign
       - name: Package IPA (unsigned)
         script: |
           cd build/ios/iphoneos
@@ -119,6 +157,8 @@ workflows:
     cache:
       cache_paths:
         - $CM_BUILD_DIR/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+        - ios/Pods
     artifacts:
       - build/ios/iphoneos/FlutterIpaExport.ipa
 
