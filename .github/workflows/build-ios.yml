@@ -15,12 +15,17 @@ jobs:
       # 2. Setup Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.5"
+          # Flutter 3.27.3 bundles Dart 3.9.2, matching pubspec SDK ^3.9.2
+          flutter-version: "3.27.3"
           channel: "stable"
 
       # 3. Get packages
       - name: Install Flutter dependencies
         run: flutter pub get
+
+      # Ensure jq is available for JSON parsing later
+      - name: Install jq
+        run: brew install jq
 
       # 4. Build iOS simulator app (no signing needed)
       - name: Build iOS (Simulator, Debug)
@@ -34,13 +39,24 @@ jobs:
 
       # 6. Upload to Appetize.io
       - name: Upload to Appetize
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
         run: |
+          if [ -z "$APPETIZE_API_TOKEN" ]; then
+            echo "APPETIZE_API_TOKEN secret is not set" >&2
+            exit 1
+          fi
           RESPONSE=$(curl -s -X POST https://api.appetize.io/v1/apps \
-            -u "tok_yx4udhkdrzewxqakcvt2sn6pbm:" \
+            -u "$APPETIZE_API_TOKEN:" \
             -F "platform=ios" \
             -F "file=@build/ios/iphonesimulator/Runner.zip")
           echo "Appetize response: $RESPONSE"
-          echo "PUBLIC_URL=$(echo $RESPONSE | jq -r .publicUrl)" >> $GITHUB_ENV
+          PUBLIC_URL=$(echo "$RESPONSE" | jq -r .publicUrl)
+          if [ "$PUBLIC_URL" = "null" ] || [ -z "$PUBLIC_URL" ]; then
+            echo "Failed to get public URL from Appetize response" >&2
+            exit 1
+          fi
+          echo "PUBLIC_URL=$PUBLIC_URL" >> $GITHUB_ENV
 
       # 7. Print Appetize link in logs
       - name: Show Appetize link
