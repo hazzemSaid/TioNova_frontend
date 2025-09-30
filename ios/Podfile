@@ -1,4 +1,4 @@
-platform :ios, '15.0'  # Updated to 15.0 for Firebase SDK 12.x compatibility
+platform :ios, '13.0'  # Updated to 15.0 for Firebase SDK 12.x compatibility
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 

@@ -49,8 +49,15 @@ workflows:
             flutter pub get
           fi
           cd ios
+          # Clean pods to ensure fresh installation
+          rm -rf Pods Podfile.lock .symlinks/
           pod repo update
           pod install --repo-update
+          # Verify Firebase pods are installed
+          if ! grep -q "FirebaseCore" Podfile.lock; then
+            echo "ERROR: FirebaseCore not found in Podfile.lock"
+            exit 1
+          fi
       - name: Build simulator app
         script: |
           set -euo pipefail
@@ -103,6 +110,7 @@ workflows:
             flutter pub get
           fi
           cd ios
+          rm -rf Pods Podfile.lock .symlinks/
           pod repo update
           pod install --repo-update
       - name: Build unsigned IPA
