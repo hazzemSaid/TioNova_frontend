@@ -8,7 +8,8 @@ workflows:
       xcode: 16.2
       vars:
         # Set APPETIZE_API_TOKEN securely in Codemagic UI (do not hardcode here)
-        APPETIZE_API_TOKEN: ""
+        # APPETIZE_API_TOKEN should be set in Codemagic UI environment variables
+        APPETIZE_API_TOKEN: "changeme"
     scripts:
       - name: Show Flutter/Dart versions
         script: |
