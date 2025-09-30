@@ -32,15 +32,17 @@ workflows:
       - name: Set iOS deployment target
         script: |
           set -euo pipefail
-          # Update deployment target in Podfile to 15.0 (required by Firebase SDK 12.x)
-          sed -i '' "s/platform :ios, '14.0'/platform :ios, '15.0'/g" ios/Podfile || \
-          sed -i "s/platform :ios, '14.0'/platform :ios, '15.0'/g" ios/Podfile
+          # Update deployment target to 15.0 (required by Firebase SDK 12.2.0)
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile 2>/dev/null || \
+          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile
           
-          # Also update in project.pbxproj if needed
+          # Also update in project.pbxproj
           if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj || \
-            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
+            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj
           fi
+          
+          echo "✅ iOS deployment target set to 15.0"
       - name: CocoaPods install
         script: |
           set -euo pipefail
@@ -58,6 +60,24 @@ workflows:
             echo "ERROR: FirebaseCore not found in Podfile.lock"
             exit 1
           fi
+          echo "✅ Firebase pods installed successfully"
+      - name: Verify Firebase setup
+        script: |
+          set -euo pipefail
+          # Check if GoogleService-Info.plist exists
+          if [ ! -f ios/Runner/GoogleService-Info.plist ]; then
+            echo "WARNING: GoogleService-Info.plist not found!"
+            echo "Firebase will not work without this file."
+          else
+            echo "✅ GoogleService-Info.plist found"
+          fi
+          # Check AppDelegate.swift has correct imports
+          if ! grep -q "import FirebaseCore" ios/Runner/AppDelegate.swift; then
+            echo "ERROR: AppDelegate.swift missing 'import FirebaseCore'"
+            echo "Please update AppDelegate.swift with correct Firebase imports"
+            exit 1
+          fi
+          echo "✅ AppDelegate.swift has FirebaseCore import"
       - name: Build simulator app
         script: |
           set -euo pipefail
@@ -97,13 +117,15 @@ workflows:
       - name: Set iOS deployment target
         script: |
           set -euo pipefail
-          sed -i '' "s/platform :ios, '14.0'/platform :ios, '15.0'/g" ios/Podfile || \
-          sed -i "s/platform :ios, '14.0'/platform :ios, '15.0'/g" ios/Podfile
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile 2>/dev/null || \
+          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile
           
           if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj || \
-            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
+            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj
           fi
+          
+          echo "✅ iOS deployment target set to 15.0"
       - name: CocoaPods install
         script: |
           if [ ! -f ios/Flutter/Generated.xcconfig ]; then
