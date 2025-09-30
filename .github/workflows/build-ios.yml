@@ -1,72 +1,57 @@
-name: Build iOS App for Appetize
+name: iOS-ipa-build
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch: # allow manual trigger
+  workflow_dispatch:
 
 jobs:
   build-ios:
+    name: 🎉 iOS Build
     runs-on: macos-latest
+
     steps:
-      # 1. Checkout repo
-      - uses: actions/checkout@v3
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v3
 
-      # 2. Setup Flutter
-      - uses: subosito/flutter-action@v2
+      - name: 🚀 Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          # Flutter 3.27.3 bundles Dart 3.9.2, matching pubspec SDK ^3.9.2
-          flutter-version: "3.27.3"
-          channel: "stable"
-          architecture: arm64
-          cache: false
+          flutter-version: "3.32.5"
 
-      # Sanity check the toolchain versions before proceeding
-      - name: Show Flutter/Dart versions
-        run: |
-          flutter --version
-          dart --version
-
-      # 3. Get packages
-      - name: Install Flutter dependencies
+      - name: 📦 Install Flutter dependencies
         run: flutter pub get
 
-      # Ensure jq is available for JSON parsing later
-      - name: Install jq
-        run: brew install jq
+      - name: 🔄 Update CocoaPods repo
+        run: pod repo update
+        working-directory: ios
 
-      # 4. Build iOS simulator app (no signing needed)
-      - name: Build iOS (Simulator, Debug)
-        run: flutter build ios --debug --simulator
+      - name: 🏗️ Build iOS app (no code signing)
+        run: flutter build ios --release --no-codesign
 
-      # 5. Zip Runner.app for Appetize
-      - name: Prepare App for Appetize
+      - name: 📁 Prepare IPA structure
         run: |
-          cd build/ios/iphonesimulator
-          zip -r Runner.zip Runner.app
+          mkdir Payload
+          mv Runner.app Payload/
+        working-directory: build/ios/iphoneos
 
-      # 6. Upload to Appetize.io
-      - name: Upload to Appetize
+      - name: 📦 Create IPA file
+        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
+        working-directory: build/ios/iphoneos
+
+      - name: 🚀 Create GitHub Release and Upload IPA
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0
+          name: "First iOS Release"
+          body: "This is the first iOS .ipa release built using GitHub Actions."
+          files: build/ios/iphoneos/FlutterIpaExport.ipa
         env:
-          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
-        run: |
-          if [ -z "$APPETIZE_API_TOKEN" ]; then
-            echo "APPETIZE_API_TOKEN secret is not set" >&2
-            exit 1
-          fi
-          RESPONSE=$(curl -s -X POST https://api.appetize.io/v1/apps \
-            -u "$APPETIZE_API_TOKEN:" \
-            -F "platform=ios" \
-            -F "file=@build/ios/iphonesimulator/Runner.zip")
-          echo "Appetize response: $RESPONSE"
-          PUBLIC_URL=$(echo "$RESPONSE" | jq -r .publicUrl)
-          if [ "$PUBLIC_URL" = "null" ] || [ -z "$PUBLIC_URL" ]; then
-            echo "Failed to get public URL from Appetize response" >&2
-            exit 1
-          fi
-          echo "PUBLIC_URL=$PUBLIC_URL" >> $GITHUB_ENV
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 7. Print Appetize link in logs
-      - name: Show Appetize link
+      - name: 📲 Upload to Appetize.io
         run: |
-          echo "🚀 Test your app here: $PUBLIC_URL"
+          curl -s -X POST https://api.appetize.io/v1/apps \
+          -H "Authorization: Bearer ${{ secrets.APPETIZE_API_TOKEN }}" \
+          -F "platform=ios" \
+          -F "file=@build/ios/iphoneos/FlutterIpaExport.ipa" \
+          -F "note=Uploaded via GitHub Actions" \
+          -F "public=true"
