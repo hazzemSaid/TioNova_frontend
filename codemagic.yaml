@@ -22,6 +22,8 @@ workflows:
           }
           echo 'export PATH="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin:$PATH"' >> $CM_ENV
           echo 'export PUB_CACHE="$CM_BUILD_DIR/.pub-cache"' >> $CM_ENV
+          echo 'export FLUTTER_BIN="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin/flutter"' >> $CM_ENV
+          echo 'export DART_BIN="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin/dart"' >> $CM_ENV
           # Pre-warm Flutter tool
           export PATH="$CM_BUILD_DIR/flutter_${FLUTTER_VERSION}/bin:$PATH"
           export PUB_CACHE="$CM_BUILD_DIR/.pub-cache"
@@ -32,26 +34,31 @@ workflows:
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          which flutter || true
-          flutter --version
-          dart --version
+          which "${FLUTTER_BIN:-flutter}" || true
+          "${FLUTTER_BIN:-flutter}" --version
+          "${DART_BIN:-dart}" --version
       - name: Flutter clean
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          flutter clean
+          "${FLUTTER_BIN:-flutter}" clean
       - name: Flutter pub get
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          which flutter
-          flutter --version
-          dart --version
-          flutter pub get
+          which "${FLUTTER_BIN:-flutter}"
+          "${FLUTTER_BIN:-flutter}" --version
+          "${DART_BIN:-dart}" --version
+          "${FLUTTER_BIN:-flutter}" pub get
       - name: Update CocoaPods and install
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
+          # Ensure Generated.xcconfig exists; if not, run pub get now
+          if [ ! -f ios/Flutter/Generated.xcconfig ]; then
+            echo "Generated.xcconfig missing; running flutter pub get..."
+            "${FLUTTER_BIN:-flutter}" pub get
+          fi
           cd ios
           pod repo update
           pod install
@@ -59,7 +66,7 @@ workflows:
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          flutter build ios --debug --simulator
+          "${FLUTTER_BIN:-flutter}" build ios --debug --simulator
       - name: Zip Runner.app
         script: |
           cd build/ios/iphonesimulator
@@ -120,26 +127,30 @@ workflows:
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          which flutter || true
-          flutter --version
-          dart --version
+          which "${FLUTTER_BIN:-flutter}" || true
+          "${FLUTTER_BIN:-flutter}" --version
+          "${DART_BIN:-dart}" --version
       - name: Flutter clean
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          flutter clean
+          "${FLUTTER_BIN:-flutter}" clean
       - name: Flutter pub get
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          which flutter
-          flutter --version
-          dart --version
-          flutter pub get
+          which "${FLUTTER_BIN:-flutter}"
+          "${FLUTTER_BIN:-flutter}" --version
+          "${DART_BIN:-dart}" --version
+          "${FLUTTER_BIN:-flutter}" pub get
       - name: Update CocoaPods and install
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
+          if [ ! -f ios/Flutter/Generated.xcconfig ]; then
+            echo "Generated.xcconfig missing; running flutter pub get..."
+            "${FLUTTER_BIN:-flutter}" pub get
+          fi
           cd ios
           pod repo update
           pod install
@@ -147,7 +158,7 @@ workflows:
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          flutter build ios --release --no-codesign
+          "${FLUTTER_BIN:-flutter}" build ios --release --no-codesign
       - name: Package IPA (unsigned)
         script: |
           cd build/ios/iphoneos
