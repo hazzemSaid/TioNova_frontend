@@ -29,6 +29,18 @@ workflows:
           source "$CM_ENV" || true
           flutter clean
           flutter pub get
+      - name: Set iOS deployment target
+        script: |
+          set -euo pipefail
+          # Update deployment target in Podfile to 15.0 (required by Firebase SDK 12.x)
+          sed -i '' "s/platform :ios, '14.0'/platform :ios, '15.0'/g" ios/Podfile || \
+          sed -i "s/platform :ios, '14.0'/platform :ios, '15.0'/g" ios/Podfile
+          
+          # Also update in project.pbxproj if needed
+          if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj || \
+            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj
+          fi
       - name: CocoaPods install
         script: |
           set -euo pipefail
@@ -75,6 +87,16 @@ workflows:
           set -euo pipefail
           flutter clean
           flutter pub get
+      - name: Set iOS deployment target
+        script: |
+          set -euo pipefail
+          sed -i '' "s/platform :ios, '14.0'/platform :ios, '15.0'/g" ios/Podfile || \
+          sed -i "s/platform :ios, '14.0'/platform :ios, '15.0'/g" ios/Podfile
+          
+          if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj || \
+            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = 14.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj
+          fi
       - name: CocoaPods install
         script: |
           if [ ! -f ios/Flutter/Generated.xcconfig ]; then
