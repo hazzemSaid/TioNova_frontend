@@ -89,18 +89,56 @@ workflows:
           zip -r Runner.zip Runner.app
       - name: Upload to Appetize
         script: |
+          set -euo pipefail
+          
           if [ -z "$APPETIZE_API_TOKEN" ]; then
-            echo "APPETIZE_API_TOKEN missing!" >&2
+            echo "❌ ERROR: APPETIZE_API_TOKEN is not set!" >&2
+            echo "Please add APPETIZE_API_TOKEN in Codemagic UI under Environment variables" >&2
             exit 1
           fi
-          RESPONSE=$(curl -s -X POST https://api.appetize.io/v1/apps \
+          
+          if [ ! -f build/ios/iphonesimulator/Runner.zip ]; then
+            echo "❌ ERROR: Runner.zip not found!" >&2
+            exit 1
+          fi
+          
+          echo "📤 Uploading to Appetize.io..."
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://api.appetize.io/v1/apps \
             -u "$APPETIZE_API_TOKEN:" \
             -F "platform=ios" \
             -F "file=@build/ios/iphonesimulator/Runner.zip")
-          echo "Appetize response: $RESPONSE"
-          PUBLIC_URL=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('publicUrl',''))")
-          echo "PUBLIC_URL=$PUBLIC_URL" >> $CM_ENV
-          echo "Appetize URL: $PUBLIC_URL"
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response Body: $BODY"
+          
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            PUBLIC_KEY=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('publicKey',''))" 2>/dev/null || echo "")
+            PUBLIC_URL=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('publicUrl',''))" 2>/dev/null || echo "")
+            
+            if [ -n "$PUBLIC_KEY" ]; then
+              echo "PUBLIC_KEY=$PUBLIC_KEY" >> $CM_ENV
+              echo "✅ App uploaded successfully!"
+              echo "📱 Public Key: $PUBLIC_KEY"
+            fi
+            
+            if [ -n "$PUBLIC_URL" ]; then
+              echo "PUBLIC_URL=$PUBLIC_URL" >> $CM_ENV
+              echo "🔗 Appetize URL: $PUBLIC_URL"
+            else
+              # Construct URL from public key
+              APPETIZE_URL="https://appetize.io/app/$PUBLIC_KEY"
+              echo "PUBLIC_URL=$APPETIZE_URL" >> $CM_ENV
+              echo "🔗 Appetize URL: $APPETIZE_URL"
+            fi
+          else
+            echo "❌ Upload failed with HTTP $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
 
   ios_ipa_unsigned:
     name: iOS IPA (Unsigned)
@@ -149,3 +187,10 @@ workflows:
     artifacts:
       - build/ios/iphonesimulator/Runner.zip
       - build/ios/iphoneos/FlutterIpaExport.ipa
+    publishing:
+      scripts:
+        - name: Appetize URL
+          script: |
+            if [ -n "${PUBLIC_URL:-}" ]; then
+              echo "🔗 Test your app: $PUBLIC_URL"
+            fi
