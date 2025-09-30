@@ -5,78 +5,53 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       xcode: 16.2
-      # Set APPETIZE_API_TOKEN securely in Codemagic UI (do not hardcode here)
-      # APPETIZE_API_TOKEN should be set in the Codemagic UI environment variables, not here.
-      vars: {}
+      vars:
+        APPETIZE_API_TOKEN: "code"  # Set in Codemagic UI
     scripts:
-      - name: Install and pin Flutter SDK 3.35.5
+      - name: Install Flutter 3.35.5
         script: |
           set -euo pipefail
           FLUTTER_VERSION=3.35.5
           git clone --depth 1 -b ${FLUTTER_VERSION} https://github.com/flutter/flutter.git $CM_BUILD_DIR/flutter_${FLUTTER_VERSION} || {
-            echo "Falling back to fetching tags and checking out ${FLUTTER_VERSION}";
             git clone --depth 1 https://github.com/flutter/flutter.git $CM_BUILD_DIR/flutter_${FLUTTER_VERSION}
             cd $CM_BUILD_DIR/flutter_${FLUTTER_VERSION}
             git fetch --tags
             git checkout ${FLUTTER_VERSION}
           }
-          echo 'export PATH="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin:$PATH"' >> $CM_ENV
-          echo 'export PUB_CACHE="$CM_BUILD_DIR/.pub-cache"' >> $CM_ENV
-          echo 'export FLUTTER_ROOT="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'"' >> $CM_ENV
-          echo 'export FLUTTER_BIN="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin/flutter"' >> $CM_ENV
-          echo 'export DART_BIN="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin/dart"' >> $CM_ENV
-          # Pre-warm Flutter tool
+          echo "export PATH=$CM_BUILD_DIR/flutter_${FLUTTER_VERSION}/bin:$PATH" >> $CM_ENV
+          echo "export PUB_CACHE=$CM_BUILD_DIR/.pub-cache" >> $CM_ENV
           export PATH="$CM_BUILD_DIR/flutter_${FLUTTER_VERSION}/bin:$PATH"
           export PUB_CACHE="$CM_BUILD_DIR/.pub-cache"
-          export FLUTTER_ROOT="$CM_BUILD_DIR/flutter_${FLUTTER_VERSION}"
           flutter precache --ios
-          flutter --version
-          dart --version
-      - name: Show Flutter/Dart versions
+      - name: Flutter clean & get
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          which "${FLUTTER_BIN:-flutter}" || true
-          "${FLUTTER_BIN:-flutter}" --version
-          "${DART_BIN:-dart}" --version
-      - name: Flutter clean
+          flutter clean
+          flutter pub get
+      - name: CocoaPods install
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          "${FLUTTER_BIN:-flutter}" clean
-      - name: Flutter pub get
-        script: |
-          set -euo pipefail
-          source "$CM_ENV" || true
-          which "${FLUTTER_BIN:-flutter}"
-          "${FLUTTER_BIN:-flutter}" --version
-          "${DART_BIN:-dart}" --version
-          "${FLUTTER_BIN:-flutter}" pub get
-      - name: Update CocoaPods and install
-        script: |
-          set -euo pipefail
-          source "$CM_ENV" || true
-          # Ensure Generated.xcconfig exists; if not, run pub get now
           if [ ! -f ios/Flutter/Generated.xcconfig ]; then
-            echo "Generated.xcconfig missing; running flutter pub get..."
-            "${FLUTTER_BIN:-flutter}" pub get
+            flutter pub get
           fi
           cd ios
           pod repo update
-          pod install
-      - name: Build iOS simulator app (no signing required)
+          pod install --repo-update
+      - name: Build simulator app
         script: |
           set -euo pipefail
           source "$CM_ENV" || true
-          "${FLUTTER_BIN:-flutter}" build ios --debug --simulator
+          flutter build ios --debug --simulator
       - name: Zip Runner.app
         script: |
           cd build/ios/iphonesimulator
           zip -r Runner.zip Runner.app
-      - name: Upload to Appetize.io
+      - name: Upload to Appetize
         script: |
           if [ -z "$APPETIZE_API_TOKEN" ]; then
-            echo "APPETIZE_API_TOKEN is not set in Codemagic environment" >&2
+            echo "APPETIZE_API_TOKEN missing!" >&2
             exit 1
           fi
           RESPONSE=$(curl -s -X POST https://api.appetize.io/v1/apps \
@@ -84,21 +59,9 @@ workflows:
             -F "platform=ios" \
             -F "file=@build/ios/iphonesimulator/Runner.zip")
           echo "Appetize response: $RESPONSE"
-          PUBLIC_URL=$(echo "$RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin).get('publicUrl',''))")
-          if [ -z "$PUBLIC_URL" ] || [ "$PUBLIC_URL" = "null" ]; then
-            echo "Failed to parse publicUrl from Appetize response" >&2
-            exit 1
-          fi
+          PUBLIC_URL=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('publicUrl',''))")
           echo "PUBLIC_URL=$PUBLIC_URL" >> $CM_ENV
-          echo "Appetize public URL: $PUBLIC_URL"
-    cache:
-      cache_paths:
-        - $CM_BUILD_DIR/.pub-cache
-        - $HOME/Library/Caches/CocoaPods
-        - ios/Pods
-    artifacts:
-      - build/ios/iphonesimulator/Runner.app
-      - build/ios/iphonesimulator/Runner.zip
+          echo "Appetize URL: $PUBLIC_URL"
 
   ios_ipa_unsigned:
     name: iOS IPA (Unsigned)
@@ -107,71 +70,30 @@ workflows:
     environment:
       xcode: 16.2
     scripts:
-      - name: Install and pin Flutter SDK 3.35.5
+      - name: Flutter clean & get
         script: |
           set -euo pipefail
-          FLUTTER_VERSION=3.35.5
-          git clone --depth 1 -b ${FLUTTER_VERSION} https://github.com/flutter/flutter.git $CM_BUILD_DIR/flutter_${FLUTTER_VERSION} || {
-            echo "Falling back to fetching tags and checking out ${FLUTTER_VERSION}";
-            git clone --depth 1 https://github.com/flutter/flutter.git $CM_BUILD_DIR/flutter_${FLUTTER_VERSION}
-            cd $CM_BUILD_DIR/flutter_${FLUTTER_VERSION}
-            git fetch --tags
-            git checkout ${FLUTTER_VERSION}
-          }
-          echo 'export PATH="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin:$PATH"' >> $CM_ENV
-          echo 'export PUB_CACHE="$CM_BUILD_DIR/.pub-cache"' >> $CM_ENV
-          export PATH="$CM_BUILD_DIR/flutter_${FLUTTER_VERSION}/bin:$PATH"
-          export PUB_CACHE="$CM_BUILD_DIR/.pub-cache"
-          flutter precache --ios
-          flutter --version
-          dart --version
-      - name: Show Flutter/Dart versions
+          flutter clean
+          flutter pub get
+      - name: CocoaPods install
         script: |
-          set -euo pipefail
-          source "$CM_ENV" || true
-          which "${FLUTTER_BIN:-flutter}" || true
-          "${FLUTTER_BIN:-flutter}" --version
-          "${DART_BIN:-dart}" --version
-      - name: Flutter clean
-        script: |
-          set -euo pipefail
-          source "$CM_ENV" || true
-          "${FLUTTER_BIN:-flutter}" clean
-      - name: Flutter pub get
-        script: |
-          set -euo pipefail
-          source "$CM_ENV" || true
-          which "${FLUTTER_BIN:-flutter}"
-          "${FLUTTER_BIN:-flutter}" --version
-          "${DART_BIN:-dart}" --version
-          "${FLUTTER_BIN:-flutter}" pub get
-      - name: Update CocoaPods and install
-        script: |
-          set -euo pipefail
-          source "$CM_ENV" || true
           if [ ! -f ios/Flutter/Generated.xcconfig ]; then
-            echo "Generated.xcconfig missing; running flutter pub get..."
-            "${FLUTTER_BIN:-flutter}" pub get
+            flutter pub get
           fi
           cd ios
           pod repo update
-          pod install
-      - name: Build iOS (no codesign)
+          pod install --repo-update
+      - name: Build unsigned IPA
         script: |
-          set -euo pipefail
-          source "$CM_ENV" || true
-          "${FLUTTER_BIN:-flutter}" build ios --release --no-codesign
-      - name: Package IPA (unsigned)
-        script: |
+          flutter build ios --release --no-codesign
           cd build/ios/iphoneos
           mkdir -p Payload
           mv Runner.app Payload/
-          zip -qq -r -9 FlutterIpaExport.ipa Payload
+          zip -r FlutterIpaExport.ipa Payload
     cache:
       cache_paths:
         - $CM_BUILD_DIR/.pub-cache
-        - $HOME/Library/Caches/CocoaPods
         - ios/Pods
     artifacts:
+      - build/ios/iphonesimulator/Runner.zip
       - build/ios/iphoneos/FlutterIpaExport.ipa
-

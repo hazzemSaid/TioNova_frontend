@@ -1,6 +1,5 @@
-platform :ios, '13.0'
+platform :ios, '14.0'  # Ensure Firebase and other pods are happy
 
-# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
@@ -10,11 +9,10 @@ project 'Runner', {
 }
 
 def flutter_root
-  # Prefer environment variable if provided by CI (e.g., Codemagic)
+  # Prefer CI env variable
   env_flutter_root = ENV['FLUTTER_ROOT']
   return env_flutter_root if env_flutter_root && !env_flutter_root.empty?
 
-  # Fallback: read from Generated.xcconfig created by `flutter pub get`
   generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'))
   unless File.exist?(generated_xcode_build_settings_path)
     raise "Generated.xcconfig must exist. Run 'flutter pub get' in your Flutter project."
@@ -24,6 +22,7 @@ def flutter_root
     matches = line.match(/FLUTTER_ROOT\=(.*)/)
     return matches[1].strip if matches
   end
+
   raise "FLUTTER_ROOT not set in Generated.xcconfig"
 end
 
@@ -32,17 +31,17 @@ require File.expand_path(File.join(flutter_root, 'packages', 'flutter_tools', 'b
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  # If you use Swift or would like to use dynamic frameworks, uncomment below
   use_frameworks!
   use_modular_headers!
-
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      # Ensure deployment target is compatible with Firebase
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+    end
   end
 end
-
-
