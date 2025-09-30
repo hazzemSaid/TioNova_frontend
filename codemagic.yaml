@@ -139,6 +139,29 @@ workflows:
             echo "Response: $BODY"
             exit 1
           fi
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/.pub-cache
+        - ios/Pods
+    artifacts:
+      - build/ios/iphonesimulator/Runner.zip
+      - build/ios/iphonesimulator/Runner.app
+    publishing:
+      scripts:
+        - name: Appetize URL
+          script: |
+            if [ -n "${PUBLIC_URL:-}" ]; then
+              echo "════════════════════════════════════════════════"
+              echo "🎉 Build Complete!"
+              echo "════════════════════════════════════════════════"
+              echo ""
+              echo "📱 Test your app in browser:"
+              echo "   $PUBLIC_URL"
+              echo ""
+              echo "📦 Download Runner.zip from artifacts above"
+              echo ""
+              echo "════════════════════════════════════════════════"
+            fi
 
   ios_ipa_unsigned:
     name: iOS IPA (Unsigned)
