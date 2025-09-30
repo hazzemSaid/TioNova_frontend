@@ -1,4 +1,6 @@
+// features/folder/presentation/view/screens/chapter_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:tionova/core/services/download_service.dart';
@@ -10,7 +12,7 @@ import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.
 import 'package:tionova/features/folder/presentation/view/screens/RawSummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
-import 'package:provider/provider.dart';
+// removed provider package; using flutter_bloc's BlocProvider for QuizCubit
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_screen.dart';
@@ -147,12 +149,12 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             onPressed: () async {
               final token = await TokenStorage.getAccessToken();
               if (!mounted) return;
-              
+
               if (token != null) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => Provider<QuizCubit>(
+                    builder: (context) => BlocProvider<QuizCubit>(
                       create: (context) => getIt<QuizCubit>(),
                       child: QuizScreen(
                         token: token,
@@ -165,7 +167,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                 // Handle case where token is not available
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please login to take the quiz')),
+                  const SnackBar(
+                    content: Text('Please login to take the quiz'),
+                  ),
                 );
               }
             },
@@ -213,7 +217,13 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const QuizHistoryScreen(),
+                      ),
+                    );
+                  },
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 46),
                     side: const BorderSide(color: Color(0xFF1C1C1E)),

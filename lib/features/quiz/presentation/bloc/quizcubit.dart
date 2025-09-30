@@ -1,11 +1,15 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/features/quiz/domain/usecases/CreateQuizUseCase.dart';
+import 'package:tionova/features/quiz/domain/usecases/UserQuizStatusUseCase.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizstate.dart';
 
 class QuizCubit extends Cubit<QuizState> {
-  QuizCubit({required this.createQuizUseCase}) : super(QuizInitial());
+  QuizCubit({
+    required this.createQuizUseCase,
+    required this.userQuizStatusUseCase,
+  }) : super(QuizInitial());
   final CreateQuizUseCase createQuizUseCase;
-
+  final UserQuizStatusUseCase userQuizStatusUseCase;
   void createQuiz({required String token, required String chapterId}) async {
     emit(CreateQuizLoading());
     final result = await createQuizUseCase.call(
@@ -15,6 +19,25 @@ class QuizCubit extends Cubit<QuizState> {
     result.fold(
       (failure) => emit(CreateQuizFailure(failure: failure)),
       (quiz) => emit(CreateQuizSuccess(quiz: quiz)),
+    );
+  }
+
+  void setuserquizstatus({
+    required String token,
+    required String quizId,
+    required Map<String, dynamic> body,
+    required String chapterId,
+  }) async {
+    emit(UserQuizStatusLoading());
+    final result = await userQuizStatusUseCase.call(
+      token: token,
+      quizId: quizId,
+      body: body,
+      chapterId: chapterId,
+    );
+    result.fold(
+      (failure) => emit(UserQuizStatusFailure(failure: failure)),
+      (status) => emit(UserQuizStatusSuccess(status: status)),
     );
   }
 }

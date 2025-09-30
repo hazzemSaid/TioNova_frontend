@@ -1,3 +1,4 @@
+// main.dart
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,7 @@ import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_bloc.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_state.dart';
+import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 
 import 'core/services/notification/notification_service.dart';
 
@@ -102,6 +104,7 @@ Future<void> main() async {
         BlocProvider<ThemeBloc>(create: (context) => ThemeBloc(prefs: prefs)),
         BlocProvider<AuthCubit>.value(value: authCubit),
         BlocProvider<ChapterCubit>(create: (context) => getIt<ChapterCubit>()),
+        BlocProvider<QuizCubit>(create: (context) => getIt<QuizCubit>()),
       ],
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {

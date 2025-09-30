@@ -1,5 +1,8 @@
+// features/quiz/presentation/view/quiz_questions_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
+import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_results_screen.dart';
 import 'package:tionova/features/quiz/presentation/widgets/quiz_header.dart';
 import 'package:tionova/features/quiz/presentation/widgets/quiz_review_answers.dart';
@@ -8,11 +11,15 @@ class QuizQuestionsScreen extends StatefulWidget {
   final QuizModel quiz;
   final List<String?>
   answers; // This will store the selected option letters (a, b, c, d)
+  final String token;
+  final String chapterId;
 
   const QuizQuestionsScreen({
     super.key,
     required this.quiz,
     required this.answers,
+    required this.token,
+    required this.chapterId,
   });
 
   @override
@@ -66,28 +73,17 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
   }
 
   void _submitQuiz() {
-    // Calculate which answers are correct
-    List<bool> isCorrectList = [];
-    int score = 0;
-
-    for (int i = 0; i < widget.quiz.questions.length; i++) {
-      bool isCorrect =
-          widget.answers[i]?.toLowerCase() ==
-          widget.quiz.questions[i].answer.toLowerCase();
-      if (isCorrect) score++;
-      isCorrectList.add(isCorrect);
-    }
-
-    // Navigate to results screen
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => QuizResultsScreen(
-          quiz: widget.quiz,
-          userAnswers: widget.answers,
-          score: score,
-          totalQuestions: widget.quiz.questions.length,
-          isCorrectList: isCorrectList,
+        builder: (context) => BlocProvider.value(
+          value: context.read<QuizCubit>(),
+          child: QuizResultsScreen(
+            quiz: widget.quiz,
+            userAnswers: widget.answers,
+            token: widget.token,
+            chapterId: widget.chapterId,
+          ),
         ),
       ),
     );
@@ -110,7 +106,6 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
     BuildContext context,
     String option,
     bool isSelected,
-    bool isCorrect,
     bool reviewing,
     VoidCallback onTap,
   ) {
@@ -158,10 +153,6 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                   ),
                 ),
               ),
-              if (reviewing && isCorrect)
-                const Icon(Icons.check, color: Colors.green)
-              else if (reviewing && !isCorrect)
-                const Icon(Icons.close, color: Colors.red),
             ],
           ),
         ),
@@ -180,14 +171,7 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
             padding: const EdgeInsets.all(16.0),
             child: QuizReviewAnswers(
               questions: widget.quiz.questions
-                  .map(
-                    (q) => {
-                      'question': q.question,
-                      'options': q.options,
-                      'answer': q.answer,
-                      'explanation': q.explanation,
-                    },
-                  )
+                  .map((q) => {'question': q.question, 'options': q.options})
                   .toList(),
               answers: widget.answers.map((answer) {
                 if (answer == null) return null;
@@ -241,14 +225,11 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                   final index = entry.key;
                   final option = entry.value;
                   final isSelected = index == selectedAnswer;
-                  final isCorrect =
-                      option == widget.quiz.questions[currentStep].answer;
 
                   return _buildOption(
                     context,
                     option,
                     isSelected,
-                    isCorrect,
                     reviewing,
                     () => _selectAnswer(index),
                   );

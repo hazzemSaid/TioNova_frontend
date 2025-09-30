@@ -1,3 +1,4 @@
+// features/quiz/presentation/view/quiz_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
@@ -9,12 +10,8 @@ import 'package:tionova/features/quiz/presentation/widgets/quiz_header.dart';
 class QuizScreen extends StatefulWidget {
   final String token;
   final String chapterId;
-  
-  const QuizScreen({
-    super.key, 
-    required this.token, 
-    required this.chapterId
-  });
+
+  const QuizScreen({super.key, required this.token, required this.chapterId});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -28,9 +25,9 @@ class _QuizScreenState extends State<QuizScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<QuizCubit>().createQuiz(
-              token: widget.token,
-              chapterId: widget.chapterId,
-            );
+          token: widget.token,
+          chapterId: widget.chapterId,
+        );
       }
     });
   }
@@ -38,14 +35,13 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     final Color bgColor = Colors.black;
-    final quizCubit = context.read<QuizCubit>();
-    
+
     return BlocConsumer<QuizCubit, QuizState>(
       listener: (context, state) {
         if (state is CreateQuizFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.failure.errMessage)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.failure.errMessage)));
         }
       },
       builder: (context, state) {
@@ -53,18 +49,16 @@ class _QuizScreenState extends State<QuizScreen> {
           return const Scaffold(
             backgroundColor: Colors.black,
             body: Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFFE9500),
-              ),
+              child: CircularProgressIndicator(color: Color(0xFFFE9500)),
             ),
           );
         }
-        
+
         if (state is CreateQuizSuccess) {
           // If quiz is successfully loaded, show the quiz content
           return _buildQuizContent(context, bgColor, state.quiz);
         }
-        
+
         // Default view or error state
         return Scaffold(
           backgroundColor: bgColor,
@@ -268,9 +262,17 @@ class _QuizScreenState extends State<QuizScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => QuizQuestionsScreen(
-                                      quiz: quizState.quiz,
-                                      answers: List.filled(quizState.quiz.questions.length, null),
+                                    builder: (context) => BlocProvider.value(
+                                      value: context.read<QuizCubit>(),
+                                      child: QuizQuestionsScreen(
+                                        quiz: quizState.quiz,
+                                        answers: List.filled(
+                                          quizState.quiz.questions.length,
+                                          null,
+                                        ),
+                                        token: widget.token,
+                                        chapterId: widget.chapterId,
+                                      ),
                                     ),
                                   ),
                                 );
@@ -318,8 +320,12 @@ class _QuizScreenState extends State<QuizScreen> {
       },
     );
   }
-  
-  Widget _buildQuizContent(BuildContext context, Color bgColor, QuizModel quiz) {
+
+  Widget _buildQuizContent(
+    BuildContext context,
+    Color bgColor,
+    QuizModel quiz,
+  ) {
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
@@ -353,7 +359,10 @@ class _QuizScreenState extends State<QuizScreen> {
                       Text(
                         'Test your knowledge with ${quiz.questions.length} questions',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white70, fontSize: 16),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
                       ),
                       const SizedBox(height: 32),
                       Row(
@@ -503,9 +512,17 @@ class _QuizScreenState extends State<QuizScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => QuizQuestionsScreen(
-                                quiz: quiz,
-                                answers: List.filled(quiz.questions.length, null),
+                              builder: (context) => BlocProvider.value(
+                                value: context.read<QuizCubit>(),
+                                child: QuizQuestionsScreen(
+                                  quiz: quiz,
+                                  answers: List.filled(
+                                    quiz.questions.length,
+                                    null,
+                                  ),
+                                  token: widget.token,
+                                  chapterId: widget.chapterId,
+                                ),
                               ),
                             ),
                           );
