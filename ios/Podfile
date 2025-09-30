@@ -10,6 +10,11 @@ project 'Runner', {
 }
 
 def flutter_root
+  # Prefer environment variable if provided by CI (e.g., Codemagic)
+  env_flutter_root = ENV['FLUTTER_ROOT']
+  return env_flutter_root if env_flutter_root && !env_flutter_root.empty?
+
+  # Fallback: read from Generated.xcconfig created by `flutter pub get`
   generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'))
   unless File.exist?(generated_xcode_build_settings_path)
     raise "Generated.xcconfig must exist. Run 'flutter pub get' in your Flutter project."

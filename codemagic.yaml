@@ -22,11 +22,13 @@ workflows:
           }
           echo 'export PATH="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin:$PATH"' >> $CM_ENV
           echo 'export PUB_CACHE="$CM_BUILD_DIR/.pub-cache"' >> $CM_ENV
+          echo 'export FLUTTER_ROOT="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'"' >> $CM_ENV
           echo 'export FLUTTER_BIN="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin/flutter"' >> $CM_ENV
           echo 'export DART_BIN="$CM_BUILD_DIR/flutter_'${FLUTTER_VERSION}'/bin/dart"' >> $CM_ENV
           # Pre-warm Flutter tool
           export PATH="$CM_BUILD_DIR/flutter_${FLUTTER_VERSION}/bin:$PATH"
           export PUB_CACHE="$CM_BUILD_DIR/.pub-cache"
+          export FLUTTER_ROOT="$CM_BUILD_DIR/flutter_${FLUTTER_VERSION}"
           flutter precache --ios
           flutter --version
           dart --version
