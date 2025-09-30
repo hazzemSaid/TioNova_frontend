@@ -1,0 +1,48 @@
+name: Build iOS App for Appetize
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      # 1. Checkout repo
+      - uses: actions/checkout@v3
+
+      # 2. Setup Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.5"
+          channel: "stable"
+
+      # 3. Get packages
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      # 4. Build iOS simulator app (no signing needed)
+      - name: Build iOS (Simulator, Debug)
+        run: flutter build ios --debug --simulator
+
+      # 5. Zip Runner.app for Appetize
+      - name: Prepare App for Appetize
+        run: |
+          cd build/ios/iphonesimulator
+          zip -r Runner.zip Runner.app
+
+      # 6. Upload to Appetize.io
+      - name: Upload to Appetize
+        run: |
+          RESPONSE=$(curl -s -X POST https://api.appetize.io/v1/apps \
+            -u "tok_yx4udhkdrzewxqakcvt2sn6pbm:" \
+            -F "platform=ios" \
+            -F "file=@build/ios/iphonesimulator/Runner.zip")
+          echo "Appetize response: $RESPONSE"
+          echo "PUBLIC_URL=$(echo $RESPONSE | jq -r .publicUrl)" >> $GITHUB_ENV
+
+      # 7. Print Appetize link in logs
+      - name: Show Appetize link
+        run: |
+          echo "🚀 Test your app here: $PUBLIC_URL"
