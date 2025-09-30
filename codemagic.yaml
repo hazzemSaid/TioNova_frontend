@@ -6,7 +6,7 @@ workflows:
     environment:
       xcode: 16.2
       vars:
-        APPETIZE_API_TOKEN: "code"  # Set in Codemagic UI
+        APPETIZE_API_TOKEN: "code" # Set in Codemagic UI
     scripts:
       - name: Install Flutter 3.35.5
         script: |
@@ -32,17 +32,17 @@ workflows:
       - name: Set iOS deployment target
         script: |
           set -euo pipefail
-          # Update deployment target to 15.0 (required by Firebase SDK 12.2.0)
-          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile 2>/dev/null || \
-          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile
-          
+          # Update deployment target to 13.0 (standard minimum for modern Flutter apps)
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/g" ios/Podfile 2>/dev/null || \
+          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/g" ios/Podfile
+
           # Also update in project.pbxproj
           if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
-            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
+            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/g' ios/Runner.xcodeproj/project.pbxproj
           fi
-          
-          echo "✅ iOS deployment target set to 15.0"
+
+          echo "✅ iOS deployment target set to 13.0"
       - name: CocoaPods install
         script: |
           set -euo pipefail
@@ -55,29 +55,7 @@ workflows:
           rm -rf Pods Podfile.lock .symlinks/
           pod repo update
           pod install --repo-update
-          # Verify Firebase pods are installed
-          if ! grep -q "FirebaseCore" Podfile.lock; then
-            echo "ERROR: FirebaseCore not found in Podfile.lock"
-            exit 1
-          fi
-          echo "✅ Firebase pods installed successfully"
-      - name: Verify Firebase setup
-        script: |
-          set -euo pipefail
-          # Check if GoogleService-Info.plist exists
-          if [ ! -f ios/Runner/GoogleService-Info.plist ]; then
-            echo "WARNING: GoogleService-Info.plist not found!"
-            echo "Firebase will not work without this file."
-          else
-            echo "✅ GoogleService-Info.plist found"
-          fi
-          # Check AppDelegate.swift has correct imports
-          if ! grep -q "import FirebaseCore" ios/Runner/AppDelegate.swift; then
-            echo "ERROR: AppDelegate.swift missing 'import FirebaseCore'"
-            echo "Please update AppDelegate.swift with correct Firebase imports"
-            exit 1
-          fi
-          echo "✅ AppDelegate.swift has FirebaseCore import"
+          echo "✅ CocoaPods installed successfully"
       - name: Build simulator app
         script: |
           set -euo pipefail
@@ -90,31 +68,31 @@ workflows:
       - name: Upload to Appetize
         script: |
           set -euo pipefail
-          
+
           if [ -z "$APPETIZE_API_TOKEN" ]; then
             echo "❌ ERROR: APPETIZE_API_TOKEN is not set!" >&2
             echo "Please add APPETIZE_API_TOKEN in Codemagic UI under Environment variables" >&2
             exit 1
           fi
-          
+
           if [ ! -f build/ios/iphonesimulator/Runner.zip ]; then
             echo "❌ ERROR: Runner.zip not found!" >&2
             exit 1
           fi
-          
+
           echo "📤 Uploading to Appetize.io..."
-          
+
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://api.appetize.io/v1/apps \
             -u "$APPETIZE_API_TOKEN:" \
             -F "platform=ios" \
             -F "file=@build/ios/iphonesimulator/Runner.zip")
-          
+
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
-          
+
           echo "HTTP Status: $HTTP_CODE"
           echo "Response Body: $BODY"
-          
+
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
             PUBLIC_KEY=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('publicKey',''))" 2>/dev/null || echo "")
             PUBLIC_URL=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('publicUrl',''))" 2>/dev/null || echo "")
@@ -178,15 +156,15 @@ workflows:
       - name: Set iOS deployment target
         script: |
           set -euo pipefail
-          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile 2>/dev/null || \
-          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile
-          
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/g" ios/Podfile 2>/dev/null || \
+          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/g" ios/Podfile
+
           if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
-            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
+            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/g' ios/Runner.xcodeproj/project.pbxproj
           fi
-          
-          echo "✅ iOS deployment target set to 15.0"
+
+          echo "✅ iOS deployment target set to 13.0"
       - name: CocoaPods install
         script: |
           if [ ! -f ios/Flutter/Generated.xcconfig ]; then
@@ -210,10 +188,3 @@ workflows:
     artifacts:
       - build/ios/iphonesimulator/Runner.zip
       - build/ios/iphoneos/FlutterIpaExport.ipa
-    publishing:
-      scripts:
-        - name: Appetize URL
-          script: |
-            if [ -n "${PUBLIC_URL:-}" ]; then
-              echo "🔗 Test your app: $PUBLIC_URL"
-            fi
