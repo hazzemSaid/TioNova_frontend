@@ -16,12 +16,24 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.32.5"
+          channel: "stable"
+          architecture: arm64
+          cache: false
+
+      - name: 🔎 Show Flutter/Dart versions
+        run: |
+          flutter --version
+          dart --version
 
       - name: 📦 Install Flutter dependencies
         run: flutter pub get
 
       - name: 🔄 Update CocoaPods repo
         run: pod repo update
+        working-directory: ios
+
+      - name: 📦 Install CocoaPods dependencies
+        run: pod install
         working-directory: ios
 
       - name: 🏗️ Build iOS app (no code signing)
@@ -47,11 +59,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 🛠 Install jq
+        run: brew install jq
+
       - name: 📲 Upload to Appetize.io
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
         run: |
-          curl -s -X POST https://api.appetize.io/v1/apps \
-          -H "Authorization: Bearer ${{ secrets.APPETIZE_API_TOKEN }}" \
-          -F "platform=ios" \
-          -F "file=@build/ios/iphoneos/FlutterIpaExport.ipa" \
-          -F "note=Uploaded via GitHub Actions" \
-          -F "public=true"
+          if [ -z "$APPETIZE_API_TOKEN" ]; then
+            echo "APPETIZE_API_TOKEN secret is not set" >&2
+            exit 1
+          fi
+          RESPONSE=$(curl -s -X POST https://api.appetize.io/v1/apps \
+            -u "$APPETIZE_API_TOKEN:" \
+            -F "platform=ios" \
+            -F "file=@build/ios/iphoneos/FlutterIpaExport.ipa" \
+            -F "note=Uploaded via GitHub Actions" \
+            -F "public=true")
+          echo "Appetize response: $RESPONSE"
+          PUBLIC_URL=$(echo "$RESPONSE" | jq -r .publicUrl)
+          echo "PUBLIC_URL=$PUBLIC_URL" >> $GITHUB_ENV
+
+      - name: 🔗 Show Appetize link
+        run: echo "🚀 Test your app here: $PUBLIC_URL"
