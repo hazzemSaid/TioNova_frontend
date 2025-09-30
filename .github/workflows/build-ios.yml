@@ -81,4 +81,5 @@ jobs:
           echo "PUBLIC_URL=$PUBLIC_URL" >> $GITHUB_ENV
 
       - name: 🔗 Show Appetize link
-        run: echo "🚀 Test your app here: $PUBLIC_URL"
+        run: |
+          echo "🚀 Test your app here: $PUBLIC_URL"
