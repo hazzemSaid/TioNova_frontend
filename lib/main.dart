@@ -27,10 +27,8 @@ import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_bloc.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_state.dart';
 
-import 'core/services/notification/notification_service.dart';
-
 // Create an instance of NotificationService
-final notificationService = NotificationService();
+// final notificationService = NotificationService();
 
 // // Background message handler
 // @pragma('vm:entry-point')

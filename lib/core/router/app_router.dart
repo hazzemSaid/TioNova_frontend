@@ -144,12 +144,12 @@ class AppRouter {
             ),
           ],
         ),
-        GoRoute(
-          path: '/notifications',
-          name: 'notifications',
-          builder: (BuildContext context, GoRouterState state) =>
-              const NotificationsScreen(),
-        ),
+        // GoRoute(
+        //   path: '/notifications',
+        //   name: 'notifications',
+        //   builder: (BuildContext context, GoRouterState state) =>
+        //       const NotificationsScreen(),
+        // ),
       ],
     );
   }
