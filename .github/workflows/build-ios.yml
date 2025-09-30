@@ -18,6 +18,14 @@ jobs:
           # Flutter 3.27.3 bundles Dart 3.9.2, matching pubspec SDK ^3.9.2
           flutter-version: "3.27.3"
           channel: "stable"
+          architecture: arm64
+          cache: false
+
+      # Sanity check the toolchain versions before proceeding
+      - name: Show Flutter/Dart versions
+        run: |
+          flutter --version
+          dart --version
 
       # 3. Get packages
       - name: Install Flutter dependencies
