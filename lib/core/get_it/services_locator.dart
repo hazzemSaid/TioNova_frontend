@@ -48,7 +48,9 @@ Future<void> setupServiceLocator() async {
 
   // Open Hive box
   final box = await Hive.openBox('auth_box');
-  final Dio dio = Dio(BaseOptions(baseUrl: 'http://192.168.1.12:3000/api/v1'));
+  final Dio dio = Dio(
+    BaseOptions(baseUrl: 'https://tio-nova-backend.vercel.app/api/v1'),
+  );
 
   dio.interceptors.add(
     InterceptorsWrapper(
