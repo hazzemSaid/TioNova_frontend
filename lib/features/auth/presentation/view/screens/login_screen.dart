@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
+import 'package:tionova/features/auth/presentation/view/widgets/SecondaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
 import 'package:tionova/features/theme/presentation/widgets/theme_toggle_button.dart';
 
@@ -114,14 +116,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                       SizedBox(height: isCompact ? 20 : 25),
                                       Text(
-                                        'Welcome Back!',
-                                        style: theme.textTheme.headlineSmall
-                                            ?.copyWith(
-                                              color: isDark
-                                                  ? Colors.white
-                                                  : Colors.black87,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                        'Welcome Back',
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
+                                        ),
                                       ),
                                       const SizedBox(
                                         height: 6,
@@ -192,59 +194,46 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Align(
                                     alignment: Alignment.centerRight,
                                     child: TextButton(
-                                      onPressed: () {},
+                                      onPressed: () =>
+                                          context.go('/auth/forgot-password'),
                                       child: Text(
                                         'Forgot password?',
                                         style: TextStyle(
                                           color: isDark
                                               ? Colors.white70
                                               : Colors.black54,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ),
                                   ),
 
                                   const SizedBox(height: 8),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 52,
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        if (formKey.currentState!.validate()) {
-                                          print('Validated');
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: isDark
-                                            ? Colors.white10
-                                            : Colors.black87,
-                                        foregroundColor: isDark
-                                            ? Colors.white
-                                            : Colors.black,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                        ),
-                                        elevation: 0,
-                                      ),
-                                      child: Text(
-                                        'Sign In',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: !isDark
-                                              ? Colors.white
-                                              : Colors.black,
-                                        ),
-                                      ),
-                                    ),
+                                  PrimaryBtn(
+                                    label: 'Sign In',
+                                    onPressed: () {
+                                      if (formKey.currentState!.validate()) {
+                                        print(_emailController.text);
+                                        print(_passwordController.text);
+                                      }
+                                    },
+                                    buttonColor: isDark
+                                        ? Colors.white10
+                                        : Colors.black87,
+                                    textColor: isDark
+                                        ? Colors.white
+                                        : Colors.white,
                                   ),
 
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
-                                      const Expanded(
-                                        child: Divider(color: Colors.white12),
+                                      Expanded(
+                                        child: Divider(
+                                          color: isDark
+                                              ? Colors.white12
+                                              : Colors.black12,
+                                        ),
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
@@ -259,53 +248,28 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                         ),
                                       ),
-                                      const Expanded(
-                                        child: Divider(color: Colors.white12),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 52,
-                                    child: OutlinedButton.icon(
-                                      onPressed: () {},
-                                      icon: Image.asset(
-                                        'assets/icons/google.png',
-                                        width: 24,
-                                        height: 24,
-                                        color: isDark
-                                            ? Colors.white70
-                                            : Colors.black54,
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        side: BorderSide(
+                                      Expanded(
+                                        child: Divider(
                                           color: isDark
                                               ? Colors.white12
                                               : Colors.black12,
                                         ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                        ),
-                                        foregroundColor: isDark
-                                            ? Colors.white
-                                            : Colors.black,
-                                        backgroundColor: isDark
-                                            ? Colors.black12
-                                            : Colors.white10,
                                       ),
-                                      label: Text(
-                                        'Continue with Google',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: isDark
-                                              ? Colors.white
-                                              : Colors.black,
-                                        ),
-                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SecondaryBtn(
+                                    label: 'Continue with Google',
+                                    onPressed: () {},
+                                    icon: Image.asset(
+                                      'assets/icons/google.png',
+                                      width: 24,
+                                      height: 24,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black54,
                                     ),
+                                    isDark: isDark,
                                   ),
                                 ],
                               ),
@@ -324,11 +288,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextButton(
                               onPressed: () => context.go('/auth/register'),
                               child: Text(
-                                "Don't have an account? Sign Up",
+                                "Don't have an account? Sign Up here",
                                 style: TextStyle(
                                   color: isDark
                                       ? Colors.white70
                                       : Colors.black54,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),

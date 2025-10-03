@@ -1,3 +1,4 @@
+// core/get_it/services_locator.dart
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
@@ -11,6 +12,8 @@ import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/data/services/auth_service.dart';
 import 'package:tionova/features/auth/domain/repo/authrepo.dart';
 import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/registerusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/verifyEmailusecase.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/folder/data/datasources/FolderRemoteDataSource.dart';
 import 'package:tionova/features/folder/data/datasources/chapterRemoteDataSource.dart';
@@ -32,6 +35,7 @@ import 'package:tionova/features/quiz/data/datasources/remotequizdatasource.dart
 import 'package:tionova/features/quiz/data/repo/Quizrepoimp.dart';
 import 'package:tionova/features/quiz/domain/repo/Quizrepo.dart';
 import 'package:tionova/features/quiz/domain/usecases/CreateQuizUseCase.dart';
+import 'package:tionova/features/quiz/domain/usecases/GetHistoryUseCase.dart';
 import 'package:tionova/features/quiz/domain/usecases/UserQuizStatusUseCase.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 
@@ -49,7 +53,9 @@ Future<void> setupServiceLocator() async {
   // Open Hive box
   final box = await Hive.openBox('auth_box');
   final Dio dio = Dio(
-    BaseOptions(baseUrl: 'https://tio-nova-backend.vercel.app/api/v1'),
+    // http://192.168.1.12:3000/api/v1
+    //https://tio-nova-backend.vercel.app/api/v1
+    BaseOptions(baseUrl: 'http://192.168.1.12:3000/api/v1'),
   );
 
   dio.interceptors.add(
@@ -135,10 +141,17 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<Googleauthusecase>(
     () => Googleauthusecase(authRepo: getIt<AuthRepo>()),
   );
-
+  getIt.registerLazySingleton<RegisterUseCase>(
+    () => RegisterUseCase(getIt<AuthRepo>()),
+  );
+  getIt.registerLazySingleton<VerifyEmailUseCase>(
+    () => VerifyEmailUseCase(getIt<AuthRepo>()),
+  );
   // Bloc
   getIt.registerSingleton<AuthCubit>(
     AuthCubit(
+      registerUseCase: getIt<RegisterUseCase>(),
+      verifyEmailUseCase: getIt<VerifyEmailUseCase>(),
       tokenStorage:
           TokenStorage(), // Provide instance directly since TokenStorage uses static methods
       googleauthusecase: getIt<Googleauthusecase>(),
@@ -231,11 +244,14 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<UserQuizStatusUseCase>(
     () => UserQuizStatusUseCase(getIt<QuizRepo>()),
   );
-
+  getIt.registerLazySingleton<GetHistoryUseCase>(
+    () => GetHistoryUseCase(quizrepo: getIt<QuizRepo>()),
+  );
   getIt.registerFactory(
     () => QuizCubit(
       createQuizUseCase: getIt<CreateQuizUseCase>(),
       userQuizStatusUseCase: getIt<UserQuizStatusUseCase>(),
+      getHistoryUseCase: getIt<GetHistoryUseCase>(),
     ),
   );
 }

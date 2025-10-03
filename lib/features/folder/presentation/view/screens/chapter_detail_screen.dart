@@ -217,10 +217,25 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
+                    final token = await TokenStorage.getAccessToken();
+                    if (!mounted) return;
+
+                    if (token == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please login to view history'),
+                        ),
+                      );
+                      return;
+                    }
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const QuizHistoryScreen(),
+                        builder: (_) => QuizHistoryScreen(
+                          token: token,
+                          chapterId: widget.chapter.id ?? '',
+                          quizTitle: widget.chapter.title ?? '',
+                        ),
                       ),
                     );
                   },

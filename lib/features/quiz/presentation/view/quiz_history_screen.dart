@@ -1,53 +1,29 @@
 // features/quiz/presentation/view/quiz_history_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
+import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
+import 'package:tionova/features/quiz/presentation/bloc/quizstate.dart';
 
-class QuizHistoryScreen extends StatelessWidget {
-  const QuizHistoryScreen({super.key});
+class QuizHistoryScreen extends StatefulWidget {
+  final String token;
+  final String chapterId;
+  final String? quizTitle;
 
-  Map<String, dynamic> get _staticData => {
-    "success": true,
-    "message": "Quiz history retrieved successfully",
-    "history": {
-      "attempts": [
-        {
-          "startedAt": "2024-01-15T17:30:00.000Z",
-          "completedAt": "2024-01-15T17:38:32.000Z",
-          "totalQuestions": 10,
-          "correct": 8,
-          "degree": 80,
-          "state": "Passed",
-          "timeSpent": "8m 32s",
-          "score": 85,
-        },
-        {
-          "startedAt": "2024-01-14T14:15:00.000Z",
-          "completedAt": "2024-01-14T14:27:45.000Z",
-          "totalQuestions": 10,
-          "correct": 7,
-          "degree": 70,
-          "state": "Passed",
-          "timeSpent": "12m 45s",
-          "score": 75,
-        },
-        {
-          "startedAt": "2024-01-13T16:20:00.000Z",
-          "completedAt": "2024-01-13T16:35:10.000Z",
-          "totalQuestions": 10,
-          "correct": 6,
-          "degree": 60,
-          "state": "Failed",
-          "timeSpent": "15m 10s",
-          "score": 60,
-        },
-      ],
-      "overallStatus": "Passed",
-      "overallScore": 73,
-      "totalAttempts": 5,
-      "bestScore": 90,
-      "averageScore": 70,
-      "passRate": 60,
-    },
-  };
+  const QuizHistoryScreen({
+    super.key,
+    required this.token,
+    required this.chapterId,
+    this.quizTitle,
+  });
+
+  @override
+  State<QuizHistoryScreen> createState() => _QuizHistoryScreenState();
+}
+
+class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
+  final _getIt = GetIt.instance;
 
   // Exact colors from the images
   Color get _bg => const Color(0xFF000000);
@@ -56,149 +32,173 @@ class QuizHistoryScreen extends StatelessWidget {
   Color get _textSecondary => const Color(0xFF8E8E93);
   Color get _green => const Color(0xFF30D158);
   Color get _orange => const Color(0xFFFF9500);
-  Color get _red => const Color(0xFFFF3B30);
   Color get _blue => const Color(0xFF007AFF);
   Color get _purple => const Color(0xFFAF52DE);
-  Color get _teal => const Color(0xFF5AC8FA);
+
+  late final QuizCubit _cubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _cubit = _getIt<QuizCubit>();
+    _cubit.gethistory(token: widget.token, chapterId: widget.chapterId);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final history = _staticData["history"] as Map<String, dynamic>;
-    final attempts = List<Map<String, dynamic>>.from(history["attempts"]);
-
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
+    return BlocProvider.value(
+      value: _cubit,
+      child: Scaffold(
         backgroundColor: _bg,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: _textPrimary, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          children: [
-            Text(
-              'Quiz History',
-              style: TextStyle(
-                color: _textPrimary,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              'Binary Search Trees',
-              style: TextStyle(
-                color: _textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: Icon(Icons.add, size: 16, color: _textPrimary),
-              label: Text(
-                'New Quiz',
+        appBar: AppBar(
+          backgroundColor: _bg,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios, color: _textPrimary, size: 18),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Column(
+            children: [
+              Text(
+                'Quiz History',
                 style: TextStyle(
                   color: _textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _cardBg,
-                foregroundColor: _textPrimary,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+              Text(
+                widget.quizTitle ?? '',
+                style: TextStyle(
+                  color: _textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Metrics Grid
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.2,
-              children: [
-                _MetricCard(
-                  icon: Icons.bar_chart,
-                  iconColor: _blue,
-                  value: '5',
-                  label: 'Total Attempts',
-                ),
-                _MetricCard(
-                  icon: Icons.emoji_events,
-                  iconColor: _green,
-                  value: '90%',
-                  label: 'Best Score',
-                ),
-                _MetricCard(
-                  icon: Icons.trending_up,
-                  iconColor: _purple,
-                  value: '70%',
-                  label: 'Average Score',
-                ),
-                _MetricCard(
-                  icon: Icons.radio_button_checked,
-                  iconColor: _orange,
-                  value: '60%',
-                  label: 'Pass Rate',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 32),
-
-            // Recent Attempts Header
-            Row(
-              children: [
-                Icon(Icons.schedule, color: _textSecondary, size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  'Recent Attempts',
+          centerTitle: true,
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: Icon(Icons.add, size: 16, color: _textPrimary),
+                label: Text(
+                  'New Quiz',
                   style: TextStyle(
                     color: _textPrimary,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Attempts List
-            ...attempts.asMap().entries.map((entry) {
-              final index = entry.key;
-              final attempt = entry.value;
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index == attempts.length - 1 ? 0 : 12,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _cardBg,
+                  foregroundColor: _textPrimary,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                 ),
-                child: _AttemptCard(attempt: attempt),
-              );
-            }).toList(),
+              ),
+            ),
           ],
+        ),
+        body: BlocBuilder<QuizCubit, QuizState>(
+          builder: (context, state) {
+            if (state is GetHistoryLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state is GetHistoryFailure) {
+              return Center(
+                child: Text(
+                  'Failed to load history',
+                  style: TextStyle(color: _textPrimary),
+                ),
+              );
+            }
+            if (state is GetHistorySuccess) {
+              final UserQuizStatusModel history = state.history;
+              final attempts = history.attempts;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.2,
+                      children: [
+                        _MetricCard(
+                          icon: Icons.bar_chart,
+                          iconColor: _blue,
+                          value: '${history.totalAttempts}',
+                          label: 'Total Attempts',
+                        ),
+                        _MetricCard(
+                          icon: Icons.emoji_events,
+                          iconColor: _green,
+                          value: '${history.bestScore}%',
+                          label: 'Best Score',
+                        ),
+                        _MetricCard(
+                          icon: Icons.trending_up,
+                          iconColor: _purple,
+                          value: '${history.averageScore}%',
+                          label: 'Average Score',
+                        ),
+                        _MetricCard(
+                          icon: Icons.radio_button_checked,
+                          iconColor: _orange,
+                          value: '${history.passRate}%',
+                          label: 'Pass Rate',
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    Row(
+                      children: [
+                        Icon(Icons.schedule, color: _textSecondary, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Recent Attempts',
+                          style: TextStyle(
+                            color: _textPrimary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    ...attempts.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final attempt = entry.value;
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: index == attempts.length - 1 ? 0 : 12,
+                        ),
+                        child: _AttemptCard(attempt: attempt),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
         ),
       ),
     );
@@ -263,7 +263,7 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _AttemptCard extends StatelessWidget {
-  final Map<String, dynamic> attempt;
+  final Attempt attempt;
 
   const _AttemptCard({required this.attempt});
 
@@ -272,14 +272,15 @@ class _AttemptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final degree = attempt["degree"] as int;
-    final total = attempt["totalQuestions"] as int;
-    final correct = attempt["correct"] as int;
-    final state = (attempt["state"] as String).toLowerCase();
+    final degree = attempt.degree;
+    final total = attempt.totalQuestions;
+    final correct = attempt.correct;
+    final state = attempt.state.toLowerCase();
     final passed = state == 'passed';
-    final DateTime started = DateTime.parse(attempt["startedAt"]);
-    final timeSpent = attempt["timeSpent"] as String;
-    final score = attempt["score"] as int;
+    final DateTime started = attempt.startedAt;
+    final duration = attempt.completedAt.difference(attempt.startedAt);
+    final timeSpent = _formatDuration(duration);
+    final score = attempt.degree;
 
     return GestureDetector(
       onTap: () {
@@ -369,6 +370,13 @@ class _AttemptCard extends StatelessWidget {
     );
   }
 
+  String _formatDuration(Duration d) {
+    if (d.inSeconds <= 0) return '—';
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds % 60;
+    return '${minutes}m ${seconds}s';
+  }
+
   String _formatDate(DateTime date) {
     const months = [
       'Jan',
@@ -426,7 +434,7 @@ class _StatusChip extends StatelessWidget {
 
 // Quiz Review Screen
 class QuizReviewScreen extends StatelessWidget {
-  final Map<String, dynamic> attempt;
+  final Attempt attempt;
 
   const QuizReviewScreen({super.key, required this.attempt});
 
@@ -439,14 +447,15 @@ class QuizReviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final degree = attempt["degree"] as int;
-    final total = attempt["totalQuestions"] as int;
-    final correct = attempt["correct"] as int;
+    final degree = attempt.degree;
+    final total = attempt.totalQuestions;
+    final correct = attempt.correct;
     final incorrect = total - correct;
-    final timeSpent = attempt["timeSpent"] as String;
-    final score = attempt["score"] as int;
-    final passed = (attempt["state"] as String).toLowerCase() == 'passed';
-    final DateTime started = DateTime.parse(attempt["startedAt"]);
+    final duration = attempt.completedAt.difference(attempt.startedAt);
+    final timeSpent = '${duration.inMinutes}m ${duration.inSeconds % 60}s';
+    final score = attempt.degree;
+    final passed = attempt.state.toLowerCase() == 'passed';
+    final DateTime started = attempt.startedAt;
 
     return Scaffold(
       backgroundColor: _bg,
@@ -623,26 +632,18 @@ class QuizReviewScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Sample Questions (since we don't have real data)
-            _QuestionCard(
-              questionNumber: 1,
-              question:
-                  'What is the primary function of mitochondria in cellular respiration?',
-              userAnswer: 'Energy production through ATP synthesis',
-              isCorrect: true,
-            ),
-
-            const SizedBox(height: 12),
-
-            _QuestionCard(
-              questionNumber: 5,
-              question: 'What is the role of ribosomes in the cell?',
-              userAnswer: 'Lipid synthesis',
-              correctAnswer: 'Protein synthesis',
-              explanation:
-                  'Ribosomes are the cellular machinery responsible for protein synthesis, translating mRNA into proteins.',
-              isCorrect: false,
-            ),
+            for (int i = 0; i < attempt.answers.length; i++) ...[
+              _QuestionCard(
+                questionNumber: i + 1,
+                question: attempt.answers[i].question,
+                userAnswer: attempt.answers[i].selectedOption,
+                correctAnswer: attempt.answers[i].correctAnswer,
+                explanation: attempt.answers[i].explanation,
+                isCorrect: attempt.answers[i].isCorrect,
+                options: attempt.answers[i].options,
+              ),
+              if (i != attempt.answers.length - 1) const SizedBox(height: 12),
+            ],
           ],
         ),
       ),
@@ -736,7 +737,7 @@ class _QuestionCard extends StatelessWidget {
   final String? correctAnswer;
   final String? explanation;
   final bool isCorrect;
-
+  final List<String> options;
   const _QuestionCard({
     required this.questionNumber,
     required this.question,
@@ -744,6 +745,7 @@ class _QuestionCard extends StatelessWidget {
     this.correctAnswer,
     this.explanation,
     required this.isCorrect,
+    required this.options,
   });
 
   @override
@@ -831,7 +833,8 @@ class _QuestionCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  userAnswer,
+                  options[(userAnswer.toLowerCase().codeUnitAt(0) -
+                      'a'.codeUnitAt(0))],
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ],
@@ -862,7 +865,8 @@ class _QuestionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    correctAnswer!,
+                    options[(correctAnswer!.toLowerCase().codeUnitAt(0) -
+                        'a'.codeUnitAt(0))],
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ],

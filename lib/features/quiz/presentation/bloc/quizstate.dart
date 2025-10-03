@@ -1,6 +1,7 @@
+// features/quiz/presentation/bloc/quizstate.dart
 import 'package:tionova/core/errors/failure.dart';
-import 'package:tionova/features/quiz/data/models/QuizModel.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
+import 'package:tionova/features/quiz/data/models/QuizModel.dart';
 
 abstract class QuizState {}
 
@@ -32,4 +33,18 @@ class UserQuizStatusFailure extends QuizState {
   final Failure failure;
 
   UserQuizStatusFailure({required this.failure});
+}
+
+class GetHistoryLoading extends QuizState {}
+
+class GetHistorySuccess extends QuizState {
+  final UserQuizStatusModel history;
+
+  GetHistorySuccess({required this.history});
+}
+
+class GetHistoryFailure extends QuizState {
+  final Failure failure;
+
+  GetHistoryFailure({required this.failure});
 }

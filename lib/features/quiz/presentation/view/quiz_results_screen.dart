@@ -398,7 +398,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              selectedOptionText.isEmpty
+                                              (selectedOptionText.isEmpty ||
+                                                      selectedOptionText == 'z')
                                                   ? 'Not answered'
                                                   : selectedOptionText,
                                               style: TextStyle(

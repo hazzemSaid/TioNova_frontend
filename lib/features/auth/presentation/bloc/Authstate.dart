@@ -17,3 +17,15 @@ class AuthFailure extends AuthState {
   final Failure failure;
   AuthFailure({required this.failure});
 }
+
+class RegisterSuccess extends AuthState {
+  final String email;
+  RegisterSuccess({required this.email});
+}
+
+class RegisterLoading extends AuthState {}
+
+class RegisterFailure extends AuthState {
+  final Failure failure;
+  RegisterFailure({required this.failure});
+}

@@ -1,6 +1,8 @@
+// features/auth/data/services/auth_service.dart
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'dart:io' show Platform;
 import 'package:either_dart/either.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:tionova/core/errors/failure.dart' hide ServerFailure;
@@ -12,8 +14,13 @@ class AuthService {
   final Dio dio;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    // Web client ID for server-side verification (same for Android/iOS)
     serverClientId:
         '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com',
+    // iOS-specific client ID required on iOS (from GoogleService-Info.plist CLIENT_ID)
+    clientId: Platform.isIOS
+        ? '827260912271-kldgi7qlqjigrrr1pb008quk6lre450e.apps.googleusercontent.com'
+        : '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com',
   );
   AuthService({required this.dio});
   // Sign in with Google

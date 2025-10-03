@@ -49,8 +49,11 @@ class AuthRepoImp implements AuthRepo {
   }
 
   @override
-  Future<Either<Failure, void>> resetPassword(String email) {
-    return remoteDataSource.resetPassword(email);
+  Future<Either<Failure, void>> resetPassword(
+    String email, {
+    String? newPassword,
+  }) {
+    return remoteDataSource.resetPassword(email, newPassword: newPassword);
   }
 
   @override

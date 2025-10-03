@@ -22,9 +22,9 @@ class SecondaryBtn extends StatelessWidget {
         onPressed: onPressed,
         icon: icon ?? const Icon(Icons.person_add_rounded),
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Colors.white12),
+          side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           foregroundColor: isDark ? Colors.white : Colors.black,
           backgroundColor: isDark ? Colors.black12 : Colors.white10,

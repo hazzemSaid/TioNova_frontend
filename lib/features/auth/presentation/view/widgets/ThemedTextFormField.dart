@@ -8,7 +8,7 @@ class ThemedTextFormField extends StatelessWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final bool isDark;
-
+  final FormFieldValidator<String>? validator;
   const ThemedTextFormField({
     required this.controller,
     required this.hintText,
@@ -17,40 +17,18 @@ class ThemedTextFormField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType,
     required this.isDark,
+    this.validator,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      validator: (value) {
-        if (hintText == 'Email') {
-          if (value!.isEmpty) {
-            return 'Please enter your email';
-          }
-          if (!value.contains('@')) {
-            return 'Please enter a valid email';
-          }
-          return null;
-        }
-        if (hintText == 'Password') {
-          if (value!.isEmpty) {
-            return 'Please enter your password';
-          }
-          if (value.length < 6) {
-            return 'Password must be at least 6 characters long';
-          }
-          return null;
-        }
-
-        if (value == null || value.isEmpty) {
-          return 'Please enter your $hintText';
-        }
-        return null;
-      },
+      validator: validator,
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
       style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
@@ -60,10 +38,21 @@ class ThemedTextFormField extends StatelessWidget {
         ),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+        fillColor: isDark ? Colors.white10 : Colors.black.withAlpha(5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: isDark ? Colors.white24 : Colors.black26,
+            width: 1,
+          ),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
       ),

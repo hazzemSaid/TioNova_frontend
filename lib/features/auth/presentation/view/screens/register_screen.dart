@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
+import 'package:tionova/features/auth/presentation/view/widgets/SecondaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
 import 'package:tionova/features/theme/presentation/widgets/theme_toggle_button.dart';
 
@@ -244,108 +246,69 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 52,
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        if (formKey.currentState!.validate()) {
-                                          print(_usernameController.text);
-                                          print(_emailController.text);
-                                          print(_passwordController.text);
-                                          print(_confirmController.text);
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: isDark
-                                            ? Colors.white10
-                                            : Colors.black87,
-                                        foregroundColor: isDark
-                                            ? Colors.white
-                                            : Colors.black,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                        ),
-                                        elevation: 0,
-                                      ),
-                                      child: Text(
-                                        'Create Account',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: !isDark
-                                              ? Colors.white
-                                              : Colors.black,
-                                        ),
-                                      ),
-                                    ),
+                                  PrimaryBtn(
+                                    label: 'Create Account',
+                                    onPressed: () {
+                                      if (formKey.currentState!.validate()) {
+                                        print(_usernameController.text);
+                                        print(_emailController.text);
+                                        print(_passwordController.text);
+                                        print(_confirmController.text);
+                                      }
+                                    },
+                                    buttonColor: isDark
+                                        ? Colors.white10
+                                        : Colors.black87,
+                                    textColor: isDark
+                                        ? Colors.white
+                                        : Colors.white,
                                   ),
 
                                   const SizedBox(height: 12),
                                   Row(
-                                    children: const [
+                                    children: [
                                       Expanded(
-                                        child: Divider(color: Colors.white12),
+                                        child: Divider(
+                                          color: isDark
+                                              ? Colors.white12
+                                              : Colors.black12,
+                                        ),
                                       ),
                                       Padding(
-                                        padding: EdgeInsets.symmetric(
+                                        padding: const EdgeInsets.symmetric(
                                           horizontal: 12.0,
                                         ),
                                         child: Text(
                                           'OR',
                                           style: TextStyle(
-                                            color: Colors.white38,
+                                            color: isDark
+                                                ? Colors.white38
+                                                : Colors.black38,
                                           ),
                                         ),
                                       ),
                                       Expanded(
-                                        child: Divider(color: Colors.white12),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 52,
-                                    child: OutlinedButton.icon(
-                                      onPressed: () {},
-                                      icon: Image.asset(
-                                        'assets/icons/google.png',
-                                        width: 24,
-                                        height: 24,
-                                        color: isDark
-                                            ? Colors.white70
-                                            : Colors.black54,
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        side: BorderSide(
+                                        child: Divider(
                                           color: isDark
                                               ? Colors.white12
                                               : Colors.black12,
                                         ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                        ),
-                                        foregroundColor: isDark
-                                            ? Colors.white
-                                            : Colors.black,
-                                        backgroundColor: isDark
-                                            ? Colors.black12
-                                            : Colors.white10,
                                       ),
-                                      label: Text(
-                                        'Continue with Google',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: isDark
-                                              ? Colors.white
-                                              : Colors.black,
-                                        ),
-                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SecondaryBtn(
+                                    label: 'Continue with Google',
+                                    onPressed: () {},
+                                    icon: Image.asset(
+                                      'assets/icons/google.png',
+                                      width: 24,
+                                      height: 24,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black54,
                                     ),
+                                    isDark: isDark,
                                   ),
                                 ],
                               ),
@@ -369,6 +332,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   color: isDark
                                       ? Colors.white70
                                       : Colors.black54,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),

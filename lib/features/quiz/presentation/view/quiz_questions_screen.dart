@@ -1,4 +1,6 @@
 // features/quiz/presentation/view/quiz_questions_screen.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
@@ -31,16 +33,25 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
   late int selectedAnswer;
   bool reviewing = false;
   bool submitted = false;
+  late Timer _timer;
+  late int
+  _remainingTimeInSeconds; // Total quiz duration in seconds (e.g., 900 for 15 minutes)
+  static const int quizDurationInMinutes = 1; // 15 minutes for the quiz
 
   @override
   void initState() {
     super.initState();
     currentStep = 0;
+    _remainingTimeInSeconds =
+        quizDurationInMinutes * 60; // Convert minutes to seconds
     selectedAnswer = widget.answers[currentStep] != null
         ? widget.quiz.questions[currentStep].options.indexOf(
             widget.answers[currentStep]!,
           )
         : -1;
+
+    // Start the countdown timer
+    _startTimer();
   }
 
   void _selectAnswer(int index) {
@@ -72,7 +83,50 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    if (_timer.isActive) {
+      _timer.cancel();
+    }
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (_remainingTimeInSeconds <= 1) {
+        timer.cancel();
+        if (!submitted && mounted) {
+          submitted = true;
+          _submitQuiz();
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _remainingTimeInSeconds--;
+          });
+        } else {
+          timer.cancel();
+        }
+      }
+    });
+  }
+
+  String _formatTime(int seconds) {
+    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
+    final remainingSeconds = (seconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$remainingSeconds';
+  }
+
   void _submitQuiz() {
+    if (_timer.isActive) {
+      _timer.cancel();
+    }
+    submitted = true;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -200,7 +254,7 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
               QuizHeader(
                 title:
                     'Question ${currentStep + 1} of ${widget.quiz.questions.length}',
-                timer: '14:59',
+                timer: _formatTime(_remainingTimeInSeconds),
               ),
               const SizedBox(height: 16),
               // Progress bar

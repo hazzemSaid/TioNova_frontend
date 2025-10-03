@@ -7,10 +7,13 @@ import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/screens/auth_landing_screen.dart';
+import 'package:tionova/features/auth/presentation/view/screens/check_email_screen.dart';
+import 'package:tionova/features/auth/presentation/view/screens/forgot_password_screen.dart';
 import 'package:tionova/features/auth/presentation/view/screens/login_screen.dart';
 import 'package:tionova/features/auth/presentation/view/screens/register_screen.dart';
+import 'package:tionova/features/auth/presentation/view/screens/reset_password_screen.dart';
+import 'package:tionova/features/auth/presentation/view/screens/verify_reset_code_screen.dart';
 import 'package:tionova/features/start/presentation/view/screens/TioNovaspalsh.dart';
-import 'package:tionova/features/start/presentation/view/screens/notifications_screen.dart';
 import 'package:tionova/features/start/presentation/view/screens/onboarding_screen.dart';
 import 'package:tionova/utils/mainlayout.dart';
 
@@ -141,6 +144,30 @@ class AppRouter {
               name: 'register',
               builder: (BuildContext context, GoRouterState state) =>
                   const RegisterScreen(),
+            ),
+            GoRoute(
+              path: 'forgot-password',
+              name: 'forgot-password',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const ForgotPasswordScreen(),
+            ),
+            GoRoute(
+              path: 'verify-reset-code',
+              name: 'verify-reset-code',
+              builder: (BuildContext context, GoRouterState state) =>
+                  VerifyResetCodeScreen(email: state.extra as String),
+            ),
+            GoRoute(
+              path: 'reset-password',
+              name: 'reset-password',
+              builder: (BuildContext context, GoRouterState state) =>
+                  ResetPasswordScreen(email: state.extra as String),
+            ),
+            GoRoute(
+              path: 'check-email',
+              name: 'check-email',
+              builder: (BuildContext context, GoRouterState state) =>
+                  CheckEmailScreen(email: state.extra as String),
             ),
           ],
         ),
