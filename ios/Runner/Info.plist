@@ -69,5 +69,9 @@
 		<string>This app needs access to documents to upload PDF files for chapters.</string>
 		<key>NSDownloadsFolderUsageDescription</key>
 		<string>This app needs access to downloads to upload PDF files for chapters.</string>
+		<key>keychain-access-groups</key>
+		<array>
+			<string>$(AppIdentifierPrefix)$(CFBundleIdentifier)</string>
+		</array>
 	</dict>
 </plist>
