@@ -4,6 +4,7 @@ import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/loginusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/registerusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/verifyEmailusecase.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
@@ -13,11 +14,12 @@ class AuthCubit extends Cubit<AuthState> {
     required this.googleauthusecase,
     required this.localAuthDataSource,
     required this.registerUseCase,
+    required this.loginUseCase,
     required this.verifyEmailUseCase,
     // Keep the tokenStorage parameter for backward compatibility
     required TokenStorage tokenStorage,
   }) : super(AuthInitial());
-
+  final LoginUseCase loginUseCase;
   final Googleauthusecase googleauthusecase;
   final ILocalAuthDataSource localAuthDataSource;
   final RegisterUseCase registerUseCase;
@@ -138,6 +140,27 @@ class AuthCubit extends Cubit<AuthState> {
                 "401",
               ),
             ),
+          );
+        }
+      },
+    );
+  }
+
+  // Method to login a user
+  Future<void> login(String email, String password) async {
+    emit(AuthLoading());
+    final result = await loginUseCase.call(email, password);
+    await result.fold(
+      (failure) {
+        emit(AuthFailure(failure: failure));
+      },
+      (user) async {
+        final token = await TokenStorage.getAccessToken();
+        if (token != null && token.isNotEmpty) {
+          emit(AuthSuccess(user: user, token: token));
+        } else {
+          emit(
+            AuthFailure(failure: ServerFailure("Failed to get token", "401")),
           );
         }
       },

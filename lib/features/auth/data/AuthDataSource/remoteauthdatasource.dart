@@ -20,9 +20,20 @@ class Remoteauthdatasource implements IAuthDataSource {
   }
 
   @override
-  Future<Either<Failure, UserModel>> login(String email, String password) {
-    // TODO: implement login
-    throw UnimplementedError();
+  Future<Either<Failure, UserModel>> login(
+    String email,
+    String password,
+  ) async {
+    ///auth/login
+    try {
+      final response = await dio.post(
+        '/auth/login',
+        data: {'email': email, 'password': password},
+      );
+      return Right(UserModel.fromJson(response.data));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 
   @override

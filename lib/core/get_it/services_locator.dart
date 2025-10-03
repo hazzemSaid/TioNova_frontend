@@ -12,6 +12,7 @@ import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/data/services/auth_service.dart';
 import 'package:tionova/features/auth/domain/repo/authrepo.dart';
 import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/loginusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/registerusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/verifyEmailusecase.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
@@ -55,7 +56,7 @@ Future<void> setupServiceLocator() async {
   final Dio dio = Dio(
     // http://192.168.1.12:3000/api/v1
     //https://tio-nova-backend.vercel.app/api/v1
-    BaseOptions(baseUrl: 'http://192.168.1.12:3000/api/v1'),
+    BaseOptions(baseUrl: 'https://tio-nova-backend.vercel.app/api/v1'),
   );
 
   dio.interceptors.add(
@@ -147,9 +148,13 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<VerifyEmailUseCase>(
     () => VerifyEmailUseCase(getIt<AuthRepo>()),
   );
+  getIt.registerLazySingleton<LoginUseCase>(
+    () => LoginUseCase(getIt<AuthRepo>()),
+  );
   // Bloc
   getIt.registerSingleton<AuthCubit>(
     AuthCubit(
+      loginUseCase: getIt<LoginUseCase>(),
       registerUseCase: getIt<RegisterUseCase>(),
       verifyEmailUseCase: getIt<VerifyEmailUseCase>(),
       tokenStorage:
