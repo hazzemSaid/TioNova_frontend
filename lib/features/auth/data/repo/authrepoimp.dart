@@ -78,8 +78,11 @@ class AuthRepoImp implements AuthRepo {
   }
 
   @override
-  Future<Either<Failure, UserModel>> verifyEmail(String email) async {
-    final result = await remoteDataSource.verifyEmail(email);
+  Future<Either<Failure, UserModel>> verifyEmail(
+    String email,
+    String code,
+  ) async {
+    final result = await remoteDataSource.verifyEmail(email, code);
     if (result.isRight) {
       await localDataSource.saveUser(result.right);
     }

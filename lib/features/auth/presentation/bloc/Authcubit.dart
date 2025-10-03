@@ -118,9 +118,9 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   // Method to verify email
-  Future<void> verifyEmail(String email) async {
+  Future<void> verifyEmail(String email, String code) async {
     emit(AuthLoading());
-    final result = await verifyEmailUseCase.call(email);
+    final result = await verifyEmailUseCase.call(email, code);
 
     await result.fold(
       (failure) {

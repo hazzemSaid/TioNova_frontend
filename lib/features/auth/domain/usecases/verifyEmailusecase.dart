@@ -8,7 +8,7 @@ class VerifyEmailUseCase {
 
   VerifyEmailUseCase(this.authRepo);
 
-  Future<Either<Failure, UserModel>> call(String email) async {
-    return await authRepo.verifyEmail(email);
+  Future<Either<Failure, UserModel>> call(String email, String code) async {
+    return await authRepo.verifyEmail(email, code);
   }
 }

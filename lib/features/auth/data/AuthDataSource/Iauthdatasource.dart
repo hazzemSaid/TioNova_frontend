@@ -11,7 +11,10 @@ abstract class IAuthDataSource {
     String password,
   );
   Future<Either<Failure, UserModel>> login(String email, String password);
-  Future<Either<Failure, void>> resetPassword(String email, {String? newPassword});
-  Future<Either<Failure, UserModel>> verifyEmail(String email);
+  Future<Either<Failure, void>> resetPassword(
+    String email, {
+    String? newPassword,
+  });
+  Future<Either<Failure, UserModel>> verifyEmail(String email, String code);
   Future<Either<Failure, UserModel>> getCurrentUser();
 }

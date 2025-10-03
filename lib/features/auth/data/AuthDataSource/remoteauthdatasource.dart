@@ -54,11 +54,14 @@ class Remoteauthdatasource implements IAuthDataSource {
   }
 
   @override
-  Future<Either<Failure, UserModel>> verifyEmail(String email) async {
+  Future<Either<Failure, UserModel>> verifyEmail(
+    String email,
+    String code,
+  ) async {
     try {
       final response = await dio.post(
         '/auth/verify-email',
-        data: {'email': email},
+        data: {'email': email, 'code': code},
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
