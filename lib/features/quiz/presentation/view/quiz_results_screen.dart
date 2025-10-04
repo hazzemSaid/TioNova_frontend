@@ -11,6 +11,7 @@ class QuizResultsScreen extends StatefulWidget {
   final List<String?> userAnswers;
   final String token;
   final String chapterId;
+  final int timeTaken;
 
   const QuizResultsScreen({
     Key? key,
@@ -18,6 +19,7 @@ class QuizResultsScreen extends StatefulWidget {
     required this.userAnswers,
     required this.token,
     required this.chapterId,
+    required this.timeTaken,
   }) : super(key: key);
 
   @override
@@ -165,7 +167,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
       answersPayload.add({'questionId': question.id, 'answer': answer});
     }
 
-    final body = {'answers': answersPayload};
+    final body = {'answers': answersPayload, 'timeTaken': widget.timeTaken};
 
     context.read<QuizCubit>().setuserquizstatus(
       token: widget.token,

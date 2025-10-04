@@ -133,6 +133,7 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
         builder: (context) => BlocProvider.value(
           value: context.read<QuizCubit>(),
           child: QuizResultsScreen(
+            timeTaken: quizDurationInMinutes * 60 - _remainingTimeInSeconds,
             quiz: widget.quiz,
             userAnswers: widget.answers,
             token: widget.token,

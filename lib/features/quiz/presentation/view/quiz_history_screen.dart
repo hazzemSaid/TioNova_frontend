@@ -278,8 +278,7 @@ class _AttemptCard extends StatelessWidget {
     final state = attempt.state.toLowerCase();
     final passed = state == 'passed';
     final DateTime started = attempt.startedAt;
-    final duration = attempt.completedAt.difference(attempt.startedAt);
-    final timeSpent = _formatDuration(duration);
+    final duration = attempt.timeTaken ?? 0;
     final score = attempt.degree;
 
     return GestureDetector(
@@ -348,7 +347,9 @@ class _AttemptCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  timeSpent,
+                  duration > 0
+                      ? _formatDuration(Duration(seconds: duration))
+                      : '—',
                   style: const TextStyle(
                     color: Color(0xFF8E8E93),
                     fontSize: 13,
@@ -833,8 +834,10 @@ class _QuestionCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  options[(userAnswer.toLowerCase().codeUnitAt(0) -
-                      'a'.codeUnitAt(0))],
+                  userAnswer == "z"
+                      ? "No Answer"
+                      : options[(userAnswer.toLowerCase().codeUnitAt(0) -
+                            'a'.codeUnitAt(0))],
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ],
