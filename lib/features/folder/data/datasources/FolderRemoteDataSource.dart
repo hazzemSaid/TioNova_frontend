@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
+import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 
 class FolderRemoteDataSource implements IFolderRepository {
@@ -156,6 +157,35 @@ class FolderRemoteDataSource implements IFolderRepository {
       }
     } catch (e) {
       return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ShareWithmodel>>> getAvailableUsersForShare({
+    required String query,
+    required String token,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/getAvailableUsersForShare',
+        data: {'query': query},
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $token",
+          },
+        ),
+      );
+      if (response.statusCode == 200) {
+        List<ShareWithmodel> users = (response.data['results'] as List)
+            .map((userJson) => ShareWithmodel.fromJson(userJson))
+            .toList();
+        return Right(users);
+      } else {
+        return Left(ServerFailure('Failed to fetch users'));
+      }
+    } catch (error) {
+      return Left(ServerFailure(error.toString()));
     }
   }
 }

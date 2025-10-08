@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
-
-import '../widgets/folder_card.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/folder_card.dart';
 
 class FolderGridItem extends StatelessWidget {
   final Foldermodel folder;
@@ -17,8 +16,8 @@ class FolderGridItem extends StatelessWidget {
     required this.icon,
     required this.onLongPress,
     required this.onTap,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,16 +30,18 @@ class FolderGridItem extends StatelessWidget {
           border: Border.all(color: const Color(0xFF1C1C1E), width: 1),
         ),
         child: FolderCard(
+          onTap: onTap,
           title: folder.title,
           description: folder.description ?? 'No description',
           category: folder.category ?? 'Uncategorized',
-          privacy: folder.status == Status.private ? 'Private' : 'Public',
+          privacy: folder.status == Status.private
+              ? 'Private'
+              : (folder.status == Status.share ? 'Shared' : 'Public'),
           chapters: folder.chapterCount ?? 0,
           lastAccessed:
               '${DateTime.now().difference(folder.createdAt).inDays} days ago',
           color: color,
-          icon: icon,
-          onTap: onTap,
+          sharedWith: folder.sharedWith,
         ),
       ),
     );

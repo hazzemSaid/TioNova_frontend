@@ -1,6 +1,7 @@
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
+import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 
 abstract class IFolderRepository {
   //createfolder , search folder , get all folder
@@ -32,6 +33,10 @@ abstract class IFolderRepository {
     String? icon,
     String? color,
   });
+  Future<Either<Failure, List<ShareWithmodel>>> getAvailableUsersForShare({
+    required String query,
+    required String token,
+  });
 }
 
-enum Status { public, private }
+enum Status { public, private, share }

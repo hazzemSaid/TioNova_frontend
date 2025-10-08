@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class FolderCard extends StatelessWidget {
+class FolderCardHome extends StatelessWidget {
   final String title;
   final String chapters;
   final String days;
 
-  const FolderCard({
+  const FolderCardHome({
     super.key,
     required this.title,
     required this.chapters,
@@ -34,7 +34,7 @@ class FolderCard extends StatelessWidget {
     return Container(
       width: cardWidth,
       constraints: BoxConstraints(
-        minWidth: isTablet ? 140.0 : 120.0, // Slightly wider on tablet
+        minWidth: isTablet ? 160.0 : 140.0, // Slightly wider on tablet
         maxHeight: isTablet
             ? 220.0
             : double.infinity, // Limit max height on tablet

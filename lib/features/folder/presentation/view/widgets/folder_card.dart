@@ -1,5 +1,6 @@
 // features/folder/presentation/view/widgets/folder_card.dart
 import 'package:flutter/material.dart';
+import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 
 class FolderCard extends StatelessWidget {
   final String title;
@@ -11,6 +12,7 @@ class FolderCard extends StatelessWidget {
   final Color color;
   final IconData? icon;
   final VoidCallback? onTap;
+  final List<ShareWithmodel>? sharedWith;
 
   const FolderCard({
     Key? key,
@@ -23,6 +25,7 @@ class FolderCard extends StatelessWidget {
     required this.color,
     this.icon,
     this.onTap,
+    this.sharedWith,
   }) : super(key: key);
 
   Widget _buildTag(
@@ -32,13 +35,13 @@ class FolderCard extends StatelessWidget {
     IconData? icon, {
     bool isTablet = false,
   }) {
-    final double padding = isTablet ? 8.0 : 6.0; // Smaller padding on tablet
-    final double iconSize = isTablet ? 12.0 : 10.0; // Smaller icon
-    final double fontSize = isTablet ? 10.0 : 8.0; // Smaller font
+    final double padding = isTablet ? 8.0 : 6.0;
+    final double iconSize = isTablet ? 12.0 : 10.0;
+    final double fontSize = isTablet ? 10.0 : 8.0;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding / 2),
-      margin: EdgeInsets.only(right: isTablet ? 6.0 : 4.0), // Smaller margin
+      margin: EdgeInsets.only(right: isTablet ? 6.0 : 4.0),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(6),
@@ -73,25 +76,16 @@ class FolderCard extends StatelessWidget {
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
 
-    // Responsive sizing - Keep tablet compact, make phone ultra-compact
-    final double cardPadding = isTablet
-        ? 16.0
-        : (isLargeScreen ? 16.0 : 10.0); // Minimal padding for phone
+    final double cardPadding = isTablet ? 16.0 : (isLargeScreen ? 16.0 : 10.0);
     final double iconContainerSize = isLargeScreen
         ? 56.0
-        : (isTablet ? 42.0 : 36.0); // Smaller on phone
-    final double iconSize = isLargeScreen
-        ? 28.0
-        : (isTablet ? 20.0 : 18.0); // Compact icon for phone
-    final double titleSize = isLargeScreen
-        ? 20.0
-        : (isTablet ? 16.0 : 13.0); // Smaller title on phone
+        : (isTablet ? 42.0 : 36.0);
+    final double iconSize = isLargeScreen ? 28.0 : (isTablet ? 20.0 : 18.0);
+    final double titleSize = isLargeScreen ? 20.0 : (isTablet ? 16.0 : 13.0);
     final double descriptionSize = isLargeScreen
         ? 14.0
-        : (isTablet ? 12.0 : 9.0); // Compact text for phone
-    final double metaSize = isLargeScreen
-        ? 18.0
-        : (isTablet ? 12.0 : 10.0); // Compact meta text for phone
+        : (isTablet ? 12.0 : 9.0);
+    final double metaSize = isLargeScreen ? 18.0 : (isTablet ? 12.0 : 10.0);
 
     Color categoryColor;
     switch (category) {
@@ -126,14 +120,12 @@ class FolderCard extends StatelessWidget {
           color: const Color(0xFF0E0E10),
           borderRadius: BorderRadius.circular(
             isTablet ? 14.0 : (isLargeScreen ? 16.0 : 10.0),
-          ), // Compact phone radius
+          ),
           border: Border.all(color: const Color(0xFF1C1C1E), width: 0.5),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.3),
-              blurRadius: isTablet
-                  ? 8.0
-                  : (isLargeScreen ? 8.0 : 4.0), // Compact phone shadow
+              blurRadius: isTablet ? 8.0 : (isLargeScreen ? 8.0 : 4.0),
               offset: const Offset(0, 4),
             ),
           ],
@@ -143,11 +135,9 @@ class FolderCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header row with icon and tags
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Folder icon with gradient
                 Container(
                   width: iconContainerSize,
                   height: iconContainerSize,
@@ -155,7 +145,7 @@ class FolderCard extends StatelessWidget {
                     color: color.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(
                       isTablet ? 10.0 : (isLargeScreen ? 12.0 : 8.0),
-                    ), // Compact phone radius
+                    ),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.2),
                       width: 0.5,
@@ -163,12 +153,12 @@ class FolderCard extends StatelessWidget {
                     boxShadow: [
                       BoxShadow(
                         color: color.withOpacity(0.3),
-                        blurRadius: isTablet ? 8.0 : 4.0, // Smaller shadow
+                        blurRadius: isTablet ? 8.0 : 4.0,
                         offset: const Offset(0, 2),
                       ),
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
-                        blurRadius: isTablet ? 4.0 : 2.0, // Smaller shadow
+                        blurRadius: isTablet ? 4.0 : 2.0,
                         offset: const Offset(0, 1),
                       ),
                     ],
@@ -182,7 +172,7 @@ class FolderCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(
                         isTablet ? 10.0 : (isLargeScreen ? 12.0 : 8.0),
-                      ), // Compact phone inner radius
+                      ),
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -199,125 +189,190 @@ class FolderCard extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                SizedBox(width: isTablet ? 10.0 : 8.0), // Ultra compact spacing
-                // Tags (category and privacy)
+                SizedBox(width: isTablet ? 10.0 : 8.0),
                 Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTag(
-                          category,
-                          categoryColor,
-                          Colors.white,
-                          null,
-                          isTablet: isTablet,
-                        ),
-                        if (privacy.isNotEmpty) ...[
-                          SizedBox(
-                            width: isTablet ? 6.0 : 4.0,
-                          ), // Smaller spacing
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           _buildTag(
-                            privacy,
-                            privacyBgColor,
-                            privacyTextColor,
-                            privacyIcon,
+                            category,
+                            categoryColor,
+                            Colors.white,
+                            null,
                             isTablet: isTablet,
                           ),
+                          if (privacy.isNotEmpty) ...[
+                            SizedBox(width: isTablet ? 6.0 : 4.0),
+                            _buildTag(
+                              privacy,
+                              privacyBgColor,
+                              privacyTextColor,
+                              privacy == 'private' ? Icons.lock : Icons.group,
+                              isTablet: isTablet,
+                            ),
+                          ],
+                          if (privacy.toLowerCase() == 'shared') ...[
+                            SizedBox(width: isTablet ? 6.0 : 4.0),
+                            Text(
+                              '$chapters chapters',
+                              style: TextStyle(
+                                color: const Color(0xFF8E8E93),
+                                fontSize: isTablet ? 10.0 : 8.0,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: isTablet ? 6.0 : 4.0),
+                            const Icon(
+                              Icons.more_vert,
+                              color: Color(0xFF8E8E93),
+                              size: 16,
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-
-            // Content spacing
-            SizedBox(
-              height: isTablet ? 8.0 : (isLargeScreen ? 8.0 : 6.0),
-            ), // Compact phone spacing
-            // Title
+            SizedBox(height: isTablet ? 8.0 : (isLargeScreen ? 8.0 : 6.0)),
             Text(
               title,
-              maxLines: 1, // Single line only
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: titleSize,
                 fontWeight: FontWeight.w600,
-                height: isLargeScreen ? 1.1 : 1.2, // Tighter on smaller screens
+                height: isLargeScreen ? 1.1 : 1.2,
               ),
             ),
-
-            // Description spacing
             if (description.isNotEmpty) ...[
-              SizedBox(
-                height: isTablet ? 2.0 : (isLargeScreen ? 2.0 : 1.0),
-              ), // Minimal phone spacing
+              SizedBox(height: isTablet ? 2.0 : (isLargeScreen ? 2.0 : 1.0)),
               Text(
                 description,
-                maxLines: 1, // Max 1 line on all devices
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: const Color(0xFF8E8E93),
                   fontSize: descriptionSize,
-                  height: 1.2, // Tight line height
+                  height: 1.2,
                 ),
               ),
             ],
-
-            // Footer spacing
-            SizedBox(
-              height: isTablet ? 8.0 : (isLargeScreen ? 8.0 : 6.0),
-            ), // Compact phone spacing
-            // Footer with last accessed and chapter count
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time_outlined,
-                  color: const Color(0xFF8E8E93),
-                  size: metaSize + 2,
-                ),
-                SizedBox(width: isTablet ? 8.0 : 6.0),
-                Expanded(
-                  child: Text(
-                    'Last accessed $lastAccessed',
+            SizedBox(height: isTablet ? 8.0 : (isLargeScreen ? 8.0 : 6.0)),
+            if (privacy.toLowerCase() != 'shared')
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time_outlined,
+                    color: const Color(0xFF8E8E93),
+                    size: metaSize + 2,
+                  ),
+                  SizedBox(width: isTablet ? 8.0 : 6.0),
+                  Expanded(
+                    child: Text(
+                      'Last accessed $lastAccessed',
+                      style: TextStyle(
+                        color: const Color(0xFF8E8E93),
+                        fontSize: metaSize,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(width: isTablet ? 8.0 : 6.0),
+                  Container(
+                    width: isTablet ? 20.0 : 20.0,
+                    height: isTablet ? 20.0 : 20.0,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1C1C1E),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.1),
+                        width: 0.5,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$chapters',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: metaSize - 1,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            if (privacy.toLowerCase() == 'shared' &&
+                sharedWith != null &&
+                sharedWith!.isNotEmpty) ...[
+              SizedBox(height: isTablet ? 8.0 : 6.0),
+              Row(
+                children: [
+                  const Text(
+                    'Shared with:',
                     style: TextStyle(
-                      color: const Color(0xFF8E8E93),
-                      fontSize: metaSize,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                SizedBox(width: isTablet ? 8.0 : 6.0),
-                Container(
-                  width: isTablet ? 20.0 : 20.0, // Ultra compact counter
-                  height: isTablet ? 20.0 : 20.0, // Ultra compact counter
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1C1C1E),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 0.5,
+                      color: Color(0xFF8E8E93),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '$chapters',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: metaSize - 1,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(width: 8),
+                  // Avatar list logic, showing up to 3 avatars + 'more' if applicable
+                  ...List.generate(
+                    sharedWith!.length > 3 ? 3 : sharedWith!.length,
+                    (i) => Container(
+                      margin: const EdgeInsets.only(right: 4),
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF232325),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        sharedWith![i].username.isNotEmpty
+                            ? sharedWith![i].username
+                                  .substring(0, 2)
+                                  .toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                  // Display the '+X more' tag only if there are more than 3 users
+                  if (sharedWith!.length > 3)
+                    Container(
+                      margin: const EdgeInsets.only(left: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF232325),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '+${sharedWith!.length - 3} more',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

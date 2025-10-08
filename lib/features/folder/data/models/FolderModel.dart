@@ -1,11 +1,12 @@
 import 'package:equatable/equatable.dart';
+import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 
 class Foldermodel extends Equatable {
   final String id;
   final DateTime createdAt;
   final String ownerId;
-  final List<dynamic>? sharedWith;
+  final List<ShareWithmodel>? sharedWith;
   final String? description;
   final String? icon;
   final String? color;
@@ -36,7 +37,13 @@ class Foldermodel extends Equatable {
           ? DateTime.parse(json['createdAt'])
           : json['createdAt'] as DateTime,
       ownerId: json['ownerId'],
-      sharedWith: json['sharedWith'],
+      sharedWith: (json['sharedWith'] != null && json['status'] != "private")
+          ? List<ShareWithmodel>.from(
+              (json['sharedWith'] as List).map(
+                (x) => ShareWithmodel.fromJson(x),
+              ),
+            )
+          : [],
       description: json['description'],
       category: json['category'],
       title: json['title'],
@@ -85,7 +92,7 @@ class Foldermodel extends Equatable {
   copyWith({
     DateTime? createdAt,
     String? ownerId,
-    List<dynamic>? sharedWith,
+    List<ShareWithmodel>? sharedWith,
     String? description,
     String? icon,
     String? color,
@@ -109,14 +116,3 @@ class Foldermodel extends Equatable {
     );
   }
 }
-
-/*  "_id": "68c7fc64cfbd31d609c6e006",
-            "ownerId": "68c3d742811330274418c411",
-            "sharedWith": [],
-            "title": "first  file",
-            "description": "fire file des",
-            "status": "private",
-            "createdAt": "2025-09-15T11:45:40.398Z",
-            "updatedAt": "2025-09-15T11:45:40.398Z",
-            "__v": 0,
-            "chapterCount": 0*/

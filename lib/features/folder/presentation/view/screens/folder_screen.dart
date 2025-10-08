@@ -4,12 +4,13 @@ import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
-import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
+import 'package:tionova/features/folder/presentation/view/screens/EditFolderDialog.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/widgets/app_search_bar.dart';
 import 'package:tionova/utils/widgets/page_header.dart';
@@ -23,7 +24,7 @@ import 'folder_detail_screen.dart';
 import 'folder_screen_widgets.dart';
 
 class FolderScreen extends StatefulWidget {
-  const FolderScreen({Key? key}) : super(key: key);
+  const FolderScreen({super.key});
 
   @override
   State<FolderScreen> createState() => _FolderScreenState();
@@ -62,6 +63,20 @@ class _FolderScreenState extends State<FolderScreen> {
   void initState() {
     super.initState();
     _fetchFolders();
+    _subscribeToFolderView();
+  }
+
+  void _subscribeToFolderView() {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthSuccess) return;
+    final userId = authState.user.id;
+    final sseUrl = 'http://192.168.1.12:3000/api/v1/subscribe?userId=$userId';
+    context.read<FolderCubit>().subscribeToFolderSse(sseUrl);
+  }
+
+  void dispose() {
+    context.read<FolderCubit>().unsubscribeFromFolderSse();
+    super.dispose();
   }
 
   void _fetchFolders() {
@@ -216,13 +231,13 @@ class _FolderScreenState extends State<FolderScreen> {
         red: 0,
         green: 0,
         blue: 0,
-      ), // 0.6 opacity
+      ),
       builder: (dialogContext) => MultiBlocProvider(
         providers: [
           BlocProvider.value(value: context.read<FolderCubit>()),
           BlocProvider.value(value: context.read<AuthCubit>()),
         ],
-        child: _EditFolderDialog(
+        child: EditFolderDialog(
           folder: folder,
           defaultcolors: defaultColors,
           icons: defaultIcons,
@@ -268,6 +283,7 @@ class _FolderScreenState extends State<FolderScreen> {
         id: folderId,
         token: authState.token,
       );
+      // No need to manually refresh, UI will update from FolderLoaded
     }
   }
 
@@ -284,20 +300,21 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   // Helper method to get categories from folders
-  List<String> _getCategories(List<Foldermodel> folders) {
+  List<String> _getCategories(FolderState state) {
     final categories = ['All'];
     final categorySet = <String>{};
 
-    for (final folder in folders) {
-      if (folder.category != null && folder.category!.isNotEmpty) {
-        categorySet.add(folder.category!);
+    if (state is FolderLoaded) {
+      for (final folder in state.folders) {
+        if (folder.category != null && folder.category!.isNotEmpty) {
+          categorySet.add(folder.category!);
+        }
       }
     }
     categories.addAll(categorySet);
     return categories;
   }
 
-  // Helper method to extract folders from different state types
   List<Foldermodel> _getFoldersFromState(FolderState state) {
     if (state is FolderLoaded) {
       return state.folders;
@@ -305,22 +322,19 @@ class _FolderScreenState extends State<FolderScreen> {
     return [];
   }
 
-  // Helper method to build folder list
-  Widget _buildFolderList(
-    List<Foldermodel> folders,
-    double screenWidth,
-    String categoryFilter, [
-    FolderState? currentState,
-  ]) {
-    // Filter folders by category
-    final filteredFolders = categoryFilter == 'All'
-        ? folders
-        : folders.where((f) => f.category == categoryFilter).toList();
+  Widget _buildFolderList(FolderState state) {
+    final folders = _getFoldersFromState(state);
+    final filteredFolders = folders.where((folder) {
+      if (selectedCategory == 'All') {
+        return true;
+      }
+      return folder.category == selectedCategory;
+    }).toList();
 
-    final isTablet = screenWidth > 600;
-    final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
+    final isTablet = MediaQuery.of(context).size.width > 600;
+    final horizontalPadding =
+        MediaQuery.of(context).size.width * (isTablet ? 0.08 : 0.05);
     final crossAxisCount = isTablet ? 2 : 1;
-    final aspectRatio = isTablet ? 2.0 : 1.9;
 
     if (filteredFolders.isEmpty) {
       return const SliverFillRemaining(
@@ -416,7 +430,6 @@ class _FolderScreenState extends State<FolderScreen> {
                 );
               }
               if (state is UpdateFolderSuccess) {
-                _fetchFolders();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Row(
@@ -424,6 +437,22 @@ class _FolderScreenState extends State<FolderScreen> {
                         Icon(Icons.check_circle, color: Colors.white, size: 16),
                         SizedBox(width: 8),
                         Text('Folder updated successfully'),
+                      ],
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+              if (state is DeleteFolderSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.white, size: 16),
+                        SizedBox(width: 8),
+                        Text('Folder deleted successfully'),
                       ],
                     ),
                     behavior: SnackBarBehavior.floating,
@@ -481,11 +510,8 @@ class _FolderScreenState extends State<FolderScreen> {
                         const AppSearchBar(hintText: 'Search folders'),
                         SizedBox(height: verticalSpacing * 1.5),
                         CategoryFilter(
-                          categories:
-                              (state is FolderLoaded ||
-                                  state is UpdateFolderSuccess ||
-                                  state is UpdateFolderError)
-                              ? _getCategories(_getFoldersFromState(state))
+                          categories: (state is FolderLoaded)
+                              ? _getCategories(state)
                               : const ['All', 'Technology', 'Science'],
                           selectedCategory: selectedCategory,
                           onCategorySelected: onCategorySelected,
@@ -518,6 +544,8 @@ class _FolderScreenState extends State<FolderScreen> {
                                       getIt<UpdateFolderUseCase>(),
                                   deleteFolderUseCase:
                                       getIt<DeleteFolderUseCase>(),
+                                  getAvailableUsersForShareUseCase:
+                                      getIt<GetAvailableUsersForShareUseCase>(),
                                 ),
                                 child: const CreateFolderDialog(),
                               ),
@@ -530,7 +558,17 @@ class _FolderScreenState extends State<FolderScreen> {
                                   duration: Duration(seconds: 2),
                                 ),
                               );
-                              _fetchFolders();
+                              final authState = context.read<AuthCubit>().state;
+                              String token = '';
+                              if (authState is AuthSuccess) {
+                                token = authState.token;
+                              }
+                              if (token == '') return;
+                              context.read<FolderCubit>().fetchAllFolders(
+                                token,
+                              );
+
+                              // No need to call _fetchFolders(); UI will update from FolderLoaded
                             }
                           },
                         ),
@@ -563,22 +601,18 @@ class _FolderScreenState extends State<FolderScreen> {
                               style: TextStyle(color: Colors.white),
                             ),
                             TextButton(
-                              onPressed: _fetchFolders,
+                              onPressed: () {
+                                // Only retry fetch if needed
+                                _fetchFolders();
+                              },
                               child: const Text('Retry'),
                             ),
                           ],
                         ),
                       ),
                     )
-                  else if (state is FolderLoaded ||
-                      state is UpdateFolderSuccess ||
-                      state is UpdateFolderError)
-                    _buildFolderList(
-                      _getFoldersFromState(state),
-                      screenWidth,
-                      selectedCategory,
-                      state,
-                    )
+                  else if (state is FolderLoaded)
+                    _buildFolderList(state)
                   else
                     const SliverFillRemaining(
                       child: Center(
@@ -622,424 +656,6 @@ class _FolderScreenState extends State<FolderScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _EditFolderDialog extends StatefulWidget {
-  final Foldermodel folder;
-  final List<Color> defaultcolors;
-  final List<IconData> icons;
-
-  const _EditFolderDialog({
-    required this.folder,
-    required this.defaultcolors,
-    required this.icons,
-  });
-
-  @override
-  State<_EditFolderDialog> createState() => _EditFolderDialogState();
-}
-
-class _EditFolderDialogState extends State<_EditFolderDialog> {
-  late TextEditingController _titleController;
-  late TextEditingController _descriptionController;
-  late Status _selectedStatus;
-  late int _selectedIcon;
-  late int _selectedColor;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: widget.folder.title);
-    _descriptionController = TextEditingController(
-      text: widget.folder.description ?? '',
-    );
-    _selectedStatus = widget.folder.status;
-
-    // Parse existing icon or default to 0
-    _selectedIcon = 0;
-    if (widget.folder.icon != null) {
-      final iconIndex = int.tryParse(widget.folder.icon!);
-      if (iconIndex != null &&
-          iconIndex >= 0 &&
-          iconIndex < widget.icons.length) {
-        _selectedIcon = iconIndex;
-      }
-    }
-
-    // Parse existing color or default to 0
-    _selectedColor = 0;
-    if (widget.folder.color != null) {
-      try {
-        final colorValue = int.parse(widget.folder.color!, radix: 16);
-        final colorIndex = widget.defaultcolors.indexWhere(
-          (c) => c.value == colorValue,
-        );
-        if (colorIndex != -1) {
-          _selectedColor = colorIndex;
-        }
-      } catch (e) {
-        // Keep default if parsing fails
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<FolderCubit, FolderState>(
-      listener: (context, state) {
-        if (state is UpdateFolderSuccess) {
-          // Show success and close dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 16),
-                  SizedBox(width: 8),
-                  Text('Folder updated successfully!'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          // Fetch fresh data before closing dialog
-          final authState = context.read<AuthCubit>().state;
-          if (authState is AuthSuccess) {
-            // Fetch data and wait for completion before popping
-            Navigator.pop(context, true);
-          } else {
-            // If no auth state, just pop
-            Navigator.pop(context, true);
-          }
-        }
-        if (state is UpdateFolderSuccess) {
-          // Show success message only, do not pop here
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 16),
-                  SizedBox(width: 8),
-                  Text('Folder updated successfully!'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          // Do not pop here; let parent handle navigation
-        }
-        if (state is UpdateFolderError) {
-          // Show error with retry option
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.error, color: Colors.white, size: 16),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Update failed: ${state.message.errMessage}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 4),
-              action: SnackBarAction(
-                label: 'Retry',
-                textColor: Colors.white,
-                onPressed: () => _updateFolder(),
-              ),
-            ),
-          );
-        }
-      },
-      child: AlertDialog(
-        backgroundColor: const Color(0xFF0E0E10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF1C1C1E)),
-        ),
-        title: const Text(
-          'Edit Folder',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              TextField(
-                maxLines: 2,
-                controller: _titleController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.all(12),
-                  labelText: 'Title',
-                  labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFF1C1C1E)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.blue),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.red),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFF1C1C1E),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _descriptionController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFF1C1C1E)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.blue),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFF1C1C1E),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Choose Icon',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _iconGrid(),
-              const SizedBox(height: 20),
-              Text(
-                'Choose Color',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _colorRow(),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<Status>(
-                value: _selectedStatus,
-                style: const TextStyle(color: Colors.white),
-                dropdownColor: const Color(0xFF1C1C1E),
-                decoration: InputDecoration(
-                  labelText: 'Privacy',
-                  labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFF1C1C1E)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.blue),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFF1C1C1E),
-                ),
-                items: Status.values.map((status) {
-                  return DropdownMenuItem(
-                    value: status,
-                    child: Text(
-                      status == Status.private ? 'Private' : 'Public',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedStatus = value;
-                    });
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF8E8E93)),
-            ),
-          ),
-          BlocBuilder<FolderCubit, FolderState>(
-            builder: (context, state) {
-              final isLoading = state is UpdateFolderLoading;
-              return ElevatedButton(
-                onPressed: isLoading ? null : _updateFolder,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: isLoading
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Updating...'),
-                        ],
-                      )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.save, size: 16),
-                          SizedBox(width: 4),
-                          Text('Update'),
-                        ],
-                      ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _updateFolder() {
-    if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Title cannot be empty'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Get auth token
-    final authCubit = context.read<AuthCubit>();
-    final authState = authCubit.state;
-
-    if (authState is AuthSuccess) {
-      context.read<FolderCubit>().updatefolder(
-        id: widget.folder.id,
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        sharedWith: widget.folder.sharedWith?.cast<String>(),
-        status: _selectedStatus,
-        icon: _selectedIcon.toString(),
-        color:
-            '#${widget.defaultcolors[_selectedColor].value.toRadixString(16).padLeft(8, '0').substring(2)}',
-        token: authState.token,
-      );
-    }
-  }
-
-  Widget _iconGrid() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: List.generate(widget.icons.length, (i) {
-        final selected = i == _selectedIcon;
-        return GestureDetector(
-          onTap: () => setState(() => _selectedIcon = i),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: selected ? Colors.blue : Colors.grey,
-                width: selected ? 2 : 1,
-              ),
-            ),
-            child: Icon(widget.icons[i], color: Colors.white, size: 20),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _colorRow() {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: List.generate(widget.defaultcolors.length, (i) {
-        final selected = i == _selectedColor;
-        return GestureDetector(
-          onTap: () => setState(() => _selectedColor = i),
-          child: Container(
-            width: 44,
-            height: 32,
-            decoration: BoxDecoration(
-              color: widget.defaultcolors[i].withValues(alpha: 0.22),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: selected ? Colors.blue : Colors.grey,
-                width: selected ? 2 : 1,
-              ),
-            ),
-            child: Center(
-              child: Container(
-                width: 22,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: widget.defaultcolors[i],
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
     );
   }
 }

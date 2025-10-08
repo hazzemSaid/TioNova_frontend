@@ -166,7 +166,7 @@ class HomeScreen extends StatelessWidget {
                           'days': '608 days ago',
                         },
                       ];
-                      return FolderCard(
+                      return FolderCardHome(
                         title: folders[index]['title']!,
                         chapters: folders[index]['chapters']!,
                         days: folders[index]['days']!,

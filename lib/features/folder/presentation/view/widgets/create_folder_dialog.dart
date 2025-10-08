@@ -4,6 +4,7 @@ import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/share_with_dialog.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 // Map our UI enum to the repository's Status enum
@@ -46,6 +47,9 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
   int _selectedColor = 0;
   FolderPrivacy _privacy = FolderPrivacy.private;
 
+  List<String> _sharedUserIds = [];
+  String? _token;
+
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -53,11 +57,32 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
     super.dispose();
   }
 
+  Future<void> _openShareWithDialog() async {
+    if (_token == null) return;
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (ctx) => BlocProvider.value(
+        value: context.read<FolderCubit>(),
+        child: ShareWithDialog(
+          folderTitle: _nameCtrl.text.isEmpty ? 'Folder Name' : _nameCtrl.text,
+          initialUserIds: _sharedUserIds,
+          isEdit: false,
+        ),
+      ),
+    );
+    if (result != null) {
+      setState(() => _sharedUserIds = result);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final canCreate = _nameCtrl.text.trim().isNotEmpty;
+  final canCreate = _nameCtrl.text.trim().isNotEmpty;
+  _token ??= context.read<AuthCubit>().state is AuthSuccess
+    ? (context.read<AuthCubit>().state as AuthSuccess).token
+    : null;
 
-    return BlocListener<FolderCubit, FolderState>(
+  return BlocListener<FolderCubit, FolderState>(
       listener: (context, state) {
         if (state is CreateFolderSuccess) {
           // Close the dialog with success result
@@ -177,6 +202,37 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                                     subtitle: 'Invite specific people',
                                     value: FolderPrivacy.shared,
                                   ),
+                                  if (_privacy == FolderPrivacy.shared) ...[
+                                    const SizedBox(height: 10),
+                                    _label('Share With'),
+                                    const SizedBox(height: 8),
+                                    GestureDetector(
+                                      onTap: _openShareWithDialog,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF232325),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: Color(0xFF2C2C2E)),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.person_add, color: Color(0xFF8E8E93)),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                _sharedUserIds.isEmpty
+                                                    ? 'Select users to share with'
+                                                    : '${_sharedUserIds.length} user(s) selected',
+                                                style: const TextStyle(color: Colors.white, fontSize: 14),
+                                              ),
+                                            ),
+                                            const Icon(Icons.chevron_right, color: Color(0xFF8E8E93)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                   const SizedBox(height: 10),
                                   _privacyTile(
                                     icon: Icons.public,
@@ -216,40 +272,26 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                                       enabled: canCreate && !isLoading,
                                       onTap: canCreate && !isLoading
                                           ? () {
-                                              // Get token from AuthCubit
-                                              final authState = context
-                                                  .read<AuthCubit>()
-                                                  .state;
+                                              final authState = context.read<AuthCubit>().state;
                                               if (authState is AuthSuccess) {
-                                                // Convert FolderPrivacy to Status
                                                 final status =
-                                                    _privacy ==
-                                                        FolderPrivacy.private
-                                                    ? Status.private
-                                                    : Status.public;
-
-                                                // Use folder cubit to create folder
+                                                    _privacy == FolderPrivacy.private
+                                                        ? Status.private
+                                                        : Status.public;
                                                 context.read<FolderCubit>().createfolder(
                                                   title: _nameCtrl.text.trim(),
-                                                  description: _descCtrl.text
-                                                      .trim(),
-                                                  category:
-                                                      'General', // Default category
+                                                  description: _descCtrl.text.trim(),
+                                                  category: 'General',
                                                   token: authState.token,
                                                   status: status,
-                                                  icon: _selectedIcon
-                                                      .toString(), // Store icon index as string
-                                                  color:
-                                                      '#${_colors[_selectedColor].value.toRadixString(16).padLeft(8, '0').substring(2)}', // Store color as hex string
+                                                  icon: _selectedIcon.toString(),
+                                                  color: '#${_colors[_selectedColor].value.toRadixString(16).padLeft(8, '0').substring(2)}',
+                                                  sharedWith: _privacy == FolderPrivacy.shared ? _sharedUserIds : null,
                                                 );
                                               } else {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
+                                                ScaffoldMessenger.of(context).showSnackBar(
                                                   const SnackBar(
-                                                    content: Text(
-                                                      'Authentication required',
-                                                    ),
+                                                    content: Text('Authentication required'),
                                                     backgroundColor: Colors.red,
                                                   ),
                                                 );

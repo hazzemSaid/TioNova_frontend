@@ -2,6 +2,7 @@ import 'package:either_dart/src/either.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/folder/data/datasources/FolderRemoteDataSource.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
+import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 
 class FolderRepoImp implements IFolderRepository {
@@ -70,6 +71,17 @@ class FolderRepoImp implements IFolderRepository {
       status: status,
       icon: icon,
       color: color,
+    );
+  }
+
+  @override
+  Future<Either<Failure, List<ShareWithmodel>>> getAvailableUsersForShare({
+    required String query,
+    required String token,
+  }) {
+    return remoteDataSource.getAvailableUsersForShare(
+      query: query,
+      token: token,
     );
   }
 }

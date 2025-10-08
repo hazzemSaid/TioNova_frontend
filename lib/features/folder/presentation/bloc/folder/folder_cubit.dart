@@ -1,40 +1,85 @@
 // features/folder/presentation/bloc/folder/folder_cubit.dart
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
+import 'package:flutter_client_sse/flutter_client_sse.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
+import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
 
 part 'folder_state.dart';
 
 class FolderCubit extends Cubit<FolderState> {
+  final Map<String, Foldermodel> _folderMap = {};
   FolderCubit({
     required this.getAllFolderUseCase,
     required this.createFolderUseCase,
     required this.updateFolderUseCase,
     required this.deleteFolderUseCase,
+    required this.getAvailableUsersForShareUseCase,
   }) : super(FolderInitial());
 
   final GetAllFolderUseCase getAllFolderUseCase;
   final CreateFolderUseCase createFolderUseCase;
   final UpdateFolderUseCase updateFolderUseCase;
   final DeleteFolderUseCase deleteFolderUseCase;
+  final GetAvailableUsersForShareUseCase getAvailableUsersForShareUseCase;
 
-  Map<String, Foldermodel> _folderMap = {};
-  String? _lastUpdateId;
-  Map<String, dynamic>? _lastUpdateData;
+  // SSE subscription reference
+  StreamSubscription<SSEModel>? _sseSubscription;
+
+  // Call this to start listening to SSE events for folder changes
+  void subscribeToFolderSse(String sseUrl) {
+    // Cancel previous subscription if exists
+    _sseSubscription?.cancel();
+    _sseSubscription =
+        SSEClient.subscribeToSSE(
+          url: sseUrl,
+          method: SSERequestType.GET,
+          header: {},
+        ).listen((event) {
+          _handleSseEvent(event);
+        });
+  }
+
+  // Call this to stop listening to SSE events
+  void unsubscribeFromFolderSse() {
+    _sseSubscription?.cancel();
+    _sseSubscription = null;
+  }
+
+  @override
+  Future<void> close() {
+    unsubscribeFromFolderSse();
+    return super.close();
+  }
 
   Future<void> fetchAllFolders(String token) async {
+    if (isClosed) return;
     emit(FolderLoading());
     final result = await getAllFolderUseCase(token: token);
-    result.fold((failure) => emit(FolderError(failure)), (folders) {
-      _folderMap = {for (var f in folders) f.id: f};
-      emit(FolderLoaded(_folderMap.values.toList()));
-    });
+    if (isClosed) return;
+    result.fold(
+      (failure) {
+        if (!isClosed) emit(FolderError(failure));
+      },
+      (folders) {
+        _folderMap.clear();
+        for (final folder in folders) {
+          _folderMap[folder.id] = folder;
+        }
+        if (!isClosed) emit(FolderLoaded(_folderMap.values.toList()));
+      },
+    );
   }
 
   Future<void> createfolder({
@@ -58,25 +103,20 @@ class FolderCubit extends Cubit<FolderState> {
       icon: icon,
       color: color,
     );
-    result.fold(
-      (failure) => emit(CreateFolderError(failure)),
-      (_) => emit(CreateFolderSuccess()),
-    );
+    result.fold((failure) => emit(CreateFolderError(failure)), (_) async {
+      emit(CreateFolderSuccess());
+    });
   }
 
   Future<void> deletefolder({required String id, required String token}) async {
-    final previousMap = Map<String, Foldermodel>.from(_folderMap);
-    _folderMap.remove(id);
-    emit(FolderLoaded(_folderMap.values.toList()));
-
     final result = await deleteFolderUseCase(id: id, token: token);
     result.fold(
       (failure) {
-        _folderMap = previousMap;
-        emit(FolderError(failure));
-        emit(FolderLoaded(_folderMap.values.toList()));
+        emit(DeleteFolderError(failure));
       },
       (_) {
+        _folderMap.remove(id);
+        emit(DeleteFolderSuccess());
         emit(FolderLoaded(_folderMap.values.toList()));
       },
     );
@@ -93,10 +133,6 @@ class FolderCubit extends Cubit<FolderState> {
     required String token,
   }) async {
     try {
-      emit(UpdateFolderLoading());
-
-      final previousMap = Map<String, Foldermodel>.from(_folderMap);
-
       // Validate input
       if (title.trim().isEmpty) {
         emit(UpdateFolderError(ValidationFailure('Title cannot be empty')));
@@ -104,32 +140,6 @@ class FolderCubit extends Cubit<FolderState> {
       }
 
       // Store update data for potential retry
-      _lastUpdateId = id;
-      _lastUpdateData = {
-        'title': title,
-        'description': description,
-        'sharedWith': sharedWith,
-        'status': status,
-        'icon': icon,
-        'color': color,
-        'token': token,
-      };
-
-      // Optimistically update
-      _folderMap[id] = Foldermodel(
-        id: id,
-        title: title,
-        description: description,
-        sharedWith: sharedWith,
-        status: status,
-        icon: icon,
-        color: color,
-        category: previousMap[id]?.category,
-        chapterCount: previousMap[id]?.chapterCount,
-        createdAt: previousMap[id]!.createdAt,
-        ownerId: previousMap[id]!.ownerId,
-      );
-      emit(FolderLoaded(_folderMap.values.toList()));
 
       final result = await updateFolderUseCase(
         id: id,
@@ -144,26 +154,10 @@ class FolderCubit extends Cubit<FolderState> {
 
       result.fold(
         (failure) {
-          // Revert optimistic update on failure
-          _folderMap = previousMap;
           emit(UpdateFolderError(failure));
-          emit(FolderLoaded(_folderMap.values.toList()));
         },
         (updatedFolderFromServer) {
-          // Update with server response
-          _folderMap[id] = Foldermodel(
-            id: updatedFolderFromServer.id,
-            title: updatedFolderFromServer.title,
-            description: updatedFolderFromServer.description,
-            sharedWith: updatedFolderFromServer.sharedWith,
-            status: updatedFolderFromServer.status,
-            icon: updatedFolderFromServer.icon,
-            color: updatedFolderFromServer.color,
-            category: updatedFolderFromServer.category,
-            chapterCount: previousMap[id]!.chapterCount,
-            createdAt: updatedFolderFromServer.createdAt,
-            ownerId: updatedFolderFromServer.ownerId,
-          );
+          _folderMap[updatedFolderFromServer.id] = updatedFolderFromServer;
           emit(UpdateFolderSuccess());
           emit(FolderLoaded(_folderMap.values.toList()));
         },
@@ -178,18 +172,61 @@ class FolderCubit extends Cubit<FolderState> {
     }
   }
 
-  Future<void> retryLastUpdate() async {
-    if (_lastUpdateId != null && _lastUpdateData != null) {
-      await updatefolder(
-        id: _lastUpdateId!,
-        title: _lastUpdateData!['title'],
-        description: _lastUpdateData!['description'],
-        sharedWith: _lastUpdateData!['sharedWith'],
-        status: _lastUpdateData!['status'],
-        icon: _lastUpdateData!['icon'],
-        color: _lastUpdateData!['color'],
-        token: _lastUpdateData!['token'],
-      );
+  Future<void> getAvailableUsersForShare({
+    required String query,
+    required String token,
+  }) async {
+    emit(GetAvailableUsersForShareLoading());
+    final result = await getAvailableUsersForShareUseCase(
+      query: query,
+      token: token,
+    );
+    result.fold(
+      (failure) => emit(GetAvailableUsersForShareError(failure)),
+      (users) => emit(GetAvailableUsersForShareSuccess(users)),
+    );
+  }
+
+  // افترض ان ده الكود داخل نفس الـ Cubit/BLoC
+
+  // ... (متغير _folderMap موجود هنا)
+  // Map<String, Folder> _folderMap = {};
+
+  // دالة جديدة لمعالجة الأحداث القادمة من السيرفر
+  void _handleSseEvent(SSEModel event) {
+    if (isClosed || event.data == null || event.data!.isEmpty) return;
+
+    try {
+      final eventData = event.data is String
+          ? json.decode(event.data!)
+          : event.data;
+      final String eventType = eventData['type'];
+      final Foldermodel folder = Foldermodel.fromJson(eventData['folder']);
+
+      // 2. حدد نوع الحدث ونفذ التعديل المناسب
+      switch (eventType) {
+        case 'folder_created':
+        case 'folder_shared_created':
+          // أضف المجلد الجديد للخريطة
+          _folderMap[folder.id] = folder;
+          break;
+        case 'folder_updated':
+        case 'folder_shared_updated':
+          // حدث بيانات المجلد الموجود
+          _folderMap[folder.id] = folder;
+          break;
+        case 'folder_deleted':
+        case 'folder_shared_deleted':
+          _folderMap.remove(folder.id);
+          break;
+        default:
+        // تجاهل الأنواع غير المعروفة
+      }
+
+      // 3. أطلق state جديدة بالقائمة المحدثة
+      emit(FolderLoaded(_folderMap.values.toList()));
+    } catch (e) {
+      // يمكنك التعامل مع أخطاء فك التشفير هنا
     }
   }
 }

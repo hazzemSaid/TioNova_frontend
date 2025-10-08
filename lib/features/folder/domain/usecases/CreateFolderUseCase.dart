@@ -1,10 +1,9 @@
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
-import 'package:tionova/features/folder/data/repoimp/FolderRepoImp.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 
 class CreateFolderUseCase {
-  final FolderRepoImp FolderRepoimp;
+  final IFolderRepository FolderRepoimp;
 
   CreateFolderUseCase(this.FolderRepoimp);
 

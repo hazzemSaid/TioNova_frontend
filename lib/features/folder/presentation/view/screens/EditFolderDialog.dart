@@ -6,6 +6,7 @@ import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/share_with_dialog.dart';
 
 class EditFolderDialog extends StatefulWidget {
   final Foldermodel folder;
@@ -28,7 +29,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
   late Status _selectedStatus;
   late int _selectedIcon;
   late int _selectedColor;
-
+  List<String> _sharedUsers = [];
   @override
   void initState() {
     super.initState();
@@ -37,6 +38,8 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
       text: widget.folder.description ?? '',
     );
     _selectedStatus = widget.folder.status;
+    _sharedUsers =
+        widget.folder.sharedWith?.map((user) => user.id).toList() ?? [];
 
     // Parse existing icon or default to 0
     _selectedIcon = 0;
@@ -134,7 +137,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                 ),
                 title: const Text(
                   'Edit Folder',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -203,9 +206,9 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                           maxLines: 3,
                         ),
                         const SizedBox(height: 16),
-                        Text(
+                        const Text(
                           'Choose Icon',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -214,9 +217,9 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                         const SizedBox(height: 12),
                         _iconGrid(),
                         const SizedBox(height: 20),
-                        Text(
+                        const Text(
                           'Choose Color',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -251,7 +254,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                             return DropdownMenuItem(
                               value: status,
                               child: Text(
-                                status == Status.private ? 'Private' : 'Public',
+                                status.name,
                                 style: const TextStyle(color: Colors.white),
                               ),
                             );
@@ -264,6 +267,10 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                             }
                           },
                         ),
+                        if (_selectedStatus == Status.share) ...[
+                          const SizedBox(height: 16),
+                          _buildShareWithTile(context),
+                        ],
                       ],
                     ),
                   ),
@@ -279,14 +286,16 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                     ),
                     child: const Text(
                       'Cancel',
-                      style: TextStyle(color: Color(0xFF8E8E93)),
+                      style: const TextStyle(color: Color(0xFF8E8E93)),
                     ),
                   ),
                   BlocBuilder<FolderCubit, FolderState>(
                     builder: (context, state) {
                       final isLoading = state is UpdateFolderLoading;
                       return ElevatedButton(
-                        onPressed: isLoading ? null : _updateFolder,
+                        onPressed: isLoading
+                            ? null
+                            : () => _updateFolder(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
@@ -310,16 +319,16 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                                       color: Colors.white,
                                     ),
                                   ),
-                                  SizedBox(width: 8),
-                                  Text('Updating...'),
+                                  const SizedBox(width: 8),
+                                  const Text('Updating...'),
                                 ],
                               )
                             : Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.save, size: 16),
-                                  SizedBox(width: 4),
-                                  Text('Update'),
+                                  const Icon(Icons.save, size: 16),
+                                  const SizedBox(width: 4),
+                                  const Text('Update'),
                                 ],
                               ),
                       );
@@ -332,9 +341,9 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                   color: Colors.black.withOpacity(0.5),
                   child: Center(
                     child: Container(
-                      padding: EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Color(0xFF1C1C1E),
+                        color: const Color(0xFF1C1C1E),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -344,10 +353,13 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                             color: Colors.blue,
                             strokeWidth: 2,
                           ),
-                          SizedBox(height: 16),
-                          Text(
+                          const SizedBox(height: 16),
+                          const Text(
                             'Updating folder...',
-                            style: TextStyle(color: Colors.white, fontSize: 16),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
                           ),
                         ],
                       ),
@@ -361,7 +373,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
     );
   }
 
-  void _updateFolder() {
+  void _updateFolder(BuildContext context) {
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -383,7 +395,9 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
         description: _descriptionController.text.trim().isEmpty
             ? null
             : _descriptionController.text.trim(),
-        sharedWith: widget.folder.sharedWith?.cast<String>(),
+        sharedWith: _selectedStatus == Status.share && _sharedUsers.isNotEmpty
+            ? _sharedUsers
+            : [],
         status: _selectedStatus,
         icon: _selectedIcon.toString(),
         color:
@@ -451,6 +465,74 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
           ),
         );
       }),
+    );
+  }
+
+  Widget _buildShareWithTile(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final selectedUsers = await showDialog<List<String>>(
+          context: context,
+          builder: (dialogContext) => Builder(
+            builder: (innerContext) => BlocProvider.value(
+              value: context.read<FolderCubit>(),
+              child: ShareWithDialog(
+                folderTitle: _titleController.text,
+                initialUserIds:
+                    widget.folder.sharedWith?.map((user) => user.id).toList() ??
+                    [],
+              ),
+            ),
+          ),
+        );
+        if (selectedUsers != null) {
+          setState(() {
+            _sharedUsers = selectedUsers;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C1E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF2C2C2E)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.share, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Share With',
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  if (_sharedUsers.isNotEmpty)
+                    Text(
+                      '${_sharedUsers.length} users selected',
+                      style: const TextStyle(
+                        color: Color(0xFF8E8E93),
+                        fontSize: 12,
+                      ),
+                    )
+                  else
+                    const Text(
+                      'Select users to share with',
+                      style: const TextStyle(
+                        color: Color(0xFF8E8E93),
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF8E8E93)),
+          ],
+        ),
+      ),
     );
   }
 }

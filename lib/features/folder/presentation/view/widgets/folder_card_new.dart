@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
+import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 
 class FolderCard extends StatelessWidget {
   final String title;
@@ -8,6 +9,7 @@ class FolderCard extends StatelessWidget {
   final int chapters;
   final String lastAccessed;
   final Color color;
+  final List<ShareWithmodel>? sharedWith;
 
   const FolderCard({
     Key? key,
@@ -18,6 +20,7 @@ class FolderCard extends StatelessWidget {
     required this.chapters,
     required this.lastAccessed,
     required this.color,
+    this.sharedWith,
   }) : super(key: key);
 
   Widget _buildTag(
@@ -179,8 +182,72 @@ class FolderCard extends StatelessWidget {
               ),
             ],
           ),
+          if (privacy.toLowerCase() == 'shared' &&
+              sharedWith != null &&
+              sharedWith!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Text(
+                  'Shared with:',
+                  style: TextStyle(
+                    color: Color(0xFF8E8E93),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ...List.generate(
+                  sharedWith!.length > 4 ? 4 : sharedWith!.length,
+                  (i) => Container(
+                    margin: const EdgeInsets.only(right: 4),
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF232325),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      sharedWith![i].username.isNotEmpty
+                          ? sharedWith![i].username
+                                .substring(0, 2)
+                                .toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                if (sharedWith!.length > 4)
+                  Container(
+                    margin: const EdgeInsets.only(left: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF232325),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '+${sharedWith!.length - 4} more',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 }
+*/
