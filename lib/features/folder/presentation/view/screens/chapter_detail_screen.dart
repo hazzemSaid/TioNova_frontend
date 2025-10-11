@@ -1,8 +1,9 @@
 // features/folder/presentation/view/screens/chapter_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+// removed provider package; using flutter_bloc's BlocProvider for QuizCubit
+import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
@@ -12,9 +13,8 @@ import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.
 import 'package:tionova/features/folder/presentation/view/screens/RawSummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
-// removed provider package; using flutter_bloc's BlocProvider for QuizCubit
-import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
+import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_screen.dart';
 
 class ChapterDetailScreen extends StatefulWidget {
@@ -858,276 +858,177 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                   horizontalPadding,
                   16,
                 ),
+                // Background and border match the dark, slightly bordered card style.
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0E0E10),
+                  color: const Color(0xFF0E0E10), // Card background color
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFF1C1C1E)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with cache status indicator
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.smart_toy_outlined,
-                            color: Colors.white70,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'AI-Generated Summary',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const Spacer(),
-                          // Cache status indicator
-                          if (_summaryData != null || _rawSummaryText != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _summaryData != null
-                                    ? (_isCachedSummary
-                                          ? Colors.blue.withOpacity(0.2)
-                                          : Colors.green.withOpacity(0.2))
-                                    : Colors.orange.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _summaryData != null
-                                      ? (_isCachedSummary
-                                            ? Colors.blue.withOpacity(0.5)
-                                            : Colors.green.withOpacity(0.5))
-                                      : Colors.orange.withOpacity(0.5),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _summaryData != null
-                                        ? (_isCachedSummary
-                                              ? Icons.cached
-                                              : Icons.new_releases)
-                                        : Icons.text_snippet,
-                                    size: 12,
-                                    color: _summaryData != null
-                                        ? (_isCachedSummary
-                                              ? Colors.blue
-                                              : Colors.green)
-                                        : Colors.orange,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _summaryData != null
-                                        ? (_isCachedSummary
-                                              ? 'Cached'
-                                              : 'Fresh')
-                                        : 'Text Format',
-                                    style: TextStyle(
-                                      color: _summaryData != null
-                                          ? (_isCachedSummary
-                                                ? Colors.blue
-                                                : Colors.green)
-                                          : Colors.orange,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-
-                    // Summary content or CTA with cache info
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Column(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 1. Header Section (Icon, Title, Description)
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            (_summaryData != null || _rawSummaryText != null)
-                                ? (_summaryData != null
-                                      ? (_isCachedSummary
-                                            ? 'AI summary available from cache ($_cacheAge). View or regenerate to get updated insights.'
-                                            : 'Fresh AI summary generated. View the insights or regenerate if needed.')
-                                      : 'AI summary generated in text format. View the summary or regenerate for structured format.')
-                                : 'Generate an AI-powered summary of this chapter to get key insights and main concepts.',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 14,
+                          // Custom AI Icon (using auto_awesome as a close alternative to the image's icon)
+                          Icon(
+                            Icons.auto_awesome,
+                            color: Color(0xFFF0F0F0),
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Title: AI Summary
+                                const Text(
+                                  'AI Summary',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                // Description: Get key points, definitions, practice questions, and quick reference cards
+                                Text(
+                                  'Get key points, definitions, practice questions,\nand quick reference cards',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 14,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-
-                          // Show cache age for cached summaries
-                          if (_summaryData != null && _isCachedSummary)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.schedule,
-                                    size: 14,
-                                    color: Colors.grey[500],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Cached $_cacheAge',
-                                    style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 12,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                         ],
                       ),
-                    ),
 
-                    // Generate button for new summaries
-                    if (_summaryData == null && _rawSummaryText == null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: ElevatedButton.icon(
-                          onPressed: _isSummaryLoading
-                              ? null
-                              : _generateSummary,
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 52),
-                            backgroundColor: _isSummaryLoading
-                                ? const Color(0xFF2C2C2E)
-                                : widget.folderColor,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
+                      const SizedBox(height: 20),
+
+                      // 2. Button Section (View Full Summary)
+                      // This button uses a gradient and is conditionally shown when a summary exists.
+                      if (_summaryData != null ||
+                          _rawSummaryText !=
+                              null) // Retain original logic to show button when summary exists
+                        Container(
+                          height: 52, // Fixed height for the button
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(26),
+                            // Gradient for the button background (Purple to Pink/Magenta)
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF5E3CFF), // Primary Purple
+                                Color(0xFFB558FF), // Secondary Magenta/Pink
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors
+                                .transparent, // Required for gradient with InkWell/GestureDetector
+                            child: InkWell(
+                              onTap: _viewSummary, // Reusing existing action
                               borderRadius: BorderRadius.circular(26),
-                            ),
-                          ),
-                          icon: _isSummaryLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.auto_awesome,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                          label: Text(
-                            _isSummaryLoading
-                                ? 'Generating Summary...'
-                                : 'Generate AI Summary',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Action buttons when summary exists
-                    if (_summaryData != null || _rawSummaryText != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: Column(
-                          children: [
-                            // View Summary button - Primary action
-                            ElevatedButton.icon(
-                              onPressed: _viewSummary,
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 52),
-                                backgroundColor: widget.folderColor,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(26),
-                                ),
-                              ),
-                              icon: const Icon(
-                                Icons.visibility,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              label: Text(
-                                _isCachedSummary
-                                    ? 'View Cached Summary'
-                                    : 'View Summary',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Regenerate button - Secondary action
-                            OutlinedButton.icon(
-                              onPressed: _isSummaryLoading
-                                  ? null
-                                  : _regenerateSummary,
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 48),
-                                side: BorderSide(
-                                  color: _isSummaryLoading
-                                      ? const Color(0xFF2C2C2E)
-                                      : const Color(0xFF1C1C1E),
-                                  width: 1,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                              ),
-                              icon: _isSummaryLoading
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white70,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Icon(
-                                      Icons.refresh,
-                                      color: _isSummaryLoading
-                                          ? Colors.grey
-                                          : Colors.white.withOpacity(0.8),
-                                      size: 18,
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    // Icon for the button
+                                    const Icon(
+                                      Icons
+                                          .auto_awesome, // Matches the header icon
+                                      color: Colors.white,
+                                      size: 20,
                                     ),
-                              label: Text(
-                                _isSummaryLoading
-                                    ? 'Regenerating...'
-                                    : (_isCachedSummary
-                                          ? 'Generate Fresh Summary'
-                                          : 'Regenerate Summary'),
-                                style: TextStyle(
-                                  color: _isSummaryLoading
-                                      ? Colors.grey
-                                      : Colors.white.withOpacity(0.8),
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
+                                    const SizedBox(width: 8),
+                                    // Button Text
+                                    const Text(
+                                      'View Full Summary',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                  ],
+
+                      // Optional: Add the 'Generate' button for when no summary exists,
+                      // keeping the primary button styling for better UX consistency.
+                      // Note: The provided image *only* shows the 'View Full Summary' state.
+                      // The code below is a best-effort replacement for the original 'Generate' button.
+                      if (_summaryData == null && _rawSummaryText == null)
+                        Container(
+                          height: 52,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(26),
+                            // Use a default non-gradient color for the 'Generate' button or the same gradient
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF5E3CFF), // Primary Purple
+                                Color(0xFFB558FF), // Secondary Magenta/Pink
+                                Color(0xFFF2EDFC), // Light Purple/Pink
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: _isSummaryLoading
+                                ? null
+                                : _generateSummary,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 52),
+                              backgroundColor: Colors
+                                  .transparent, // Make button transparent to show Container color/gradient
+                              shadowColor: Colors.transparent,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(26),
+                              ),
+                            ),
+                            icon: _isSummaryLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.auto_awesome,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                            label: Text(
+                              _isSummaryLoading
+                                  ? 'Generating Summary...'
+                                  : 'Generate AI Summary',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ), // Quiz and Chatbot Section
@@ -1276,12 +1177,20 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                     ),
 
                     // Content Area - Show content based on active tab
-                    if (_activeTab == "quiz") _buildQuizContent(),
-                    if (_activeTab == "chatbot") _buildChatbotContent(),
+                    
                   ],
                 ),
               ),
             ),
+            SliverToBoxAdapter(
+              child: Container(
+                child: _activeTab == "quiz"
+                    ? _buildQuizContent()
+                    : _activeTab == "chatbot"
+                        ? _buildChatbotContent()
+                        : null,
+              ),
+            )
           ],
         ),
       ), // End of Scaffold

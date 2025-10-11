@@ -72,7 +72,7 @@ class AppRouter {
     _router = GoRouter(
       initialLocation: '/splash',
       refreshListenable: _authNotifier,
-      debugLogDiagnostics: true,
+      debugLogDiagnostics: false,
       redirect: (BuildContext context, GoRouterState state) {
         final currentAuthState = authCubit.state;
         final path = state.uri.path;

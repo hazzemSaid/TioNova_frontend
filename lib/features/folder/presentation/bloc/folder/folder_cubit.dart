@@ -109,6 +109,15 @@ class FolderCubit extends Cubit<FolderState> {
   }
 
   Future<void> deletefolder({required String id, required String token}) async {
+    // Validation check before destructive operation
+    if (!_folderMap.containsKey(id)) {
+      emit(
+        DeleteFolderError(ValidationFailure('Folder not found for deletion')),
+      );
+      return;
+    }
+
+    emit(DeleteFolderLoading(_folderMap.values.toList())); // Emit loading state
     final result = await deleteFolderUseCase(id: id, token: token);
     result.fold(
       (failure) {
@@ -133,13 +142,22 @@ class FolderCubit extends Cubit<FolderState> {
     required String token,
   }) async {
     try {
-      // Validate input
+      // Validate input before operation
       if (title.trim().isEmpty) {
         emit(UpdateFolderError(ValidationFailure('Title cannot be empty')));
         return;
       }
 
-      // Store update data for potential retry
+      if (!_folderMap.containsKey(id)) {
+        emit(
+          UpdateFolderError(ValidationFailure('Folder not found for update')),
+        );
+        return;
+      }
+      int chapterCount = _folderMap[id]!.chapterCount ?? 0;
+
+      // Emit loading state with current folders for immediate UI feedback
+      emit(UpdateFolderLoading(_folderMap.values.toList()));
 
       final result = await updateFolderUseCase(
         id: id,
@@ -155,20 +173,24 @@ class FolderCubit extends Cubit<FolderState> {
       result.fold(
         (failure) {
           emit(UpdateFolderError(failure));
+          // Restore folder list after error to maintain UI consistency
+          emit(FolderLoaded(_folderMap.values.toList()));
         },
         (updatedFolderFromServer) {
-          _folderMap[updatedFolderFromServer.id] = updatedFolderFromServer;
+          _folderMap[updatedFolderFromServer.id] = updatedFolderFromServer
+              .copyWith(chapterCount: chapterCount);
           emit(UpdateFolderSuccess());
           emit(FolderLoaded(_folderMap.values.toList()));
         },
       );
     } catch (e) {
-      // Handle unexpected errors
+      // Handle unexpected errors and restore UI state
       emit(
         UpdateFolderError(
           ServerFailure('An unexpected error occurred: ${e.toString()}'),
         ),
       );
+      emit(FolderLoaded(_folderMap.values.toList()));
     }
   }
 

@@ -30,55 +30,107 @@ class QuizQuestionsScreen extends StatefulWidget {
 
 class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
   late int currentStep;
-  late int selectedAnswer;
+  int selectedAnswer = -1; // Changed to non-late and initialized
   bool reviewing = false;
   bool submitted = false;
   late Timer _timer;
-  late int
-  _remainingTimeInSeconds; // Total quiz duration in seconds (e.g., 900 for 15 minutes)
-  static const int quizDurationInMinutes = 1; // 15 minutes for the quiz
+  late int _remainingTimeInSeconds;
+  static const int quizDurationInMinutes = 1;
 
   @override
   void initState() {
     super.initState();
     currentStep = 0;
-    _remainingTimeInSeconds =
-        quizDurationInMinutes * 60; // Convert minutes to seconds
-    selectedAnswer = widget.answers[currentStep] != null
-        ? widget.quiz.questions[currentStep].options.indexOf(
-            widget.answers[currentStep]!,
-          )
-        : -1;
-
-    // Start the countdown timer
+    _remainingTimeInSeconds = quizDurationInMinutes * 60;
+    selectedAnswer = _getSelectedAnswerIndex(currentStep);
+    print(
+      'InitState - Question $currentStep, Selected: $selectedAnswer, Stored answer: ${widget.answers[currentStep]}',
+    );
     _startTimer();
   }
 
+  // Helper method to extract letter from option text (e.g., "a) Text" -> "a")
+  String? _extractLetterFromOption(String option) {
+    final trimmed = option.trim().toLowerCase();
+    if (trimmed.isEmpty) return null;
+
+    // Check if it starts with a letter followed by )
+    final match = RegExp(r'^([a-d])\s*\)').firstMatch(trimmed);
+    if (match != null) {
+      return match.group(1);
+    }
+
+    return null;
+  }
+
+  // Helper method to get the selected answer index from the stored letter
+  int _getSelectedAnswerIndex(int questionIndex) {
+    final storedAnswer = widget.answers[questionIndex];
+    print('Getting answer for question $questionIndex, stored: $storedAnswer');
+
+    if (storedAnswer == null || storedAnswer.isEmpty) {
+      print('No stored answer');
+      return -1;
+    }
+
+    final storedLetter = storedAnswer.toLowerCase().trim();
+    print('Looking for letter: "$storedLetter"');
+
+    // Find the option that starts with this letter
+    final options = widget.quiz.questions[questionIndex].options;
+    for (int i = 0; i < options.length; i++) {
+      final optionLetter = _extractLetterFromOption(options[i]);
+      print('Option $i: "${options[i]}" -> letter: "$optionLetter"');
+      if (optionLetter != null && optionLetter == storedLetter) {
+        print('Match found at index $i');
+        return i;
+      }
+    }
+
+    print('No match found, returning -1');
+    return -1;
+  }
+
   void _selectAnswer(int index) {
+    print('Selecting answer index $index for question $currentStep');
+    final option = widget.quiz.questions[currentStep].options[index];
+    final letter = _extractLetterFromOption(option);
+    print('Extracted letter: $letter from option: $option');
+
     setState(() {
       selectedAnswer = index;
-      // Store the selected option letter (a, b, c, d)
-      widget.answers[currentStep] = String.fromCharCode(
-        97 + index,
-      ); // 97 is ASCII for 'a'
+      widget.answers[currentStep] = letter ?? String.fromCharCode(97 + index);
+      print('Stored answer: ${widget.answers[currentStep]}');
     });
   }
 
   void _nextQuestion() {
+    print(
+      'Next question - Current: $currentStep, Total: ${widget.quiz.questions.length}',
+    );
     if (currentStep < widget.quiz.questions.length - 1) {
       setState(() {
         currentStep++;
-        selectedAnswer = widget.answers[currentStep] != null
-            ? widget.quiz.questions[currentStep].options.indexOf(
-                widget.answers[currentStep]!,
-              )
-            : -1;
+        selectedAnswer = _getSelectedAnswerIndex(currentStep);
+        print('Moved to question $currentStep, selected: $selectedAnswer');
       });
     } else {
       setState(() {
         reviewing = true;
-        currentStep = 0; // Reset to first question for review
-        selectedAnswer = -1; // Clear selection for review mode
+        currentStep = 0;
+        selectedAnswer = -1;
+      });
+    }
+  }
+
+  void _previousQuestion() {
+    print('Previous question - Current: $currentStep');
+    if (currentStep > 0) {
+      setState(() {
+        currentStep--;
+        print('Moving to question $currentStep');
+        selectedAnswer = _getSelectedAnswerIndex(currentStep);
+        print('After move - selected: $selectedAnswer');
       });
     }
   }
@@ -144,19 +196,6 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
     );
   }
 
-  void _previousQuestion() {
-    if (currentStep > 0) {
-      setState(() {
-        currentStep--;
-        selectedAnswer = widget.answers[currentStep] != null
-            ? widget.quiz.questions[currentStep].options.indexOf(
-                widget.answers[currentStep]!,
-              )
-            : -1;
-      });
-    }
-  }
-
   Widget _buildOption(
     BuildContext context,
     String option,
@@ -217,7 +256,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show review answers when in review mode
+    print('Building - Question: $currentStep, Selected: $selectedAnswer');
+
     if (reviewing) {
       return Scaffold(
         backgroundColor: Colors.black,
@@ -258,7 +298,6 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                 timer: _formatTime(_remainingTimeInSeconds),
               ),
               const SizedBox(height: 16),
-              // Progress bar
               LinearProgressIndicator(
                 value: (currentStep + 1) / widget.quiz.questions.length,
                 backgroundColor: const Color(0xFF2C2C2E),
@@ -274,7 +313,6 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              // Options as cards
               ...widget.quiz.questions[currentStep].options.asMap().entries.map(
                 (entry) {
                   final index = entry.key;

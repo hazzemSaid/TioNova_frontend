@@ -15,7 +15,7 @@ class FolderCard extends StatelessWidget {
   final List<ShareWithmodel>? sharedWith;
 
   const FolderCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.description,
     required this.category,
@@ -26,7 +26,7 @@ class FolderCard extends StatelessWidget {
     this.icon,
     this.onTap,
     this.sharedWith,
-  }) : super(key: key);
+  });
 
   Widget _buildTag(
     String text,
@@ -78,8 +78,8 @@ class FolderCard extends StatelessWidget {
 
     final double cardPadding = isTablet ? 16.0 : (isLargeScreen ? 16.0 : 10.0);
     final double iconContainerSize = isLargeScreen
-        ? 56.0
-        : (isTablet ? 42.0 : 36.0);
+        ? 66.0
+        : (isTablet ? 52.0 : 40.0);
     final double iconSize = isLargeScreen ? 28.0 : (isTablet ? 20.0 : 18.0);
     final double titleSize = isLargeScreen ? 20.0 : (isTablet ? 16.0 : 13.0);
     final double descriptionSize = isLargeScreen
@@ -115,7 +115,6 @@ class FolderCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: const Color(0xFF0E0E10),
           borderRadius: BorderRadius.circular(
@@ -133,7 +132,8 @@ class FolderCard extends StatelessWidget {
         padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,23 +214,17 @@ class FolderCard extends StatelessWidget {
                               isTablet: isTablet,
                             ),
                           ],
-                          if (privacy.toLowerCase() == 'shared') ...[
-                            SizedBox(width: isTablet ? 6.0 : 4.0),
-                            Text(
-                              '$chapters chapters',
-                              style: TextStyle(
-                                color: const Color(0xFF8E8E93),
-                                fontSize: isTablet ? 10.0 : 8.0,
-                                fontWeight: FontWeight.w600,
-                              ),
+
+                          SizedBox(width: isTablet ? 6.0 : 4.0),
+                          Text(
+                            '$chapters chapters',
+                            style: TextStyle(
+                              color: const Color(0xFF8E8E93),
+                              fontSize: isTablet ? 10.0 : 8.0,
+                              fontWeight: FontWeight.w600,
                             ),
-                            SizedBox(width: isTablet ? 6.0 : 4.0),
-                            const Icon(
-                              Icons.more_vert,
-                              color: Color(0xFF8E8E93),
-                              size: 16,
-                            ),
-                          ],
+                          ),
+                          SizedBox(width: isTablet ? 6.0 : 4.0),
                         ],
                       ),
                     ],
@@ -264,53 +258,61 @@ class FolderCard extends StatelessWidget {
               ),
             ],
             SizedBox(height: isTablet ? 8.0 : (isLargeScreen ? 8.0 : 6.0)),
-            if (privacy.toLowerCase() != 'shared')
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time_outlined,
-                    color: const Color(0xFF8E8E93),
-                    size: metaSize + 2,
-                  ),
-                  SizedBox(width: isTablet ? 8.0 : 6.0),
-                  Expanded(
-                    child: Text(
-                      'Last accessed $lastAccessed',
-                      style: TextStyle(
-                        color: const Color(0xFF8E8E93),
-                        fontSize: metaSize,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time_outlined,
+                  color: const Color(0xFF8E8E93),
+                  size: metaSize + 2,
+                ),
+                SizedBox(width: isTablet ? 8.0 : 6.0),
+                Expanded(
+                  child: Text(
+                    'Last accessed $lastAccessed',
+                    style: TextStyle(
+                      color: const Color(0xFF8E8E93),
+                      fontSize: metaSize,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(width: isTablet ? 8.0 : 6.0),
-                  Container(
-                    width: isTablet ? 20.0 : 20.0,
-                    height: isTablet ? 20.0 : 20.0,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C1E),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
-                        width: 0.5,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '$chapters',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: metaSize - 1,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                SizedBox(width: isTablet ? 8.0 : 6.0),
+                // Container(
+                //   width: isTablet ? 20.0 : 20.0,
+                //   height: isTablet ? 20.0 : 20.0,
+                //   decoration: BoxDecoration(
+                //     color: const Color(0xFF1C1C1E),
+                //     shape: BoxShape.circle,
+                //     border: Border.all(
+                //       color: Colors.white.withOpacity(0.1),
+                //       width: 0.5,
+                //     ),
+                //   ),
+                //   alignment: Alignment.center,
+                //   child: Text(
+                //     '$chapters',
+                //     style: TextStyle(
+                //       color: Colors.white,
+                //       fontSize: metaSize - 1,
+                //       fontWeight: FontWeight.w600,
+                //     ),
+                //   ),
+                // ),
+              ],
+            ),
+
             if (privacy.toLowerCase() == 'shared' &&
                 sharedWith != null &&
                 sharedWith!.isNotEmpty) ...[
+              SizedBox(height: isTablet ? 8.0 : 6.0),
+
+              Divider(
+                thickness: 2,
+                height: 2,
+                color: Colors.white.withOpacity(0.08),
+              ),
               SizedBox(height: isTablet ? 8.0 : 6.0),
               Row(
                 children: [

@@ -49,10 +49,10 @@ class ChapterCubit extends Cubit<ChapterState> {
       token: token,
       file: file,
     );
-    result.fold(
-      (failure) => emit(CreateChapterError(failure)),
-      (_) => emit(CreateChapterSuccess()),
-    );
+    result.fold((failure) => emit(CreateChapterError(failure)), (_) {
+      emit(CreateChapterSuccess());
+      getChapters(folderId: folderId, token: token);
+    });
   }
 
   void getChapterContentPdf({

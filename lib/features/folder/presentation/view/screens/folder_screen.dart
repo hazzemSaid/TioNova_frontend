@@ -10,8 +10,12 @@ import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
-import 'package:tionova/features/folder/presentation/view/screens/EditFolderDialog.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/delete_confirmation_dialog.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/edit_folder_dialog.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/folder_list.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/folder_options_bottom_sheet.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
+import 'package:tionova/utils/static.dart';
 import 'package:tionova/utils/widgets/app_search_bar.dart';
 import 'package:tionova/utils/widgets/page_header.dart';
 
@@ -20,7 +24,6 @@ import '../widgets/create_folder_card.dart';
 import '../widgets/create_folder_dialog.dart';
 import '../widgets/folder_tabs.dart';
 import '../widgets/study_stats.dart';
-import 'folder_detail_screen.dart';
 import 'folder_screen_widgets.dart';
 
 class FolderScreen extends StatefulWidget {
@@ -33,32 +36,8 @@ class FolderScreen extends StatefulWidget {
 class _FolderScreenState extends State<FolderScreen> {
   String selectedCategory = 'All';
   String selectedTab = 'My Folders';
-  static const defaultColors = [
-    Color(0xFF007AFF), // blue
-    Color(0xFF34C759), // green
-    Color(0xFF8E44AD), // purple
-    Color(0xFF7B3F00), // brown-ish
-    Color(0xFFFF3B30), // red
-    Color(0xFF4B4EFC), // indigo
-    Color(0xFFFFD700), // gold
-    Color(0xFFE91E63), // pink
-    Color(0xFF00C853), // teal
-    Color(0xFFFF9800), // orange
-    Color(0xFF673AB7), // deep purple
-    Color(0xFF009688), // cyan
-  ];
-  static const defaultIcons = [
-    Icons.folder_outlined,
-    Icons.book_outlined,
-    Icons.code,
-    Icons.calculate_outlined,
-    Icons.science_outlined,
-    Icons.music_note_outlined,
-    Icons.language_outlined,
-    Icons.auto_awesome_outlined,
-    Icons.sports_esports_outlined,
-    Icons.school_outlined,
-  ];
+  static const defaultColors = Static.defaultColors;
+  static const defaultIcons = Static.defaultIcons;
   @override
   void initState() {
     super.initState();
@@ -118,164 +97,6 @@ class _FolderScreenState extends State<FolderScreen> {
     return defaultColors[0];
   }
 
-  void _showFolderOptionsBottomSheet(
-    BuildContext context,
-    Foldermodel folder,
-    Color color,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF0E0E10),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (bottomSheetContext) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF636366),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Text(
-              folder.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildActionButton(
-                  icon: Icons.edit,
-                  label: 'Edit',
-                  color: Colors.blue,
-                  onTap: () {
-                    Navigator.pop(bottomSheetContext);
-                    _showEditFolderDialog(folder);
-                  },
-                ),
-                _buildActionButton(
-                  icon: Icons.delete,
-                  label: 'Delete',
-                  color: Colors.red,
-                  onTap: () {
-                    Navigator.pop(bottomSheetContext);
-                    _showDeleteConfirmationDialog(folder);
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 600;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          vertical: isTablet ? 16 : 12,
-          horizontal: isTablet ? 32 : 24,
-        ),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: isTablet ? 28 : 24),
-            SizedBox(height: isTablet ? 6 : 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: isTablet ? 14 : 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showEditFolderDialog(Foldermodel folder) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withValues(
-        alpha: 153,
-        red: 0,
-        green: 0,
-        blue: 0,
-      ),
-      builder: (dialogContext) => MultiBlocProvider(
-        providers: [
-          BlocProvider.value(value: context.read<FolderCubit>()),
-          BlocProvider.value(value: context.read<AuthCubit>()),
-        ],
-        child: EditFolderDialog(
-          folder: folder,
-          defaultcolors: defaultColors,
-          icons: defaultIcons,
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteConfirmationDialog(Foldermodel folder) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Delete Folder',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${folder.title}"? This action cannot be undone.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              _deleteFolder(folder.id);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _deleteFolder(String folderId) {
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthSuccess) {
@@ -322,72 +143,6 @@ class _FolderScreenState extends State<FolderScreen> {
     return [];
   }
 
-  Widget _buildFolderList(FolderState state) {
-    final folders = _getFoldersFromState(state);
-    final filteredFolders = folders.where((folder) {
-      if (selectedCategory == 'All') {
-        return true;
-      }
-      return folder.category == selectedCategory;
-    }).toList();
-
-    final isTablet = MediaQuery.of(context).size.width > 600;
-    final horizontalPadding =
-        MediaQuery.of(context).size.width * (isTablet ? 0.08 : 0.05);
-    final crossAxisCount = isTablet ? 2 : 1;
-
-    if (filteredFolders.isEmpty) {
-      return const SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Text(
-            'No folders found',
-            style: TextStyle(color: Color(0xFF8E8E93), fontSize: 16),
-          ),
-        ),
-      );
-    }
-
-    return SliverPadding(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      sliver: SliverGrid(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          crossAxisSpacing: isTablet ? 16 : 0,
-          mainAxisSpacing: 16,
-          childAspectRatio: 2.5,
-        ),
-        delegate: SliverChildBuilderDelegate((context, index) {
-          final folder = filteredFolders[index];
-          final color = _getColorFromHex(folder.color);
-          final icon = _getIconFromIndex(folder.icon);
-          return FolderGridItem(
-            folder: folder,
-            color: color,
-            icon: icon,
-            onLongPress: () =>
-                _showFolderOptionsBottomSheet(context, folder, color),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => FolderDetailScreen(
-                    folderId: folder.id,
-                    title: folder.title,
-                    subtitle: folder.description ?? 'No description',
-                    chapters: folder.chapterCount ?? 0,
-                    passed: 0,
-                    attempted: 0,
-                    color: color,
-                  ),
-                ),
-              );
-            },
-          );
-        }, childCount: filteredFolders.length),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -404,6 +159,7 @@ class _FolderScreenState extends State<FolderScreen> {
           behavior: const NoGlowScrollBehavior(),
           child: BlocConsumer<FolderCubit, FolderState>(
             listener: (context, state) {
+              // Handle folder update operations
               if (state is UpdateFolderLoading) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -470,7 +226,7 @@ class _FolderScreenState extends State<FolderScreen> {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Update failed: ${state.message.errMessage}',
+                            'Update failed: ${state.message}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -484,7 +240,38 @@ class _FolderScreenState extends State<FolderScreen> {
                       label: 'Retry',
                       textColor: Colors.white,
                       onPressed: () {
-                        // Optionally implement retry logic here
+                        // Auto-refresh folders after error
+                        _fetchFolders();
+                      },
+                    ),
+                  ),
+                );
+              }
+              if (state is DeleteFolderError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.error, color: Colors.white, size: 16),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Delete failed: ${state.message}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Colors.red,
+                    duration: Duration(seconds: 4),
+                    action: SnackBarAction(
+                      label: 'Retry',
+                      textColor: Colors.white,
+                      onPressed: () {
+                        // Auto-refresh folders after error
+                        _fetchFolders();
                       },
                     ),
                   ),
@@ -586,33 +373,70 @@ class _FolderScreenState extends State<FolderScreen> {
                     )
                   else if (state is FolderError)
                     SliverFillRemaining(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              color: Colors.red,
-                              size: 48,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Failed to load folders',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                // Only retry fetch if needed
-                                _fetchFolders();
-                              },
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                      child: SingleChildScrollView(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                                size: 48,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Failed to load folders',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  // Only retry fetch if needed
+                                  _fetchFolders();
+                                },
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     )
                   else if (state is FolderLoaded)
-                    _buildFolderList(state)
+                    FolderList(
+                      state: state,
+                      selectedCategory: selectedCategory,
+                      getIconFromIndex: _getIconFromIndex,
+                      getColorFromHex: _getColorFromHex,
+                      onFolderLongPress: (context, folder, color) {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: const Color(0xFF1C1C1E),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(24),
+                            ),
+                          ),
+                          isScrollControlled: true,
+                          builder: (bottomSheetContext) =>
+                              FolderOptionsBottomSheet(
+                                folder: folder,
+                                color: color,
+                                onEdit: () => showEditFolderDialog(
+                                  context,
+                                  folder,
+                                  defaultColors,
+                                  defaultIcons,
+                                  context.read<FolderCubit>(),
+                                ),
+                                onDelete: () => showDeleteConfirmationDialog(
+                                  context,
+                                  folder.id!,
+                                  folder.title!,
+                                  context.read<FolderCubit>(),
+                                ),
+                              ),
+                        );
+                      },
+                    )
                   else
                     const SliverFillRemaining(
                       child: Center(
