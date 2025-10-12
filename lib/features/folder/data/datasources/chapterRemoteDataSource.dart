@@ -1,9 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:either_dart/src/either.dart';
+import 'package:either_dart/either.dart';
 import 'package:http_parser/http_parser.dart'; // For MediaType
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
@@ -17,7 +18,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
     required String folderId,
     required String token,
   }) async {
-    // /getchapters/{folderId}
     try {
       final response = await _dio.get(
         '/getchapters/$folderId',
@@ -28,16 +28,17 @@ class ChapterRemoteDataSource extends IChapterRepository {
           },
         ),
       );
-      if (response.statusCode == 200) {
-        List<ChapterModel> chapters = (response.data['chapters'] as List)
-            .map((chapterJson) => ChapterModel.fromJson(chapterJson))
-            .toList();
-        return Right(chapters);
-      } else {
-        return Left(ServerFailure('Failed to fetch chapters'));
-      }
+      
+      return ErrorHandlingUtils.handleApiResponse<List<ChapterModel>>(
+        response: response,
+        onSuccess: (data) {
+          return (data['chapters'] as List)
+              .map((chapterJson) => ChapterModel.fromJson(chapterJson))
+              .toList();
+        },
+      );
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -69,21 +70,16 @@ class ChapterRemoteDataSource extends IChapterRepository {
         options: Options(
           headers: {
             'Authorization': "Bearer $token",
-            // Don't set Content-Type header manually for multipart data
-            // Dio will set it automatically with boundary
           },
         ),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return const Right(null);
-      } else {
-        return Left(
-          ServerFailure('Failed to create chapter: ${response.statusMessage}'),
-        );
-      }
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
+      );
     } catch (e) {
-      return Left(ServerFailure('Error creating chapter: ${e.toString()}'));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 

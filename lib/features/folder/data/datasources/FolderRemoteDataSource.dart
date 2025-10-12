@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
@@ -23,17 +24,17 @@ class FolderRemoteDataSource implements IFolderRepository {
           },
         ),
       );
-      if (response.statusCode == 200) {
-        // Assuming response.data is a List<String>
-        List<Foldermodel> folders = (response.data['folders'] as List)
-            .map((folderJson) => Foldermodel.fromJson(folderJson))
-            .toList();
-        return Right(folders);
-      } else {
-        return Left(ServerFailure('Failed to fetch folders'));
-      }
+      
+      return ErrorHandlingUtils.handleApiResponse<List<Foldermodel>>(
+        response: response,
+        onSuccess: (data) {
+          return (data['folders'] as List)
+              .map((folderJson) => Foldermodel.fromJson(folderJson))
+              .toList();
+        },
+      );
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -74,13 +75,13 @@ class FolderRemoteDataSource implements IFolderRepository {
           },
         ),
       );
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return const Right(null);
-      } else {
-        return Left(ServerFailure('Failed to create folder'));
-      }
+      
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
+      );
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -99,13 +100,13 @@ class FolderRemoteDataSource implements IFolderRepository {
           },
         ),
       );
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return const Right(null);
-      } else {
-        return Left(ServerFailure('Failed to delete folder'));
-      }
+      
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
+      );
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 

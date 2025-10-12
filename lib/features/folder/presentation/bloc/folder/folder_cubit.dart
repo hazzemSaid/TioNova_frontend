@@ -155,6 +155,8 @@ class FolderCubit extends Cubit<FolderState> {
         return;
       }
       int chapterCount = _folderMap[id]!.chapterCount ?? 0;
+      int passedCount = _folderMap[id]!.passedCount ?? 0;
+      int attemptedCount = _folderMap[id]!.attemptedCount ?? 0;
 
       // Emit loading state with current folders for immediate UI feedback
       emit(UpdateFolderLoading(_folderMap.values.toList()));
@@ -178,7 +180,11 @@ class FolderCubit extends Cubit<FolderState> {
         },
         (updatedFolderFromServer) {
           _folderMap[updatedFolderFromServer.id] = updatedFolderFromServer
-              .copyWith(chapterCount: chapterCount);
+              .copyWith(
+                chapterCount: chapterCount,
+                passedCount: passedCount,
+                attemptedCount: attemptedCount,
+              );
           emit(UpdateFolderSuccess());
           emit(FolderLoaded(_folderMap.values.toList()));
         },

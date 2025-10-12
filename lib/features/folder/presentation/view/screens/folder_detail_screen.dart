@@ -9,7 +9,6 @@ import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/screens/EditChapterDialog.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/DashedBorderPainter.dart';
-import 'package:tionova/features/folder/presentation/view/widgets/create_folder_card.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/static.dart';
 
@@ -380,7 +379,9 @@ class FolderDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                _buildActionButton('Summary', Icons.summarize),
+                chapter.summaryId != null
+                    ? _buildActionButton('Summary', Icons.summarize)
+                    : const SizedBox.shrink(),
                 const SizedBox(width: 8),
                 _buildActionButton('Quiz', Icons.quiz),
                 const SizedBox(width: 8),

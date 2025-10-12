@@ -3,7 +3,6 @@ import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_detail_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_screen_widgets.dart';
-import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 class FolderList extends StatelessWidget {
   final FolderState state;
@@ -36,9 +35,43 @@ class FolderList extends StatelessWidget {
       return folder.category == selectedCategory;
     }).toList();
 
-    final isTablet = MediaQuery.of(context).size.width > 600;
-    final horizontalPadding = MediaQuery.of(context).size.width * (isTablet ? 0.08 : 0.05);
-    final crossAxisCount = isTablet ? 2 : 1;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Better breakpoints for different device sizes
+    final isLargeScreen = screenWidth > 900;
+    final isTablet = screenWidth > 600;
+    final isSmallTablet = screenWidth > 600 && screenWidth < 750;
+    final isSmallPhone = screenWidth < 360;
+
+    // Dynamic cross axis count based on screen width
+    int crossAxisCount;
+    double horizontalPadding;
+    double crossAxisSpacing;
+    double mainAxisSpacing;
+    double childAspectRatio;
+
+    if (isLargeScreen || isTablet) {
+      // Tablets (2 columns)
+      crossAxisCount = 2;
+      horizontalPadding = screenWidth * 0.06;
+      crossAxisSpacing = 16;
+      mainAxisSpacing = 16;
+      childAspectRatio = 2;
+    } else if (isSmallPhone) {
+      // Small phones (1 column)
+      crossAxisCount = 1;
+      horizontalPadding = screenWidth * 0.04;
+      crossAxisSpacing = 0;
+      mainAxisSpacing = 12;
+      childAspectRatio = 2.4;
+    } else {
+      // Regular phones (1 column)
+      crossAxisCount = 1;
+      horizontalPadding = screenWidth * 0.05;
+      crossAxisSpacing = 0;
+      mainAxisSpacing = 14;
+      childAspectRatio = 2.5;
+    }
 
     if (filteredFolders.isEmpty) {
       return const SliverFillRemaining(
@@ -53,39 +86,42 @@ class FolderList extends StatelessWidget {
     }
 
     return SliverPadding(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: isTablet ? 16 : 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: isTablet ? 15 : 12,
+      ),
       sliver: SliverGrid(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
-          crossAxisSpacing: isTablet ? 16 : 0,
-          mainAxisSpacing: 16,
-          childAspectRatio: isTablet ? 2.5 : 2.0,
+          crossAxisSpacing: crossAxisSpacing,
+          mainAxisSpacing: mainAxisSpacing,
+          childAspectRatio: childAspectRatio,
         ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final folder = filteredFolders[index];
-            final color = getColorFromHex(folder.color);
-            final icon = getIconFromIndex(folder.icon);
-            return FolderGridItem(
-              folder: folder,
-              color: color,
-              icon: icon,
-              onLongPress: () => onFolderLongPress(context, folder, color),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final folder = filteredFolders[index];
+          final color = getColorFromHex(folder.color);
+          final icon = getIconFromIndex(folder.icon);
+
+          return FolderGridItem(
+            folder: folder,
+            color: color,
+            icon: icon,
+            onLongPress: () => onFolderLongPress(context, folder, color),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
                 builder: (_) => FolderDetailScreen(
                   folderId: folder.id,
                   title: folder.title,
                   subtitle: folder.description ?? 'No description',
                   chapters: folder.chapterCount ?? 0,
-                  passed: 0,
-                  attempted: 0,
+                  passed: folder.passedCount ?? 0,
+                  attempted: folder.attemptedCount ?? 0,
                   color: color,
                 ),
-              )),
-            );
-          },
-          childCount: filteredFolders.length,
-        ),
+              ),
+            ),
+          );
+        }, childCount: filteredFolders.length),
       ),
     );
   }

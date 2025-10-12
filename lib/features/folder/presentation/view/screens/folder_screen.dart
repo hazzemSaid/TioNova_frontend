@@ -433,6 +433,10 @@ class _FolderScreenState extends State<FolderScreen> {
                                   folder.title!,
                                   context.read<FolderCubit>(),
                                 ),
+                                onShare: () {},
+                                onDuplicate: () {},
+                                onExportPDF: () {},
+                                onArchive: () {},
                               ),
                         );
                       },

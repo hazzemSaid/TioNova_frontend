@@ -10,9 +10,11 @@ class ChapterModel extends Equatable {
   final String? quizStatus;
   final int? quizScore;
   final bool? quizCompleted;
+  final String? summaryId;
 
   const ChapterModel({
     this.id,
+    this.summaryId,
     this.title,
     this.description,
     this.createdBy,
@@ -26,6 +28,7 @@ class ChapterModel extends Equatable {
   factory ChapterModel.fromJson(Map<String, dynamic> json) {
     return ChapterModel(
       id: json['_id'],
+      summaryId: json['summaryId'],
       title: json['title'],
       description: json['description'],
       createdBy: json['createdBy'],
@@ -39,6 +42,7 @@ class ChapterModel extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       '_id': id,
+      'summaryId': summaryId,
       'title': title,
       'description': description,
       'createdBy': createdBy,
@@ -60,6 +64,7 @@ class ChapterModel extends Equatable {
     createdAt,
     quizStatus,
     quizScore,
+    summaryId,
     quizCompleted,
   ];
 

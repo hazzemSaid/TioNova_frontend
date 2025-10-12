@@ -2,6 +2,7 @@
 import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart' show Either, Left, Right;
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/quiz/data/datasources/IRemoteQuizDataSource.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
@@ -29,15 +30,12 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
         ),
       );
 
-      if (response.data['success'] == true) {
-        return Right(QuizModel.fromJson(response.data));
-      } else {
-        return Left(
-          ServerFailure(response.data['message'] ?? 'Failed to create quiz'),
-        );
-      }
+      return ErrorHandlingUtils.handleApiResponse<QuizModel>(
+        response: response,
+        onSuccess: (data) => QuizModel.fromJson(data),
+      );
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -48,7 +46,6 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
     required Map<String, dynamic> body,
     required String chapterId,
   }) async {
-    //setuserquizstatus
     try {
       final fullBody = {...body, 'quizId': quizId, 'chapterId': chapterId};
       final response = await dio.post(
@@ -61,69 +58,72 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
           },
         ),
       );
-      if (response.statusCode == 200) {
-        final data = response.data;
-        print(data);
-        // New API: parse directly from 'result'
-        final result = data['result'] as Map<String, dynamic>?;
-        if (result == null) {
-          return Future.value(
-            Left(ServerFailure('Missing result in response')),
+
+      return ErrorHandlingUtils.handleApiResponse<UserQuizStatusModel>(
+        response: response,
+        onSuccess: (data) {
+          // If the response already contains the UserQuizStatusModel structure
+          if (data.containsKey('attempts') &&
+              data.containsKey('overallStatus')) {
+            return UserQuizStatusModel.fromJson(data);
+          }
+
+          // Handle the case where the response has a different structure
+          final result = data['result'] as Map<String, dynamic>? ?? data;
+
+          final answers = <Answer>[];
+          final graded = (result['gradedAnswers'] as List?) ?? const [];
+
+          for (final e in graded) {
+            try {
+              final m = Map<String, dynamic>.from(e as Map);
+              final options = ((m['options'] as List?) ?? const [])
+                  .map((o) => o?.toString() ?? '')
+                  .toList()
+                  .cast<String>();
+
+              answers.add(
+                Answer(
+                  questionId: m['questionId']?.toString() ?? '',
+                  question: (m['question'] ?? '').toString(),
+                  options: options,
+                  correctAnswer: (m['correctAnswer'] ?? '').toString(),
+                  selectedOption: (m['selectedOption'] ?? '').toString(),
+                  isCorrect: (m['isCorrect'] ?? false) as bool,
+                  explanation: (m['explanation'] ?? '').toString().isEmpty
+                      ? null
+                      : (m['explanation'] ?? '').toString(),
+                ),
+              );
+            } catch (e) {
+              print('Error parsing answer: $e');
+            }
+          }
+
+          final now = DateTime.now();
+          final attempt = Attempt(
+            startedAt: now,
+            completedAt: now,
+            totalQuestions: (result['totalQuestions'] ?? 0) as int,
+            correct: (result['correct'] ?? 0) as int,
+            degree: (result['score'] ?? 0) as int,
+            state: (result['status'] ?? 'completed').toString(),
+            answers: answers,
           );
-        }
 
-        final totalQuestions = (result['totalQuestions'] ?? 0) as int;
-        final correct = (result['correct'] ?? 0) as int;
-        final score = (result['score'] ?? 0) as int;
-        final status = (result['status'] ?? '').toString();
-        final graded = (result['gradedAnswers'] as List?) ?? const [];
-
-        final answers = graded.map((e) {
-          final m = Map<String, dynamic>.from(e as Map);
-          final options = ((m['options'] as List?) ?? const [])
-              .map((o) => o?.toString() ?? '')
-              .toList()
-              .cast<String>();
-          return Answer(
-            questionId: m['questionId']?.toString(),
-            question: (m['question'] ?? '').toString(),
-            options: options,
-            correctAnswer: (m['correctAnswer'] ?? '').toString(),
-            selectedOption: (m['selectedOption'] ?? '').toString(),
-            isCorrect: (m['isCorrect'] ?? false) as bool,
-            explanation: (m['explanation'] ?? '').toString().isEmpty
-                ? null
-                : (m['explanation'] ?? '').toString(),
+          return UserQuizStatusModel(
+            attempts: [attempt],
+            overallStatus: (result['status'] ?? 'completed').toString(),
+            overallScore: (result['score'] ?? 0) as int,
+            totalAttempts: 1,
+            bestScore: (result['score'] ?? 0) as int,
+            averageScore: (result['score'] ?? 0) as int,
+            passRate: (result['score'] ?? 0) >= 50 ? 100 : 0,
           );
-        }).toList();
-
-        final attempt = Attempt(
-          startedAt: DateTime.now(),
-          completedAt: DateTime.now(),
-          totalQuestions: totalQuestions,
-          correct: correct,
-          degree: score,
-          state: status,
-          answers: answers,
-        );
-
-        final statusModel = UserQuizStatusModel(
-          attempts: [attempt],
-          overallStatus: status,
-          overallScore: score,
-          totalAttempts: 1,
-          bestScore: score,
-          averageScore: score,
-          passRate: 0,
-        );
-        return Right(statusModel);
-      } else {
-        return Future.value(
-          Left(ServerFailure('Failed to set user quiz status')),
-        );
-      }
+        },
+      );
     } catch (e) {
-      return Future.value(Left(ServerFailure(e.toString())));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 

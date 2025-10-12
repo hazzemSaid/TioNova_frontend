@@ -14,7 +14,11 @@ class Foldermodel extends Equatable {
   final String? category;
   final String title;
   final int? chapterCount;
+  final int? attemptedCount;
+  final int? passedCount;
   const Foldermodel({
+    required this.passedCount,
+    required this.attemptedCount,
     required this.id,
     required this.status,
     required this.createdAt,
@@ -30,6 +34,8 @@ class Foldermodel extends Equatable {
 
   factory Foldermodel.fromJson(Map<String, dynamic> json) {
     return Foldermodel(
+      passedCount: json['passedCount'],
+      attemptedCount: json['attemptedCount'],
       id: json['_id'] ?? json['id'],
       icon: json['icon'],
       color: json['color'],
@@ -83,6 +89,8 @@ class Foldermodel extends Equatable {
     status,
     icon,
     color,
+    attemptedCount,
+    passedCount,
   ];
   @override
   String toString() {
@@ -100,6 +108,8 @@ class Foldermodel extends Equatable {
     String? category,
     String? title,
     int? chapterCount,
+    int? passedCount,
+    int? attemptedCount,
   }) {
     return Foldermodel(
       id: id,
@@ -113,6 +123,8 @@ class Foldermodel extends Equatable {
       category: category ?? this.category,
       title: title ?? this.title,
       chapterCount: chapterCount ?? this.chapterCount,
+      passedCount: passedCount ?? this.passedCount,
+      attemptedCount: attemptedCount ?? this.attemptedCount,
     );
   }
 }
