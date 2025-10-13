@@ -8,6 +8,7 @@ import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/presentation/screens/mindmap_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/RawSummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/ai_summary_section.dart';
@@ -36,6 +37,7 @@ class ChapterDetailScreen extends StatefulWidget {
 class _ChapterDetailScreenState extends State<ChapterDetailScreen>
     with WidgetsBindingObserver {
   bool _isSummaryLoading = false;
+  bool _isMindmapLoading = false;
   String _activeTab = ""; // Empty string means no tab is selected
   SummaryModel? _summaryData; // Store the parsed summary data
   String? _rawSummaryText; // Store raw text summary when JSON parsing fails
@@ -162,6 +164,42 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
     }
   }
 
+  // Handle mindmap generation
+  Future<void> _generateMindmap() async {
+    try {
+      final token = await TokenStorage.getAccessToken();
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Authentication required'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final chapterId = widget.chapter.id ?? '';
+      setState(() {
+        _isMindmapLoading = true;
+      });
+
+      context.read<ChapterCubit>().createMindmap(
+        token: token,
+        chapterId: chapterId,
+      );
+    } catch (e) {
+      setState(() {
+        _isMindmapLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to generate mindmap: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   // Handle PDF download
   Future<void> _downloadChapterPDF() async {
     try {
@@ -237,7 +275,37 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   Widget build(BuildContext context) {
     return BlocListener<ChapterCubit, ChapterState>(
       listener: (context, state) {
-        if (state is GetChapterContentPdfSuccess) {
+        // Handle mindmap generation
+        if (state is CreateMindmapLoading) {
+          setState(() {
+            _isMindmapLoading = true;
+          });
+        } else if (state is CreateMindmapSuccess) {
+          setState(() {
+            _isMindmapLoading = false;
+          });
+          // Navigate to mindmap viewer
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MindmapScreen(mindmap: state.mindmap),
+            ),
+          );
+        } else if (state is CreateMindmapError) {
+          setState(() {
+            _isMindmapLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Failed to generate mindmap: ${state.message.errMessage}',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        // Handle PDF download
+        else if (state is GetChapterContentPdfSuccess) {
           // Only handle download side-effects when explicitly for download
           if (state.forDownload) {
             Navigator.of(context).pop(); // Close loading dialog
@@ -370,9 +438,8 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             // Mind Map Section
             SliverToBoxAdapter(
               child: MindMapSection(
-                onOpen: () {
-                  // TODO: Implement Mind Map functionality
-                },
+                isLoading: _isMindmapLoading,
+                onOpen: _generateMindmap,
               ),
             ),
 

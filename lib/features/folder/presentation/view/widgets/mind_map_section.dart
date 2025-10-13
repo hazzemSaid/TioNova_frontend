@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 
 class MindMapSection extends StatelessWidget {
   final VoidCallback onOpen;
-  const MindMapSection({super.key, required this.onOpen});
+  final bool isLoading;
+
+  const MindMapSection({
+    super.key,
+    required this.onOpen,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +64,7 @@ class MindMapSection extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: onOpen,
+              onPressed: isLoading ? null : onOpen,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 48),
                 backgroundColor: const Color(0xFF1C1C1E),
@@ -66,16 +72,28 @@ class MindMapSection extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
+                disabledBackgroundColor: const Color(
+                  0xFF1C1C1E,
+                ).withOpacity(0.5),
               ),
-              icon: Icon(
-                Icons.account_tree_outlined,
-                color: Colors.white.withOpacity(0.9),
-                size: 18,
-              ),
-              label: const Text(
-                'Open',
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Icon(
+                      Icons.hub,
+                      color: Colors.white.withOpacity(0.9),
+                      size: 20,
+                    ),
+              label: Text(
+                isLoading ? 'Generating...' : 'Generate Mind Map',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Colors.white.withOpacity(isLoading ? 0.5 : 0.9),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

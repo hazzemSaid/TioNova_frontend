@@ -1,0 +1,73 @@
+import 'package:bloc/bloc.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
+import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
+import 'package:tionova/features/folder/data/models/nodeModel.dart';
+
+part 'mindmap_state.dart';
+
+class MindmapCubit extends Cubit<MindmapState> {
+  MindmapCubit() : super(MindmapInitial());
+
+  void loadMindmap(Mindmapmodel mindmap) {
+    emit(
+      MindmapLoaded(mindmap: mindmap, selectedNode: null, nodePositions: {}),
+    );
+  }
+
+  void selectNode(NodeModel? node) {
+    if (state is MindmapLoaded) {
+      final currentState = state as MindmapLoaded;
+      emit(currentState.copyWith(selectedNode: node));
+    }
+  }
+
+  void updateNodePosition(String nodeId, Offset position) {
+    if (state is MindmapLoaded) {
+      final currentState = state as MindmapLoaded;
+      final updatedPositions = Map<String, Offset>.from(
+        currentState.nodePositions,
+      );
+      updatedPositions[nodeId] = position;
+      emit(currentState.copyWith(nodePositions: updatedPositions));
+    }
+  }
+
+  void addNode({
+    required String title,
+    required String content,
+    required String color,
+    required String icon,
+    String? parentNodeId,
+  }) {
+    // TODO: Implement add node logic
+    // This will be implemented later with backend integration
+  }
+
+  void editNode({
+    required String nodeId,
+    required String title,
+    required String content,
+    required String color,
+    required String icon,
+  }) {
+    // TODO: Implement edit node logic
+    // This will be implemented later with backend integration
+  }
+
+  void deleteNode(String nodeId) {
+    // TODO: Implement delete node logic
+    // This will be implemented later with backend integration
+  }
+
+  void updateZoom(double zoom) {
+    if (state is MindmapLoaded) {
+      final currentState = state as MindmapLoaded;
+      emit(currentState.copyWith(zoomLevel: zoom));
+    }
+  }
+
+  void reset() {
+    emit(MindmapInitial());
+  }
+}
