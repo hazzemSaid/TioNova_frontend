@@ -7,10 +7,13 @@ import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateChapterUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaperContentPdfUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
+
+import '../../../domain/usecases/createMindmapUseCase.dart';
 
 part 'chapter_state.dart';
 
@@ -20,7 +23,9 @@ class ChapterCubit extends Cubit<ChapterState> {
     required this.getChaptersUseCase,
     required this.createChapterUseCase,
     required this.getChapterContentPdfUseCase,
+    required this.createMindmapUseCase,
   }) : super(ChapterInitial());
+  final CreateMindmapUseCase createMindmapUseCase;
   final GetChaptersUseCase getChaptersUseCase;
   final CreateChapterUseCase createChapterUseCase;
   final GetChapterContentPdfUseCase getChapterContentPdfUseCase;
@@ -186,6 +191,18 @@ class ChapterCubit extends Cubit<ChapterState> {
       chapterId: chapterId,
       chapterTitle: chapterTitle,
       forceRegenerate: true,
+    );
+  }
+
+  void createMindmap({required String token, required String chapterId}) async {
+    emit(CreateMindmapLoading());
+    final result = await createMindmapUseCase(
+      token: token,
+      chapterId: chapterId,
+    );
+    result.fold(
+      (failure) => emit(CreateMindmapError(failure)),
+      (mindmap) => emit(CreateMindmapSuccess(mindmap)),
     );
   }
 }

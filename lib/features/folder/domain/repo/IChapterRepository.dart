@@ -5,6 +5,7 @@ import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 
 abstract class IChapterRepository {
   Future<Either<Failure, List<ChapterModel>>> getChaptersByFolderId({
@@ -23,6 +24,10 @@ abstract class IChapterRepository {
     required String chapterId,
   });
   Future<Either<Failure, SummaryResponse>> GenerateSummary({
+    required String token,
+    required String chapterId,
+  });
+  Future<Either<Failure, Mindmapmodel>> createMindmap({
     required String token,
     required String chapterId,
   });

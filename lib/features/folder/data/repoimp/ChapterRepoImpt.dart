@@ -5,6 +5,7 @@ import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
 
 class ChapterRepoImpl extends IChapterRepository {
@@ -55,5 +56,13 @@ class ChapterRepoImpl extends IChapterRepository {
     required String chapterId,
   }) {
     return remoteDataSource.GenerateSummary(token: token, chapterId: chapterId);
+  }
+
+  @override
+  Future<Either<Failure, Mindmapmodel>> createMindmap({
+    required String token,
+    required String chapterId,
+  }) {
+    return remoteDataSource.createMindmap(token: token, chapterId: chapterId);
   }
 }

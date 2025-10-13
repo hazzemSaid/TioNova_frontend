@@ -91,3 +91,19 @@ class SummaryRegenerateSuccess extends ChapterState {
   @override
   List<Object> get props => [summaryData];
 }
+
+class CreateMindmapLoading extends ChapterState {}
+
+class CreateMindmapSuccess extends ChapterState {
+  final Mindmapmodel mindmap;
+  const CreateMindmapSuccess(this.mindmap);
+  @override
+  List<Object> get props => [];
+}
+
+class CreateMindmapError extends ChapterState {
+  final Failure message;
+  const CreateMindmapError(this.message);
+  @override
+  List<Object> get props => [message];
+}

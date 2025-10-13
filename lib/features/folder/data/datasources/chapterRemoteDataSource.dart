@@ -8,7 +8,9 @@ import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/mind_map_section.dart';
 
 class ChapterRemoteDataSource extends IChapterRepository {
   final Dio _dio;
@@ -28,7 +30,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
           },
         ),
       );
-      
+
       return ErrorHandlingUtils.handleApiResponse<List<ChapterModel>>(
         response: response,
         onSuccess: (data) {
@@ -67,11 +69,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
       final response = await _dio.post(
         '/createchapter',
         data: formData,
-        options: Options(
-          headers: {
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Authorization': "Bearer $token"}),
       );
 
       return ErrorHandlingUtils.handleApiResponse<void>(
@@ -200,6 +198,33 @@ class ChapterRemoteDataSource extends IChapterRepository {
     } catch (e) {
       print('💥 Exception in GenerateSummary: $e');
       return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Mindmapmodel>> createMindmap({
+    required String token,
+    required String chapterId,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/createmindmap',
+        data: {'chapterId': chapterId},
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $token",
+          },
+        ),
+      );
+      return ErrorHandlingUtils.handleApiResponse<Mindmapmodel>(
+        response: response,
+        onSuccess: (data) {
+          return Mindmapmodel.fromJson(data['data']);
+        },
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 }

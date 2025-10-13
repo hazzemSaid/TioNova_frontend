@@ -30,6 +30,7 @@ import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart
 import 'package:tionova/features/folder/domain/usecases/GetChaperContentPdfUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/createMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
@@ -213,10 +214,14 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<GetChapterContentPdfUseCase>(
     () => GetChapterContentPdfUseCase(getIt<IChapterRepository>()),
   );
+  getIt.registerLazySingleton<CreateMindmapUseCase>(
+    () => CreateMindmapUseCase(getIt<IChapterRepository>()),
+  );
 
   // Register ChapterCubit
   getIt.registerFactory(
     () => ChapterCubit(
+      createMindmapUseCase: getIt<CreateMindmapUseCase>(),
       generateSummaryUseCase: getIt<GenerateSummaryUseCase>(),
       getChaptersUseCase: getIt<GetChaptersUseCase>(),
       createChapterUseCase: getIt<CreateChapterUseCase>(),
