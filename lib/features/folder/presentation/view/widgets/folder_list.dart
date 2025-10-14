@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
-import 'package:tionova/features/folder/presentation/view/screens/folder_detail_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_screen_widgets.dart';
 
 class FolderList extends StatelessWidget {
@@ -107,18 +107,16 @@ class FolderList extends StatelessWidget {
             color: color,
             icon: icon,
             onLongPress: () => onFolderLongPress(context, folder, color),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => FolderDetailScreen(
-                  folderId: folder.id,
-                  title: folder.title,
-                  subtitle: folder.description ?? 'No description',
-                  chapters: folder.chapterCount ?? 0,
-                  passed: folder.passedCount ?? 0,
-                  attempted: folder.attemptedCount ?? 0,
-                  color: color,
-                ),
-              ),
+            onTap: () => context.push(
+              '/folder/${folder.id}',
+              extra: {
+                'title': folder.title,
+                'subtitle': folder.description ?? 'No description',
+                'chapters': folder.chapterCount ?? 0,
+                'passed': folder.passedCount ?? 0,
+                'attempted': folder.attemptedCount ?? 0,
+                'color': color,
+              },
             ),
           );
         }, childCount: filteredFolders.length),

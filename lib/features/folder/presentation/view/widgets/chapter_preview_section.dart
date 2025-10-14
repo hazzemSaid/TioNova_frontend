@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
-import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/status_badge.dart';
 
 class ChapterPreviewSection extends StatelessWidget {
@@ -57,14 +57,9 @@ class ChapterPreviewSection extends StatelessWidget {
           ),
           GestureDetector(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PDFViewerScreen(
-                    chapterId: chapter.id!,
-                    chapterTitle: chapter.title ?? 'Chapter',
-                  ),
-                ),
+              context.push(
+                '/pdf-viewer/${chapter.id}',
+                extra: {'chapterTitle': chapter.title ?? 'Chapter'},
               );
             },
             child: Container(

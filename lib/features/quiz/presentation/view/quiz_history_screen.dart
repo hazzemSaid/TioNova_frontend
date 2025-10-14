@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizstate.dart';
@@ -55,7 +56,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back_ios, color: _textPrimary, size: 18),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.pop(),
           ),
           title: Column(
             children: [
@@ -283,12 +284,8 @@ class _AttemptCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => QuizReviewScreen(attempt: attempt),
-          ),
-        );
+        // Navigate to a review screen for this attempt (implement later if needed)
+        // For now, just show attempt details in the list
       },
       child: Container(
         decoration: BoxDecoration(
@@ -465,7 +462,7 @@ class QuizReviewScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         title: Column(
           children: const [

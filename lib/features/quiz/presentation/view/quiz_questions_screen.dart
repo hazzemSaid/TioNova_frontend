@@ -2,10 +2,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
-import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
-import 'package:tionova/features/quiz/presentation/view/quiz_results_screen.dart';
 import 'package:tionova/features/quiz/presentation/widgets/quiz_header.dart';
 import 'package:tionova/features/quiz/presentation/widgets/quiz_review_answers.dart';
 
@@ -179,20 +177,15 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
       _timer.cancel();
     }
     submitted = true;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BlocProvider.value(
-          value: context.read<QuizCubit>(),
-          child: QuizResultsScreen(
-            timeTaken: quizDurationInMinutes * 60 - _remainingTimeInSeconds,
-            quiz: widget.quiz,
-            userAnswers: widget.answers,
-            token: widget.token,
-            chapterId: widget.chapterId,
-          ),
-        ),
-      ),
+    context.pushReplacement(
+      '/quiz-results',
+      extra: {
+        'quiz': widget.quiz,
+        'userAnswers': widget.answers,
+        'token': widget.token,
+        'chapterId': widget.chapterId,
+        'timeTaken': quizDurationInMinutes * 60 - _remainingTimeInSeconds,
+      },
     );
   }
 

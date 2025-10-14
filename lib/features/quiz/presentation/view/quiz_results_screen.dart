@@ -1,6 +1,7 @@
 // features/quiz/presentation/view/quiz_results_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
@@ -480,8 +481,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () {
-            // Navigate back to the home screen or quiz list
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            // Navigate back to the home screen
+            context.go('/');
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0A84FF),

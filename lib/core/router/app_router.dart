@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
@@ -13,6 +14,20 @@ import 'package:tionova/features/auth/presentation/view/screens/login_screen.dar
 import 'package:tionova/features/auth/presentation/view/screens/register_screen.dart';
 import 'package:tionova/features/auth/presentation/view/screens/reset_password_screen.dart';
 import 'package:tionova/features/auth/presentation/view/screens/verify_reset_code_screen.dart';
+import 'package:tionova/features/folder/data/models/ChapterModel.dart';
+import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/presentation/view/screens/RawSummaryViewerScreen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerScreen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/chapter_detail_screen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/create_chapter_screen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/folder_detail_screen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
+import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
+import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
+import 'package:tionova/features/quiz/presentation/view/quiz_questions_screen.dart';
+import 'package:tionova/features/quiz/presentation/view/quiz_results_screen.dart';
+import 'package:tionova/features/quiz/presentation/view/quiz_screen.dart';
 import 'package:tionova/features/start/presentation/view/screens/TioNovaspalsh.dart';
 import 'package:tionova/features/start/presentation/view/screens/onboarding_screen.dart';
 import 'package:tionova/utils/mainlayout.dart';
@@ -170,6 +185,140 @@ class AppRouter {
                   CheckEmailScreen(email: state.extra as String),
             ),
           ],
+        ),
+        // Quiz Routes
+        GoRoute(
+          path: '/quiz/:chapterId',
+          name: 'quiz',
+          builder: (BuildContext context, GoRouterState state) {
+            final chapterId = state.pathParameters['chapterId']!;
+            final extra = state.extra as Map<String, dynamic>?;
+            final token = extra?['token'] as String;
+            return BlocProvider<QuizCubit>(
+              create: (context) => getIt<QuizCubit>(),
+              child: QuizScreen(token: token, chapterId: chapterId),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/quiz-questions',
+          name: 'quiz-questions',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return QuizQuestionsScreen(
+              quiz: extra['quiz'],
+              answers: extra['answers'] as List<String?>,
+              token: extra['token'] as String,
+              chapterId: extra['chapterId'] as String,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/quiz-results',
+          name: 'quiz-results',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return QuizResultsScreen(
+              quiz: extra['quiz'],
+              userAnswers: extra['userAnswers'] as List<String?>,
+              token: extra['token'] as String,
+              chapterId: extra['chapterId'] as String,
+              timeTaken: extra['timeTaken'] as int,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/quiz-history/:chapterId',
+          name: 'quiz-history',
+          builder: (BuildContext context, GoRouterState state) {
+            final chapterId = state.pathParameters['chapterId']!;
+            final extra = state.extra as Map<String, dynamic>;
+            return QuizHistoryScreen(
+              token: extra['token'] as String,
+              chapterId: chapterId,
+              quizTitle: extra['quizTitle'] as String,
+            );
+          },
+        ),
+        // Folder & Chapter Routes
+        GoRoute(
+          path: '/folder/:folderId',
+          name: 'folder-detail',
+          builder: (BuildContext context, GoRouterState state) {
+            final folderId = state.pathParameters['folderId']!;
+            final extra = state.extra as Map<String, dynamic>;
+            return FolderDetailScreen(
+              folderId: folderId,
+              title: extra['title'] as String,
+              subtitle: extra['subtitle'] as String,
+              chapters: extra['chapters'] as int,
+              passed: extra['passed'] as int,
+              attempted: extra['attempted'] as int,
+              color: extra['color'] as Color,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/chapter/:chapterId',
+          name: 'chapter-detail',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return BlocProvider<ChapterCubit>(
+              create: (context) => getIt<ChapterCubit>(),
+              child: ChapterDetailScreen(
+                chapter: extra['chapter'] as ChapterModel,
+                folderColor: extra['folderColor'] as Color? ?? Colors.blue,
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/create-chapter/:folderId',
+          name: 'create-chapter',
+          builder: (BuildContext context, GoRouterState state) {
+            final folderId = state.pathParameters['folderId']!;
+            final extra = state.extra as Map<String, dynamic>?;
+            return CreateChapterScreen(
+              folderId: folderId,
+              folderTitle: extra?['folderTitle'] as String? ?? 'Folder',
+            );
+          },
+        ),
+        GoRoute(
+          path: '/pdf-viewer/:chapterId',
+          name: 'pdf-viewer',
+          builder: (BuildContext context, GoRouterState state) {
+            final chapterId = state.pathParameters['chapterId']!;
+            final extra = state.extra as Map<String, dynamic>?;
+            return PDFViewerScreen(
+              chapterId: chapterId,
+              chapterTitle: extra?['chapterTitle'] as String? ?? 'PDF Viewer',
+            );
+          },
+        ),
+        GoRoute(
+          path: '/summary-viewer',
+          name: 'summary-viewer',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return SummaryViewerScreen(
+              summaryData: extra['summaryData'] as SummaryModel,
+              chapterTitle: extra['chapterTitle'] as String,
+              accentColor: extra['accentColor'] as Color? ?? Colors.blue,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/raw-summary-viewer',
+          name: 'raw-summary-viewer',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return RawSummaryViewerScreen(
+              summaryText: extra['summaryText'] as String,
+              chapterTitle: extra['chapterTitle'] as String,
+              accentColor: extra['accentColor'] as Color? ?? Colors.blue,
+            );
+          },
         ),
         // GoRoute(
         //   path: '/notifications',

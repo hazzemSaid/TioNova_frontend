@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ChapterDetailAppBar extends StatelessWidget {
   final String? title;
@@ -11,7 +12,7 @@ class ChapterDetailAppBar extends StatelessWidget {
       pinned: true,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => context.pop(),
       ),
       title: Text(
         title ?? 'Chapter Preview',

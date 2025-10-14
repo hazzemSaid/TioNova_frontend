@@ -1,10 +1,10 @@
 // features/quiz/presentation/view/quiz_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizstate.dart';
-import 'package:tionova/features/quiz/presentation/view/quiz_questions_screen.dart';
 import 'package:tionova/features/quiz/presentation/widgets/quiz_header.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -259,22 +259,17 @@ class _QuizScreenState extends State<QuizScreen> {
                             onPressed: () {
                               final quizState = state;
                               if (quizState is CreateQuizSuccess) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => BlocProvider.value(
-                                      value: context.read<QuizCubit>(),
-                                      child: QuizQuestionsScreen(
-                                        quiz: quizState.quiz,
-                                        answers: List.filled(
-                                          quizState.quiz.questions.length,
-                                          null,
-                                        ),
-                                        token: widget.token,
-                                        chapterId: widget.chapterId,
-                                      ),
+                                context.push(
+                                  '/quiz-questions',
+                                  extra: {
+                                    'quiz': quizState.quiz,
+                                    'answers': List.filled(
+                                      quizState.quiz.questions.length,
+                                      null,
                                     ),
-                                  ),
+                                    'token': widget.token,
+                                    'chapterId': widget.chapterId,
+                                  },
                                 );
                               }
                             },
@@ -509,22 +504,17 @@ class _QuizScreenState extends State<QuizScreen> {
                       const SizedBox(height: 48),
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BlocProvider.value(
-                                value: context.read<QuizCubit>(),
-                                child: QuizQuestionsScreen(
-                                  quiz: quiz,
-                                  answers: List.filled(
-                                    quiz.questions.length,
-                                    null,
-                                  ),
-                                  token: widget.token,
-                                  chapterId: widget.chapterId,
-                                ),
+                          context.push(
+                            '/quiz-questions',
+                            extra: {
+                              'quiz': quiz,
+                              'answers': List.filled(
+                                quiz.questions.length,
+                                null,
                               ),
-                            ),
+                              'token': widget.token,
+                              'chapterId': widget.chapterId,
+                            },
                           );
                         },
                         style: ElevatedButton.styleFrom(

@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
-import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
-import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
-import 'package:tionova/features/quiz/presentation/view/quiz_screen.dart';
 
 class QuizContent extends StatelessWidget {
   final String? chapterId;
@@ -60,17 +56,9 @@ class QuizContent extends StatelessWidget {
                 final token = await TokenStorage.getAccessToken();
                 if (!context.mounted) return;
                 if (token != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BlocProvider<QuizCubit>(
-                        create: (context) => getIt<QuizCubit>(),
-                        child: QuizScreen(
-                          token: token,
-                          chapterId: chapterId ?? '',
-                        ),
-                      ),
-                    ),
+                  context.push(
+                    '/quiz/${chapterId ?? ''}',
+                    extra: {'token': token},
                   );
                 } else {
                   if (!context.mounted) return;
@@ -132,14 +120,12 @@ class QuizContent extends StatelessWidget {
                         );
                         return;
                       }
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => QuizHistoryScreen(
-                            token: token,
-                            chapterId: chapterId ?? '',
-                            quizTitle: chapterTitle ?? '',
-                          ),
-                        ),
+                      context.push(
+                        '/quiz-history/${chapterId ?? ''}',
+                        extra: {
+                          'token': token,
+                          'quizTitle': chapterTitle ?? '',
+                        },
                       );
                     },
                     style: OutlinedButton.styleFrom(

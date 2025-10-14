@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class QuizHeader extends StatelessWidget {
   final String? title;
@@ -14,7 +15,7 @@ class QuizHeader extends StatelessWidget {
       children: [
         IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         if (title != null)
           Text(

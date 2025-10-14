@@ -9,13 +9,13 @@ class BottomNavItem extends StatefulWidget {
   final VoidCallback onTap;
 
   const BottomNavItem({
-    Key? key,
+    super.key,
     required this.icon,
     required this.label,
     required this.index,
     required this.currentIndex,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<BottomNavItem> createState() => _BottomNavItemState();
@@ -25,6 +25,7 @@ class _BottomNavItemState extends State<BottomNavItem>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -40,14 +41,42 @@ class _BottomNavItemState extends State<BottomNavItem>
 
   @override
   void dispose() {
+    _isDisposed = true;
+    // Stop and reset animation before disposing
+    _animationController.stop();
+    _animationController.reset();
     _animationController.dispose();
     super.dispose();
   }
 
+  void _handleTap() async {
+    if (_isDisposed || !mounted) return;
+
+    try {
+      // Add haptic feedback for better touch experience
+      HapticFeedback.lightImpact();
+
+      // Play quick scale animation for visual feedback
+      if (!_isDisposed && mounted) {
+        await _animationController.forward();
+      }
+
+      if (!_isDisposed && mounted) {
+        await _animationController.reverse();
+      }
+    } catch (e) {
+      // Silently catch any animation errors during disposal
+      debugPrint('Animation error: $e');
+    }
+
+    // Call the onTap callback
+    if (!_isDisposed && mounted) {
+      widget.onTap();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     final isSelected = widget.currentIndex == widget.index;
 
     return AnimatedBuilder(
@@ -56,56 +85,22 @@ class _BottomNavItemState extends State<BottomNavItem>
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: InkWell(
-            onTap: () {
-              // Add haptic feedback for better touch experience
-              HapticFeedback.lightImpact();
-
-              // Play quick scale animation for visual feedback
-              _animationController.forward().then((_) {
-                _animationController.reverse();
-              });
-
-              widget.onTap();
-            },
-            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+            onTap: _handleTap,
+            borderRadius: BorderRadius.circular(12),
             splashColor: const Color(0xFF3C3C3E),
             highlightColor: const Color(0xFF3C3C3E).withOpacity(0.3),
             child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-                vertical: screenHeight * 0.015, // Increased tap area height
-              ),
-              margin: EdgeInsets.all(
-                screenWidth * 0.01,
-              ), // Added margin for better tap separation
+              padding: const EdgeInsets.all(12),
               decoration: isSelected
                   ? BoxDecoration(
                       color: const Color(0xFF2C2C2E),
-                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                      borderRadius: BorderRadius.circular(12),
                     )
                   : null,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    widget.icon,
-                    color: isSelected ? Colors.white : const Color(0xFF8E8E93),
-                    size: screenWidth * 0.05,
-                  ),
-                  SizedBox(width: screenWidth * 0.015),
-                  Text(
-                    widget.label,
-                    style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : const Color(0xFF8E8E93),
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                      fontSize: screenWidth * 0.035,
-                    ),
-                  ),
-                ],
+              child: Icon(
+                widget.icon,
+                color: isSelected ? Colors.white : const Color(0xFF8E8E93),
+                size: 26,
               ),
             ),
           ),

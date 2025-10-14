@@ -1,6 +1,7 @@
 // features/folder/presentation/view/screens/chapter_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
@@ -9,8 +10,6 @@ import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/screens/mindmap_screen.dart';
-import 'package:tionova/features/folder/presentation/view/screens/RawSummaryViewerScreen.dart';
-import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/ai_summary_section.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_detail_app_bar.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_preview_section.dart';
@@ -139,27 +138,23 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   void _viewSummary() {
     if (_summaryData != null) {
       // Navigate to structured summary viewer
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SummaryViewerScreen(
-            summaryData: _summaryData!,
-            chapterTitle: widget.chapter.title ?? 'Chapter',
-            accentColor: widget.folderColor,
-          ),
-        ),
+      context.push(
+        '/summary-viewer',
+        extra: {
+          'summaryData': _summaryData!,
+          'chapterTitle': widget.chapter.title ?? 'Chapter',
+          'accentColor': widget.folderColor,
+        },
       );
     } else if (_rawSummaryText != null) {
       // Navigate to raw text summary viewer
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RawSummaryViewerScreen(
-            summaryText: _rawSummaryText!,
-            chapterTitle: widget.chapter.title ?? 'Chapter',
-            accentColor: widget.folderColor,
-          ),
-        ),
+      context.push(
+        '/raw-summary-viewer',
+        extra: {
+          'summaryText': _rawSummaryText!,
+          'chapterTitle': widget.chapter.title ?? 'Chapter',
+          'accentColor': widget.folderColor,
+        },
       );
     }
   }
