@@ -4,6 +4,7 @@ import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
+import 'package:tionova/features/folder/data/models/NoteModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
@@ -64,5 +65,42 @@ class ChapterRepoImpl extends IChapterRepository {
     required String chapterId,
   }) {
     return remoteDataSource.createMindmap(token: token, chapterId: chapterId);
+  }
+
+  @override
+  //getNotesByChapterId
+  Future<Either<Failure, List<Notemodel>>> getNotesByChapterId({
+    required String chapterId,
+    required String token,
+  }) async {
+    return await remoteDataSource.getNotesByChapterId(
+      chapterId: chapterId,
+      token: token,
+    );
+  }
+
+  @override
+  //addNote
+  Future<Either<Failure, Notemodel>> addNote({
+    required String title,
+    required String chapterId,
+    required String token,
+    required Map<String, dynamic> rawData,
+  }) {
+    return remoteDataSource.addNote(
+      title: title,
+      chapterId: chapterId,
+      token: token,
+      rawData: rawData,
+    );
+  }
+
+  @override
+  //deleteNote
+  Future<Either<Failure, void>> deleteNote({
+    required String noteId,
+    required String token,
+  }) {
+    return remoteDataSource.deleteNote(noteId: noteId, token: token);
   }
 }

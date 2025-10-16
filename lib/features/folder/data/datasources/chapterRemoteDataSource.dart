@@ -1,3 +1,4 @@
+import 'dart:convert'; // For base64Decode and jsonEncode
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -7,10 +8,10 @@ import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
+import 'package:tionova/features/folder/data/models/NoteModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
-import 'package:tionova/features/folder/presentation/view/widgets/mind_map_section.dart';
 
 class ChapterRemoteDataSource extends IChapterRepository {
   final Dio _dio;
@@ -221,6 +222,193 @@ class ChapterRemoteDataSource extends IChapterRepository {
         response: response,
         onSuccess: (data) {
           return Mindmapmodel.fromJson(data['data']);
+        },
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<Either<Failure, Notemodel>> addNote({
+    required String title,
+    required String chapterId,
+    required String token,
+    required Map<String, dynamic> rawData,
+  }) async {
+    /**
+     * Add a new note
+     * Routes based on type:
+     * - POST /notes/text (for text notes)
+     * - POST /notes/image (for image notes with file upload)
+     * - POST /notes/voice (for voice notes with file upload)
+     */
+    try {
+      final noteType = rawData['type'] as String?;
+
+      if (noteType == null || noteType.isEmpty) {
+        return Left(ServerFailure('Note type is required'));
+      }
+
+      Response response;
+
+      switch (noteType) {
+        case 'text':
+          // Text notes: Send as JSON
+          response = await _dio.post(
+            '/notes/text',
+            data: {'title': title, 'chapterId': chapterId, 'rawData': rawData},
+            options: Options(
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': "Bearer $token",
+              },
+            ),
+          );
+          break;
+
+        case 'image':
+          // Image notes: Send as multipart with file upload
+          final imageData = rawData['data'] as String?;
+          if (imageData == null || imageData.isEmpty) {
+            return Left(ServerFailure('Image data is required'));
+          }
+
+          // Decode base64 to bytes
+          final bytes = base64Decode(
+            imageData.contains(',') ? imageData.split(',').last : imageData,
+          );
+
+          final formData = FormData.fromMap({
+            'title': title,
+            'chapterId': chapterId,
+            'file': MultipartFile.fromBytes(
+              bytes,
+              filename: rawData['meta']?['fileName'] ?? 'image.jpg',
+              contentType: MediaType.parse('image/jpeg'),
+            ),
+            // Send meta as JSON string if present
+            if (rawData['meta'] != null) 'meta': jsonEncode(rawData['meta']),
+          });
+
+          response = await _dio.post(
+            '/notes/image',
+            data: formData,
+            options: Options(headers: {'Authorization': "Bearer $token"}),
+          );
+          break;
+
+        case 'voice':
+          // Voice notes: Send as multipart with file upload
+          final voiceData = rawData['data'] as String?;
+          if (voiceData == null || voiceData.isEmpty) {
+            return Left(ServerFailure('Voice data is required'));
+          }
+
+          // Decode base64 to bytes
+          final bytes = base64Decode(
+            voiceData.contains(',') ? voiceData.split(',').last : voiceData,
+          );
+
+          final formData = FormData.fromMap({
+            'title': title,
+            'chapterId': chapterId,
+            'file': MultipartFile.fromBytes(
+              bytes,
+              filename: rawData['meta']?['fileName'] ?? 'voice.aac',
+              contentType: MediaType.parse('audio/aac'),
+            ),
+            // Send meta as JSON string if present
+            if (rawData['meta'] != null) 'meta': jsonEncode(rawData['meta']),
+          });
+
+          response = await _dio.post(
+            '/notes/voice',
+            data: formData,
+            options: Options(headers: {'Authorization': "Bearer $token"}),
+          );
+          break;
+
+        default:
+          return Left(
+            ServerFailure(
+              'Invalid note type: $noteType. Must be text, image, or voice',
+            ),
+          );
+      }
+
+      return ErrorHandlingUtils.handleApiResponse<Notemodel>(
+        response: response,
+        onSuccess: (data) {
+          // Response structure: { status: "success", data: { note: {...} } }
+          return Notemodel.fromJson(
+            data['data']['note'] as Map<String, dynamic>,
+          );
+        },
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteNote({
+    required String noteId,
+    required String token,
+  }) async {
+    // * Delete a note
+    //  * @route DELETE /api/notes/:noteId
+    try {
+      final response = await _dio.delete(
+        '/notes/$noteId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $token",
+          },
+        ),
+      );
+
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (data) {
+          print('✅ Note deleted successfully');
+          return null;
+        },
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Notemodel>>> getNotesByChapterId({
+    required String chapterId,
+    required String token,
+  }) async {
+    ///notes/chapter/:chapterId
+    try {
+      final response = await _dio.get(
+        '/notes/chapter/$chapterId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': "Bearer $token",
+          },
+        ),
+      );
+
+      return ErrorHandlingUtils.handleApiResponse<List<Notemodel>>(
+        response: response,
+        onSuccess: (data) {
+          // Response structure: { status: "success", data: { notes: [...], count: 5 } }
+          final notesData = data['data']['notes'] as List;
+          return notesData
+              .map(
+                (noteJson) =>
+                    Notemodel.fromJson(noteJson as Map<String, dynamic>),
+              )
+              .toList();
         },
       );
     } catch (e) {

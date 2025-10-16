@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io' show Platform; // تفضل موجودة لكن هنتأكد ما تُستخدمش على الويب
+
 import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -7,7 +9,6 @@ import 'package:tionova/core/errors/failure.dart' hide ServerFailure;
 import 'package:tionova/core/errors/server_failure.dart';
 import 'package:tionova/features/auth/data/models/UserModel.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
-import 'dart:io' show Platform; // تفضل موجودة لكن هنتأكد ما تُستخدمش على الويب
 
 class AuthService {
   final Dio dio;
@@ -21,20 +22,27 @@ class AuthService {
     if (kIsWeb) {
       clientId =
           '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com';
-    } else if (Platform.isIOS) {
-      clientId =
-          '827260912271-kldgi7qlqjigrrr1pb008quk6lre450e.apps.googleusercontent.com';
+      // For web, don't use serverClientId
+      _googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+        clientId: clientId,
+      );
     } else {
-      clientId =
-          '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com';
+      if (Platform.isIOS) {
+        clientId =
+            '827260912271-kldgi7qlqjigrrr1pb008quk6lre450e.apps.googleusercontent.com';
+      } else {
+        clientId =
+            '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com';
+      }
+      // For mobile platforms, use serverClientId
+      _googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+        serverClientId:
+            '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com',
+        clientId: clientId,
+      );
     }
-
-    _googleSignIn = GoogleSignIn(
-      scopes: ['email', 'profile'],
-      serverClientId:
-          '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com',
-      clientId: clientId,
-    );
   }
 
   Future<Either<Failure, UserModel>> signInWithGoogle() async {

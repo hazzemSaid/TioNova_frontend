@@ -441,9 +441,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             // Notes Section
             SliverToBoxAdapter(
               child: NotesSection(
-                onOpen: () {
-                  // TODO: Implement Notes functionality
-                },
+                chapterId: widget.chapter.id ?? '',
+                chapterTitle: widget.chapter.title ?? 'Chapter',
+                accentColor: widget.folderColor,
               ),
             ),
 

@@ -107,3 +107,46 @@ class CreateMindmapError extends ChapterState {
   @override
   List<Object> get props => [message];
 }
+
+class GetNotesByChapterIdLoading extends ChapterState {}
+
+class GetNotesByChapterIdSuccess extends ChapterState {
+  final List<Notemodel> notes;
+  const GetNotesByChapterIdSuccess(this.notes);
+  @override
+  List<Object> get props => [notes];
+}
+
+class GetNotesByChapterIdError extends ChapterState {
+  final Failure message;
+  const GetNotesByChapterIdError(this.message);
+  @override
+  List<Object> get props => [message];
+}
+
+class AddNoteLoading extends ChapterState {}
+
+class AddNoteSuccess extends ChapterState {
+  final Notemodel note;
+  const AddNoteSuccess(this.note);
+  @override
+  List<Object> get props => [note];
+}
+
+class AddNoteError extends ChapterState {
+  final Failure message;
+  const AddNoteError(this.message);
+  @override
+  List<Object> get props => [message];
+}
+
+class DeleteNoteLoading extends ChapterState {}
+
+class DeleteNoteSuccess extends ChapterState {}
+
+class DeleteNoteError extends ChapterState {
+  final Failure message;
+  const DeleteNoteError(this.message);
+  @override
+  List<Object> get props => [message];
+}

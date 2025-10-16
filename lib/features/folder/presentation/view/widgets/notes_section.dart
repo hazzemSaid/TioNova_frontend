@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
 
 class NotesSection extends StatelessWidget {
-  final VoidCallback onOpen;
-  const NotesSection({super.key, required this.onOpen});
+  final String chapterId;
+  final String chapterTitle;
+  final Color? accentColor;
+
+  const NotesSection({
+    super.key,
+    required this.chapterId,
+    required this.chapterTitle,
+    this.accentColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +67,17 @@ class NotesSection extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: onOpen,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => NotesScreen(
+                      chapterId: chapterId,
+                      chapterTitle: chapterTitle,
+                      accentColor: accentColor ?? const Color(0xFF00D9A0),
+                    ),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 48),
                 backgroundColor: const Color(0xFF1C1C1E),

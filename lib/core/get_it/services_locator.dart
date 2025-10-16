@@ -21,14 +21,17 @@ import 'package:tionova/features/folder/data/datasources/chapterRemoteDataSource
 import 'package:tionova/features/folder/data/repoimp/ChapterRepoImpt.dart';
 import 'package:tionova/features/folder/data/repoimp/FolderRepoImp.dart';
 import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
+import 'package:tionova/features/folder/domain/usecases/AddnoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateChapterUseCase.dart';
 // import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart'; // Not directly used
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/DeleteNoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaperContentPdfUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetNotesByChapterIdUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/createMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
@@ -217,10 +220,22 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<CreateMindmapUseCase>(
     () => CreateMindmapUseCase(getIt<IChapterRepository>()),
   );
+  getIt.registerLazySingleton<Addnoteusecase>(
+    () => Addnoteusecase(getIt<IChapterRepository>()),
+  );
+  getIt.registerLazySingleton<Deletenoteusecase>(
+    () => Deletenoteusecase(getIt<IChapterRepository>()),
+  );
 
+  getIt.registerLazySingleton<Getnotesbychapteridusecase>(
+    () => Getnotesbychapteridusecase(getIt<IChapterRepository>()),
+  );
   // Register ChapterCubit
   getIt.registerFactory(
     () => ChapterCubit(
+      getNotesByChapterIdUseCase: getIt<Getnotesbychapteridusecase>(),
+      addNoteUseCase: getIt<Addnoteusecase>(),
+      deleteNoteUseCase: getIt<Deletenoteusecase>(),
       createMindmapUseCase: getIt<CreateMindmapUseCase>(),
       generateSummaryUseCase: getIt<GenerateSummaryUseCase>(),
       getChaptersUseCase: getIt<GetChaptersUseCase>(),

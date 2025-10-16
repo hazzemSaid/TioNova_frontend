@@ -6,12 +6,16 @@ import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
+import 'package:tionova/features/folder/data/models/NoteModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
+import 'package:tionova/features/folder/domain/usecases/AddnoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateChapterUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/DeleteNoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaperContentPdfUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetNotesByChapterIdUseCase.dart';
 
 import '../../../domain/usecases/createMindmapUseCase.dart';
 
@@ -24,7 +28,13 @@ class ChapterCubit extends Cubit<ChapterState> {
     required this.createChapterUseCase,
     required this.getChapterContentPdfUseCase,
     required this.createMindmapUseCase,
+    required this.getNotesByChapterIdUseCase,
+    required this.addNoteUseCase,
+    required this.deleteNoteUseCase,
   }) : super(ChapterInitial());
+  final Getnotesbychapteridusecase getNotesByChapterIdUseCase;
+  final Addnoteusecase addNoteUseCase;
+  final Deletenoteusecase deleteNoteUseCase;
   final CreateMindmapUseCase createMindmapUseCase;
   final GetChaptersUseCase getChaptersUseCase;
   final CreateChapterUseCase createChapterUseCase;
@@ -204,5 +214,52 @@ class ChapterCubit extends Cubit<ChapterState> {
       (failure) => emit(CreateMindmapError(failure)),
       (mindmap) => emit(CreateMindmapSuccess(mindmap)),
     );
+  }
+
+  void getNotesByChapterId({
+    required String chapterId,
+    required String token,
+  }) async {
+    emit(GetNotesByChapterIdLoading());
+    final result = await getNotesByChapterIdUseCase(
+      chapterId: chapterId,
+      token: token,
+    );
+    result.fold(
+      (failure) => emit(GetNotesByChapterIdError(failure)),
+      (notes) => emit(GetNotesByChapterIdSuccess(notes)),
+    );
+  }
+
+  void addNote({
+    required String title,
+    required String chapterId,
+    required String token,
+    required Map<String, dynamic> rawData,
+  }) async {
+    emit(AddNoteLoading());
+    final result = await addNoteUseCase(
+      title: title,
+      chapterId: chapterId,
+      token: token,
+      rawData: rawData,
+    );
+    result.fold(
+      (failure) => emit(AddNoteError(failure)),
+      (note) => emit(AddNoteSuccess(note)),
+    );
+  }
+
+  void deleteNote({
+    required String noteId,
+    required String token,
+    required String chapterId,
+  }) async {
+    emit(DeleteNoteLoading());
+    final result = await deleteNoteUseCase(noteId: noteId, token: token);
+    result.fold((failure) => emit(DeleteNoteError(failure)), (_) {
+      emit(DeleteNoteSuccess());
+      getNotesByChapterId(chapterId: chapterId, token: token);
+    });
   }
 }
