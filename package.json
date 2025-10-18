@@ -1,0 +1,14 @@
+{
+  "name": "tionova",
+  "version": "1.0.0",
+  "description": "TioNova Flutter Web App",
+  "scripts": {
+    "build": "flutter build web --release"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hazzemSaid/TioNova_frontend.git"
+  },
+  "author": "",
+  "license": "MIT"
+}

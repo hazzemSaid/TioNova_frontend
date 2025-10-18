@@ -17,25 +17,24 @@ class AuthService {
 
   AuthService({required this.dio}) {
     // ✅ نحدد الـ clientId بطريقة آمنة لكل Platform
-    String clientId;
-
     if (kIsWeb) {
-      clientId =
-          '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com';
-      // For web, don't use serverClientId
+      // For web, only use clientId (not serverClientId)
       _googleSignIn = GoogleSignIn(
+        clientId:
+            '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com',
         scopes: ['email', 'profile'],
-        clientId: clientId,
       );
     } else {
+      // For mobile platforms
+      String clientId;
       if (Platform.isIOS) {
         clientId =
             '827260912271-kldgi7qlqjigrrr1pb008quk6lre450e.apps.googleusercontent.com';
       } else {
+        // Android
         clientId =
             '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com';
       }
-      // For mobile platforms, use serverClientId
       _googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
         serverClientId:
@@ -47,18 +46,35 @@ class AuthService {
 
   Future<Either<Failure, UserModel>> signInWithGoogle() async {
     try {
+      print('🔵 [Google Sign-In] Starting authentication...');
+      print('🔵 [Platform] ${kIsWeb ? "Web" : "Mobile"}');
+
       await _googleSignIn.signOut();
+      print('🔵 [Google Sign-In] Previous session cleared');
 
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      print(
+        '🔵 [Google Sign-In] Sign-in returned: ${googleUser != null ? "User account" : "null (cancelled)"}',
+      );
+
       if (googleUser == null) {
+        print('❌ [Google Sign-In] User cancelled sign-in');
         return Left(ServerFailure(errMessage: 'Google sign in was cancelled'));
       }
+
+      print('✅ [Google User] Email: ${googleUser.email}');
+      print('✅ [Google User] Display Name: ${googleUser.displayName}');
 
       final GoogleSignInAuthentication? googleAuth =
           await googleUser.authentication;
 
       final String? idToken = googleAuth?.idToken;
+      print(
+        '🔵 [ID Token] ${idToken != null ? "Retrieved (${idToken.substring(0, 20)}...)" : "Failed to retrieve"}',
+      );
+
       if (idToken == null) {
+        print('❌ [ID Token] Failed to get ID token from Google');
         return Left(
           ServerFailure(
             errMessage:
@@ -67,6 +83,7 @@ class AuthService {
         );
       }
 
+      print('🔵 [Backend] Sending request to /auth/google...');
       final response = await dio.post(
         '/auth/google',
         data: {'token': idToken},
@@ -76,15 +93,20 @@ class AuthService {
         ),
       );
 
+      print('🔵 [Backend] Response status: ${response.statusCode}');
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data is String
             ? jsonDecode(response.data)
             : response.data as Map<String, dynamic>;
 
+        print('✅ [Backend] Response received successfully');
+
         final token = responseData['token']?.toString();
         final refreshToken = responseData['refreshToken']?.toString();
 
         if (token == null || refreshToken == null) {
+          print('❌ [Backend] Missing tokens in response');
           return Left(
             ServerFailure(
               errMessage: 'Invalid response from server: missing tokens',
@@ -92,11 +114,14 @@ class AuthService {
           );
         }
 
+        print('✅ [Tokens] Saving access and refresh tokens...');
         TokenStorage.saveTokens(token, refreshToken);
 
         if (responseData['user'] is Map<String, dynamic>) {
+          print('✅ [Auth] Sign-in completed successfully! 🎉');
           return Right(UserModel.fromJson(responseData['user']));
         } else {
+          print('❌ [Backend] Invalid user data format');
           return Left(ServerFailure(errMessage: 'Invalid user data format'));
         }
       } else {
@@ -104,14 +129,24 @@ class AuthService {
             ? jsonDecode(response.data)
             : response.data as Map<String, dynamic>;
 
-        return Left(
-          ServerFailure(
-            errMessage: (errorData['message'] ?? 'Unknown error occurred')
-                .toString(),
-          ),
+        final errorMessage = (errorData['message'] ?? 'Unknown error occurred')
+            .toString();
+        print(
+          '❌ [Backend] Error: $errorMessage (Status: ${response.statusCode})',
         );
+
+        return Left(ServerFailure(errMessage: errorMessage));
       }
     } catch (e) {
+      print('❌ [Exception] Error during sign-in: $e');
+      print('❌ [Exception] Type: ${e.runtimeType}');
+      if (e is DioException) {
+        print('❌ [Dio Error] Message: ${e.message}');
+        print('❌ [Dio Error] Type: ${e.type}');
+        if (e.response != null) {
+          print('❌ [Dio Error] Response: ${e.response?.data}');
+        }
+      }
       return Left(ServerFailure(errMessage: e.toString()));
     }
   }

@@ -1,0 +1,52 @@
+# Ignore source files - only deploy build/web
+lib/
+test/
+android/
+ios/
+linux/
+macos/
+windows/
+
+
+# Ignore config files
+pubspec.yaml
+pubspec.lock
+analysis_options.yaml
+*.iml
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.metadata
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore other build outputs
+.dart_tool/
+build/app/
+build/audio_waveforms/
+build/connectivity_plus/
+build/file_picker/
+build/flutter_local_notifications/
+build/flutter_native_splash/
+build/flutter_pdfview/
+build/flutter_plugin_android_lifecycle/
+build/flutter_secure_storage/
+build/flutter_sound/
+build/google_sign_in_android/
+build/image_picker_android/
+build/native_assets/
+build/path_provider_android/
+build/permission_handler_android/
+build/shared_preferences_android/
+
+# Keep only build/web
+!build/web/
