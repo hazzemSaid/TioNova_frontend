@@ -5,12 +5,14 @@ class PrimaryBtn extends StatelessWidget {
   final VoidCallback? onPressed;
   final Color buttonColor;
   final Color textColor;
+  final IconData? icon;
 
   const PrimaryBtn({
     required this.label,
     required this.onPressed,
     this.buttonColor = Colors.black,
     this.textColor = Colors.white,
+    this.icon,
   });
 
   @override
@@ -18,26 +20,54 @@ class PrimaryBtn extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 52,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: buttonColor,
-          foregroundColor: textColor,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 2,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: textColor,
-          ),
-        ),
-      ),
+      child: icon != null
+          ? ElevatedButton.icon(
+              onPressed: onPressed,
+              icon: Icon(icon, color: textColor),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: buttonColor,
+                foregroundColor: textColor,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 24,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+              label: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            )
+          : ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: buttonColor,
+                foregroundColor: textColor,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 24,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            ),
     );
   }
 }

@@ -16,27 +16,41 @@ class AuthService {
   late final GoogleSignIn _googleSignIn;
 
   AuthService({required this.dio}) {
-    // ✅ نحدد الـ clientId بطريقة آمنة لكل Platform
+    // ✅ Configure Google Sign-In for each platform with correct client IDs
     if (kIsWeb) {
-      // For web, only use clientId (not serverClientId)
+      // Web: CANNOT use serverClientId - it's not supported on web!
+      // The web client ID must match the one configured in index.html
       _googleSignIn = GoogleSignIn(
         clientId:
             '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com',
-        scopes: ['email', 'profile'],
+        // DO NOT set serverClientId on web - it will cause an assertion error
+        scopes: [
+          'email',
+          'profile',
+          'openid', // Required for ID token
+          'https://www.googleapis.com/auth/userinfo.email',
+          'https://www.googleapis.com/auth/userinfo.profile',
+        ],
       );
     } else {
-      // For mobile platforms
+      // Mobile platforms - use platform-specific client IDs
       String clientId;
       if (Platform.isIOS) {
+        // iOS client ID - matches backend GOOGLE_IOS_CLIENT_ID
         clientId =
             '827260912271-kldgi7qlqjigrrr1pb008quk6lre450e.apps.googleusercontent.com';
       } else {
-        // Android
+        // Android client ID - matches backend GOOGLE_ANDROID_CLIENT_ID
         clientId =
-            '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com';
+            '827260912271-6l6c4hvocqtvt2pqhhpjmeed2a4573ee.apps.googleusercontent.com';
       }
       _googleSignIn = GoogleSignIn(
-        scopes: ['email', 'profile'],
+        scopes: [
+          'email',
+          'profile',
+          'openid', // Required for ID token
+        ],
+        // serverClientId is the web/backend client ID for token validation
         serverClientId:
             '827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com',
         clientId: clientId,
@@ -65,28 +79,57 @@ class AuthService {
       print('✅ [Google User] Email: ${googleUser.email}');
       print('✅ [Google User] Display Name: ${googleUser.displayName}');
 
-      final GoogleSignInAuthentication? googleAuth =
+      final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
-      final String? idToken = googleAuth?.idToken;
+      print('🔵 [Auth Object] Has idToken: ${googleAuth.idToken != null}');
       print(
-        '🔵 [ID Token] ${idToken != null ? "Retrieved (${idToken.substring(0, 20)}...)" : "Failed to retrieve"}',
+        '🔵 [Auth Object] Has accessToken: ${googleAuth.accessToken != null}',
+      );
+      print(
+        '🔵 [Auth Object] Has serverAuthCode: ${googleAuth.serverAuthCode != null}',
       );
 
-      if (idToken == null) {
-        print('❌ [ID Token] Failed to get ID token from Google');
+      final String? idToken = googleAuth.idToken;
+      final String? accessToken = googleAuth.accessToken;
+      final String? serverAuthCode = googleAuth.serverAuthCode;
+
+      print(
+        '🔵 [ID Token] ${idToken != null ? "Retrieved (${idToken.substring(0, 20)}...)" : "Not available"}',
+      );
+      print(
+        '🔵 [Access Token] ${accessToken != null ? "Retrieved (${accessToken.substring(0, 20)}...)" : "Not available"}',
+      );
+      print(
+        '🔵 [Server Auth Code] ${serverAuthCode != null ? "Retrieved" : "Not available"}',
+      );
+
+      // On web, ID token might not be available due to package limitations
+      // Try ID token first, fallback to access token
+      if (idToken == null && accessToken == null) {
+        print('❌ [Critical] No authentication token available');
         return Left(
           ServerFailure(
             errMessage:
-                'Failed to get ID token from Google. Please check your internet connection.',
+                'Failed to get authentication token from Google. Please try again.',
           ),
         );
       }
 
-      print('🔵 [Backend] Sending request to /auth/google...');
+      // Prepare auth data
+      final String tokenToSend = idToken ?? accessToken!;
+      final bool usingAccessToken = idToken == null;
+
+      if (usingAccessToken) {
+        print('⚠️ [Web Workaround] Using access token (ID token unavailable)');
+        print('⚠️ [Note] Backend may reject this - see WEB_ID_TOKEN_FIX.md');
+      } else {
+        print('🔵 [Backend] Sending ID token to /auth/google...');
+      }
+
       final response = await dio.post(
         '/auth/google',
-        data: {'token': idToken},
+        data: {'token': tokenToSend, 'idToken': tokenToSend},
         options: Options(
           headers: {'Content-Type': 'application/json'},
           responseType: ResponseType.json,
@@ -140,14 +183,43 @@ class AuthService {
     } catch (e) {
       print('❌ [Exception] Error during sign-in: $e');
       print('❌ [Exception] Type: ${e.runtimeType}');
-      if (e is DioException) {
+
+      // Handle specific error types with user-friendly messages
+      String errorMessage;
+
+      if (e.toString().contains('popup_closed')) {
+        print('ℹ️ [Info] User closed the sign-in popup');
+        errorMessage = 'Sign-in cancelled. Please try again.';
+      } else if (e.toString().contains('popup_blocked')) {
+        errorMessage = 'Popup was blocked. Please allow popups for this site.';
+      } else if (e.toString().contains('idpiframe_initialization_failed')) {
+        errorMessage =
+            'Failed to initialize Google Sign-In. Please refresh the page.';
+      } else if (e is DioException) {
         print('❌ [Dio Error] Message: ${e.message}');
         print('❌ [Dio Error] Type: ${e.type}');
         if (e.response != null) {
           print('❌ [Dio Error] Response: ${e.response?.data}');
+
+          // Try to extract error message from response
+          try {
+            final responseData = e.response?.data is String
+                ? jsonDecode(e.response!.data)
+                : e.response?.data as Map<String, dynamic>;
+            errorMessage =
+                responseData['message'] ?? e.message ?? 'Authentication failed';
+          } catch (_) {
+            errorMessage = e.message ?? 'Authentication failed';
+          }
+        } else {
+          errorMessage =
+              e.message ?? 'Network error. Please check your connection.';
         }
+      } else {
+        errorMessage = 'An unexpected error occurred. Please try again.';
       }
-      return Left(ServerFailure(errMessage: e.toString()));
+
+      return Left(ServerFailure(errMessage: errorMessage));
     }
   }
 }

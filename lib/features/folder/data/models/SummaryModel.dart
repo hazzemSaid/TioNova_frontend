@@ -1,4 +1,18 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
+
+// Helper function to sanitize UTF-8 strings
+String _sanitizeUtf8(String input) {
+  try {
+    // Remove invalid UTF-8 characters by encoding and decoding
+    final bytes = utf8.encode(input);
+    return utf8.decode(bytes, allowMalformed: true);
+  } catch (e) {
+    // If that fails, replace invalid characters manually
+    return input.replaceAll(RegExp(r'[^\x00-\x7F]+'), '');
+  }
+}
 
 class SummaryResponse extends Equatable {
   final bool success;
@@ -261,8 +275,8 @@ class KeyConcept extends Equatable {
 
   static String _parseString(dynamic value, {String defaultValue = ''}) {
     if (value == null) return defaultValue;
-    if (value is String) return value;
-    return value.toString();
+    if (value is String) return _sanitizeUtf8(value);
+    return _sanitizeUtf8(value.toString());
   }
 
   static List<String> _parseStringList(dynamic value) {
@@ -307,8 +321,8 @@ class Example extends Equatable {
 
   static String _parseString(dynamic value) {
     if (value == null) return '';
-    if (value is String) return value;
-    return value.toString();
+    if (value is String) return _sanitizeUtf8(value);
+    return _sanitizeUtf8(value.toString());
   }
 
   Map<String, dynamic> toJson() {
@@ -334,8 +348,8 @@ class ProfessionalImplication extends Equatable {
 
   static String _parseString(dynamic value) {
     if (value == null) return '';
-    if (value is String) return value;
-    return value.toString();
+    if (value is String) return _sanitizeUtf8(value);
+    return _sanitizeUtf8(value.toString());
   }
 
   Map<String, dynamic> toJson() {

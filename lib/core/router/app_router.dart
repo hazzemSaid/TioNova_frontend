@@ -23,6 +23,7 @@ import 'package:tionova/features/folder/presentation/view/screens/chapter_detail
 import 'package:tionova/features/folder/presentation/view/screens/create_chapter_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_detail_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
+import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_questions_screen.dart';
@@ -238,6 +239,14 @@ class AppRouter {
               chapterId: chapterId,
               quizTitle: extra['quizTitle'] as String,
             );
+          },
+        ),
+        GoRoute(
+          path: '/quiz-review',
+          name: 'quiz-review',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return QuizReviewScreen(attempt: extra['attempt'] as Attempt);
           },
         ),
         // Folder & Chapter Routes

@@ -14,7 +14,7 @@ class ThemeToggleButton extends StatelessWidget {
         return IconButton(
           icon: Icon(
             state.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-            color: Colors.white70,
+            color: state.isDarkMode ? Colors.white : Colors.black,
           ),
           onPressed: () {
             context.read<ThemeBloc>().add(

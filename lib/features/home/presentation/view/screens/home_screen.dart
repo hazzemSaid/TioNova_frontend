@@ -23,31 +23,33 @@ class HomeScreen extends StatelessWidget {
     final double horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
     final double verticalSpacing = screenHeight * 0.02;
 
+    final bool isWeb = MediaQuery.of(context).size.width > 800.0;
+    print(MediaQuery.of(context).size.width);
     return Scaffold(
       backgroundColor: Colors.black,
       body: ScrollConfiguration(
         behavior: const NoGlowScrollBehavior(),
         child: CustomScrollView(
           physics: const ClampingScrollPhysics(),
+
           slivers: [
             // Custom Header using SliverPersistentHeader
-            SliverPersistentHeader(
-              delegate: CustomHeaderDelegate(
-                minHeight:
-                    topPadding +
-                    (isTablet
-                        ? 60
-                        : 80), // Further reduced min height for tablet
-                maxHeight:
-                    topPadding +
-                    (isTablet
-                        ? 70
-                        : 100), // Further reduced max height for tablet
-                screenWidth: screenWidth,
+            if (!isWeb)
+              SliverPersistentHeader(
+                delegate: CustomHeaderDelegate(
+                  minHeight:
+                      topPadding +
+                      (isTablet
+                          ? 60
+                          : 80), // Further reduced min height for tablet
+                  maxHeight:
+                      topPadding +
+                      (isTablet
+                          ? 70
+                          : 100), // Further reduced max height for tablet
+                  screenWidth: screenWidth,
+                ),
               ),
-            ),
-
-            // Main Content
             SliverPadding(
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               sliver: SliverList(

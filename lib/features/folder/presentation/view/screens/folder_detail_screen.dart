@@ -38,7 +38,7 @@ class FolderDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final isWeb = screenWidth > 900;
     final isTablet = screenWidth > 600;
     final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
 
@@ -62,213 +62,438 @@ class FolderDetailScreen extends StatelessWidget {
 
           return Scaffold(
             backgroundColor: Colors.black,
-            body: ScrollConfiguration(
-              behavior: NoGlowScrollBehavior(),
-              child: CustomScrollView(
-                physics: const ClampingScrollPhysics(),
-                slivers: [
-                  // Header with back button, title, and share button
-                  SliverToBoxAdapter(
+            body: isWeb
+                ? _buildWebLayout(context, token)
+                : _buildMobileLayout(context, token, horizontalPadding),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(
+    BuildContext context,
+    String token,
+    double horizontalPadding,
+  ) {
+    return ScrollConfiguration(
+      behavior: NoGlowScrollBehavior(),
+      child: CustomScrollView(
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          // Header with back button, title, and share button
+          SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 16,
+                left: horizontalPadding,
+                right: horizontalPadding,
+                bottom: 24,
+              ),
+              child: Row(
+                children: [
+                  // Back button
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
                     child: Container(
-                      padding: EdgeInsets.only(
-                        top: MediaQuery.of(context).padding.top + 16,
-                        left: horizontalPadding,
-                        right: horizontalPadding,
-                        bottom: 24,
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0E0E10),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF1C1C1E)),
                       ),
-                      child: Row(
-                        children: [
-                          // Back button
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0E0E10),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFF1C1C1E),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back_ios_new,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          // Title and subtitle
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  subtitle,
-                                  style: const TextStyle(
-                                    color: Color(0xFF8E8E93),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Share button
-                          GestureDetector(
-                            onTap: () {
-                              // Handle share action
-                            },
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0E0E10),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFF1C1C1E),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.share,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 16,
                       ),
                     ),
                   ),
-
-                  // Stats cards
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
+                  const SizedBox(width: 16),
+                  // Title and subtitle
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            color: Color(0xFF8E8E93),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Share button
+                  GestureDetector(
+                    onTap: () {
+                      // Handle share action
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0E0E10),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF1C1C1E)),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard(
-                              'Chapters',
-                              chapters.toString(),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildStatCard('Passed', passed.toString()),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildStatCard(
-                              'Attempted',
-                              attempted.toString(),
-                            ),
-                          ),
-                        ],
+                      child: const Icon(
+                        Icons.share,
+                        color: Colors.white,
+                        size: 16,
                       ),
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
 
+          // Stats cards
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard('Chapters', chapters.toString()),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildStatCard('Passed', passed.toString())),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard('Attempted', attempted.toString()),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Add Chapter button
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(horizontalPadding),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CreateChapterScreen(
+                        folderTitle: title,
+                        folderId: folderId,
+                      ),
+                    ),
+                  );
+                },
+                child: CustomPaint(
+                  size: Size(double.infinity, 44),
+                  isComplex: true,
+                  willChange: true,
+                  painter: DashedBorderPainter(
+                    color: color.withValues(alpha: 0.22),
+                  ),
+                  child: Container(
+                    height: 44,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0E0E10),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: const Color(0xFF1C1C1E)),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Add Chapter',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Dynamic chapter list from cubit
+          BlocBuilder<ChapterCubit, ChapterState>(
+            builder: (context, state) {
+              if (state is ChapterLoading) {
+                return const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              } else if (state is ChapterLoaded) {
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate((ctx, idx) {
+                    final chapter = state.chapters[idx];
+                    return _buildChapterCard(context, chapter);
+                  }, childCount: state.chapters.length),
+                );
+              } else if (state is ChapterError) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Text(
+                      'Failed to load chapters: ${state.message}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                );
+              } else {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Text(
+                      'No chapters found',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebLayout(BuildContext context, String token) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = 1400.0;
+    final horizontalPadding = (screenWidth - maxWidth) / 2;
+    final effectivePadding = horizontalPadding > 0 ? horizontalPadding : 40.0;
+
+    return ScrollConfiguration(
+      behavior: NoGlowScrollBehavior(),
+      child: CustomScrollView(
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          // Web Header
+          SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 32,
+                left: effectivePadding,
+                right: effectivePadding,
+                bottom: 32,
+              ),
+              child: Row(
+                children: [
+                  // Back button
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0E0E10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF1C1C1E)),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  // Title and subtitle
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            color: Color(0xFF8E8E93),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Share button
+                  GestureDetector(
+                    onTap: () {
+                      // Handle share action
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0E0E10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF1C1C1E)),
+                      ),
+                      child: const Icon(
+                        Icons.share,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Stats cards and Add Chapter button - Side by side on web
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: effectivePadding),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Stats cards column
+                  Expanded(
+                    flex: 3,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            'Chapters',
+                            chapters.toString(),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildStatCard('Passed', passed.toString()),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Attempted',
+                            attempted.toString(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 24),
                   // Add Chapter button
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(horizontalPadding),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => CreateChapterScreen(
-                                folderTitle: title,
-                                folderId: folderId,
-                              ),
+                  Expanded(
+                    flex: 1,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => CreateChapterScreen(
+                              folderTitle: title,
+                              folderId: folderId,
                             ),
-                          );
-                        },
-                        child: CustomPaint(
-                          size: Size(double.infinity, 44),
-                          isComplex: true,
-                          willChange: true,
-                          painter: DashedBorderPainter(
-                            color: color.withValues(alpha: 0.22),
                           ),
-                          child: Container(
-                            height: 44,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0E0E10),
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: const Color(0xFF1C1C1E),
+                        );
+                      },
+                      child: Container(
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: color.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_circle_outline,
+                                color: color,
+                                size: 20,
                               ),
-                            ),
-                            child: const Center(
-                              child: Text(
+                              const SizedBox(width: 8),
+                              Text(
                                 'Add Chapter',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: color,
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
                       ),
                     ),
                   ),
-
-                  // Dynamic chapter list from cubit
-                  BlocBuilder<ChapterCubit, ChapterState>(
-                    builder: (context, state) {
-                      if (state is ChapterLoading) {
-                        return const SliverFillRemaining(
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      } else if (state is ChapterLoaded) {
-                        return SliverList(
-                          delegate: SliverChildBuilderDelegate((ctx, idx) {
-                            final chapter = state.chapters[idx];
-                            return _buildChapterCard(context, chapter);
-                          }, childCount: state.chapters.length),
-                        );
-                      } else if (state is ChapterError) {
-                        return SliverFillRemaining(
-                          child: Center(
-                            child: Text(
-                              'Failed to load chapters: ${state.message}',
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        );
-                      } else {
-                        return SliverFillRemaining(
-                          child: Center(
-                            child: Text(
-                              'No chapters found',
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
                 ],
               ),
             ),
-          );
-        },
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+          // Dynamic chapter list in grid for web
+          BlocBuilder<ChapterCubit, ChapterState>(
+            builder: (context, state) {
+              if (state is ChapterLoading) {
+                return const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              } else if (state is ChapterLoaded) {
+                return SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: effectivePadding),
+                  sliver: SliverGrid(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 20,
+                          crossAxisSpacing: 20,
+                          childAspectRatio: 2.5,
+                        ),
+                    delegate: SliverChildBuilderDelegate((ctx, idx) {
+                      final chapter = state.chapters[idx];
+                      return _buildWebChapterCard(context, chapter);
+                    }, childCount: state.chapters.length),
+                  ),
+                );
+              } else if (state is ChapterError) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Text(
+                      'Failed to load chapters: ${state.message}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                );
+              } else {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Text(
+                      'No chapters found',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        ],
       ),
     );
   }
@@ -458,6 +683,117 @@ class FolderDetailScreen extends StatelessWidget {
     } catch (e) {
       return 'Unknown';
     }
+  }
+
+  Widget _buildWebChapterCard(BuildContext context, ChapterModel chapter) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                ChapterDetailScreen(chapter: chapter, folderColor: color),
+          ),
+        );
+      },
+      onLongPress: () {
+        ShowChapterOptionsBottomSheet(chapter: chapter).show(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0E0E10),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF1C1C1E)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Top section with title and status
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    chapter.title ?? 'Untitled Chapter',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _buildStatusChip(chapter.quizStatus ?? 'Not Taken'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Description
+            Expanded(
+              child: Text(
+                chapter.description ?? 'No description available',
+                style: const TextStyle(
+                  color: Color(0xFF8E8E93),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Bottom section with date and action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Created ${_formatDate(chapter.createdAt)}',
+                    style: const TextStyle(
+                      color: Color(0xFF8E8E93),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+                chapter.summaryId != null
+                    ? _buildWebActionButton('Summary', Icons.summarize)
+                    : const SizedBox.shrink(),
+                const SizedBox(width: 8),
+                _buildWebActionButton('Quiz', Icons.quiz),
+                const SizedBox(width: 8),
+                _buildWebActionButton('Chat', Icons.chat_bubble_outline),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWebActionButton(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C1C1E),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

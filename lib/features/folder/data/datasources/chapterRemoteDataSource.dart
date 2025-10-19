@@ -142,18 +142,48 @@ class ChapterRemoteDataSource extends IChapterRepository {
   }
 
   @override
+  // Helper method to recursively sanitize all strings in a JSON object
+  dynamic _sanitizeJsonData(dynamic data) {
+    if (data == null) return null;
+
+    if (data is String) {
+      try {
+        // Remove invalid UTF-8 characters
+        final bytes = utf8.encode(data);
+        return utf8.decode(bytes, allowMalformed: true);
+      } catch (e) {
+        // If encoding fails, replace problematic characters
+        return data.replaceAll(RegExp(r'[^\x00-\x7F]+'), '');
+      }
+    } else if (data is Map) {
+      // Convert to Map<String, dynamic> explicitly
+      final Map<String, dynamic> sanitizedMap = {};
+      data.forEach((key, value) {
+        final sanitizedKey = key is String
+            ? _sanitizeJsonData(key) as String
+            : key.toString();
+        sanitizedMap[sanitizedKey] = _sanitizeJsonData(value);
+      });
+      return sanitizedMap;
+    } else if (data is List) {
+      return data.map((item) => _sanitizeJsonData(item)).toList();
+    }
+
+    return data;
+  }
+
   Future<Either<Failure, SummaryResponse>> GenerateSummary({
     required String token,
     required String chapterId,
   }) async {
-    print('🔥 DEBUG: GenerateSummary API call started');
-    print('📄 Chapter ID: $chapterId');
+    print('DEBUG: GenerateSummary API call started');
+    print('Chapter ID: $chapterId');
     print(
-      '🔑 Token (first 20 chars): ${token.length > 20 ? token.substring(0, 20) : token}...',
+      'Token (first 20 chars): ${token.length > 20 ? token.substring(0, 20) : token}...',
     );
 
     try {
-      print('🌐 Making POST request to /summarizecchapter');
+      print('Making POST request to /summarizecchapter');
 
       final response = await _dio.post(
         '/summarizecchapter',
@@ -166,30 +196,33 @@ class ChapterRemoteDataSource extends IChapterRepository {
         ),
       );
 
-      print('✅ Response received - Status: ${response.statusCode}');
-      print('📦 Response data keys: ${response.data?.keys}');
+      print('Response received - Status: ${response.statusCode}');
+      print('Response data keys: ${response.data?.keys}');
 
       if (response.statusCode == 200) {
         try {
+          // Sanitize the response data before parsing
+          final sanitizedData = _sanitizeJsonData(response.data);
+
           // Parse the complete response using SummaryResponse.fromJson
-          final summaryResponse = SummaryResponse.fromJson(response.data);
-          print('📝 Summary parsed successfully');
+          final summaryResponse = SummaryResponse.fromJson(sanitizedData);
+          print('Summary parsed successfully');
           print(
-            '🔢 Key concepts count: ${summaryResponse.summary.keyConcepts.length}',
+            'Key concepts count: ${summaryResponse.summary.keyConcepts.length}',
           );
-          print('� Examples count: ${summaryResponse.summary.examples.length}');
+          print('Examples count: ${summaryResponse.summary.examples.length}');
           print(
-            '💼 Professional implications count: ${summaryResponse.summary.professionalImplications.length}',
+            'Professional implications count: ${summaryResponse.summary.professionalImplications.length}',
           );
           return Right(summaryResponse);
         } catch (parseError) {
-          print('💥 Error parsing summary response: $parseError');
+          print('Error parsing summary response: $parseError');
           return Left(
             ServerFailure('Failed to parse summary response: $parseError'),
           );
         }
       } else {
-        print('❌ Non-200 status code: ${response.statusCode}');
+        print('Non-200 status code: ${response.statusCode}');
         return Left(
           ServerFailure(
             'Failed to generate summary - Status: ${response.statusCode}',
@@ -197,7 +230,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
         );
       }
     } catch (e) {
-      print('💥 Exception in GenerateSummary: $e');
+      print('Exception in GenerateSummary: $e');
       return Left(ServerFailure(e.toString()));
     }
   }

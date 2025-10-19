@@ -284,8 +284,7 @@ class _AttemptCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        // Navigate to a review screen for this attempt (implement later if needed)
-        // For now, just show attempt details in the list
+        context.push('/quiz-review', extra: {'attempt': attempt});
       },
       child: Container(
         decoration: BoxDecoration(

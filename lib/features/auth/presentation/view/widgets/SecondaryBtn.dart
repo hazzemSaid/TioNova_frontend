@@ -20,16 +20,23 @@ class SecondaryBtn extends StatelessWidget {
       height: 52,
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: icon ?? const Icon(Icons.person_add_rounded),
+        icon: icon ?? const Icon(Icons.person_add_rounded, size: 20),
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+          side: BorderSide(
+            color: isDark ? Colors.white24 : Colors.black26,
+            width: 1.5,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           foregroundColor: isDark ? Colors.white : Colors.black,
-          backgroundColor: isDark ? Colors.black12 : Colors.white10,
+          backgroundColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         ),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        label: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
       ),
     );
   }

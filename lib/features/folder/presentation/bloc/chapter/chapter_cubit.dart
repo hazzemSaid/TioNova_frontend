@@ -143,7 +143,7 @@ class ChapterCubit extends Cubit<ChapterState> {
         print(
           '🔢 Key concepts count: ${summaryResponse.summary.keyConcepts.length}',
         );
-        print('� Examples count: ${summaryResponse.summary.examples.length}');
+        print('📝 Examples count: ${summaryResponse.summary.examples.length}');
         print(
           '💼 Professional implications count: ${summaryResponse.summary.professionalImplications.length}',
         );
