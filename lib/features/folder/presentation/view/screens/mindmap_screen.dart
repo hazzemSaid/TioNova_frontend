@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/presentation/bloc/mindmap/mindmap_cubit.dart';
-import 'package:tionova/features/folder/presentation/widgets/mindmap/mindmap_viewer.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/mindmap/mindmap_viewer.dart';
 
 /// Example screen showing how to use the Mindmap Viewer with BLoC
 class MindmapScreen extends StatelessWidget {
@@ -23,8 +23,7 @@ class MindmapScreen extends StatelessWidget {
 class MindmapScreenWithExistingCubit extends StatelessWidget {
   final Mindmapmodel mindmap;
 
-  const MindmapScreenWithExistingCubit({Key? key, required this.mindmap})
-    : super(key: key);
+  const MindmapScreenWithExistingCubit({super.key, required this.mindmap});
 
   @override
   Widget build(BuildContext context) {

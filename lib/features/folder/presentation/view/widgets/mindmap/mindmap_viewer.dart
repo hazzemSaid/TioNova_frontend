@@ -5,12 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/data/models/nodeModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/mindmap/mindmap_cubit.dart';
-import 'package:tionova/features/folder/presentation/widgets/mindmap/add_node_dialog.dart';
-import 'package:tionova/features/folder/presentation/widgets/mindmap/edit_node_dialog.dart';
-import 'package:tionova/features/folder/presentation/widgets/mindmap/mindmap_controls.dart';
-import 'package:tionova/features/folder/presentation/widgets/mindmap/mindmap_node_widget.dart';
-import 'package:tionova/features/folder/presentation/widgets/mindmap/mindmap_painter.dart';
-import 'package:tionova/features/folder/presentation/widgets/mindmap/node_content_dialog.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/mindmap/add_node_dialog.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/mindmap/edit_node_dialog.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/mindmap/mindmap_controls.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/mindmap/mindmap_node_widget.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/mindmap/mindmap_painter.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/mindmap/node_content_dialog.dart';
 
 class MindmapViewer extends StatefulWidget {
   final Mindmapmodel mindmap;

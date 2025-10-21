@@ -9,7 +9,7 @@ import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/screens/mindmap_screen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/mindmap_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/ai_summary_section.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_detail_app_bar.dart';
@@ -25,10 +25,10 @@ class ChapterDetailScreen extends StatefulWidget {
   final Color folderColor;
 
   const ChapterDetailScreen({
-    Key? key,
+    super.key,
     required this.chapter,
     required this.folderColor,
-  }) : super(key: key);
+  });
 
   @override
   State<ChapterDetailScreen> createState() => _ChapterDetailScreenState();
