@@ -14,6 +14,8 @@ import 'package:tionova/features/auth/presentation/view/screens/login_screen.dar
 import 'package:tionova/features/auth/presentation/view/screens/register_screen.dart';
 import 'package:tionova/features/auth/presentation/view/screens/reset_password_screen.dart';
 import 'package:tionova/features/auth/presentation/view/screens/verify_reset_code_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/EnterCode_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
@@ -255,15 +257,15 @@ class AppRouter {
           name: 'folder-detail',
           builder: (BuildContext context, GoRouterState state) {
             final folderId = state.pathParameters['folderId']!;
-            final extra = state.extra as Map<String, dynamic>;
+            final extra = state.extra as Map<String, dynamic>?;
             return FolderDetailScreen(
               folderId: folderId,
-              title: extra['title'] as String,
-              subtitle: extra['subtitle'] as String,
-              chapters: extra['chapters'] as int,
-              passed: extra['passed'] as int,
-              attempted: extra['attempted'] as int,
-              color: extra['color'] as Color,
+              title: extra?['title'] as String? ?? 'Folder',
+              subtitle: extra?['subtitle'] as String? ?? 'Subtitle',
+              chapters: extra?['chapters'] as int? ?? 0,
+              passed: extra?['passed'] as int? ?? 0,
+              attempted: extra?['attempted'] as int? ?? 0,
+              color: extra?['color'] as Color? ?? Colors.blue,
             );
           },
         ),
@@ -327,6 +329,19 @@ class AppRouter {
               chapterTitle: extra['chapterTitle'] as String,
               accentColor: extra['accentColor'] as Color? ?? Colors.blue,
             );
+          },
+        ),
+        GoRoute(
+          path: '/challenges',
+          name: 'challenges',
+          builder: (BuildContext context, GoRouterState state) =>
+              ChallangeScreen(),
+        ),
+        GoRoute(
+          path: '/enter-code',
+          name: 'enter-code',
+          builder: (BuildContext context, GoRouterState state) {
+            return EntercodeScreen();
           },
         ),
         // GoRoute(

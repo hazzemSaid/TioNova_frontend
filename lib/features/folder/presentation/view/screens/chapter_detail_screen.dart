@@ -1583,7 +1583,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
 
   Widget _buildMobileLayout() {
     return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+
       slivers: [
         ChapterDetailAppBar(title: widget.chapter.title),
 

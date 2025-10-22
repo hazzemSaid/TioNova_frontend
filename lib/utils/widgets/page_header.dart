@@ -6,11 +6,11 @@ class PageHeader extends StatelessWidget {
   final Widget? trailing;
 
   const PageHeader({
-    Key? key,
+    super.key,
     required this.title,
     this.subtitle,
     this.trailing,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

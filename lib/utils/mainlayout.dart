@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_screen.dart';
 import 'package:tionova/features/home/presentation/view/screens/home_screen.dart';
-import 'package:tionova/features/home/presentation/view/widgets/CustomHeaderDelegate.dart';
 import 'package:tionova/features/profile/presentation/view/screens/profile_screen.dart';
 import 'package:tionova/utils/widgets/BottomNavItem.dart';
 
@@ -51,7 +51,7 @@ class _MainLayoutState extends State<MainLayout> {
           );
           break;
         case 2:
-          _screens[index] = const ChallengesScreen();
+          _screens[index] = const ChallangeScreen();
           break;
         case 3:
           _screens[index] = const ProfileScreen();
