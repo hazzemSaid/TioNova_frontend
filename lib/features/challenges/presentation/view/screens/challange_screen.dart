@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/share_challenge_screen.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/create_challenge_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/OptionCard.dart';
+import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/BuildTap.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/widgets/page_header.dart';
@@ -281,11 +285,19 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                               // Use Navigator with mounted check to avoid ancestor lookup issues
                               Navigator.of(context, rootNavigator: false).push(
                                 MaterialPageRoute(
-                                  builder: (_) => const ShareChallengeScreen(
-                                    challengeName: 'Data Structures Challenge',
-                                    questionsCount: 10,
-                                    durationMinutes: 15,
-                                    inviteCode: 'TSPHO5',
+                                  builder: (_) => MultiBlocProvider(
+                                    providers: [
+                                      BlocProvider.value(
+                                        value: context.read<FolderCubit>(),
+                                      ),
+                                      BlocProvider.value(
+                                        value: context.read<ChapterCubit>(),
+                                      ),
+                                      BlocProvider.value(
+                                        value: context.read<AuthCubit>(),
+                                      ),
+                                    ],
+                                    child: const CreateChallengeScreen(),
                                   ),
                                 ),
                               );

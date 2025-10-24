@@ -1,6 +1,7 @@
 // // main.dart
 // import 'package:firebase_core/firebase_core.dart';
 // import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +27,7 @@ import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_bloc.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_state.dart';
+import 'package:tionova/firebase_options.dart';
 
 // Create an instance of NotificationService
 // final notificationService = NotificationService();
@@ -39,7 +41,7 @@ import 'package:tionova/features/theme/presentation/bloc/theme_state.dart';
 Future<void> main() async {
   // Initialize Flutter bindings and services
   WidgetsFlutterBinding.ensureInitialized();
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await HiveManager.initializeHive();
 
