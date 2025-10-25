@@ -1,12 +1,14 @@
+import 'dart:async';
+
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
-import 'package:tionova/features/folder/data/models/FolderModel.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
+import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/live_question_screen.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 class CreateChallengeScreen extends StatefulWidget {
@@ -35,9 +37,13 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
   late TextEditingController _titleController;
   late int _questionsCount;
   late int _durationMinutes;
-  Foldermodel? _selectedFolder;
-  final Set<String> _selectedChapterIds = {};
   String? _selectedChapterTitle; // for UI header and preview
+
+  // Firebase real-time listeners
+  DatabaseReference? _participantsRef;
+  StreamSubscription<DatabaseEvent>? _participantsSubscription;
+  int _participantCount = 0;
+  List<Map<String, dynamic>> _participants = [];
 
   @override
   void initState() {
@@ -46,11 +52,108 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
     _durationMinutes = widget.durationMinutes;
     _titleController = TextEditingController(text: widget.challengeName ?? '');
     _selectedChapterTitle = widget.challengeName;
+
+    // Initialize Firebase listeners
+    _setupFirebaseListeners();
+  }
+
+  void _setupFirebaseListeners() {
+    final path = 'liveChallenges/${widget.inviteCode}/participants';
+    print('CreateChallengeScreen - Setting up Firebase listener at: $path');
+
+    // Listen to participants updates
+    _participantsRef = FirebaseDatabase.instance.ref(path);
+
+    _participantsSubscription = _participantsRef!.onValue.listen(
+      (event) {
+        print('CreateChallengeScreen - Firebase event received');
+        print(
+          'CreateChallengeScreen - Snapshot exists: ${event.snapshot.exists}',
+        );
+        print(
+          'CreateChallengeScreen - Snapshot value type: ${event.snapshot.value.runtimeType}',
+        );
+        print(
+          'CreateChallengeScreen - Snapshot value: ${event.snapshot.value}',
+        );
+
+        if (!mounted) return;
+
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (data != null) {
+          print(
+            'CreateChallengeScreen - Processing ${data.length} participants',
+          );
+          final participants = <Map<String, dynamic>>[];
+          int activeCount = 0;
+
+          data.forEach((userId, userData) {
+            print(
+              'CreateChallengeScreen - Processing userId: $userId, data: $userData',
+            );
+            final participantData = Map<String, dynamic>.from(userData as Map);
+            final isActive = participantData['active'] == true;
+            final username = participantData['username'] ?? 'Unknown Player';
+
+            print(
+              'CreateChallengeScreen - Username: $username, Active: $isActive',
+            );
+
+            if (isActive) {
+              participants.add({
+                'userId': userId,
+                'username': username,
+                'active': true,
+                'joinedAt': participantData['joinedAt'],
+                'score': participantData['score'] ?? 0,
+              });
+              activeCount++;
+            }
+          });
+
+          setState(() {
+            _participantCount = activeCount;
+            _participants = participants;
+          });
+
+          print(
+            'CreateChallengeScreen - Participants updated: $activeCount active, names: ${participants.map((p) => p['username']).toList()}',
+          );
+
+          // Notify cubit of participant updates
+          final usernames = participants
+              .map((p) => p['username'] as String)
+              .toList();
+          context.read<ChallengeCubit>().updateParticipants(
+            challengeId: widget.inviteCode,
+            participants: usernames,
+          );
+        } else {
+          print('CreateChallengeScreen - No participants data found');
+          setState(() {
+            _participantCount = 0;
+            _participants = [];
+          });
+        }
+      },
+      onError: (error) {
+        print('CreateChallengeScreen - Firebase listener ERROR: $error');
+        print('CreateChallengeScreen - Error type: ${error.runtimeType}');
+        if (error.toString().contains('permission') ||
+            error.toString().contains('PERMISSION_DENIED')) {
+          print(
+            'CreateChallengeScreen - PERMISSION DENIED! Check Firebase Security Rules!',
+          );
+        }
+      },
+      cancelOnError: false,
+    );
   }
 
   @override
   void dispose() {
     _titleController.dispose();
+    _participantsSubscription?.cancel();
     super.dispose();
   }
 
@@ -64,38 +167,79 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: ScrollConfiguration(
-                behavior: const NoGlowScrollBehavior(),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 16),
-                      _buildChapterCard(),
-                      const SizedBox(height: 16),
-                      _buildChallengeTitleField(),
-                      const SizedBox(height: 16),
-                      _buildChallengePreviewCard(),
-                      const SizedBox(height: 16),
-                      _buildQRCodeSection(),
-                      const SizedBox(height: 16),
-                      _buildShareButtons(),
-                      const SizedBox(height: 16),
+    return BlocListener<ChallengeCubit, ChallengeState>(
+      listener: (context, state) {
+        print('CreateChallengeScreen - BlocListener state: $state');
+
+        if (state is ChallengeStarted) {
+          print(
+            'CreateChallengeScreen - Challenge started! Navigating to questions...',
+          );
+          print('CreateChallengeScreen - Challenge code: ${widget.inviteCode}');
+          print(
+            'CreateChallengeScreen - Questions count: ${state.questions.length}',
+          );
+
+          // Navigate to question screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(value: context.read<ChallengeCubit>()),
+                  BlocProvider.value(value: context.read<AuthCubit>()),
+                ],
+                child: LiveQuestionScreen(
+                  challengeCode: widget.inviteCode,
+                  challengeName: widget.challengeName ?? 'Challenge',
+                ),
+              ),
+            ),
+          );
+        } else if (state is ChallengeError) {
+          print('CreateChallengeScreen - Error: ${state.message}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context),
+              Expanded(
+                child: ScrollConfiguration(
+                  behavior: const NoGlowScrollBehavior(),
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            const SizedBox(height: 16),
+                            _buildParticipantCountCard(),
+                            const SizedBox(height: 16),
+                            _buildChapterCard(),
+                            const SizedBox(height: 16),
+                            _buildChallengeTitleField(),
+                            const SizedBox(height: 16),
+                            _buildChallengePreviewCard(),
+                            const SizedBox(height: 16),
+                            _buildQRCodeSection(),
+                            const SizedBox(height: 16),
+                            _buildShareButtons(),
+                            const SizedBox(height: 16),
+                          ]),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-            ),
-            _buildStartChallengeButton(),
-          ],
+              _buildStartChallengeButton(),
+            ],
+          ),
         ),
       ),
     );
@@ -136,96 +280,92 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
   }
 
   Widget _buildChapterCard() {
-    return InkWell(
-      onTap: () => _showFolderSelectionDialog(context),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _cardBg,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'CHAPTER',
-                  style: TextStyle(
-                    color: _textSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'CHAPTER',
+                style: TextStyle(
+                  color: _textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
                 ),
-                const Spacer(),
-                Icon(Icons.edit_outlined, color: _green, size: 16),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: _green.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.description_outlined,
-                    color: _green,
-                    size: 24,
-                  ),
+              ),
+              const Spacer(),
+              Icon(Icons.check_circle, color: _green, size: 16),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _green.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if ((widget.chapterName ?? _selectedFolder?.title)
-                              ?.isNotEmpty ==
-                          true)
-                        Text(
-                          (widget.chapterName ?? _selectedFolder?.title)!,
-                          style: TextStyle(
-                            color: _textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      const SizedBox(height: 2),
+                child: Icon(
+                  Icons.description_outlined,
+                  color: _green,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.chapterName?.isNotEmpty == true)
                       Text(
-                        _selectedChapterTitle ?? 'Tap to select chapter',
+                        widget.chapterName!,
                         style: TextStyle(
-                          color: _textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          color: _textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (widget.chapterDescription?.isNotEmpty == true) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.chapterDescription!,
-                          style: TextStyle(
-                            color: _textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 2),
+                    Text(
+                      _selectedChapterTitle ??
+                          widget.challengeName ??
+                          'Selected Chapter',
+                      style: TextStyle(
+                        color: _textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (widget.chapterDescription?.isNotEmpty == true) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.chapterDescription!,
+                        style: TextStyle(
+                          color: _textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          height: 1.3,
                         ),
-                      ],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -389,41 +529,6 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // Opens the folder -> chapters dialog and updates selection
-  void _showFolderSelectionDialog(BuildContext context) {
-    final authCubit = context.read<AuthCubit>();
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (dialogContext) => MultiBlocProvider(
-        providers: [
-          BlocProvider.value(value: context.read<FolderCubit>()),
-          BlocProvider.value(value: context.read<ChapterCubit>()),
-          BlocProvider.value(value: authCubit),
-        ],
-        child: _FolderSelectionDialog(
-          currentFolder: _selectedFolder,
-          currentSelectedIds: _selectedChapterIds,
-          onConfirm: (folder, chapterIds, firstChapterTitle) {
-            setState(() {
-              _selectedFolder = folder;
-              _selectedChapterIds
-                ..clear()
-                ..addAll(chapterIds);
-              // Use the first chapter title (or folder title fallback) to show in card
-              _selectedChapterTitle = firstChapterTitle ?? folder.title;
-              if (_titleController.text.isEmpty) {
-                _titleController.text = _selectedChapterTitle ?? 'Challenge';
-              }
-            });
-          },
-        ),
       ),
     );
   }
@@ -602,383 +707,237 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
   }
 
   Widget _buildStartChallengeButton() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: () {
-            // TODO: Start challenge
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _green,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 0,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.play_arrow_rounded, size: 22),
-              SizedBox(width: 8),
-              Text(
-                'Start Challenge',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Bottom sheet to select folder then chapters
-class _FolderSelectionDialog extends StatefulWidget {
-  final Foldermodel? currentFolder;
-  final Set<String> currentSelectedIds;
-  // onConfirm returns folder, selected chapter ids and an optional chapter title for display
-  final void Function(
-    Foldermodel folder,
-    Set<String> chapterIds,
-    String? firstChapterTitle,
-  )
-  onConfirm;
-
-  const _FolderSelectionDialog({
-    required this.currentFolder,
-    required this.currentSelectedIds,
-    required this.onConfirm,
-  });
-
-  @override
-  State<_FolderSelectionDialog> createState() => _FolderSelectionDialogState();
-}
-
-class _FolderSelectionDialogState extends State<_FolderSelectionDialog> {
-  Foldermodel? _selectedFolder;
-  final Set<String> _selectedChapterIds = {};
-  bool _showChapters = false;
-  String? _firstChapterTitle;
-
-  Color get _bg => const Color(0xFF000000);
-  Color get _cardBg => const Color(0xFF1C1C1E);
-  Color get _panelBg => const Color(0xFF0E0E10);
-  Color get _textPrimary => const Color(0xFFFFFFFF);
-  Color get _textSecondary => const Color(0xFF8E8E93);
-  Color get _divider => const Color(0xFF2C2C2E);
-  Color get _green => const Color(0xFF30D158);
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedFolder = widget.currentFolder;
-    _selectedChapterIds.addAll(widget.currentSelectedIds);
-    _showChapters = _selectedFolder != null;
-
-    // Fetch all folders on open
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authState = context.read<AuthCubit>().state;
-      if (authState is AuthSuccess) {
-        context.read<FolderCubit>().fetchAllFolders(authState.token);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
-    return Container(
-      height: height * 0.85,
-      decoration: BoxDecoration(
-        color: _bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border.all(color: _divider),
-      ),
-      child: Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: _showChapters ? _buildChaptersList() : _buildFoldersGrid(),
-          ),
-          _buildActions(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          if (_showChapters)
-            InkWell(
-              onTap: () => setState(() => _showChapters = false),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _panelBg,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.arrow_back_ios_new,
-                  color: _textSecondary,
-                  size: 16,
-                ),
-              ),
-            ),
-          if (_showChapters) const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _showChapters ? 'Pick Chapters' : 'Pick a Folder',
-                  style: TextStyle(
-                    color: _textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (_showChapters && _selectedFolder != null)
-                  Text(
-                    _selectedFolder!.title,
-                    style: TextStyle(color: _textSecondary, fontSize: 13),
-                  ),
-              ],
-            ),
-          ),
-          if (_showChapters && _selectedChapterIds.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: _green.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${_selectedChapterIds.length}',
-                style: TextStyle(color: _green, fontWeight: FontWeight.w700),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFoldersGrid() {
-    return BlocBuilder<FolderCubit, FolderState>(
+    return BlocBuilder<ChallengeCubit, ChallengeState>(
       builder: (context, state) {
-        if (state is FolderLoading) {
-          return Center(child: CircularProgressIndicator(color: _green));
-        }
-        if (state is FolderError) {
-          return Center(
-            child: Text(
-              'Failed to load folders',
-              style: TextStyle(color: _textSecondary),
-            ),
-          );
-        }
-        if (state is FolderLoaded) {
-          return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.1,
-            ),
-            itemCount: state.folders.length,
-            itemBuilder: (context, index) {
-              final folder = state.folders[index];
-              return InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  setState(() {
-                    _selectedFolder = folder;
-                    _selectedChapterIds.clear();
-                    _firstChapterTitle = null;
-                    _showChapters = true;
-                  });
-                  final authState = context.read<AuthCubit>().state;
-                  if (authState is AuthSuccess) {
-                    context.read<ChapterCubit>().getChapters(
-                      folderId: folder.id,
-                      token: authState.token,
-                    );
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _cardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _divider),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: _panelBg,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Icon(
-                          Icons.folder_rounded,
-                          color: _green,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        folder.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: _textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${folder.chapterCount ?? 0} chapters',
-                        style: TextStyle(color: _textSecondary, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        }
-        return const SizedBox.shrink();
-      },
-    );
-  }
+        final isLoading = state is ChallengeLoading;
+        final canStart =
+            _participantCount >= 1; // At least 1 participant (owner)
 
-  Widget _buildChaptersList() {
-    return BlocBuilder<ChapterCubit, ChapterState>(
-      builder: (context, state) {
-        if (state is ChapterLoading) {
-          return Center(child: CircularProgressIndicator(color: _green));
-        }
-        if (state is ChapterError) {
-          return Center(
-            child: Text(
-              'Failed to load chapters',
-              style: TextStyle(color: _textSecondary),
-            ),
-          );
-        }
-        if (state is ChapterLoaded) {
-          final chapters = state.chapters;
-          if (chapters.isEmpty) {
-            return Center(
-              child: Text(
-                'No chapters',
-                style: TextStyle(color: _textSecondary),
-              ),
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            itemCount: chapters.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final chapter = chapters[index];
-              final chapterId = chapter.id;
-              final selected =
-                  chapterId != null && _selectedChapterIds.contains(chapterId);
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    if (chapterId != null) {
-                      if (selected) {
-                        _selectedChapterIds.remove(chapterId);
-                      } else {
-                        _selectedChapterIds.add(chapterId);
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: (canStart && !isLoading)
+                  ? () async {
+                      print(
+                        'CreateChallengeScreen - Start Challenge button pressed',
+                      );
+                      print(
+                        'CreateChallengeScreen - Participant count: $_participantCount',
+                      );
+                      print(
+                        'CreateChallengeScreen - Challenge code: ${widget.inviteCode}',
+                      );
+
+                      final authState = context.read<AuthCubit>().state;
+                      if (authState is! AuthSuccess) {
+                        print(
+                          'CreateChallengeScreen - Auth state is not AuthSuccess',
+                        );
+                        return;
                       }
+
+                      print(
+                        'CreateChallengeScreen - Calling startChallenge on cubit...',
+                      );
+                      // Start the challenge (Step 4)
+                      await context.read<ChallengeCubit>().startChallenge(
+                        token: authState.token,
+                        challengeCode: widget.inviteCode,
+                      );
+                      print(
+                        'CreateChallengeScreen - startChallenge call completed',
+                      );
                     }
-                    _firstChapterTitle ??= chapter.title;
-                  });
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: _cardBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: selected ? _green : _divider),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        selected ? Icons.check_circle : Icons.circle_outlined,
-                        color: selected ? _green : _textSecondary,
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: canStart ? _green : _divider,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          chapter.title ?? 'Untitled Chapter',
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.play_arrow_rounded, size: 22),
+                        SizedBox(width: 8),
+                        Text(
+                          'Start Challenge',
                           style: TextStyle(
-                            color: _textPrimary,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        }
-        return const SizedBox.shrink();
+                      ],
+                    ),
+            ),
+          ),
+        );
       },
     );
   }
 
-  Widget _buildActions(BuildContext context) {
-    final canConfirm =
-        _selectedFolder != null && _selectedChapterIds.isNotEmpty;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-      child: SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: ElevatedButton(
-          onPressed: canConfirm
-              ? () {
-                  if (_selectedFolder == null) return;
-                  widget.onConfirm(
-                    _selectedFolder!,
-                    _selectedChapterIds,
-                    _firstChapterTitle,
-                  );
-                  Navigator.pop(context);
-                }
-              : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: canConfirm ? _green : _divider,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildParticipantCountCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _green.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _green.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.people_rounded, color: _green, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$_participantCount players',
+                      style: TextStyle(
+                        color: _textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'joined and ready',
+                      style: TextStyle(color: _textSecondary, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              if (_participantCount > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _green.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _green,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Live',
+                        style: TextStyle(
+                          color: _green,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          if (_participants.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _panelBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _divider),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.person, color: _green, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Participants in Lobby',
+                        style: TextStyle(
+                          color: _textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _participants.map((participant) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _cardBg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: _green.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: _green,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              participant['username'] ?? 'Unknown',
+                              style: TextStyle(
+                                color: _textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
             ),
-            elevation: 0,
-          ),
-          child: const Text(
-            'Confirm Selection',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
+          ],
+        ],
       ),
     );
   }

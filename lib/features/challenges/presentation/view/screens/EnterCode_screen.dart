@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/challenge_ready_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
+import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/challenge_waiting_lobby_screen.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 class EntercodeScreen extends StatefulWidget {
@@ -48,41 +52,75 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
     final isWeb = width > 900;
     final maxContentWidth = 520.0; // keeps a compact, focused panel on web
 
-    return Scaffold(
-      backgroundColor: _bg,
-      body: SafeArea(
-        child: ScrollConfiguration(
-          behavior: const NoGlowScrollBehavior(),
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isWeb ? (width - maxContentWidth) / 2 : 16,
-                    vertical: 16,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: isWeb ? maxContentWidth : double.infinity,
+    return BlocListener<ChallengeCubit, ChallengeState>(
+      listener: (context, state) {
+        print('EnterCodeScreen - BlocListener state: $state');
+        if (state is ChallengeJoined) {
+          // Navigate to waiting lobby after successfully joining
+          print('ChallengeJoined detected - navigating to waiting lobby');
+          
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => MultiBlocProvider(
+                providers: [
+                  BlocProvider.value(value: context.read<ChallengeCubit>()),
+                  BlocProvider.value(value: context.read<AuthCubit>()),
+                ],
+                child: ChallengeWaitingLobbyScreen(
+                  challengeCode: _codeController.text.trim(),
+                  challengeName: state.challengeName,
+                ),
+              ),
+            ),
+          );
+        } else if (state is ChallengeError) {
+          // Show error message
+          print('ChallengeError detected: ${state.message}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red,
+              content: Text(state.message),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: SafeArea(
+          child: ScrollConfiguration(
+            behavior: const NoGlowScrollBehavior(),
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isWeb ? (width - maxContentWidth) / 2 : 16,
+                      vertical: 16,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildHeader(context),
-                        const SizedBox(height: 12),
-                        _buildHeroIcon(),
-                        const SizedBox(height: 16),
-                        _buildTitleSection(),
-                        const SizedBox(height: 16),
-                        _buildCodeInputCard(context),
-                        const SizedBox(height: 16),
-                        _buildRecentChallengesCard(context),
-                      ],
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: isWeb ? maxContentWidth : double.infinity,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildHeader(context),
+                          const SizedBox(height: 12),
+                          _buildHeroIcon(),
+                          const SizedBox(height: 16),
+                          _buildTitleSection(),
+                          const SizedBox(height: 16),
+                          _buildCodeInputCard(context),
+                          const SizedBox(height: 16),
+                          _buildRecentChallengesCard(context),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -171,117 +209,133 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
 
   // Input Card
   Widget _buildCodeInputCard(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _divider),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '6-Character Code',
-            style: TextStyle(
-              color: _textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+    return BlocBuilder<ChallengeCubit, ChallengeState>(
+      builder: (context, state) {
+        final isLoading = state is ChallengeLoading;
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: _cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _divider),
           ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _codeController,
-            focusNode: _codeFocus,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: _textPrimary,
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 6,
-            ),
-            cursorColor: _blue,
-            decoration: InputDecoration(
-              hintText: 'ABC123',
-              hintStyle: TextStyle(
-                color: _textSecondary,
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 6,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '6-Character Code',
+                style: TextStyle(
+                  color: _textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 8),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _panelBg),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _codeController,
+                focusNode: _codeFocus,
+                enabled: !isLoading,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _textPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 6,
+                ),
+                cursorColor: _blue,
+                decoration: InputDecoration(
+                  hintText: 'ABC123',
+                  hintStyle: TextStyle(
+                    color: _textSecondary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 6,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: _panelBg),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: _blue),
+                  ),
+                  filled: true,
+                  fillColor: _panelBg,
+                ),
+                keyboardType: TextInputType.visiblePassword,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _onJoinPressed(),
+                onChanged: (_) =>
+                    setState(() {}), // rebuild chips and button immediately
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(6),
+                  // Allow letters, digits, and the symbols shown in design: @ # /
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@#/]')),
+                  _UpperCaseTextFormatter(),
+                ],
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _blue),
+              const SizedBox(height: 12),
+              // Six fixed slots like the design: filled with typed chars or empty placeholders
+              _codeController.text.isEmpty != true
+                  ? Align(
+                      alignment: Alignment.center,
+                      child: Wrap(
+                        spacing: 10,
+                        children: List.generate(6, (i) {
+                          final txt = _codeController.text;
+                          if (i < txt.length) {
+                            return _KeyChip(
+                              label: txt[i],
+                              onTap: () {},
+                              border: _blue,
+                              fg: _textPrimary,
+                            );
+                          }
+                          return _EmptyKey(border: _divider);
+                        }),
+                      ),
+                    )
+                  : SizedBox.shrink(),
+              const SizedBox(height: 16),
+              Align(
+                child: SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: (_codeController.text.trim().length == 6 && !isLoading)
+                        ? _onJoinPressed
+                        : null,
+                    icon: isLoading 
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.bolt, size: 18),
+                    label: Text(
+                      isLoading ? 'Joining...' : 'Join Challenge',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _blue,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: _panelBg,
+                      disabledForegroundColor: _textSecondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              filled: true,
-              fillColor: _panelBg,
-            ),
-            keyboardType: TextInputType.visiblePassword,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _onJoinPressed(),
-            onChanged: (_) =>
-                setState(() {}), // rebuild chips and button immediately
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(6),
-              // Allow letters, digits, and the symbols shown in design: @ # /
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@#/]')),
-              _UpperCaseTextFormatter(),
             ],
           ),
-          const SizedBox(height: 12),
-          // Six fixed slots like the design: filled with typed chars or empty placeholders
-          _codeController.text.isEmpty != true
-              ? Align(
-                  alignment: Alignment.center,
-                  child: Wrap(
-                    spacing: 10,
-                    children: List.generate(6, (i) {
-                      final txt = _codeController.text;
-                      if (i < txt.length) {
-                        return _KeyChip(
-                          label: txt[i],
-                          onTap: () {},
-                          border: _blue,
-                          fg: _textPrimary,
-                        );
-                      }
-                      return _EmptyKey(border: _divider);
-                    }),
-                  ),
-                )
-              : SizedBox.shrink(),
-          const SizedBox(height: 16),
-          Align(
-            child: SizedBox(
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: _codeController.text.trim().length == 6
-                    ? _onJoinPressed
-                    : null,
-                icon: const Icon(Icons.bolt, size: 18),
-                label: const Text(
-                  'Join Challenge',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _blue,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: _panelBg,
-                  disabledForegroundColor: _textSecondary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -325,25 +379,37 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
     );
   }
 
-  void _onJoinPressed() {
-    // TODO: Wire to backend join action
+  void _onJoinPressed() async {
     final code = _codeController.text.trim();
-    if (code.length == 6) {
-      // For now, just unfocus as feedback
-      _codeFocus.unfocus();
-      if (!mounted) return; // avoid using context after dispose
-      // Navigate to Get Ready screen mock
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const ChallengeReadyScreen(
-            challengeName: 'Data Structures Marathon',
-            playersCount: 124,
-            initialSeconds: 3,
-          ),
+    print('_onJoinPressed called with code: $code');
+    if (code.length != 6) {
+      print('Code length invalid: ${code.length}');
+      return;
+    }
+    
+    // Unfocus keyboard
+    _codeFocus.unfocus();
+    
+    // Get auth token
+    final authState = context.read<AuthCubit>().state;
+    print('Auth state: ${authState.runtimeType}');
+    if (authState is! AuthSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please login first'),
+          backgroundColor: Colors.red,
         ),
       );
+      return;
     }
-    setState(() {}); // ensure button state updates if user pressed early
+    
+    print('Calling joinChallenge with token and code: $code');
+    // Call join challenge API
+    await context.read<ChallengeCubit>().joinChallenge(
+      token: authState.token,
+      challengeCode: code,
+    );
+    print('joinChallenge call completed');
   }
 
   void _onTapRecent(String code) {

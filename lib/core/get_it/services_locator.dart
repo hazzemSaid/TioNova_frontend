@@ -16,6 +16,15 @@ import 'package:tionova/features/auth/domain/usecases/loginusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/registerusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/verifyEmailusecase.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
+import 'package:tionova/features/challenges/data/datasource/remote_Livechallenge_datasource.dart';
+import 'package:tionova/features/challenges/data/repo/LiveChallenge_Imprepo.dart';
+import 'package:tionova/features/challenges/domain/repo/LiveChallenge_repo.dart';
+import 'package:tionova/features/challenges/domain/usecase/createLiveChallengeusecase.dart';
+import 'package:tionova/features/challenges/domain/usecase/disconnectFromLiveChallengeusecase.dart';
+import 'package:tionova/features/challenges/domain/usecase/joinLiveChallengeusecase.dart';
+import 'package:tionova/features/challenges/domain/usecase/startLiveChallengeusecase.dart';
+import 'package:tionova/features/challenges/domain/usecase/submitLiveAnswerusecase.dart';
+import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/folder/data/datasources/FolderRemoteDataSource.dart';
 import 'package:tionova/features/folder/data/datasources/chapterRemoteDataSource.dart';
 import 'package:tionova/features/folder/data/repoimp/ChapterRepoImpt.dart';
@@ -61,7 +70,7 @@ Future<void> setupServiceLocator() async {
   final Dio dio = Dio(
     // http://192.168.1.12:3000/api/v1
     //https://tio-nova-backend.vercel.app/api/v1
-    BaseOptions(baseUrl: 'https://tio-nova-backend.vercel.app/api/v1'),
+    BaseOptions(baseUrl: 'http://192.168.1.12:3000/api/v1'),
   );
 
   dio.interceptors.add(
@@ -283,6 +292,45 @@ Future<void> setupServiceLocator() async {
       createQuizUseCase: getIt<CreateQuizUseCase>(),
       userQuizStatusUseCase: getIt<UserQuizStatusUseCase>(),
       getHistoryUseCase: getIt<GetHistoryUseCase>(),
+    ),
+  );
+
+  //challenge
+  getIt.registerLazySingleton<RemoteLiveChallengeDataSource>(
+    () => RemoteLiveChallengeDataSource(dio: getIt<Dio>()),
+  );
+
+  getIt.registerLazySingleton<LiveChallengeRepo>(
+    () => LiveChallengeImpRepo(
+      remoteDataSource: getIt<RemoteLiveChallengeDataSource>(),
+    ),
+  );
+  getIt.registerLazySingleton<CreateLiveChallengeUseCase>(
+    () => CreateLiveChallengeUseCase(repository: getIt<LiveChallengeRepo>()),
+  );
+  getIt.registerLazySingleton<JoinLiveChallengeUseCase>(
+    () => JoinLiveChallengeUseCase(repository: getIt<LiveChallengeRepo>()),
+  );
+  getIt.registerLazySingleton<StartLiveChallengeUseCase>(
+    () => StartLiveChallengeUseCase(repository: getIt<LiveChallengeRepo>()),
+  );
+  getIt.registerLazySingleton<SubmitLiveAnswerUseCase>(
+    () => SubmitLiveAnswerUseCase(repository: getIt<LiveChallengeRepo>()),
+  );
+  getIt.registerLazySingleton<Disconnectfromlivechallengeusecase>(
+    () => Disconnectfromlivechallengeusecase(
+      repository: getIt<LiveChallengeRepo>(),
+    ),
+  );
+
+  getIt.registerFactory(
+    () => ChallengeCubit(
+      submitLiveAnswerUseCase: getIt<SubmitLiveAnswerUseCase>(),
+      createLiveChallengeUseCase: getIt<CreateLiveChallengeUseCase>(),
+      disconnectfromlivechallengeusecase:
+          getIt<Disconnectfromlivechallengeusecase>(),
+      startLiveChallengeUseCase: getIt<StartLiveChallengeUseCase>(),
+      joinLiveChallengeUseCase: getIt<JoinLiveChallengeUseCase>(),
     ),
   );
 }

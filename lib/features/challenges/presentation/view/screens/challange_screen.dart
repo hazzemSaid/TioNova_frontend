@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/create_challenge_screen.dart';
+import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/select_chapter_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/OptionCard.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
@@ -282,7 +283,7 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                           child: InkWell(
                             onTap: () {
                               if (!mounted) return;
-                              // Use Navigator with mounted check to avoid ancestor lookup issues
+                              // Navigate to chapter selection screen first
                               Navigator.of(context, rootNavigator: false).push(
                                 MaterialPageRoute(
                                   builder: (_) => MultiBlocProvider(
@@ -296,8 +297,11 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                                       BlocProvider.value(
                                         value: context.read<AuthCubit>(),
                                       ),
+                                      BlocProvider.value(
+                                        value: context.read<ChallengeCubit>(),
+                                      ),
                                     ],
-                                    child: const CreateChallengeScreen(),
+                                    child: const SelectChapterScreen(),
                                   ),
                                 ),
                               );

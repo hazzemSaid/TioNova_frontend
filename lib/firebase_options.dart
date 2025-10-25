@@ -46,6 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '187048592726',
     projectId: 'tionova-c566b',
     authDomain: 'tionova-c566b.firebaseapp.com',
+    databaseURL: 'https://tionova-c566b-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tionova-c566b.firebasestorage.app',
     measurementId: 'G-QXM87T79Z7',
   );
@@ -55,6 +56,7 @@ class DefaultFirebaseOptions {
     appId: '1:187048592726:android:24724b2055759ee39402f7',
     messagingSenderId: '187048592726',
     projectId: 'tionova-c566b',
+    databaseURL: 'https://tionova-c566b-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tionova-c566b.firebasestorage.app',
   );
 
@@ -63,6 +65,7 @@ class DefaultFirebaseOptions {
     appId: '1:187048592726:ios:b729badbcd887f4c9402f7',
     messagingSenderId: '187048592726',
     projectId: 'tionova-c566b',
+    databaseURL: 'https://tionova-c566b-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tionova-c566b.firebasestorage.app',
     iosBundleId: 'com.example.tionova',
   );
@@ -72,6 +75,7 @@ class DefaultFirebaseOptions {
     appId: '1:187048592726:ios:b729badbcd887f4c9402f7',
     messagingSenderId: '187048592726',
     projectId: 'tionova-c566b',
+    databaseURL: 'https://tionova-c566b-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tionova-c566b.firebasestorage.app',
     iosBundleId: 'com.example.tionova',
   );
@@ -82,7 +86,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '187048592726',
     projectId: 'tionova-c566b',
     authDomain: 'tionova-c566b.firebaseapp.com',
+    databaseURL: 'https://tionova-c566b-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tionova-c566b.firebasestorage.app',
     measurementId: 'G-BW07DP1ZGK',
   );
+
 }

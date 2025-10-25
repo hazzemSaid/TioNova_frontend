@@ -22,8 +22,10 @@ import 'package:tionova/core/theme/app_theme.dart';
 import 'package:tionova/features/auth/data/models/UserModel.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
+import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 // import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart'; // DISABLED
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_bloc.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_state.dart';
@@ -41,7 +43,46 @@ import 'package:tionova/firebase_options.dart';
 Future<void> main() async {
   // Initialize Flutter bindings and services
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Firebase - check using Firebase.apps list
+  print('🔧 Checking Firebase initialization...');
+  print('🔧 Number of existing Firebase apps: ${Firebase.apps.length}');
+
+  if (Firebase.apps.isNotEmpty) {
+    print('⚠️ Found existing Firebase apps:');
+    for (var app in Firebase.apps) {
+      print('   - App name: ${app.name}');
+      print('   - App options: ${app.options}');
+      print('   - Database URL: ${app.options.databaseURL}');
+
+      // Delete the app
+      await app.delete();
+      print('   ✅ Deleted app: ${app.name}');
+    }
+  } else {
+    print('ℹ️ No existing Firebase apps found (this is good!)');
+  }
+
+  // Now initialize with fresh config
+  print('🔧 Initializing Firebase with config...');
+  print(
+    '🔧 Target Database URL: ${DefaultFirebaseOptions.currentPlatform.databaseURL}',
+  );
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase initialized successfully with NEW config');
+
+    // Verify the initialized app
+    final app = Firebase.app();
+    print('✅ Verified app name: ${app.name}');
+    print('✅ Verified Database URL: ${app.options.databaseURL}');
+  } catch (e) {
+    print('❌ Error initializing Firebase: $e');
+    rethrow;
+  }
 
   await HiveManager.initializeHive();
 
@@ -103,8 +144,12 @@ Future<void> main() async {
       providers: [
         BlocProvider<ThemeBloc>(create: (context) => ThemeBloc(prefs: prefs)),
         BlocProvider<AuthCubit>.value(value: authCubit),
+        BlocProvider<FolderCubit>(create: (context) => getIt<FolderCubit>()),
         BlocProvider<ChapterCubit>(create: (context) => getIt<ChapterCubit>()),
         BlocProvider<QuizCubit>(create: (context) => getIt<QuizCubit>()),
+        BlocProvider<ChallengeCubit>(
+          create: (context) => getIt<ChallengeCubit>(),
+        ),
       ],
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
