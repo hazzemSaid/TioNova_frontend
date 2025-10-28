@@ -51,4 +51,18 @@ On reconnect → joinLiveChallenge (will resume from current index)*/
     required String token,
     required String challengeCode,
   });
+
+  /*API: POST /api/v1/live/challenges/check-advance
+
+Body: { challengeCode: string }
+
+Auth: required
+
+Returns: { needsAdvance, advanced, completed, timeRemaining, currentIndex }
+
+Behavior: Checks if all players answered, advances to next question if needed*/
+  Future<Either<Failure, Map<String, dynamic>>> checkAndAdvance({
+    required String token,
+    required String challengeCode,
+  });
 }

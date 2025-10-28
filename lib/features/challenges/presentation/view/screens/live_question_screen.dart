@@ -6,9 +6,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
+import 'package:tionova/features/challenges/presentation/services/challenge_polling_service.dart';
+import 'package:tionova/features/challenges/presentation/services/challenge_sound_service.dart';
+import 'package:tionova/features/challenges/presentation/services/challenge_vibration_service.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challenge_completion_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/widgets/challenge_header.dart';
+import 'package:tionova/features/challenges/presentation/view/widgets/challenge_progress_bar.dart';
+import 'package:tionova/features/challenges/presentation/view/widgets/challenge_timer_bar.dart';
+import 'package:tionova/features/challenges/presentation/view/widgets/feedback_state.dart';
+import 'package:tionova/features/challenges/presentation/view/widgets/leaderboard_entry.dart';
+import 'package:tionova/features/challenges/presentation/view/widgets/live_question_option_button.dart';
+import 'package:tionova/features/challenges/presentation/view/widgets/submit_button.dart';
+import 'package:tionova/features/challenges/presentation/view/widgets/waiting_state.dart';
 
-class LiveQuestionScreen extends StatefulWidget {
+class LiveQuestionScreen extends StatelessWidget {
   final String challengeCode;
   final String challengeName;
 
@@ -19,15 +30,41 @@ class LiveQuestionScreen extends StatefulWidget {
   });
 
   @override
-  State<LiveQuestionScreen> createState() => _LiveQuestionScreenState();
+  Widget build(BuildContext context) {
+    // Stateless wrapper delegates all logic to the body widget.
+    return LiveQuestionScreenBody(
+      challengeCode: challengeCode,
+      challengeName: challengeName,
+    );
+  }
 }
 
-class _LiveQuestionScreenState extends State<LiveQuestionScreen>
-    with TickerProviderStateMixin {
+class LiveQuestionScreenBody extends StatefulWidget {
+  final String challengeCode;
+  final String challengeName;
+
+  const LiveQuestionScreenBody({
+    super.key,
+    required this.challengeCode,
+    required this.challengeName,
+  });
+
+  @override
+  State<LiveQuestionScreenBody> createState() => _LiveQuestionScreenBodyState();
+}
+
+class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
+  // Services
+  late final ChallengeSoundService _soundService;
+  late final ChallengeVibrationService _vibrationService;
+  ChallengePollingService? _pollingService;
+
   // Firebase references
   DatabaseReference? _questionsRef;
   DatabaseReference? _currentIndexRef;
   DatabaseReference? _currentStartTimeRef;
+  DatabaseReference? _currentEndTimeRef;
   DatabaseReference? _statusRef;
   DatabaseReference? _leaderboardRef;
   DatabaseReference? _answersRef;
@@ -36,6 +73,7 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
   StreamSubscription<DatabaseEvent>? _questionsSubscription;
   StreamSubscription<DatabaseEvent>? _currentIndexSubscription;
   StreamSubscription<DatabaseEvent>? _currentStartTimeSubscription;
+  StreamSubscription<DatabaseEvent>? _currentEndTimeSubscription;
   StreamSubscription<DatabaseEvent>? _statusSubscription;
   StreamSubscription<DatabaseEvent>? _leaderboardSubscription;
   StreamSubscription<DatabaseEvent>? _answersSubscription;
@@ -58,6 +96,7 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
   List<Map<String, dynamic>> _leaderboard = [];
   int _timeRemaining = 30; // 30 seconds per question
   int? _questionStartTime;
+  int? _questionEndTime; // Canonical end time from Firebase
   Timer? _questionTimer;
   String? _selectedAnswer;
   bool _hasAnswered = false;
@@ -68,10 +107,23 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
   int _totalAnsweredPlayers = 0;
   int _totalPlayers = 0;
   String? _correctAnswer;
+  bool _checkAdvanceCalled = false; // Debounce flag
 
+  // Cached ancestor references (captured in didChangeDependencies)
+  NavigatorState? _navigator;
+  ScaffoldMessengerState? _scaffoldMessenger;
+
+  @override
   @override
   void initState() {
     super.initState();
+
+    // Add lifecycle observer to handle app state changes
+    WidgetsBinding.instance.addObserver(this);
+
+    // Initialize services
+    _soundService = ChallengeSoundService();
+    _vibrationService = ChallengeVibrationService();
 
     // Initialize animation controllers
     _questionSlideController = AnimationController(
@@ -120,6 +172,18 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
     );
     _updateTotalPlayers();
     _setupFirebaseListeners();
+    _startPolling();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Cache Navigator and ScaffoldMessenger so async callbacks or dispose
+    // can safely refer to them without performing ancestor lookups when
+    // the State may be deactivated.
+    _navigator = Navigator.of(context);
+    _scaffoldMessenger = ScaffoldMessenger.of(context);
   }
 
   void _setupFirebaseListeners() {
@@ -174,6 +238,16 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
               print(
                 'LiveQuestionScreen - Current question set: ${_currentQuestion?['question']}',
               );
+
+              // Trigger animations for first question if not already animated
+              if (_questionSlideController.isDismissed) {
+                _questionSlideController.forward();
+                Future.delayed(const Duration(milliseconds: 200), () {
+                  if (mounted && _optionsController.isDismissed) {
+                    _optionsController.forward();
+                  }
+                });
+              }
             }
           });
         }
@@ -214,6 +288,7 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
             _currentRank = null;
             _correctAnswer = null;
             _totalAnsweredPlayers = 0;
+            _checkAdvanceCalled = false; // Reset debounce flag for new question
 
             if (_currentQuestionIndex < _questions.length) {
               _currentQuestion = _questions[_currentQuestionIndex];
@@ -264,6 +339,34 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
       },
       onError: (error) {
         print('LiveQuestionScreen - StartTime listener ERROR: $error');
+      },
+    );
+
+    // 3b. Listen to current question END time (canonical from backend)
+    final endTimePath =
+        'liveChallenges/${widget.challengeCode}/current/endTime';
+    print('LiveQuestionScreen - Setting up endTime listener at: $endTimePath');
+    _currentEndTimeRef = database.ref(endTimePath);
+
+    _currentEndTimeSubscription = _currentEndTimeRef!.onValue.listen(
+      (event) {
+        print('LiveQuestionScreen - EndTime event received');
+        print('LiveQuestionScreen - EndTime value: ${event.snapshot.value}');
+
+        if (!mounted) return;
+
+        final endTime = event.snapshot.value as int?;
+        if (endTime != null && endTime != _questionEndTime) {
+          print('LiveQuestionScreen - Question end time updated: $endTime');
+          _questionEndTime = endTime;
+          // Re-sync timer with the canonical end time
+          if (_questionStartTime != null) {
+            _startQuestionTimer(_questionStartTime);
+          }
+        }
+      },
+      onError: (error) {
+        print('LiveQuestionScreen - EndTime listener ERROR: $error');
       },
     );
 
@@ -348,6 +451,76 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
     print('LiveQuestionScreen - All Firebase listeners set up successfully');
   }
 
+  /// Start polling service to check for question advances
+  void _startPolling() {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthSuccess) {
+      print('LiveQuestionScreen - Cannot start polling: not authenticated');
+      return;
+    }
+
+    print('LiveQuestionScreen - Starting polling service');
+    _pollingService = ChallengePollingService(
+      pollingInterval: const Duration(seconds: 5),
+      onPoll: () async {
+        // Avoid using context when the State has been unmounted
+        if (!mounted) return;
+
+        // Call checkAndAdvance API
+        final response = await context
+            .read<ChallengeCubit>()
+            .checkAndAdvanceQuestion(
+              token: authState.token,
+              challengeCode: widget.challengeCode,
+            );
+
+        // If State became unmounted while awaiting, bail out before setState
+        if (!mounted) return;
+
+        if (response != null) {
+          print('LiveQuestionScreen - Polling response: $response');
+
+          final needsAdvance = response['needsAdvance'] as bool? ?? false;
+          final dynamic timeRemainingRaw = response['timeRemaining'];
+
+          // Normalize server-provided timeRemaining which may be in ms or s.
+          final int normalized = _normalizeServerTimeRemaining(
+            timeRemainingRaw,
+          );
+          print(
+            'LiveQuestionScreen - timeRemaining raw: $timeRemainingRaw, normalized: $normalized',
+          );
+
+          // Sync timer if normalized value is valid
+          if (normalized >= 0 && _timeRemaining != normalized) {
+            if (mounted) {
+              setState(() {
+                _timeRemaining = normalized;
+              });
+            }
+          }
+
+          // Log polling status
+          if (needsAdvance) {
+            print('LiveQuestionScreen - Waiting for all players to answer...');
+          }
+        }
+      },
+      onError: (error) {
+        print('LiveQuestionScreen - Polling error: $error');
+      },
+    );
+
+    _pollingService!.startPolling();
+  }
+
+  /// Stop polling service
+  void _stopPolling() {
+    _pollingService?.stopPolling();
+    _pollingService?.dispose();
+    _pollingService = null;
+  }
+
   void _setupAnswersListener() {
     // Cancel existing subscription
     _answersSubscription?.cancel();
@@ -399,7 +572,7 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
   }
 
   void _updateTotalPlayers() {
-    // Get total players from participants count
+    // Get total ACTIVE players from participants (exclude inactive: active === false)
     final participantsPath =
         'liveChallenges/${widget.challengeCode}/participants';
     FirebaseDatabase.instance.ref(participantsPath).once().then((event) {
@@ -409,7 +582,18 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
       if (data != null) {
         int count = 0;
         if (data is Map) {
-          count = data.length;
+          // Count only active participants
+          data.forEach((key, value) {
+            if (value is Map) {
+              final active = value['active'];
+              // active is true by default; only exclude if explicitly false
+              if (active == null || active == true) {
+                count++;
+              }
+            } else {
+              count++; // legacy format without active flag
+            }
+          });
         } else if (data is List) {
           count = data.where((item) => item != null).length;
         }
@@ -418,7 +602,7 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
           _totalPlayers = count;
         });
 
-        print('LiveQuestionScreen - Total players: $_totalPlayers');
+        print('LiveQuestionScreen - Total ACTIVE players: $_totalPlayers');
       }
     });
   }
@@ -432,27 +616,63 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
     // Get correct answer from current question (Firebase stores it in 'answer' field)
     final correctAnswerIndex = _currentQuestion?['answer'];
     print(
-      'LiveQuestionScreen - Correct answer index from Firebase: $correctAnswerIndex',
+      'LiveQuestionScreen - Correct answer from Firebase: $correctAnswerIndex',
     );
 
     if (correctAnswerIndex != null) {
-      _correctAnswer = String.fromCharCode(65 + (correctAnswerIndex as int));
+      // Handle both string ("a", "b", "c", "d") and int (0, 1, 2, 3) formats
+      if (correctAnswerIndex is String) {
+        _correctAnswer = correctAnswerIndex.toUpperCase();
+      } else if (correctAnswerIndex is int) {
+        _correctAnswer = String.fromCharCode(65 + correctAnswerIndex);
+      }
+    }
+
+    // ALWAYS recalculate correctness locally with case-insensitive comparison
+    // This overrides any backend response that may have used case-sensitive comparison
+    if (_selectedAnswer != null && _correctAnswer != null) {
+      final selectedUpper = _selectedAnswer?.toUpperCase();
+      final correctUpper = _correctAnswer?.toUpperCase();
+      final localCorrectness = (selectedUpper == correctUpper);
+
+      print('LiveQuestionScreen - Local correctness comparison:');
+      print('  Selected: $_selectedAnswer -> $selectedUpper');
+      print('  Correct: $_correctAnswer -> $correctUpper');
+      print('  Backend said: $_wasCorrect');
+      print('  Local says: $localCorrectness');
+
+      // Override backend's value if different
+      if (_wasCorrect != localCorrectness) {
+        print(
+          'LiveQuestionScreen - ⚠️ Backend disagreed! Using local calculation.',
+        );
+        _wasCorrect = localCorrectness;
+      }
     }
 
     // Get user's rank from leaderboard
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthSuccess) {
-      final username = authState.user.username;
-      print(
-        'LiveQuestionScreen - Looking for username in leaderboard: $username',
-      );
+      final userId = authState.user.id;
+      print('LiveQuestionScreen - Looking for userId in leaderboard: $userId');
       for (int i = 0; i < _leaderboard.length; i++) {
-        if (_leaderboard[i]['username'] == username) {
+        if (_leaderboard[i]['userId'] == userId) {
           _currentRank = i + 1;
           print('LiveQuestionScreen - Found user at rank: $_currentRank');
           break;
         }
       }
+    }
+
+    // Play feedback based on correctness
+    if (_wasCorrect == true) {
+      _soundService.playCorrectSound();
+      _vibrationService.success();
+    } else if (_selectedAnswer != 'X') {
+      _soundService.playIncorrectSound();
+      _vibrationService.error();
+    } else {
+      _soundService.playTimeoutSound();
     }
 
     setState(() {
@@ -474,16 +694,30 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
 
     _questionTimer?.cancel();
 
-    if (startTime != null) {
-      final elapsed =
-          (DateTime.now().millisecondsSinceEpoch - startTime) ~/ 1000;
-      _timeRemaining = 30 - elapsed;
+    final int questionDuration =
+        _getQuestionDurationSeconds(); // seconds per question
 
-      print('LiveQuestionScreen - Elapsed: $elapsed seconds');
-      print('LiveQuestionScreen - Time remaining: $_timeRemaining seconds');
+    if (startTime != null) {
+      // Use canonical endTime from Firebase if available, otherwise compute
+      final endTimeMs =
+          _questionEndTime ?? (startTime + questionDuration * 1000);
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final remainingMs = endTimeMs - nowMs;
+
+      final rawRemaining = (remainingMs / 1000).ceil();
+      _timeRemaining = rawRemaining.clamp(0, questionDuration);
+
+      print('LiveQuestionScreen - Using endTimeMs: $endTimeMs');
+      print('LiveQuestionScreen - Now ms: $nowMs');
+      print('LiveQuestionScreen - Raw remaining (s): $rawRemaining');
+      print(
+        'LiveQuestionScreen - Clamped time remaining: $_timeRemaining seconds',
+      );
     } else {
-      _timeRemaining = 30;
-      print('LiveQuestionScreen - No start time, defaulting to 30 seconds');
+      _timeRemaining = questionDuration;
+      print(
+        'LiveQuestionScreen - No start time, defaulting to $questionDuration seconds',
+      );
     }
 
     if (_timeRemaining > 0) {
@@ -497,7 +731,7 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
         }
 
         setState(() {
-          _timeRemaining--;
+          _timeRemaining = (_timeRemaining - 1).clamp(0, questionDuration);
         });
 
         print(
@@ -507,62 +741,189 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
         if (_timeRemaining <= 0) {
           print('LiveQuestionScreen - Timer expired!');
           timer.cancel();
-          if (!_hasAnswered) {
-            // If user has selected an answer but not submitted, submit it
-            if (_selectedAnswer != null) {
-              print(
-                'LiveQuestionScreen - Auto-submitting selected answer: $_selectedAnswer',
-              );
-              _submitAnswer(_selectedAnswer);
-            } else {
-              print(
-                'LiveQuestionScreen - Timer expired - No answer selected, submitting X',
-              );
-              _handleNoAnswer();
-            }
+
+          // Play timeout sound
+          _soundService.playTimeoutSound();
+          _vibrationService.warning();
+
+          // Show feedback if user has answered (even if others haven't)
+          if (_hasAnswered) {
+            print(
+              'LiveQuestionScreen - Timer expired, showing feedback for answered user',
+            );
+            _showAnswerFeedback();
           }
+
+          // Don't show timeout dialog - backend will handle auto-advance
+
+          // Trigger check-advance once when timer expires
+          _triggerCheckAdvance();
+        } else if (_timeRemaining == 10) {
+          // Play warning sound at 10 seconds
+          _soundService.playTimerWarningSound();
+          _vibrationService.warning();
         }
       });
     } else {
-      print('LiveQuestionScreen - Time already expired, auto-submitting');
-      if (!_hasAnswered) {
-        // If user has selected an answer but not submitted, submit it
-        if (_selectedAnswer != null) {
-          print(
-            'LiveQuestionScreen - Auto-submitting selected answer: $_selectedAnswer',
-          );
-          _submitAnswer(_selectedAnswer);
-        } else {
-          print('LiveQuestionScreen - No answer selected, submitting X');
-          _handleNoAnswer();
-        }
+      print('LiveQuestionScreen - Time already expired');
+
+      // Show feedback if user has answered (even if others haven't)
+      if (_hasAnswered) {
+        print(
+          'LiveQuestionScreen - Time already expired, showing feedback for answered user',
+        );
+        _showAnswerFeedback();
       }
+
+      // Don't show timeout dialog - backend will handle auto-advance
+      // Trigger check-advance immediately if already expired
+      _triggerCheckAdvance();
     }
   }
 
-  Future<void> _handleNoAnswer() async {
-    print('LiveQuestionScreen - Handling no answer (timeout)');
-
-    setState(() {
-      _hasAnswered = true;
-      _selectedAnswer = 'X'; // Mark as X for display in feedback
-      _isWaitingForOthers = true;
-    });
-
-    // Submit "X" as no answer to the backend
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! AuthSuccess) {
-      print('LiveQuestionScreen - Auth state is not AuthSuccess');
+  /// Trigger check-advance API call (debounced per question)
+  Future<void> _triggerCheckAdvance() async {
+    if (!mounted) {
+      print('LiveQuestionScreen - Widget not mounted, skipping check-advance');
       return;
     }
 
-    await context.read<ChallengeCubit>().submitAnswer(
-      token: authState.token,
-      challengeCode: widget.challengeCode,
-      answer: 'X', // X = no answer/timeout
+    if (_checkAdvanceCalled) {
+      print(
+        'LiveQuestionScreen - check-advance already called for this question',
+      );
+      return;
+    }
+
+    _checkAdvanceCalled = true;
+    print(
+      'LiveQuestionScreen - Triggering check-advance for question $_currentQuestionIndex',
     );
 
-    print('LiveQuestionScreen - No answer submitted, waiting for others...');
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthSuccess) {
+      print(
+        'LiveQuestionScreen - Cannot trigger check-advance: not authenticated',
+      );
+      return;
+    }
+
+    try {
+      final response = await context
+          .read<ChallengeCubit>()
+          .checkAndAdvanceQuestion(
+            token: authState.token,
+            challengeCode: widget.challengeCode,
+          );
+
+      if (!mounted) {
+        print('LiveQuestionScreen - Widget unmounted after check-advance call');
+        return;
+      }
+
+      if (response != null) {
+        print('LiveQuestionScreen - check-advance response: $response');
+        final advanced = response['advanced'] as bool? ?? false;
+        final completed = response['completed'] as bool? ?? false;
+
+        if (advanced) {
+          print('LiveQuestionScreen - Question advanced by check-advance');
+        }
+        if (completed) {
+          print('LiveQuestionScreen - Challenge completed by check-advance');
+        }
+      }
+    } catch (e) {
+      print('LiveQuestionScreen - check-advance error: $e');
+    }
+  }
+
+  /// Normalize timeRemaining values coming from the server.
+  /// The backend may return either seconds or milliseconds. We accept int/double/string
+  /// and try to convert to seconds, then clamp to [0, questionDuration].
+  int _normalizeServerTimeRemaining(dynamic value) {
+    final int questionDuration = _getQuestionDurationSeconds();
+
+    if (value == null) return -1;
+
+    int raw;
+    if (value is int) {
+      raw = value;
+    } else if (value is double) {
+      raw = value.toInt();
+    } else if (value is String) {
+      raw = int.tryParse(value) ?? -1;
+    } else {
+      return -1;
+    }
+
+    // Heuristic:
+    // - If raw >= 1000 and <= questionDuration*1000 => it's likely milliseconds
+    // - If raw >= questionDuration*1000 => milliseconds
+    // - Otherwise treat as seconds
+
+    if (raw <= 0) return -1;
+
+    if (raw >= 1000 && raw <= questionDuration * 1000) {
+      final sec = ((raw + 999) ~/ 1000); // ceil
+      return sec.clamp(0, questionDuration);
+    }
+
+    if (raw >= questionDuration * 1000) {
+      final sec = ((raw + 999) ~/ 1000);
+      return sec.clamp(0, questionDuration);
+    }
+
+    // raw is likely seconds; clamp to duration to avoid huge UI values
+    if (raw > questionDuration) {
+      debugPrint(
+        'LiveQuestionScreen - server timeRemaining ($raw) > questionDuration; clamping to $questionDuration',
+      );
+      return questionDuration;
+    }
+
+    return raw.clamp(0, questionDuration);
+  }
+
+  /// Get the current question duration in seconds.
+  /// Accepts multiple field names: 'durationSeconds', 'duration', 'durationMs'.
+  /// Falls back to 30 seconds if not provided or invalid.
+  int _getQuestionDurationSeconds() {
+    const int defaultDuration = 30;
+    if (_currentQuestion == null) return defaultDuration;
+
+    final q = _currentQuestion!;
+
+    // Prefer explicit seconds fields
+    try {
+      if (q.containsKey('durationSeconds')) {
+        final v = q['durationSeconds'];
+        if (v is int && v > 0) return v;
+        if (v is String) return int.tryParse(v) ?? defaultDuration;
+      }
+
+      if (q.containsKey('duration')) {
+        final v = q['duration'];
+        if (v is int && v > 0) return v;
+        if (v is String) return int.tryParse(v) ?? defaultDuration;
+      }
+
+      // If duration is provided in milliseconds
+      if (q.containsKey('durationMs')) {
+        final v = q['durationMs'];
+        if (v is int) return ((v + 999) ~/ 1000).clamp(1, 600).toInt();
+        if (v is String) {
+          final parsed = int.tryParse(v);
+          if (parsed != null) {
+            return ((parsed + 999) ~/ 1000).clamp(1, 600).toInt();
+          }
+        }
+      }
+    } catch (e) {
+      print('LiveQuestionScreen - error parsing question duration: $e');
+    }
+
+    return defaultDuration;
   }
 
   Future<void> _submitAnswer(String? answer) async {
@@ -579,6 +940,13 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
     print('LiveQuestionScreen - Submitting answer: $answer');
     print('LiveQuestionScreen - Question index: $_currentQuestionIndex');
 
+    // Get the correct answer for logging
+    final correctAnswerFromQuestion = _currentQuestion?['answer'];
+    print('LiveQuestionScreen - Correct answer is: $correctAnswerFromQuestion');
+
+    // Play submission feedback
+    _vibrationService.medium();
+
     setState(() {
       _hasAnswered = true;
       _selectedAnswer = answer;
@@ -592,13 +960,19 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
     }
 
     // Submit answer via API
-    // Backend expects answer as a string ("A", "B", "C", "D")
-    print('LiveQuestionScreen - Submitting answer: "$answer"');
+    // Backend expects answer in lowercase to match Firebase ("a", "b", "c", "d")
+    final answerToSubmit = answer.toLowerCase();
+    print(
+      'LiveQuestionScreen - Converting "$answer" to "$answerToSubmit" before submitting',
+    );
+    print(
+      'LiveQuestionScreen - Should match: "$answerToSubmit" == "$correctAnswerFromQuestion"',
+    );
 
     await context.read<ChallengeCubit>().submitAnswer(
       token: authState.token,
       challengeCode: widget.challengeCode,
-      answer: answer,
+      answer: answerToSubmit,
     );
 
     print(
@@ -611,11 +985,11 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
 
     print('LiveQuestionScreen - Navigating to completion screen');
 
-    // Get current user's data from auth
+    // Get current user info
+    String? currentUserId;
     final authState = context.read<AuthCubit>().state;
-    String currentUsername = 'Unknown';
     if (authState is AuthSuccess) {
-      currentUsername = authState.user.username;
+      currentUserId = authState.user.id;
     }
 
     // Find user's rank and score in leaderboard
@@ -624,14 +998,12 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
 
     for (int i = 0; i < _leaderboard.length; i++) {
       final entry = _leaderboard[i];
-      if (entry['username'] == currentUsername) {
+      if (entry['userId'] == currentUserId) {
         userRank = i + 1;
         userScore = entry['score'] ?? 0;
         break;
       }
-    }
-
-    // Calculate correct answers and accuracy
+    } // Calculate correct answers and accuracy
     // Assuming each correct answer is worth points (adjust logic if needed)
     final totalQuestions = _questions.length;
     final correctAnswers = userScore; // Adjust based on your scoring system
@@ -639,7 +1011,10 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
         ? (correctAnswers / totalQuestions * 100)
         : 0.0;
 
-    Navigator.of(context).pushReplacement(
+    if (!mounted) return;
+
+    final nav = _navigator ?? Navigator.of(context);
+    nav.pushReplacement(
       MaterialPageRoute(
         builder: (_) => MultiBlocProvider(
           providers: [
@@ -661,15 +1036,27 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
   }
 
   @override
+  @override
   void dispose() {
     print('LiveQuestionScreen - dispose called');
+
+    // Remove lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
+
+    // Call disconnect API when leaving the screen
+    _disconnectFromChallenge();
+
     _questionTimer?.cancel();
     _questionsSubscription?.cancel();
     _currentIndexSubscription?.cancel();
     _currentStartTimeSubscription?.cancel();
+    _currentEndTimeSubscription?.cancel();
     _statusSubscription?.cancel();
     _leaderboardSubscription?.cancel();
     _answersSubscription?.cancel();
+
+    // Stop polling service
+    _stopPolling();
 
     // Dispose animation controllers
     _questionSlideController.dispose();
@@ -678,6 +1065,52 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
     _feedbackController.dispose();
 
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    print('LiveQuestionScreen - App lifecycle state: $state');
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      // App is going to background or being terminated
+      print(
+        'LiveQuestionScreen - App paused/terminated, disconnecting from challenge',
+      );
+      _disconnectFromChallenge();
+    }
+  }
+
+  /// Disconnect from the challenge (call disconnect API)
+  Future<void> _disconnectFromChallenge() async {
+    if (!mounted) {
+      print('LiveQuestionScreen - Cannot disconnect: widget not mounted');
+      return;
+    }
+
+    try {
+      final authState = context.read<AuthCubit>().state;
+      if (authState is! AuthSuccess) {
+        print('LiveQuestionScreen - Cannot disconnect: not authenticated');
+        return;
+      }
+
+      print(
+        'LiveQuestionScreen - Calling disconnect API for challenge ${widget.challengeCode}',
+      );
+
+      await context.read<ChallengeCubit>().disconnectFromChallenge(
+        token: authState.token,
+        challengeCode: widget.challengeCode,
+      );
+
+      print('LiveQuestionScreen - Successfully disconnected from challenge');
+    } catch (e) {
+      print('LiveQuestionScreen - Error disconnecting from challenge: $e');
+      // Don't show error to user since they're leaving anyway
+    }
   }
 
   Color get _bg => const Color(0xFF000000);
@@ -691,6 +1124,9 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
   Widget build(BuildContext context) {
     return BlocListener<ChallengeCubit, ChallengeState>(
       listener: (context, state) {
+        // Prevent reacting after the State has been disposed.
+        if (!mounted) return;
+
         print('LiveQuestionScreen - BlocListener state: ${state.runtimeType}');
 
         if (state is ChallengeCompleted) {
@@ -699,20 +1135,28 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
           _navigateToCompletion();
         } else if (state is ChallengeError) {
           print('LiveQuestionScreen - Error state: ${state.message}');
-          ScaffoldMessenger.of(context).showSnackBar(
+          final messenger = _scaffoldMessenger ?? ScaffoldMessenger.of(context);
+          messenger.showSnackBar(
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         } else if (state is AnswerSubmitted) {
           print(
             'LiveQuestionScreen - Answer submitted for question ${state.questionIndex}',
           );
-          print('LiveQuestionScreen - Is correct: ${state.isCorrect}');
+          print(
+            'LiveQuestionScreen - Backend says isCorrect: ${state.isCorrect}',
+          );
           print('LiveQuestionScreen - Current score: ${state.currentScore}');
 
-          // Store answer result
-          setState(() {
-            _wasCorrect = state.isCorrect;
-          });
+          // Store answer result from backend
+          if (mounted) {
+            setState(() {
+              print(
+                'LiveQuestionScreen - Overriding local _wasCorrect with backend response: ${state.isCorrect}',
+              );
+              _wasCorrect = state.isCorrect;
+            });
+          }
         }
       },
       child: Scaffold(
@@ -720,9 +1164,31 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
         body: SafeArea(
           child: Column(
             children: [
-              _buildHeader(),
-              _buildProgressBar(),
-              _buildTimerBar(),
+              ChallengeHeader(
+                challengeName: widget.challengeName,
+                currentIndex: _currentQuestionIndex,
+                totalQuestions: _questions.isNotEmpty ? _questions.length : 0,
+                onExit: _showExitDialog,
+                textPrimary: _textPrimary,
+                textSecondary: _textSecondary,
+              ),
+              ChallengeProgressBar(
+                currentIndex: _currentQuestionIndex,
+                totalQuestions: _questions.isNotEmpty ? _questions.length : 0,
+                cardBg: _cardBg,
+                textPrimary: _textPrimary,
+                accentGreen: _green,
+              ),
+              ChallengeTimerBar(
+                timeRemaining: _timeRemaining,
+                durationSeconds: _getQuestionDurationSeconds(),
+                isUrgent: _timeRemaining <= 10,
+                pulse: _timerPulseAnimation,
+                cardBg: _cardBg,
+                textSecondary: _textSecondary,
+                accentGreen: _green,
+                dangerRed: _red,
+              ),
               Expanded(
                 child: _currentQuestion == null
                     ? _buildLoadingState()
@@ -733,148 +1199,6 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(Icons.close, color: _textPrimary),
-            onPressed: () => _showExitDialog(),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  widget.challengeName,
-                  style: TextStyle(
-                    color: _textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  'Question ${_currentQuestionIndex + 1} of 3',
-                  style: TextStyle(color: _textSecondary, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 48),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressBar() {
-    final progress = (_currentQuestionIndex + 1) / 3;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: _cardBg,
-                valueColor: AlwaysStoppedAnimation<Color>(_green),
-                minHeight: 6,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            '${(progress * 100).toInt()}%',
-            style: TextStyle(
-              color: _textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimerBar() {
-    final timerProgress = _timeRemaining / 30;
-    final isUrgent = _timeRemaining <= 10;
-
-    return AnimatedBuilder(
-      animation: _timerPulseAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: isUrgent ? _timerPulseAnimation.value : 1.0,
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: isUrgent
-                  ? _red.withOpacity(0.15)
-                  : _green.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isUrgent
-                    ? _red.withOpacity(0.3)
-                    : _green.withOpacity(0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.timer_outlined,
-                  color: isUrgent ? _red : _green,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            '${_timeRemaining}s',
-                            style: TextStyle(
-                              color: isUrgent ? _red : _green,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'remaining',
-                            style: TextStyle(
-                              color: _textSecondary,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: timerProgress,
-                          backgroundColor: _cardBg,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            isUrgent ? _red : _green,
-                          ),
-                          minHeight: 4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -900,12 +1224,33 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
 
     // Show feedback state if all players answered
     if (_showingFeedback) {
-      return _buildFeedbackState();
+      return FeedbackState(
+        isCorrect: _wasCorrect ?? false,
+        userAnswer: _selectedAnswer ?? 'X',
+        correctAnswer: _correctAnswer ?? '?',
+        currentRank: _currentRank,
+        totalPlayers: _totalPlayers,
+        scale: _feedbackScaleAnimation,
+        bg: _bg,
+        cardBg: _cardBg,
+        textPrimary: _textPrimary,
+        textSecondary: _textSecondary,
+        accentGreen: _green,
+        dangerRed: _red,
+      );
     }
 
     // Show waiting state if user has answered
     if (_isWaitingForOthers) {
-      return _buildWaitingState();
+      return WaitingState(
+        totalAnsweredPlayers: _totalAnsweredPlayers,
+        totalPlayers: _totalPlayers,
+        selectedAnswer: _selectedAnswer,
+        cardBg: _cardBg,
+        textPrimary: _textPrimary,
+        textSecondary: _textSecondary,
+        accentGreen: _green,
+      );
     }
 
     return SingleChildScrollView(
@@ -954,489 +1299,37 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
                   final optionText = entry.value;
                   final isSelected = _selectedAnswer == optionLabel;
 
-                  return _buildOptionButton(
+                  return LiveQuestionOptionButton(
                     label: optionLabel,
                     text: optionText,
                     isSelected: isSelected,
                     onTap: _hasAnswered
                         ? null
                         : () {
+                            _vibrationService.selection();
                             setState(() {
                               _selectedAnswer = optionLabel;
                             });
                           },
+                    cardBg: _cardBg,
+                    textPrimary: _textPrimary,
+                    textSecondary: _textSecondary,
+                    accentGreen: _green,
                   );
                 }).toList(),
                 const SizedBox(height: 24),
-                _buildSubmitButton(),
+                SubmitButton(
+                  canSubmit: _selectedAnswer != null && !_hasAnswered,
+                  hasAnswered: _hasAnswered,
+                  onSubmit: () => _submitAnswer(_selectedAnswer),
+                  cardBg: _cardBg,
+                  textSecondary: _textSecondary,
+                  accentGreen: _green,
+                ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildWaitingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: _cardBg,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              children: [
-                Icon(Icons.hourglass_empty, color: _green, size: 64),
-                const SizedBox(height: 24),
-                Text(
-                  'Waiting for other players...',
-                  style: TextStyle(
-                    color: _textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '${_totalAnsweredPlayers}/$_totalPlayers players answered',
-                  style: TextStyle(color: _textSecondary, fontSize: 16),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: 200,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: _totalPlayers > 0
-                          ? _totalAnsweredPlayers / _totalPlayers
-                          : 0,
-                      backgroundColor: _cardBg,
-                      valueColor: AlwaysStoppedAnimation<Color>(_green),
-                      minHeight: 8,
-                    ),
-                  ),
-                ),
-                if (_selectedAnswer != null) ...[
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _green.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _green.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle, color: _green, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Your answer: $_selectedAnswer',
-                          style: TextStyle(
-                            color: _green,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeedbackState() {
-    final isCorrect = _wasCorrect ?? false;
-    final userAnswer = _selectedAnswer ?? 'X'; // X = no answer
-    final correctAnswer = _correctAnswer ?? '?';
-
-    return ScaleTransition(
-      scale: _feedbackScaleAnimation,
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Result Icon with Hero Animation
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 600),
-                tween: Tween(begin: 0.0, end: 1.0),
-                curve: Curves.elasticOut,
-                builder: (context, value, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: Transform.rotate(
-                      angle: (1 - value) * 0.5,
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: isCorrect
-                              ? _green.withOpacity(0.15)
-                              : _red.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: (isCorrect ? _green : _red).withOpacity(
-                                0.3,
-                              ),
-                              blurRadius: 30,
-                              spreadRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          isCorrect ? Icons.check_circle : Icons.cancel,
-                          color: isCorrect ? _green : _red,
-                          size: 80,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // Result Text with Fade Animation
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween(begin: 0.0, end: 1.0),
-                curve: Curves.easeOut,
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Text(
-                      isCorrect
-                          ? 'Correct!'
-                          : userAnswer == 'X'
-                          ? 'Time Out!'
-                          : 'Incorrect!',
-                      style: TextStyle(
-                        color: _textPrimary,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Answer Info
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: _cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    if (userAnswer != 'X') ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Your answer: ',
-                            style: TextStyle(
-                              color: _textSecondary,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isCorrect ? _green : _red,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              userAnswer,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (!isCorrect) ...[
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Correct answer: ',
-                              style: TextStyle(
-                                color: _textSecondary,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _green,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                correctAnswer,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ] else ...[
-                      Text(
-                        'You didn\'t answer in time',
-                        style: TextStyle(color: _textSecondary, fontSize: 16),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Correct answer: ',
-                            style: TextStyle(
-                              color: _textSecondary,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _green,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              correctAnswer,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Rank Display
-              if (_currentRank != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: _cardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _green.withOpacity(0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.emoji_events, color: _green, size: 32),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Your Rank',
-                            style: TextStyle(
-                              color: _textSecondary,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '#$_currentRank',
-                        style: TextStyle(
-                          color: _green,
-                          fontSize: 48,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      Text(
-                        'out of $_totalPlayers players',
-                        style: TextStyle(color: _textSecondary, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // Next Question Info
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 24,
-                ),
-                decoration: BoxDecoration(
-                  color: _green.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: _green,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Next question loading...',
-                      style: TextStyle(
-                        color: _green,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSubmitButton() {
-    final canSubmit = _selectedAnswer != null && !_hasAnswered;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: canSubmit ? () => _submitAnswer(_selectedAnswer) : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            color: canSubmit ? _green : _cardBg,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.send,
-                color: canSubmit ? Colors.white : _textSecondary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                _hasAnswered ? 'Submitted' : 'Submit Answer',
-                style: TextStyle(
-                  color: canSubmit ? Colors.white : _textSecondary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOptionButton({
-    required String label,
-    required String text,
-    required bool isSelected,
-    VoidCallback? onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? _green : Colors.transparent,
-                width: 2,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isSelected ? _green : _cardBg,
-                    border: Border.all(
-                      color: isSelected ? _green : _textSecondary,
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : _textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    text,
-                    style: TextStyle(
-                      color: _textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -1477,8 +1370,12 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
   }
 
   void _showLeaderboard() {
+    if (!mounted) return;
+
+    final sheetContext = _navigator?.context ?? context;
+
     showModalBottomSheet(
-      context: context,
+      context: sheetContext,
       backgroundColor: _bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1511,100 +1408,53 @@ class _LiveQuestionScreenState extends State<LiveQuestionScreen>
                   style: TextStyle(color: _textSecondary),
                 ),
               )
-            else
-              ..._leaderboard.take(5).map((entry) {
-                final rank = (_leaderboard.indexOf(entry) + 1);
-                return _buildLeaderboardEntry(
-                  rank: rank,
-                  username: entry['username'] ?? 'Unknown',
-                  score: entry['score'] ?? 0,
-                );
-              }).toList(),
+            else ...[
+              // Get current user ID
+              Builder(
+                builder: (context) {
+                  String? currentUserId;
+                  if (context.read<AuthCubit>().state is AuthSuccess) {
+                    currentUserId =
+                        (context.read<AuthCubit>().state as AuthSuccess)
+                            .user
+                            .id;
+                  }
+
+                  return Column(
+                    children: _leaderboard.take(5).map((entry) {
+                      final rank = (_leaderboard.indexOf(entry) + 1);
+                      return LeaderboardEntry(
+                        rank: rank,
+                        username:
+                            entry['name'] ?? entry['username'] ?? 'Unknown',
+                        score: entry['score'] ?? 0,
+                        userId: entry['userId'],
+                        currentUserId: currentUserId,
+                        photoUrl: entry['photoUrl'],
+                        cardBg: _cardBg,
+                        textPrimary: _textPrimary,
+                        textSecondary: _textSecondary,
+                        accentGreen: _green,
+                        bg: _bg,
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLeaderboardEntry({
-    required int rank,
-    required String username,
-    required int score,
-  }) {
-    final isMedalist = rank <= 3;
-    final medalColor = rank == 1
-        ? const Color(0xFFFFD700)
-        : rank == 2
-        ? const Color(0xFFC0C0C0)
-        : const Color(0xFFCD7F32);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: _cardBg,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isMedalist ? medalColor.withOpacity(0.2) : _bg,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Center(
-              child: Text(
-                '$rank',
-                style: TextStyle(
-                  color: isMedalist ? medalColor : _textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            username.length > 2
-                ? username.substring(0, 2).toUpperCase()
-                : username.toUpperCase(),
-            style: TextStyle(
-              color: _textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              username,
-              style: TextStyle(
-                color: _textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Text(
-            '$score',
-            style: TextStyle(
-              color: _green,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Icon(Icons.circle, color: _green, size: 8),
-        ],
-      ),
-    );
-  }
-
   void _showExitDialog() {
+    if (!mounted) return;
+
+    final dialogContext = _navigator?.context ?? context;
+
     showDialog(
-      context: context,
+      context: dialogContext,
       builder: (context) => AlertDialog(
         backgroundColor: _cardBg,
         title: Text('Leave Challenge?', style: TextStyle(color: _textPrimary)),

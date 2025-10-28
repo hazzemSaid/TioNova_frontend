@@ -19,6 +19,7 @@ import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/data/datasource/remote_Livechallenge_datasource.dart';
 import 'package:tionova/features/challenges/data/repo/LiveChallenge_Imprepo.dart';
 import 'package:tionova/features/challenges/domain/repo/LiveChallenge_repo.dart';
+import 'package:tionova/features/challenges/domain/usecase/checkAndAdvanceusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/createLiveChallengeusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/disconnectFromLiveChallengeusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/joinLiveChallengeusecase.dart';
@@ -322,9 +323,12 @@ Future<void> setupServiceLocator() async {
       repository: getIt<LiveChallengeRepo>(),
     ),
   );
-
+  getIt.registerLazySingleton<CheckAndAdvanceUseCase>(
+    () => CheckAndAdvanceUseCase(liveChallengeRepo: getIt<LiveChallengeRepo>()),
+  );
   getIt.registerFactory(
     () => ChallengeCubit(
+      checkAndAdvanceUseCase: getIt<CheckAndAdvanceUseCase>(),
       submitLiveAnswerUseCase: getIt<SubmitLiveAnswerUseCase>(),
       createLiveChallengeUseCase: getIt<CreateLiveChallengeUseCase>(),
       disconnectfromlivechallengeusecase:

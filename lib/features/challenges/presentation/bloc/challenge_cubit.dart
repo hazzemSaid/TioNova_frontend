@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:tionova/features/challenges/domain/usecase/checkAndAdvanceusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/createLiveChallengeusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/disconnectFromLiveChallengeusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/joinLiveChallengeusecase.dart';
@@ -17,6 +18,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   final StartLiveChallengeUseCase startLiveChallengeUseCase;
   final JoinLiveChallengeUseCase joinLiveChallengeUseCase;
   final SubmitLiveAnswerUseCase submitLiveAnswerUseCase;
+  final CheckAndAdvanceUseCase checkAndAdvanceUseCase;
 
   // Firebase listeners
   StreamSubscription<DatabaseEvent>? _statusSubscription;
@@ -35,6 +37,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     required this.disconnectfromlivechallengeusecase,
     required this.startLiveChallengeUseCase,
     required this.joinLiveChallengeUseCase,
+    required this.checkAndAdvanceUseCase,
   }) : super(ChallengeInitial());
 
   /// Create a new live challenge
@@ -289,6 +292,51 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     } catch (e) {
       print('ChallengeCubit - Disconnect failed: ${e.toString()}');
       emit(ChallengeError('Failed to disconnect: ${e.toString()}'));
+    }
+  }
+
+  /// Check if all players answered and advance to next question if needed
+  /// Used for polling mechanism
+  Future<Map<String, dynamic>?> checkAndAdvanceQuestion({
+    required String token,
+    required String challengeCode,
+  }) async {
+    try {
+      print('ChallengeCubit - Checking if should advance question');
+
+      final result = await checkAndAdvanceUseCase.call(
+        token: token,
+        challengeCode: challengeCode,
+      );
+
+      return result.fold(
+        (failure) {
+          print('ChallengeCubit - Check advance failed: ${failure.toString()}');
+          return null;
+        },
+        (response) {
+          print('ChallengeCubit - Check advance response: $response');
+
+          // Extract response data (lint: variables may not be used immediately)
+          final advanced = response['advanced'] as bool? ?? false;
+          final completed = response['completed'] as bool? ?? false;
+          final currentIndex = response['currentIndex'] as int? ?? 0;
+
+          if (completed) {
+            print('ChallengeCubit - Challenge completed');
+            _handleChallengeCompletion();
+          } else if (advanced) {
+            print('ChallengeCubit - Advanced to question $currentIndex');
+            _currentQuestionIndex = currentIndex;
+            _updateCurrentQuestion(currentIndex);
+          }
+
+          return response;
+        },
+      );
+    } catch (e) {
+      print('ChallengeCubit - Check advance exception: ${e.toString()}');
+      return null;
     }
   }
 

@@ -162,4 +162,39 @@ Behavior: writes to answers[currentIndex][userId] , increments score on correctn
       return Left(ServerFailure('Failed to submit answer: ${e.toString()}'));
     }
   }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> checkAndAdvance({
+    required String token,
+    required String challengeCode,
+  }) async {
+    /*API: POST /api/v1/live/challenges/check-advance
+
+Body: { challengeCode: string }
+
+Auth: required
+
+Returns: { needsAdvance, advanced, completed, timeRemaining, currentIndex }
+
+Behavior: Checks if all players answered, advances to next question if needed*/
+    try {
+      final response = await _dio.post(
+        "/live/challenges/check-advance",
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        data: {'challengeCode': challengeCode},
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return Right(response.data as Map<String, dynamic>);
+      } else {
+        final message = (response.data is Map)
+            ? (response.data as Map)['message']
+            : null;
+        return Left(ServerFailure(message ?? 'Failed to check and advance'));
+      }
+    } catch (e) {
+      return Left(
+        ServerFailure('Failed to check and advance: ${e.toString()}'),
+      );
+    }
+  }
 }

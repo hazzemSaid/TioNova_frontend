@@ -69,4 +69,15 @@ class LiveChallengeImpRepo implements LiveChallengeRepo {
       answer: answer,
     );
   }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> checkAndAdvance({
+    required String token,
+    required String challengeCode,
+  }) {
+    return remoteDataSource.checkAndAdvance(
+      token: token,
+      challengeCode: challengeCode,
+    );
+  }
 }

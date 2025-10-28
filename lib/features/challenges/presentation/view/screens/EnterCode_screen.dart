@@ -54,11 +54,17 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
 
     return BlocListener<ChallengeCubit, ChallengeState>(
       listener: (context, state) {
+        // Guard against reacting after this widget has been disposed.
+        // Some bloc state changes can arrive while the widget is unmounted
+        // (for example when navigating away), which causes ancestor lookups
+        // like Navigator.of(context) or ScaffoldMessenger.of(context) to fail.
+        if (!mounted) return;
+
         print('EnterCodeScreen - BlocListener state: $state');
         if (state is ChallengeJoined) {
           // Navigate to waiting lobby after successfully joining
           print('ChallengeJoined detected - navigating to waiting lobby');
-          
+
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => MultiBlocProvider(
