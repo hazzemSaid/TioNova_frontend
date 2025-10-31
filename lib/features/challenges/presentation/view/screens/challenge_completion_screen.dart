@@ -42,16 +42,16 @@ class ChallengeCompletionScreen extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    const SizedBox(height: 40),
-                    _buildTrophyIcon(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+                    _buildTopThreePodium(),
+                    const SizedBox(height: 32),
                     _buildTitle(),
                     const SizedBox(height: 8),
                     _buildSubtitle(),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                     _buildPerformanceCard(),
                     const SizedBox(height: 24),
-                    _buildFinalRankings(),
+                    _buildFullRankings(),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -64,6 +64,171 @@ class ChallengeCompletionScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildTopThreePodium() {
+    if (leaderboard.length < 3) {
+      return _buildTrophyIcon(); // Fallback to trophy if less than 3 players
+    }
+
+    final top3 = leaderboard.take(3).toList();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // 2nd Place
+          if (top3.length > 1)
+            Expanded(
+              child: _buildPodiumPlace(
+                rank: 2,
+                entry: top3[1],
+                height: 100,
+                medalColor: _silver,
+              ),
+            ),
+          const SizedBox(width: 8),
+          // 1st Place
+          Expanded(
+            child: _buildPodiumPlace(
+              rank: 1,
+              entry: top3[0],
+              height: 130,
+              medalColor: _gold,
+            ),
+          ),
+          const SizedBox(width: 8),
+          // 3rd Place
+          if (top3.length > 2)
+            Expanded(
+              child: _buildPodiumPlace(
+                rank: 3,
+                entry: top3[2],
+                height: 80,
+                medalColor: _bronze,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPodiumPlace({
+    required int rank,
+    required Map<String, dynamic> entry,
+    required double height,
+    required Color medalColor,
+  }) {
+    final name = entry['name'] ?? entry['username'] ?? 'Player';
+    final photoUrl = entry['photoUrl'] ?? '';
+    final score = entry['score'] ?? 0;
+    final isCurrentUser = rank == this.rank;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Avatar
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isCurrentUser ? _green : medalColor,
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: medalColor.withOpacity(0.3),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: photoUrl.isNotEmpty
+              ? CircleAvatar(
+                  radius: rank == 1 ? 36 : 30,
+                  backgroundImage: NetworkImage(photoUrl),
+                  backgroundColor: _cardBg,
+                )
+              : CircleAvatar(
+                  radius: rank == 1 ? 36 : 30,
+                  backgroundColor: medalColor.withOpacity(0.2),
+                  child: Text(
+                    name.length >= 2
+                        ? name.substring(0, 2).toUpperCase()
+                        : name.toUpperCase(),
+                    style: TextStyle(
+                      color: medalColor,
+                      fontSize: rank == 1 ? 20 : 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+        ),
+        const SizedBox(height: 8),
+        // Medal Icon
+        Icon(
+          rank == 1
+              ? Icons.workspace_premium
+              : rank == 2
+              ? Icons.workspace_premium_outlined
+              : Icons.military_tech_outlined,
+          color: medalColor,
+          size: rank == 1 ? 32 : 24,
+        ),
+        const SizedBox(height: 4),
+        // Name
+        Text(
+          name,
+          style: TextStyle(
+            color: isCurrentUser ? _green : _textPrimary,
+            fontSize: 13,
+            fontWeight: isCurrentUser ? FontWeight.w700 : FontWeight.w600,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 2),
+        // Score
+        Text(
+          '$score',
+          style: TextStyle(
+            color: medalColor,
+            fontSize: rank == 1 ? 18 : 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Podium
+        Container(
+          height: height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                medalColor.withOpacity(0.3),
+                medalColor.withOpacity(0.1),
+              ],
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            border: Border.all(color: medalColor.withOpacity(0.5), width: 2),
+          ),
+          child: Center(
+            child: Text(
+              '$rank',
+              style: TextStyle(
+                color: medalColor,
+                fontSize: rank == 1 ? 48 : 36,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTrophyIcon() {
     return Container(
       width: 120,
@@ -72,11 +237,7 @@ class ChallengeCompletionScreen extends StatelessWidget {
         color: _green.withOpacity(0.15),
         shape: BoxShape.circle,
       ),
-      child: Icon(
-        Icons.emoji_events,
-        size: 64,
-        color: _green,
-      ),
+      child: Icon(Icons.emoji_events, size: 64, color: _green),
     );
   }
 
@@ -100,10 +261,7 @@ class ChallengeCompletionScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Text(
         challengeName,
-        style: TextStyle(
-          color: _textSecondary,
-          fontSize: 16,
-        ),
+        style: TextStyle(color: _textSecondary, fontSize: 16),
         textAlign: TextAlign.center,
       ),
     );
@@ -170,18 +328,21 @@ class ChallengeCompletionScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: _textSecondary,
-            fontSize: 13,
-          ),
-        ),
+        Text(label, style: TextStyle(color: _textSecondary, fontSize: 13)),
       ],
     );
   }
 
-  Widget _buildFinalRankings() {
+  Widget _buildFullRankings() {
+    // Show all rankings or rankings from 4th place onwards if there are more than 3
+    final rankingsToShow = leaderboard.length > 3
+        ? leaderboard.skip(3).toList()
+        : leaderboard;
+
+    if (rankingsToShow.isEmpty) {
+      return const SizedBox.shrink(); // Don't show if no additional rankings
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(20),
@@ -194,10 +355,10 @@ class ChallengeCompletionScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.emoji_events, color: _gold, size: 20),
+              Icon(Icons.leaderboard_rounded, color: _green, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Final Rankings',
+                leaderboard.length > 3 ? 'Other Rankings' : 'Rankings',
                 style: TextStyle(
                   color: _textPrimary,
                   fontSize: 18,
@@ -206,34 +367,26 @@ class ChallengeCompletionScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          if (leaderboard.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  'No rankings available',
-                  style: TextStyle(color: _textSecondary),
-                ),
-              ),
-            )
-          else
-            ...leaderboard.take(5).map((entry) {
-              final index = leaderboard.indexOf(entry);
-              final currentRank = index + 1;
-              final username = entry['username'] ?? 'Player ${index + 1}';
-              final score = entry['score'] ?? 0;
-              final time = entry['time'] ?? '0s';
-              final isCurrentUser = currentRank == rank;
+          const SizedBox(height: 16),
+          ...rankingsToShow.map((entry) {
+            final index = leaderboard.indexOf(entry);
+            final currentRank = index + 1;
+            final name =
+                entry['name'] ?? entry['username'] ?? 'Player ${index + 1}';
+            final photoUrl = entry['photoUrl'] ?? '';
+            final score = entry['score'] ?? 0;
+            final time = entry['time'] ?? '0s';
+            final isCurrentUser = currentRank == rank;
 
-              return _buildRankingEntry(
-                rank: currentRank,
-                username: username,
-                score: score,
-                time: time,
-                isCurrentUser: isCurrentUser,
-              );
-            }).toList(),
+            return _buildRankingEntry(
+              rank: currentRank,
+              name: name,
+              photoUrl: photoUrl,
+              score: score,
+              time: time,
+              isCurrentUser: isCurrentUser,
+            );
+          }).toList(),
         ],
       ),
     );
@@ -241,54 +394,64 @@ class ChallengeCompletionScreen extends StatelessWidget {
 
   Widget _buildRankingEntry({
     required int rank,
-    required String username,
+    required String name,
+    String? photoUrl,
     required int score,
     required String time,
     required bool isCurrentUser,
   }) {
-    final isMedalist = rank <= 3;
-    final medalColor = rank == 1
-        ? _gold
-        : rank == 2
-            ? _silver
-            : _bronze;
-
-    IconData? medalIcon;
-    if (rank == 1) {
-      medalIcon = Icons.workspace_premium;
-    } else if (rank == 2) {
-      medalIcon = Icons.workspace_premium_outlined;
-    } else if (rank == 3) {
-      medalIcon = Icons.military_tech_outlined;
-    }
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isCurrentUser ? _green.withOpacity(0.1) : _panelBg,
         borderRadius: BorderRadius.circular(12),
-        border: isCurrentUser
-            ? Border.all(color: _green, width: 2)
-            : null,
+        border: isCurrentUser ? Border.all(color: _green, width: 2) : null,
       ),
       child: Row(
         children: [
-          if (isMedalist && medalIcon != null)
-            Icon(medalIcon, color: medalColor, size: 28)
+          // Rank Badge
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isCurrentUser ? _green.withOpacity(0.2) : _cardBg,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                '$rank',
+                style: TextStyle(
+                  color: isCurrentUser ? _green : _textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Avatar: Photo or Initials
+          if (photoUrl != null && photoUrl.isNotEmpty)
+            CircleAvatar(
+              radius: 20,
+              backgroundImage: NetworkImage(photoUrl),
+              backgroundColor: _cardBg,
+            )
           else
             Container(
-              width: 28,
-              height: 28,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: _cardBg,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Center(
                 child: Text(
-                  '$rank',
+                  name.length >= 2
+                      ? name.substring(0, 2).toUpperCase()
+                      : name.toUpperCase(),
                   style: TextStyle(
-                    color: _textPrimary,
+                    color: _textSecondary,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -296,33 +459,12 @@ class ChallengeCompletionScreen extends StatelessWidget {
               ),
             ),
           const SizedBox(width: 12),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: isMedalist ? medalColor.withOpacity(0.2) : _cardBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                username.length >= 2
-                    ? username.substring(0, 2).toUpperCase()
-                    : username.toUpperCase(),
-                style: TextStyle(
-                  color: isMedalist ? medalColor : _textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  username,
+                  name,
                   style: TextStyle(
                     color: _textPrimary,
                     fontSize: 15,
@@ -331,10 +473,7 @@ class ChallengeCompletionScreen extends StatelessWidget {
                 ),
                 Text(
                   'Time: $time',
-                  style: TextStyle(
-                    color: _textSecondary,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: _textSecondary, fontSize: 12),
                 ),
               ],
             ),
@@ -422,7 +561,8 @@ class ChallengeCompletionScreen extends StatelessWidget {
 
   void _shareResults() {
     // Share functionality
-    final message = '''
+    final message =
+        '''
 🏆 Challenge Complete!
 
 Challenge: $challengeName

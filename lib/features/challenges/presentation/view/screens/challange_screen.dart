@@ -120,7 +120,7 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                         subtitle: 'Quick access with your camera',
                         actionLabel: 'Scan',
                         onTap: () {
-                          // TODO: Implement Scan QR Code action
+                          context.push('/challenges/scan-qr');
                         },
                       ),
                       const SizedBox(height: 16),

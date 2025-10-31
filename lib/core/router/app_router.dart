@@ -16,6 +16,7 @@ import 'package:tionova/features/auth/presentation/view/screens/reset_password_s
 import 'package:tionova/features/auth/presentation/view/screens/verify_reset_code_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/EnterCode_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/qr_scanner_screen.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
@@ -336,6 +337,12 @@ class AppRouter {
           name: 'challenges',
           builder: (BuildContext context, GoRouterState state) =>
               ChallangeScreen(),
+        ),
+        GoRoute(
+          path: '/challenges/scan-qr',
+          name: 'scan-qr',
+          builder: (BuildContext context, GoRouterState state) =>
+              const QrScannerScreen(),
         ),
         GoRoute(
           path: '/enter-code',
