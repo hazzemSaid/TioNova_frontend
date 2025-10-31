@@ -71,7 +71,7 @@ Future<void> setupServiceLocator() async {
   final Dio dio = Dio(
     // http://192.168.1.12:3000/api/v1
     //https://tio-nova-backend.vercel.app/api/v1
-    BaseOptions(baseUrl: 'http://192.168.1.12:3000/api/v1'),
+    BaseOptions(baseUrl: 'https://tio-nova-backend.vercel.app/api/v1'),
   );
 
   dio.interceptors.add(

@@ -141,7 +141,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
     }
   }
 
-  @override
   // Helper method to recursively sanitize all strings in a JSON object
   dynamic _sanitizeJsonData(dynamic data) {
     if (data == null) return null;
@@ -207,13 +206,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
           // Parse the complete response using SummaryResponse.fromJson
           final summaryResponse = SummaryResponse.fromJson(sanitizedData);
           print('Summary parsed successfully');
-          print(
-            'Key concepts count: ${summaryResponse.summary.keyConcepts.length}',
-          );
-          print('Examples count: ${summaryResponse.summary.examples.length}');
-          print(
-            'Professional implications count: ${summaryResponse.summary.professionalImplications.length}',
-          );
           return Right(summaryResponse);
         } catch (parseError) {
           print('Error parsing summary response: $parseError');

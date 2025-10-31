@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/live_question_screen.dart';
@@ -317,32 +318,39 @@ class _ChallengeWaitingLobbyScreenState
   Color get _panelBg => const Color(0xFF0E0E10);
   Color get _textPrimary => const Color(0xFFFFFFFF);
   Color get _textSecondary => const Color(0xFF8E8E93);
-  Color get _divider => const Color(0xFF2C2C2E);
   Color get _green => const Color.fromRGBO(0, 153, 102, 1);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-              _buildTrophyIcon(),
-              const SizedBox(height: 32),
-              _buildTitle(),
-              const SizedBox(height: 16),
-              _buildParticipantCount(),
-              const SizedBox(height: 32),
-              _buildWaitingMessage(),
-              const SizedBox(height: 48),
-              _buildLoadingIndicator(),
-              const Spacer(),
-              _buildLeaveButton(),
-            ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _showLeaveDialog();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(),
+                _buildTrophyIcon(),
+                const SizedBox(height: 32),
+                _buildTitle(),
+                const SizedBox(height: 16),
+                _buildParticipantCount(),
+                const SizedBox(height: 32),
+                _buildWaitingMessage(),
+                const SizedBox(height: 48),
+                _buildLoadingIndicator(),
+                const Spacer(),
+                _buildLeaveButton(),
+              ],
+            ),
           ),
         ),
       ),
@@ -562,7 +570,7 @@ class _ChallengeWaitingLobbyScreenState
   void _showLeaveDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: _cardBg,
         title: Text('Leave Challenge?', style: TextStyle(color: _textPrimary)),
         content: Text(
@@ -571,13 +579,13 @@ class _ChallengeWaitingLobbyScreenState
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text('Cancel', style: TextStyle(color: _textSecondary)),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Go back to previous screen
+              Navigator.pop(dialogContext); // Close dialog
+              context.go('/challenges'); // Navigate back to challenges screen
             },
             child: Text('Leave', style: TextStyle(color: Colors.red)),
           ),

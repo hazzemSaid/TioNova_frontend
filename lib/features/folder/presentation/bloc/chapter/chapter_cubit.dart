@@ -141,11 +141,11 @@ class ChapterCubit extends Cubit<ChapterState> {
         );
         print('💬 API Message: ${summaryResponse.message}');
         print(
-          '🔢 Key concepts count: ${summaryResponse.summary.keyConcepts.length}',
+          '🔢 Key points count: ${summaryResponse.summary.keyPoints.length}',
         );
-        print('📝 Examples count: ${summaryResponse.summary.examples.length}');
+        print('� Definitions count: ${summaryResponse.summary.definitions.length}');
         print(
-          '💼 Professional implications count: ${summaryResponse.summary.professionalImplications.length}',
+          '🎴 Flashcards count: ${summaryResponse.summary.flashcards.length}',
         );
 
         try {

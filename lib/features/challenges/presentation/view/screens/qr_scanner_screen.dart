@@ -16,6 +16,7 @@ class QrScannerScreen extends StatefulWidget {
 class _QrScannerScreenState extends State<QrScannerScreen> {
   MobileScannerController cameraController = MobileScannerController();
   bool _isProcessing = false;
+  String? _scannedCode;
 
   Color get _bg => const Color(0xFF000000);
   Color get _cardBg => const Color(0xFF1C1C1E);
@@ -40,6 +41,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
     setState(() {
       _isProcessing = true;
+      _scannedCode = code;
     });
 
     print('QR Scanner - Code detected: $code');
@@ -49,113 +51,97 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   Future<void> _joinChallenge(String challengeCode) async {
-    try {
-      final authState = context.read<AuthCubit>().state;
-      if (authState is! AuthSuccess) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please login first'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          context.pop();
-        }
-        return;
-      }
-
-      print('QR Scanner - Joining challenge: $challengeCode');
-
-      // Call join challenge API
-      await context.read<ChallengeCubit>().joinChallenge(
-        token: authState.token,
-        challengeCode: challengeCode,
-      );
-
-      // Wait a bit for state to update
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (!mounted) return;
-
-      // Check the current state
-      final challengeState = context.read<ChallengeCubit>().state;
-
-      if (challengeState is ChallengeJoined) {
-        // Success - navigate to waiting room
-        print('QR Scanner - Successfully joined challenge');
-        context.go('/challenges/waiting/$challengeCode');
-      } else if (challengeState is ChallengeError) {
-        // Error
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(challengeState.message),
-            backgroundColor: Colors.red,
-          ),
-        );
-        setState(() {
-          _isProcessing = false;
-        });
-      }
-    } catch (e) {
-      print('QR Scanner - Error: $e');
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthSuccess) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
+          const SnackBar(
+            content: Text('Please login first'),
             backgroundColor: Colors.red,
           ),
         );
-        setState(() {
-          _isProcessing = false;
-        });
+        context.pop();
       }
+      return;
     }
+
+    print('QR Scanner - Joining challenge: $challengeCode');
+
+    // Call join challenge API using the use case
+    await context.read<ChallengeCubit>().joinChallenge(
+      token: authState.token,
+      challengeCode: challengeCode,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: Stack(
-        children: [
-          // Camera preview
-          MobileScanner(controller: cameraController, onDetect: _onDetect),
-          // Overlay
-          _buildOverlay(),
-          // Top bar
-          SafeArea(
-            child: Column(
-              children: [
-                _buildTopBar(),
-                const Spacer(),
-                _buildInstructions(),
-                const SizedBox(height: 40),
-              ],
+    return BlocListener<ChallengeCubit, ChallengeState>(
+      listener: (context, state) {
+        if (!_isProcessing) return;
+
+        if (state is ChallengeJoined) {
+          // Success - navigate to waiting room
+          print('QR Scanner - Successfully joined challenge');
+          context.go('/challenges/waiting/${_scannedCode}');
+        } else if (state is ChallengeError) {
+          // Error - show message and allow rescan
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
             ),
-          ),
-          // Processing indicator
-          if (_isProcessing)
-            Container(
-              color: Colors.black54,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: _green),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Joining challenge...',
-                      style: TextStyle(
-                        color: _textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+          );
+          setState(() {
+            _isProcessing = false;
+            _scannedCode = null;
+          });
+        }
+      },
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: Stack(
+          children: [
+            // Camera preview
+            MobileScanner(controller: cameraController, onDetect: _onDetect),
+            // Overlay
+            _buildOverlay(),
+            // Top bar
+            SafeArea(
+              child: Column(
+                children: [
+                  _buildTopBar(),
+                  const Spacer(),
+                  _buildInstructions(),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
-        ],
+            // Processing indicator
+            if (_isProcessing)
+              Container(
+                color: Colors.black54,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: _green),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Joining challenge...',
+                        style: TextStyle(
+                          color: _textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -33,7 +33,7 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
   bool submitted = false;
   late Timer _timer;
   late int _remainingTimeInSeconds;
-  static const int quizDurationInMinutes = 1;
+  static const int quizDurationInMinutes = 15;
 
   // Map to track answers by question index for better management
   final Map<int, String> answersMap = {};

@@ -19,8 +19,24 @@ class SummaryViewerScreen extends StatefulWidget {
   State<SummaryViewerScreen> createState() => _SummaryViewerScreenState();
 }
 
-class _SummaryViewerScreenState extends State<SummaryViewerScreen> {
+class _SummaryViewerScreenState extends State<SummaryViewerScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   bool _isGeneratingPdf = false;
+  int _currentFlashcardIndex = 0;
+  bool _showFlashcardAnswer = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   Future<void> _downloadPdf() async {
     setState(() {
@@ -43,7 +59,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen> {
         context: context,
       );
 
-      if (success) {
+      if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Summary PDF downloaded successfully'),
@@ -52,29 +68,33 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to download PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to download PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      setState(() {
-        _isGeneratingPdf = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isGeneratingPdf = false;
+        });
+      }
     }
   }
 
-  Color _getDifficultyColor(String difficulty) {
-    switch (difficulty.toLowerCase()) {
-      case 'easy':
-        return Colors.green;
-      case 'medium':
+  Color _getTypeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'important':
         return Colors.orange;
-      case 'hard':
-        return Colors.red;
-      default:
+      case 'concept':
         return Colors.blue;
+      case 'example':
+        return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -84,112 +104,330 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text(
-          'AI Summary',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            onPressed: _isGeneratingPdf ? null : _downloadPdf,
-            icon: _isGeneratingPdf
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Icon(Icons.download, color: Colors.white),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            // Header
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF141414),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1C1C1E)),
+                color: widget.accentColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
               ),
+              child: Icon(
+                Icons.auto_awesome,
+                color: widget.accentColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.smart_toy_outlined,
-                        color: widget.accentColor,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'AI-Generated Summary',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    'AI Summary',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 8),
                   Text(
-                    'Chapter: ${widget.chapterTitle}',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                    widget.summaryData.chapterTitle.isNotEmpty
+                        ? widget.summaryData.chapterTitle
+                        : widget.chapterTitle,
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
+          ],
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              onPressed: _isGeneratingPdf ? null : _downloadPdf,
+              icon: _isGeneratingPdf
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.save_alt, color: Colors.white, size: 22),
+            ),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            color: Colors.black,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.grey[600],
+              indicatorColor: widget.accentColor,
+              indicatorWeight: 3,
+              labelStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              tabs: const [
+                Tab(text: 'Overview'),
+                Tab(text: 'Key Points'),
+                Tab(text: 'Definitions'),
+                Tab(text: 'Cards'),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildOverviewTab(),
+          _buildKeyPointsTab(),
+          _buildDefinitionsTab(),
+          _buildFlashcardsTab(),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildOverviewTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF2C2C2E)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      color: widget.accentColor,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Chapter Overview',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  widget.summaryData.chapterOverview.summary,
+                  style: TextStyle(
+                    color: Colors.grey[300],
+                    fontSize: 15,
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          if (widget.summaryData.keyTakeaways.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  color: widget.accentColor,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Key Takeaways',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...widget.summaryData.keyTakeaways.asMap().entries.map(
+                  (entry) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1C1C1E),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: widget.accentColor.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: widget.accentColor.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${entry.key + 1}',
+                              style: TextStyle(
+                                color: widget.accentColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            entry.value,
+                            style: TextStyle(
+                              color: Colors.grey[300],
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             const SizedBox(height: 24),
+          ],
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.auto_awesome, color: Colors.grey[600], size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Generated by TioNova AI',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
 
-            // Key Concepts Section
-            if (widget.summaryData.keyConcepts.isNotEmpty) ...[
-              Text(
-                'Key Concepts',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+  Widget _buildKeyPointsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.summaryData.keyPoints.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Icon(Icons.lightbulb_outline,
+                        size: 64, color: Colors.grey[700]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No key points available',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              ...widget.summaryData.keyConcepts.map(
-                (concept) => Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF141414),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF1C1C1E)),
+            )
+          else
+            ...widget.summaryData.keyPoints.map(
+              (keyPoint) => Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1C1C1E),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _getTypeColor(keyPoint.type).withOpacity(0.3),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _getTypeColor(keyPoint.type).withOpacity(0.1),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                      ),
+                      child: Row(
                         children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getTypeColor(keyPoint.type),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              keyPoint.type.toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              concept.title,
+                              keyPoint.title,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -197,227 +435,301 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen> {
                               ),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getDifficultyColor(
-                                concept.difficultyLevel,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              concept.difficultyLevel.toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        concept.text,
-                        style: TextStyle(
-                          color: Colors.grey[300],
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                      ),
-                      if (concept.tags.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: concept.tags
-                              .map(
-                                (tag) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1C1C1E),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: widget.accentColor.withOpacity(
-                                        0.3,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    tag,
-                                    style: TextStyle(
-                                      color: widget.accentColor,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // Examples Section
-            if (widget.summaryData.examples.isNotEmpty) ...[
-              Text(
-                'Examples',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ...widget.summaryData.examples.map(
-                (example) => Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0A2A0A),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Concept: ${example.concept}',
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1C1C1E),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          example.example,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                      if (example.notes.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Note: ${example.notes}',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // Professional Implications Section
-            if (widget.summaryData.professionalImplications.isNotEmpty) ...[
-              Text(
-                'Professional Implications',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ...widget.summaryData.professionalImplications.map(
-                (implication) => Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A0A2A),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        implication.title,
-                        style: const TextStyle(
-                          color: Colors.purple,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        implication.text,
-                        style: TextStyle(
-                          color: Colors.grey[300],
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // Footer
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF141414),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1C1C1E)),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.smart_toy_outlined,
-                    color: Colors.grey[500],
-                    size: 32,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Generated by TioNova AI',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
                     ),
-                  ),
-                  Text(
-                    DateTime.now().toString().substring(0, 19),
-                    style: TextStyle(color: Colors.grey[600], fontSize: 10),
-                  ),
-                ],
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        keyPoint.content,
+                        style: TextStyle(
+                          color: Colors.grey[300],
+                          fontSize: 14,
+                          height: 1.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
 
-            const SizedBox(height: 32),
+  Widget _buildDefinitionsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.summaryData.definitions.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Icon(Icons.menu_book_outlined,
+                        size: 64, color: Colors.grey[700]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No definitions available',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...widget.summaryData.definitions.map(
+              (definition) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1C1C1E),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF2C2C2E)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: widget.accentColor.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.menu_book,
+                            color: widget.accentColor,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                definition.term,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                definition.definition,
+                                style: TextStyle(
+                                  color: Colors.grey[400],
+                                  fontSize: 14,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFlashcardsTab() {
+    if (widget.summaryData.flashcards.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.style_outlined, size: 64, color: Colors.grey[700]),
+            const SizedBox(height: 16),
+            Text(
+              'No flashcards available',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
           ],
+        ),
+      );
+    }
+
+    final currentCard = widget.summaryData.flashcards[_currentFlashcardIndex];
+    final totalCards = widget.summaryData.flashcards.length;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Card ${_currentFlashcardIndex + 1} of $totalCards',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _showFlashcardAnswer = !_showFlashcardAnswer;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1C1C1E),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _showFlashcardAnswer
+                        ? Colors.green.withOpacity(0.5)
+                        : widget.accentColor.withOpacity(0.5),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_showFlashcardAnswer
+                              ? Colors.green
+                              : widget.accentColor)
+                          .withOpacity(0.2),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _showFlashcardAnswer
+                          ? Icons.check_circle_outline
+                          : Icons.help_outline,
+                      size: 48,
+                      color: _showFlashcardAnswer
+                          ? Colors.green
+                          : widget.accentColor,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      _showFlashcardAnswer ? 'Answer' : 'Question',
+                      style: TextStyle(
+                        color: _showFlashcardAnswer
+                            ? Colors.green
+                            : widget.accentColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          child: Text(
+                            _showFlashcardAnswer
+                                ? currentCard.answer
+                                : currentCard.question,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              height: 1.6,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _showFlashcardAnswer
+                          ? 'Tap to see question'
+                          : 'Tap to reveal answer',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavigationButton(
+                icon: Icons.arrow_back,
+                label: 'Previous',
+                onPressed: _currentFlashcardIndex > 0
+                    ? () {
+                        setState(() {
+                          _currentFlashcardIndex--;
+                          _showFlashcardAnswer = false;
+                        });
+                      }
+                    : null,
+              ),
+              _buildNavigationButton(
+                icon: Icons.arrow_forward,
+                label: 'Next',
+                onPressed: _currentFlashcardIndex < totalCards - 1
+                    ? () {
+                        setState(() {
+                          _currentFlashcardIndex++;
+                          _showFlashcardAnswer = false;
+                        });
+                      }
+                    : null,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return Opacity(
+      opacity: onPressed != null ? 1.0 : 0.3,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 20),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2C2C2E),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
         ),
       ),
     );

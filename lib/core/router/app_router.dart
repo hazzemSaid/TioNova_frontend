@@ -16,6 +16,7 @@ import 'package:tionova/features/auth/presentation/view/screens/reset_password_s
 import 'package:tionova/features/auth/presentation/view/screens/verify_reset_code_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/EnterCode_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/challenge_waiting_lobby_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/qr_scanner_screen.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
@@ -343,6 +344,17 @@ class AppRouter {
           name: 'scan-qr',
           builder: (BuildContext context, GoRouterState state) =>
               const QrScannerScreen(),
+        ),
+        GoRoute(
+          path: '/challenges/waiting/:code',
+          name: 'challenge-waiting',
+          builder: (BuildContext context, GoRouterState state) {
+            final code = state.pathParameters['code']!;
+            return ChallengeWaitingLobbyScreen(
+              challengeCode: code,
+              challengeName: 'Challenge', // Will be updated from Firebase
+            );
+          },
         ),
         GoRoute(
           path: '/enter-code',
