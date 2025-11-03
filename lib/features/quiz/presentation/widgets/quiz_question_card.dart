@@ -24,6 +24,7 @@ class QuizQuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -65,13 +66,15 @@ class QuizQuestionCard extends StatelessWidget {
           children: [
             ElevatedButton(
               onPressed: onPrevious,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              ),
               child: const Text('Previous'),
             ),
             ElevatedButton(
               onPressed: onNext,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orangeAccent,
+                backgroundColor: theme.colorScheme.primary,
               ),
               child: const Text('Next'),
             ),

@@ -3,19 +3,74 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
+import 'package:tionova/features/auth/domain/usecases/forgetPasswordusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/loginusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/registerusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/resetpasswordusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/verifyCodeusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/verifyEmailusecase.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 
 class AuthCubit extends Cubit<AuthState> {
+  // --- Forget Password Flow ---
+  Future<void> forgetPassword(String email) async {
+    emit(AuthLoading());
+    final result = await forgetPasswordUseCase.call(email: email);
+    await result.fold(
+      (failure) {
+        emit(ForgetPasswordFailure(failure: failure));
+      },
+      (void_) {
+        emit(ForgetPasswordEmailSent(email: email));
+      },
+    );
+  }
+
+  Future<void> verifyCode({required String email, required String code}) async {
+    emit(AuthLoading());
+    final result = await verifyCodeUseCase.call(email: email, code: code);
+    await result.fold(
+      (failure) {
+        emit(VerifyCodeFailure(failure: failure));
+      },
+      (void_) {
+        emit(VerifyCodeSuccess(email: email, code: code));
+      },
+    );
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    emit(AuthLoading());
+    final result = await resetPasswordUseCase.execute(
+      email: email,
+      code: code,
+      newPassword: newPassword,
+    );
+    await result.fold(
+      (failure) {
+        emit(ResetPasswordFailure(failure: failure));
+      },
+      (user) async {
+        final token = await TokenStorage.getAccessToken() ?? "";
+        emit(AuthSuccess(user: user, token: token));
+      },
+    );
+  }
+
   AuthCubit({
     required this.googleauthusecase,
     required this.localAuthDataSource,
     required this.registerUseCase,
     required this.loginUseCase,
     required this.verifyEmailUseCase,
+    required this.resetPasswordUseCase,
+    required this.forgetPasswordUseCase,
+    required this.verifyCodeUseCase,
     // Keep the tokenStorage parameter for backward compatibility
     required TokenStorage tokenStorage,
   }) : super(AuthInitial());
@@ -24,6 +79,9 @@ class AuthCubit extends Cubit<AuthState> {
   final ILocalAuthDataSource localAuthDataSource;
   final RegisterUseCase registerUseCase;
   final VerifyEmailUseCase verifyEmailUseCase;
+  final ResetPasswordUseCase resetPasswordUseCase;
+  final ForgetPasswordUseCase forgetPasswordUseCase;
+  final VerifyCodeUseCase verifyCodeUseCase;
 
   Future<void> googleSignIn() async {
     emit(AuthLoading());
@@ -166,4 +224,6 @@ class AuthCubit extends Cubit<AuthState> {
       },
     );
   }
+
+  // ...existing code...
 }

@@ -69,6 +69,8 @@ class FolderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
 
@@ -110,18 +112,19 @@ class FolderCard extends StatelessWidget {
         categoryColor = const Color(0xFF8E8E93);
     }
 
-    Color privacyBgColor;
-    Color privacyTextColor;
-    IconData? privacyIcon;
-    if (privacy.toLowerCase() == 'private') {
-      privacyBgColor = const Color(0xFF1C1C1E);
-      privacyTextColor = Colors.white;
-      privacyIcon = Icons.lock;
-    } else {
-      privacyBgColor = const Color(0xFF1C1C1E);
-      privacyTextColor = Colors.white;
-      privacyIcon = Icons.group;
-    }
+    final isPrivate = privacy.toLowerCase() == 'private';
+    final double overlayOpacity = theme.brightness == Brightness.dark
+        ? 0.25
+        : 0.55;
+    final Color privacyBgColor =
+        (isPrivate
+                ? colorScheme.errorContainer
+                : colorScheme.secondaryContainer)
+            .withOpacity(overlayOpacity);
+    final Color privacyTextColor = isPrivate
+        ? colorScheme.onErrorContainer
+        : colorScheme.onSecondaryContainer;
+    final IconData? privacyIcon = isPrivate ? Icons.lock : Icons.group;
 
     final hasSharedSection =
         privacy.toLowerCase() == 'shared' &&
@@ -132,14 +135,17 @@ class FolderCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF0E0E10),
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(isTablet ? 12.0 : 10.0),
-          border: Border.all(color: const Color(0xFF1C1C1E), width: 0.5),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.6),
+            width: 0.5,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: isTablet ? 6.0 : 4.0,
-              offset: const Offset(0, 3),
+              color: theme.shadowColor.withOpacity(0.08),
+              blurRadius: isTablet ? 12.0 : 10.0,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -156,28 +162,31 @@ class FolderCard extends StatelessWidget {
                   width: iconContainerSize,
                   height: iconContainerSize,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
+                    color: color.withOpacity(0.18),
                     borderRadius: BorderRadius.circular(isTablet ? 9.0 : 8.0),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
+                      color: colorScheme.outlineVariant.withOpacity(0.4),
                       width: 0.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: color.withOpacity(0.3),
-                        blurRadius: isTablet ? 6.0 : 4.0,
-                        offset: const Offset(0, 2),
+                        color: color.withOpacity(0.22),
+                        blurRadius: isTablet ? 10.0 : 8.0,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [color.withOpacity(0.4), color.withOpacity(0.15)],
+                      colors: [
+                        color.withOpacity(0.28),
+                        color.withOpacity(0.12),
+                      ],
                     ),
                   ),
                   child: Icon(
                     icon ?? Icons.folder,
-                    color: Colors.white.withOpacity(0.9),
+                    color: colorScheme.onSurface,
                     size: iconSize,
                   ),
                 ),
@@ -201,13 +210,13 @@ class FolderCard extends StatelessWidget {
                           privacy,
                           privacyBgColor,
                           privacyTextColor,
-                          privacy == 'private' ? Icons.lock : Icons.group,
+                          privacyIcon,
                           isTablet: isTablet,
                         ),
                       Text(
                         '$chapters chapters',
                         style: TextStyle(
-                          color: const Color(0xFF8E8E93),
+                          color: colorScheme.onSurfaceVariant,
                           fontSize: isTablet ? 9.0 : 7.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -225,7 +234,7 @@ class FolderCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Colors.white,
+                color: colorScheme.onSurface,
                 fontSize: titleSize,
                 fontWeight: FontWeight.w600,
                 height: 1.2,
@@ -240,7 +249,7 @@ class FolderCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: const Color(0xFF8E8E93),
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: descriptionSize,
                   height: 1.2,
                 ),
@@ -254,7 +263,7 @@ class FolderCard extends StatelessWidget {
               children: [
                 Icon(
                   Icons.access_time_outlined,
-                  color: const Color(0xFF8E8E93),
+                  color: colorScheme.onSurfaceVariant,
                   size: metaSize + 1,
                 ),
                 SizedBox(width: isTablet ? 6.0 : 4.0),
@@ -262,7 +271,7 @@ class FolderCard extends StatelessWidget {
                   child: Text(
                     'Last accessed $lastAccessed',
                     style: TextStyle(
-                      color: const Color(0xFF8E8E93),
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: metaSize,
                     ),
                     maxLines: 1,
@@ -278,7 +287,7 @@ class FolderCard extends StatelessWidget {
               Divider(
                 thickness: 1,
                 height: 1,
-                color: Colors.white.withOpacity(0.08),
+                color: colorScheme.outlineVariant.withOpacity(0.4),
               ),
               SizedBox(height: verticalSpacing),
               Row(
@@ -286,7 +295,7 @@ class FolderCard extends StatelessWidget {
                   Text(
                     'Shared with:',
                     style: TextStyle(
-                      color: const Color(0xFF8E8E93),
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: isSmallPhone ? 9.0 : 10.0,
                       fontWeight: FontWeight.w500,
                     ),
@@ -301,8 +310,8 @@ class FolderCard extends StatelessWidget {
                             margin: const EdgeInsets.only(right: 3),
                             width: isSmallPhone ? 18 : 20,
                             height: isSmallPhone ? 18 : 20,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF232325),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceVariant,
                               shape: BoxShape.circle,
                             ),
                             alignment: Alignment.center,
@@ -313,7 +322,7 @@ class FolderCard extends StatelessWidget {
                                         .toUpperCase()
                                   : '?',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: colorScheme.onSurface,
                                 fontSize: isSmallPhone ? 8.0 : 9.0,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -329,13 +338,13 @@ class FolderCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF232325),
+                                color: colorScheme.surfaceVariant,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 '+${sharedWith!.length - 3}',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: colorScheme.onSurface,
                                   fontSize: isSmallPhone ? 8.0 : 9.0,
                                   fontWeight: FontWeight.w600,
                                 ),

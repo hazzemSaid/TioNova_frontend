@@ -16,12 +16,18 @@ class TodaysProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final streakBackground = colorScheme.secondaryContainer;
+    final streakForeground = colorScheme.onSecondaryContainer;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,16 +36,21 @@ class TodaysProgressCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
-              children: const [
-                Icon(Icons.trending_up, color: Colors.white, size: 20),
-                SizedBox(width: 8),
+              children: [
+                Icon(Icons.trending_up, color: colorScheme.primary, size: 20),
+                const SizedBox(width: 8),
                 Text(
                   "Today's Progress",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style:
+                      textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ) ??
+                      TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ],
             ),
@@ -50,7 +61,7 @@ class TodaysProgressCard extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFF4A2B1A),
+              color: streakBackground,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -59,32 +70,46 @@ class TodaysProgressCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Text(
                   '$dayStreak',
-                  style: const TextStyle(
-                    color: Color(0xFFFF8C42),
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style:
+                      textTheme.headlineSmall?.copyWith(
+                        color: streakForeground,
+                        fontWeight: FontWeight.w700,
+                      ) ??
+                      TextStyle(
+                        color: streakForeground,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Day Streak',
-                        style: TextStyle(
-                          color: Color(0xFFFF8C42),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style:
+                            textTheme.bodyMedium?.copyWith(
+                              color: streakForeground,
+                              fontWeight: FontWeight.w600,
+                            ) ??
+                            TextStyle(
+                              color: streakForeground,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         "Don't lose your streak!",
-                        style: TextStyle(
-                          color: Color(0xFFB8860B),
-                          fontSize: 12,
-                        ),
+                        style:
+                            textTheme.bodySmall?.copyWith(
+                              color: streakForeground.withOpacity(0.8),
+                            ) ??
+                            TextStyle(
+                              color: streakForeground.withOpacity(0.8),
+                              fontSize: 12,
+                            ),
                       ),
                     ],
                   ),
@@ -101,9 +126,9 @@ class TodaysProgressCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('$chaptersRead', 'Chapters Read'),
-                _buildStatItem('$quizzesTaken', 'Quizzes Taken'),
-                _buildStatItem(studyTime, 'Study Time'),
+                _buildStatItem(context, '$chaptersRead', 'Chapters Read'),
+                _buildStatItem(context, '$quizzesTaken', 'Quizzes Taken'),
+                _buildStatItem(context, studyTime, 'Study Time'),
               ],
             ),
           ),
@@ -111,14 +136,21 @@ class TodaysProgressCard extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Encouragement Text
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'Keep up the great work! 💪',
-                  style: TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+                  style:
+                      textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ) ??
+                      TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 14,
+                      ),
                 ),
               ],
             ),
@@ -130,21 +162,34 @@ class TodaysProgressCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String value, String label) {
+  Widget _buildStatItem(BuildContext context, String value, String label) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-          ),
+          style:
+              textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
+              ) ??
+              TextStyle(
+                color: colorScheme.onSurface,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
+          style:
+              textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ) ??
+              TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
         ),
       ],
     );

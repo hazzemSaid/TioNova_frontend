@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tionova/core/blocobserve/blocobserv.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
@@ -22,13 +21,7 @@ import 'package:tionova/core/theme/app_theme.dart';
 import 'package:tionova/features/auth/data/models/UserModel.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
-import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-// import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart'; // DISABLED
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
-import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
-import 'package:tionova/features/theme/presentation/bloc/theme_bloc.dart';
-import 'package:tionova/features/theme/presentation/bloc/theme_state.dart';
+import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
 import 'package:tionova/firebase_options.dart';
 
 // Create an instance of NotificationService
@@ -139,34 +132,24 @@ Future<void> main() async {
   await authCubit.start();
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
+
   runApp(
-    MultiProvider(
+    MultiBlocProvider(
       providers: [
-        BlocProvider<ThemeBloc>(create: (context) => ThemeBloc(prefs: prefs)),
+        // Global providers - needed throughout the app
+        BlocProvider<ThemeCubit>(create: (context) => ThemeCubit(prefs: prefs)),
         BlocProvider<AuthCubit>.value(value: authCubit),
-        BlocProvider<FolderCubit>(create: (context) => getIt<FolderCubit>()),
-        BlocProvider<ChapterCubit>(create: (context) => getIt<ChapterCubit>()),
-        BlocProvider<QuizCubit>(create: (context) => getIt<QuizCubit>()),
-        BlocProvider<ChallengeCubit>(
-          create: (context) => getIt<ChallengeCubit>(),
-        ),
       ],
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
-          return BlocBuilder<ThemeBloc, ThemeState>(
-            builder: (context, themeState) {
+          return BlocBuilder<ThemeCubit, ThemeMode>(
+            builder: (context, themeMode) {
               return MaterialApp.router(
                 debugShowCheckedModeBanner: false,
                 routerConfig: AppRouter.router,
-                theme: ThemeData(
-                  useMaterial3: true,
-                  colorScheme: ColorScheme.fromSeed(
-                    seedColor: Colors.blue,
-                    brightness: themeState.isDarkMode
-                        ? Brightness.dark
-                        : Brightness.light,
-                  ),
-                ),
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: themeMode,
               );
             },
           );
@@ -185,15 +168,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ThemeBloc(prefs: prefs),
-      child: BlocBuilder<ThemeBloc, ThemeState>(
-        builder: (context, themeState) {
+      create: (context) => ThemeCubit(prefs: prefs),
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             title: 'TioNova',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: themeState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            themeMode: themeMode,
             routerConfig: AppRouter.router,
           );
         },

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/GradientButton.dart';
 
 class OptionCard extends StatelessWidget {
   final List<Color> gradientColors;
-  final Color backgroundColor;
   final IconData? icon;
   final List<Color>? iconGradient;
   final Widget? leading;
@@ -17,7 +15,6 @@ class OptionCard extends StatelessWidget {
   const OptionCard({
     super.key,
     required this.gradientColors,
-    required this.backgroundColor,
     this.icon,
     this.iconGradient,
     this.leading,
@@ -33,26 +30,47 @@ class OptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isOutlined = outlined;
     final borderRadius = BorderRadius.circular(20);
+    final overlayOpacity = theme.brightness == Brightness.dark ? 0.25 : 0.12;
+    final gradientOverlay = isOutlined
+        ? null
+        : LinearGradient(
+            colors: gradientColors
+                .map((color) => color.withOpacity(overlayOpacity))
+                .toList(),
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: borderRadius,
-        gradient: outlined
-            ? null
-            : LinearGradient(
-                colors: gradientColors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-        color: outlined ? Colors.transparent : backgroundColor,
-        border: outlined
-            ? Border.all(width: 1.4, color: gradientColors.last)
-            : null,
+        color: colorScheme.surface,
+        border: Border.all(
+          width: isOutlined ? 1.4 : 1,
+          color: isOutlined
+              ? gradientColors.last
+              : colorScheme.outlineVariant.withOpacity(0.4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withOpacity(0.07),
+            blurRadius: 14,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: InkWell(
         borderRadius: borderRadius,
         onTap: onTap,
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: borderRadius,
+            gradient: gradientOverlay,
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           child: Row(
             children: [
@@ -71,7 +89,7 @@ class OptionCard extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: Icon(icon, color: gradientColors.last, size: 24),
+                  child: Icon(icon, color: colorScheme.onSurface, size: 24),
                 ),
               const SizedBox(width: 16),
               // Title & Subtitle
@@ -81,8 +99,8 @@ class OptionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         fontFamily: 'Inter',
@@ -91,8 +109,8 @@ class OptionCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 13,
                         fontFamily: 'Inter',
                       ),

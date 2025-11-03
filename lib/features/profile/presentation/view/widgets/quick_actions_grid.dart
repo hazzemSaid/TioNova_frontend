@@ -16,13 +16,17 @@ class QuickActionsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,15 +34,20 @@ class QuickActionsGrid extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Icon(Icons.flash_on, color: Colors.white, size: 20),
+              Icon(Icons.flash_on, color: colorScheme.primary, size: 20),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Quick Actions',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style:
+                    textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ],
           ),
@@ -50,6 +59,7 @@ class QuickActionsGrid extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildActionButton(
+                  context,
                   'Review Notes',
                   Icons.description_outlined,
                   onReviewNotes,
@@ -58,6 +68,7 @@ class QuickActionsGrid extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildActionButton(
+                  context,
                   'AI Summary',
                   Icons.auto_awesome_outlined,
                   onAISummary,
@@ -72,6 +83,7 @@ class QuickActionsGrid extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildActionButton(
+                  context,
                   'Take Quiz',
                   Icons.quiz_outlined,
                   onTakeQuiz,
@@ -80,6 +92,7 @@ class QuickActionsGrid extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildActionButton(
+                  context,
                   'Challenges',
                   Icons.emoji_events_outlined,
                   onChallenges,
@@ -92,28 +105,42 @@ class QuickActionsGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(String title, IconData icon, VoidCallback? onTap) {
+  Widget _buildActionButton(
+    BuildContext context,
+    String title,
+    IconData icon,
+    VoidCallback? onTap,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 68,
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
+          color: colorScheme.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2C2C2E)),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.25)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 22),
+            Icon(icon, color: colorScheme.primary, size: 22),
             const SizedBox(height: 6),
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+              style:
+                  textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ) ??
+                  TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],

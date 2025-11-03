@@ -14,13 +14,17 @@ class ThisWeekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,19 +32,24 @@ class ThisWeekCard extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.calendar_today_outlined,
-                color: Colors.white,
+                color: colorScheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'This Week',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style:
+                    textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ],
           ),
@@ -51,9 +60,9 @@ class ThisWeekCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem(totalTime, 'Total Time'),
-              _buildStatItem('$chapters', 'Chapters'),
-              _buildStatItem(avgScore, 'Avg Score'),
+              _buildStatItem(context, totalTime, 'Total Time'),
+              _buildStatItem(context, '$chapters', 'Chapters'),
+              _buildStatItem(context, avgScore, 'Avg Score'),
             ],
           ),
         ],
@@ -61,21 +70,34 @@ class ThisWeekCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String value, String label) {
+  Widget _buildStatItem(BuildContext context, String value, String label) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-          ),
+          style:
+              textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
+              ) ??
+              TextStyle(
+                color: colorScheme.onSurface,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+              ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
+          style:
+              textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ) ??
+              TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
         ),
       ],
     );

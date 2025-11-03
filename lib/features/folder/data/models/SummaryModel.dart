@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 // Helper function to sanitize UTF-8 strings
@@ -145,13 +146,13 @@ class SummaryModelData extends Equatable {
 
   @override
   List<Object> get props => [
-        chapterId,
-        summary,
-        id,
-        createdAt,
-        updatedAt,
-        version,
-      ];
+    chapterId,
+    summary,
+    id,
+    createdAt,
+    updatedAt,
+    version,
+  ];
 }
 
 // Main Summary Model
@@ -244,13 +245,13 @@ class SummaryModel extends Equatable {
 
   @override
   List<Object> get props => [
-        chapterTitle,
-        chapterOverview,
-        keyTakeaways,
-        keyPoints,
-        definitions,
-        flashcards,
-      ];
+    chapterTitle,
+    chapterOverview,
+    keyTakeaways,
+    keyPoints,
+    definitions,
+    flashcards,
+  ];
 }
 
 // Chapter Overview Model
@@ -258,10 +259,7 @@ class ChapterOverview extends Equatable {
   final String title;
   final String summary;
 
-  const ChapterOverview({
-    required this.title,
-    required this.summary,
-  });
+  const ChapterOverview({required this.title, required this.summary});
 
   factory ChapterOverview.fromJson(Map<String, dynamic> json) {
     return ChapterOverview(
@@ -271,10 +269,7 @@ class ChapterOverview extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'summary': summary,
-    };
+    return {'title': title, 'summary': summary};
   }
 
   @override
@@ -302,11 +297,7 @@ class KeyPoint extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'type': type,
-      'content': content,
-    };
+    return {'title': title, 'type': type, 'content': content};
   }
 
   @override
@@ -318,10 +309,7 @@ class Definition extends Equatable {
   final String term;
   final String definition;
 
-  const Definition({
-    required this.term,
-    required this.definition,
-  });
+  const Definition({required this.term, required this.definition});
 
   factory Definition.fromJson(Map<String, dynamic> json) {
     return Definition(
@@ -331,10 +319,7 @@ class Definition extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'term': term,
-      'definition': definition,
-    };
+    return {'term': term, 'definition': definition};
   }
 
   @override
@@ -346,10 +331,7 @@ class Flashcard extends Equatable {
   final String question;
   final String answer;
 
-  const Flashcard({
-    required this.question,
-    required this.answer,
-  });
+  const Flashcard({required this.question, required this.answer});
 
   factory Flashcard.fromJson(Map<String, dynamic> json) {
     return Flashcard(
@@ -359,10 +341,7 @@ class Flashcard extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'question': question,
-      'answer': answer,
-    };
+    return {'question': question, 'answer': answer};
   }
 
   @override

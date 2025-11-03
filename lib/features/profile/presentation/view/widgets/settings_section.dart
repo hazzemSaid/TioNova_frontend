@@ -24,13 +24,17 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,19 +42,24 @@ class SettingsSection extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.settings_outlined,
-                color: Colors.white,
+                color: colorScheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Settings',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style:
+                    textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ],
           ),
@@ -59,6 +68,7 @@ class SettingsSection extends StatelessWidget {
 
           // Notifications Toggle
           _buildToggleItem(
+            context,
             'Notifications',
             Icons.notifications_outlined,
             notificationsEnabled,
@@ -69,6 +79,7 @@ class SettingsSection extends StatelessWidget {
 
           // Dark Mode Toggle
           _buildToggleItem(
+            context,
             'Dark Mode',
             Icons.dark_mode_outlined,
             darkModeEnabled,
@@ -79,6 +90,7 @@ class SettingsSection extends StatelessWidget {
 
           // Export Data Button
           _buildActionButton(
+            context,
             'Export Study Data',
             Icons.download_outlined,
             onExportData,
@@ -88,6 +100,7 @@ class SettingsSection extends StatelessWidget {
 
           // Share Progress Button
           _buildActionButton(
+            context,
             'Share Progress',
             Icons.share_outlined,
             onShareProgress,
@@ -97,6 +110,7 @@ class SettingsSection extends StatelessWidget {
 
           // Help & Support Button
           _buildActionButton(
+            context,
             'Help & Support',
             Icons.help_outline,
             onHelpSupport,
@@ -106,6 +120,7 @@ class SettingsSection extends StatelessWidget {
 
           // Sign Out Button
           _buildActionButton(
+            context,
             'Sign Out',
             Icons.logout_outlined,
             onSignOut,
@@ -115,17 +130,31 @@ class SettingsSection extends StatelessWidget {
           const SizedBox(height: 16),
 
           // App Version
-          const Center(
+          Center(
             child: Column(
               children: [
                 Text(
                   'TioNova v1.0.0',
-                  style: TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
+                  style:
+                      textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ) ??
+                      TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'AI-powered study assistant',
-                  style: TextStyle(color: Color(0xFF6A6A6A), fontSize: 10),
+                  style:
+                      textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      ) ??
+                      TextStyle(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                        fontSize: 10,
+                      ),
                 ),
               ],
             ),
@@ -136,69 +165,85 @@ class SettingsSection extends StatelessWidget {
   }
 
   Widget _buildToggleItem(
+    BuildContext context,
     String title,
     IconData icon,
     bool value,
     VoidCallback? onToggle,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF8E8E93), size: 20),
+        Icon(icon, color: colorScheme.onSurfaceVariant, size: 20),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+            style:
+                textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface) ??
+                TextStyle(color: colorScheme.onSurface, fontSize: 16),
           ),
         ),
         Switch(
           value: value,
           onChanged: (_) => onToggle?.call(),
-          activeColor: const Color(0xFF007AFF),
-          inactiveThumbColor: const Color(0xFF8E8E93),
-          inactiveTrackColor: const Color(0xFF2C2C2E),
+          activeColor: colorScheme.primary,
+          inactiveThumbColor: colorScheme.outline,
+          inactiveTrackColor: colorScheme.surfaceVariant,
         ),
       ],
     );
   }
 
   Widget _buildActionButton(
+    BuildContext context,
     String title,
     IconData icon,
     VoidCallback? onTap, {
     bool isDestructive = false,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final actionColor = isDestructive ? colorScheme.error : colorScheme.primary;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF2C2C2E),
+          color: colorScheme.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.25)),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: isDestructive
-                  ? const Color(0xFFFF3B30)
-                  : const Color(0xFF8E8E93),
-              size: 20,
-            ),
+            Icon(icon, color: actionColor, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
-                  color: isDestructive ? const Color(0xFFFF3B30) : Colors.white,
-                  fontSize: 16,
-                ),
+                style:
+                    textTheme.bodyLarge?.copyWith(
+                      color: isDestructive
+                          ? colorScheme.error
+                          : colorScheme.onSurface,
+                    ) ??
+                    TextStyle(
+                      color: isDestructive
+                          ? colorScheme.error
+                          : colorScheme.onSurface,
+                      fontSize: 16,
+                    ),
               ),
             ),
             if (!isDestructive)
-              const Icon(
+              Icon(
                 Icons.chevron_right,
-                color: Color(0xFF8E8E93),
+                color: colorScheme.onSurfaceVariant,
                 size: 20,
               ),
           ],

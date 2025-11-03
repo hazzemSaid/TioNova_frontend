@@ -45,10 +45,11 @@ class _QuizScreenState extends State<QuizScreen> {
         }
       },
       builder: (context, state) {
+        final theme = Theme.of(context);
         if (state is CreateQuizLoading) {
-          return const Scaffold(
-            backgroundColor: Colors.black,
-            body: Center(
+          return Scaffold(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            body: const Center(
               child: CircularProgressIndicator(color: Color(0xFFFE9500)),
             ),
           );
@@ -323,9 +324,10 @@ class _QuizScreenState extends State<QuizScreen> {
   ) {
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 900;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: isWeb
             ? _buildWebLayout(context, quiz)
@@ -335,6 +337,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildWebLayout(BuildContext context, QuizModel quiz) {
+    final theme = Theme.of(context);
     return Center(
       child: SingleChildScrollView(
         child: Container(
@@ -443,8 +446,8 @@ class _QuizScreenState extends State<QuizScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: theme.colorScheme.surface,
+                    foregroundColor: theme.colorScheme.onSurface,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

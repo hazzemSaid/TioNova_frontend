@@ -20,9 +20,10 @@ class QuizReviewAnswers extends StatelessWidget {
     final unansweredCount = questions.length - answeredCount;
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 900;
+    final theme = Theme.of(context);
 
     if (isWeb) {
-      return _buildWebLayout(context, answeredCount, unansweredCount);
+      return _buildWebLayout(context, answeredCount, unansweredCount, theme);
     }
 
     return CustomScrollView(
@@ -203,8 +204,8 @@ class QuizReviewAnswers extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: onSubmit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
+                      backgroundColor: theme.colorScheme.surface,
+                      foregroundColor: theme.colorScheme.onSurface,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12.0),
                       ),
@@ -262,6 +263,7 @@ class QuizReviewAnswers extends StatelessWidget {
     BuildContext context,
     int answeredCount,
     int unansweredCount,
+    ThemeData theme,
   ) {
     return Padding(
       padding: const EdgeInsets.all(32.0),
@@ -412,8 +414,8 @@ class QuizReviewAnswers extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: onSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
+                          backgroundColor: theme.colorScheme.surface,
+                          foregroundColor: theme.colorScheme.onSurface,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           elevation: 0,
                           shape: RoundedRectangleBorder(

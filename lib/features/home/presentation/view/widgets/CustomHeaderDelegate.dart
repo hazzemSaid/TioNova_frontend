@@ -18,10 +18,12 @@ class CustomHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return SizedBox(
       height: maxHeight,
       child: Container(
-        color: Colors.black,
+        color: colorScheme.surface,
         child: SafeArea(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
@@ -37,12 +39,12 @@ class CustomHeaderDelegate extends SliverPersistentHeaderDelegate {
                   width: screenWidth * 0.11,
                   height: screenWidth * 0.11,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1C1C1E),
+                    color: colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(screenWidth * 0.025),
                   ),
                   child: Icon(
                     Icons.wb_sunny_outlined,
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     size: screenWidth * 0.055,
                   ),
                 ),
@@ -71,12 +73,23 @@ class ChallengesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.black,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: Text(
           'Challenges Screen',
-          style: TextStyle(color: Colors.white, fontSize: 24),
+          style:
+              theme.textTheme.headlineSmall?.copyWith(
+                color: colorScheme.onBackground,
+              ) ??
+              TextStyle(
+                color: colorScheme.onBackground,
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+              ),
         ),
       ),
     );

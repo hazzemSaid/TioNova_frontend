@@ -182,9 +182,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 900;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: BlocConsumer<QuizCubit, QuizState>(
           listener: (context, state) {
@@ -267,6 +268,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
     bool isPassed,
     Map<String, dynamic> questionById,
   ) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Row(
@@ -544,8 +546,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                       child: ElevatedButton(
                         onPressed: () => context.go('/'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
+                          backgroundColor: theme.colorScheme.surface,
+                          foregroundColor: theme.colorScheme.onSurface,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           elevation: 0,
                           shape: RoundedRectangleBorder(

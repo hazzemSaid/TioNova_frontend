@@ -333,10 +333,11 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
     print('=============== BUILD END ===============');
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 900;
+    final theme = Theme.of(context);
 
     if (reviewing) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -369,6 +370,7 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
   }
 
   Widget _buildWebLayout(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Row(
@@ -528,10 +530,11 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                                           : Colors.transparent,
                                     ),
                                     child: isSelected
-                                        ? const Center(
+                                        ? Center(
                                             child: CircleAvatar(
                                               radius: 6,
-                                              backgroundColor: Colors.black,
+                                              backgroundColor:
+                                                  theme.colorScheme.onPrimary,
                                             ),
                                           )
                                         : null,
@@ -593,8 +596,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                     ElevatedButton(
                       onPressed: _nextQuestion,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
+                        backgroundColor: theme.colorScheme.surface,
+                        foregroundColor: theme.colorScheme.onSurface,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 32,
                           vertical: 16,
@@ -748,8 +751,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                 ElevatedButton(
                   onPressed: _nextQuestion,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: theme.colorScheme.surface,
+                    foregroundColor: theme.colorScheme.onSurface,
                     minimumSize: const Size(double.infinity, 48),
                     elevation: 0,
                     shape: RoundedRectangleBorder(

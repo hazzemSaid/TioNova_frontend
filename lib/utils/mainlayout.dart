@@ -3,9 +3,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_screen.dart';
 import 'package:tionova/features/home/presentation/view/screens/home_screen.dart';
 import 'package:tionova/features/profile/presentation/view/screens/profile_screen.dart';
@@ -46,17 +45,14 @@ class _MainLayoutState extends State<MainLayout> {
           _screens[index] = const HomeScreen();
           break;
         case 1:
-          _screens[index] = BlocProvider(
-            create: (context) => getIt<FolderCubit>(),
-            child: const FolderScreen(),
-          );
+          // FolderCubit is provided by MainLayout route in router
+          _screens[index] = const FolderScreen();
           break;
         case 2:
-          _screens[index] = MultiBlocProvider(
-            providers: [
-              BlocProvider(create: (context) => getIt<FolderCubit>()),
-              BlocProvider(create: (context) => getIt<ChapterCubit>()),
-            ],
+          // ChallengeCubit will be provided by specific challenge routes
+          // For the main screen, we provide it here since it's accessed from MainLayout
+          _screens[index] = BlocProvider<ChallengeCubit>(
+            create: (context) => getIt<ChallengeCubit>(),
             child: const ChallangeScreen(),
           );
           break;
@@ -87,8 +83,9 @@ class _MainLayoutState extends State<MainLayout> {
 
   // Web layout with side navigation
   Widget _buildWebLayout(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Row(
         children: [
           // Side Navigation
@@ -113,8 +110,10 @@ class _MainLayoutState extends State<MainLayout> {
 
   // Mobile layout with bottom navigation
   Widget _buildMobileLayout(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.background,
       body: IndexedStack(
         index: _currentIndex,
         sizing: StackFit.expand,
@@ -131,11 +130,18 @@ class _MainLayoutState extends State<MainLayout> {
 
   // Side navigation for web/tablet
   Widget _buildSideNavigation(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       width: 240,
-      decoration: const BoxDecoration(
-        color: Color(0xFF0A0A0A),
-        border: Border(right: BorderSide(color: Color(0xFF1C1C1E), width: 1)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          right: BorderSide(
+            color: colorScheme.outline.withOpacity(0.4),
+            width: 1,
+          ),
+        ),
       ),
       child: SafeArea(
         child: Column(
@@ -149,31 +155,40 @@ class _MainLayoutState extends State<MainLayout> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00D4FF), Color(0xFF0066FF)],
+                      gradient: LinearGradient(
+                        colors: [colorScheme.primary, colorScheme.secondary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.school,
-                      color: Colors.white,
+                      color: colorScheme.onPrimary,
                       size: 24,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  const Text(
+                  SizedBox(width: 12),
+                  Text(
                     'TIONOVA',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
+                    style:
+                        theme.textTheme.titleMedium?.copyWith(
+                          fontSize: 20,
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ) ??
+                        TextStyle(
+                          fontSize: 20,
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
                   ),
                 ],
               ),
             ),
-            const Divider(color: Color(0xFF1C1C1E), height: 1),
+            Divider(color: colorScheme.outline.withOpacity(0.4), height: 1),
             const SizedBox(height: 16),
             // Navigation items
             Expanded(
@@ -211,7 +226,8 @@ class _MainLayoutState extends State<MainLayout> {
     required int index,
   }) {
     final isSelected = _currentIndex == index;
-
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Material(
@@ -222,11 +238,13 @@ class _MainLayoutState extends State<MainLayout> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF1C1C1E) : Colors.transparent,
+              color: isSelected
+                  ? colorScheme.primaryContainer
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF00D4FF).withOpacity(0.3)
+                    ? colorScheme.primary.withOpacity(0.35)
                     : Colors.transparent,
                 width: 1,
               ),
@@ -236,20 +254,31 @@ class _MainLayoutState extends State<MainLayout> {
                 Icon(
                   icon,
                   color: isSelected
-                      ? const Color(0xFF00D4FF)
-                      : Colors.white.withOpacity(0.6),
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   label,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.6),
-                    fontSize: 16,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
+                  style:
+                      theme.textTheme.bodyLarge?.copyWith(
+                        color: isSelected
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onSurfaceVariant,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ) ??
+                      TextStyle(
+                        color: isSelected
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onSurfaceVariant,
+                        fontSize: 16,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
                 ),
               ],
             ),
@@ -261,18 +290,23 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _customBottomNavigationBar(BuildContext context) {
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Container(
       height: isIOS ? 70 : 65,
       decoration: BoxDecoration(
-        color: Colors.black,
-        border: const Border(
-          top: BorderSide(color: Color(0xFF1C1C1E), width: 0.5),
+        color: colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: colorScheme.outline.withOpacity(0.3),
+            width: 0.5,
+          ),
         ),
         boxShadow: isIOS
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: colorScheme.shadow.withOpacity(0.12),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),

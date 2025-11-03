@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/SecondaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
-import 'package:tionova/features/theme/presentation/widgets/theme_toggle_button.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -41,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.failure.errMessage),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -85,13 +84,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                       : Colors.black54,
                                 ),
                               ),
-                              ThemeToggleButton(),
                             ],
                           ),
                         ),
                         SliverToBoxAdapter(
                           child: SizedBox(
-                            height: isCompact ? h * 0.12 : h * 0.1,
+                            height: isCompact ? h * 0.09 : h * 0.05,
                           ),
                         ),
                         // Login Form
@@ -310,38 +308,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                       isDark: isDark,
                                     ),
+                                    const SizedBox(height: 16),
+                                    Align(
+                                      alignment: Alignment.center,
+                                      child: TextButton(
+                                        onPressed: () =>
+                                            context.go('/auth/register'),
+                                        child: Text(
+                                          "Don't have an account? Sign Up here",
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black54,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-
-                        // Bottom sign up link
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              const SizedBox(height: 16),
-                              TextButton(
-                                onPressed: () => context.go('/auth/register'),
-                                child: Text(
-                                  "Don't have an account? Sign Up here",
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? Colors.white70
-                                        : Colors.black54,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                height:
-                                    MediaQuery.of(context).viewInsets.bottom +
-                                    16,
-                              ),
-                            ],
                           ),
                         ),
                       ],

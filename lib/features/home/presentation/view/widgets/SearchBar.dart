@@ -5,6 +5,9 @@ class CustomSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final screenSize = MediaQuery.sizeOf(context);
     final isTablet = screenSize.width > 600;
 
@@ -20,21 +23,36 @@ class CustomSearchBar extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(borderRadius),
       ),
       child: TextField(
-        style: TextStyle(color: Colors.white, fontSize: fontSize, height: 1.2),
+        style:
+            textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontSize: fontSize,
+              height: 1.2,
+            ) ??
+            TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: fontSize,
+              height: 1.2,
+            ),
         decoration: InputDecoration(
           hintText: 'Search folders, chapters...',
-          hintStyle: TextStyle(
-            color: const Color(0xFF8E8E93),
-            fontSize: fontSize,
-          ),
+          hintStyle:
+              textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: fontSize,
+              ) ??
+              TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: fontSize,
+              ),
           border: InputBorder.none,
           prefixIcon: Icon(
             Icons.search,
-            color: const Color(0xFF8E8E93),
+            color: colorScheme.onSurfaceVariant,
             size: iconSize,
           ),
           contentPadding: contentPadding,

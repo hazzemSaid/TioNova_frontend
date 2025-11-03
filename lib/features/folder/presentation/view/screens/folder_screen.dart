@@ -49,8 +49,7 @@ class _FolderScreenState extends State<FolderScreen> {
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthSuccess) return;
     final userId = authState.user.id;
-    final sseUrl =
-        'https://tio-nova-backend.vercel.app/api/v1/subscribe?userId=$userId';
+    final sseUrl = 'http://192.168.1.12:3000/api/v1/subscribe?userId=$userId';
     context.read<FolderCubit>().subscribeToFolderSse(sseUrl);
   }
 
@@ -154,8 +153,9 @@ class _FolderScreenState extends State<FolderScreen> {
     final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
     final verticalSpacing = screenHeight * 0.02;
 
+    // Folder feature uses light mode styling
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFFF8F9FA), // Light background
       body: SafeArea(
         child: ScrollConfiguration(
           behavior: const NoGlowScrollBehavior(),

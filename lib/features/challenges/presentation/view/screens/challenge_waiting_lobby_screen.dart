@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/live_question_screen.dart';
 
 /// Waiting lobby screen for participants who joined via code
 /// Shows participant count and waits for owner to start the challenge
@@ -285,22 +284,14 @@ class _ChallengeWaitingLobbyScreenState
     print('WaitingLobbyScreen - Challenge code: ${widget.challengeCode}');
     print('WaitingLobbyScreen - Challenge name: ${widget.challengeName}');
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) {
-          print('WaitingLobbyScreen - Building LiveQuestionScreen');
-          return MultiBlocProvider(
-            providers: [
-              BlocProvider.value(value: context.read<ChallengeCubit>()),
-              BlocProvider.value(value: context.read<AuthCubit>()),
-            ],
-            child: LiveQuestionScreen(
-              challengeCode: widget.challengeCode,
-              challengeName: widget.challengeName,
-            ),
-          );
-        },
-      ),
+    GoRouter.of(context).pushReplacementNamed(
+      'challenge-live',
+      pathParameters: {'code': widget.challengeCode},
+      extra: {
+        'challengeName': widget.challengeName,
+        'challengeCubit': context.read<ChallengeCubit>(),
+        'authCubit': context.read<AuthCubit>(),
+      },
     );
 
     print('WaitingLobbyScreen - Navigation initiated successfully');

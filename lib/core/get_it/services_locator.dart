@@ -11,9 +11,12 @@ import 'package:tionova/features/auth/data/repo/authrepoimp.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/data/services/auth_service.dart';
 import 'package:tionova/features/auth/domain/repo/authrepo.dart';
+import 'package:tionova/features/auth/domain/usecases/forgetPasswordusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/loginusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/registerusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/resetpasswordusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/verifyCodeusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/verifyEmailusecase.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/data/datasource/remote_Livechallenge_datasource.dart';
@@ -71,7 +74,7 @@ Future<void> setupServiceLocator() async {
   final Dio dio = Dio(
     // http://192.168.1.12:3000/api/v1
     //https://tio-nova-backend.vercel.app/api/v1
-    BaseOptions(baseUrl: 'https://tio-nova-backend.vercel.app/api/v1'),
+    BaseOptions(baseUrl: 'http://192.168.1.12:3000/api/v1'),
   );
 
   dio.interceptors.add(
@@ -166,9 +169,22 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<LoginUseCase>(
     () => LoginUseCase(getIt<AuthRepo>()),
   );
+  // New Use Cases
+  getIt.registerLazySingleton<ResetPasswordUseCase>(
+    () => ResetPasswordUseCase(getIt<AuthRepo>()),
+  );
+  getIt.registerLazySingleton<ForgetPasswordUseCase>(
+    () => ForgetPasswordUseCase(getIt<AuthRepo>()),
+  );
+  getIt.registerLazySingleton<VerifyCodeUseCase>(
+    () => VerifyCodeUseCase(getIt<AuthRepo>()),
+  );
   // Bloc
   getIt.registerSingleton<AuthCubit>(
     AuthCubit(
+      resetPasswordUseCase: getIt<ResetPasswordUseCase>(),
+      forgetPasswordUseCase: getIt<ForgetPasswordUseCase>(),
+      verifyCodeUseCase: getIt<VerifyCodeUseCase>(),
       loginUseCase: getIt<LoginUseCase>(),
       registerUseCase: getIt<RegisterUseCase>(),
       verifyEmailUseCase: getIt<VerifyEmailUseCase>(),

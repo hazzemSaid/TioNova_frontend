@@ -14,6 +14,9 @@ class FolderCardHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final screenSize = MediaQuery.sizeOf(context);
     final isTablet = screenSize.width > 600;
     final double padding = isTablet
@@ -41,9 +44,9 @@ class FolderCardHome extends StatelessWidget {
       ),
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(isTablet ? 16.0 : 14.0),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,14 +56,14 @@ class FolderCardHome extends StatelessWidget {
               width: iconSize,
               height: iconSize,
               decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E),
+                color: colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(
                   16.0,
                 ), // More rounded corners for larger icon
               ),
               child: Icon(
                 Icons.folder_outlined,
-                color: Colors.white,
+                color: colorScheme.primary,
                 size:
                     iconSize *
                     0.7, // Slightly larger icon relative to container
@@ -72,31 +75,50 @@ class FolderCardHome extends StatelessWidget {
             const Spacer(), // Remove Spacer on tablet to prevent overflow
           Text(
             title,
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: titleSize,
-              height: 1.2,
-            ),
+            style:
+                textTheme.titleSmall?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: titleSize,
+                  height: 1.2,
+                ) ??
+                TextStyle(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: titleSize,
+                  height: 1.2,
+                ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           SizedBox(height: spacing / 2),
           Text(
             chapters,
-            style: TextStyle(
-              color: const Color(0xFF8E8E93),
-              fontSize: metaSize,
-              fontWeight: FontWeight.w400,
-            ),
+            style:
+                textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: metaSize,
+                  fontWeight: FontWeight.w400,
+                ) ??
+                TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: metaSize,
+                  fontWeight: FontWeight.w400,
+                ),
           ),
           Text(
             days,
-            style: TextStyle(
-              color: const Color(0xFF636366),
-              fontSize: metaSize - 1,
-              fontWeight: FontWeight.w400,
-            ),
+            style:
+                textTheme.bodySmall?.copyWith(
+                  color: colorScheme.outline,
+                  fontSize: metaSize - 1,
+                  fontWeight: FontWeight.w400,
+                ) ??
+                TextStyle(
+                  color: colorScheme.outline,
+                  fontSize: metaSize - 1,
+                  fontWeight: FontWeight.w400,
+                ),
           ),
         ],
       ),

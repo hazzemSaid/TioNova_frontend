@@ -38,6 +38,7 @@ class Foldermodel extends Equatable {
       attemptedCount: json['attemptedCount'],
       id: json['_id'] ?? json['id'],
       icon: json['icon'],
+
       color: json['color'],
       createdAt: json['createdAt'] is String
           ? DateTime.parse(json['createdAt'])

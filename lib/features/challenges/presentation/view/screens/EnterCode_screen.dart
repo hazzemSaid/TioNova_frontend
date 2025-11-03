@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/challenge_waiting_lobby_screen.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 class EntercodeScreen extends StatefulWidget {
@@ -65,19 +65,14 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
           // Navigate to waiting lobby after successfully joining
           print('ChallengeJoined detected - navigating to waiting lobby');
 
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(value: context.read<ChallengeCubit>()),
-                  BlocProvider.value(value: context.read<AuthCubit>()),
-                ],
-                child: ChallengeWaitingLobbyScreen(
-                  challengeCode: _codeController.text.trim(),
-                  challengeName: state.challengeName,
-                ),
-              ),
-            ),
+          GoRouter.of(context).pushNamed(
+            'challenge-waiting',
+            pathParameters: {'code': _codeController.text.trim()},
+            extra: {
+              'challengeName': state.challengeName,
+              'challengeCubit': context.read<ChallengeCubit>(),
+              'authCubit': context.read<AuthCubit>(),
+            },
           );
         } else if (state is ChallengeError) {
           // Show error message
@@ -218,7 +213,7 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
     return BlocBuilder<ChallengeCubit, ChallengeState>(
       builder: (context, state) {
         final isLoading = state is ChallengeLoading;
-        
+
         return Container(
           decoration: BoxDecoration(
             color: _cardBg,
@@ -309,22 +304,28 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
                 child: SizedBox(
                   height: 48,
                   child: ElevatedButton.icon(
-                    onPressed: (_codeController.text.trim().length == 6 && !isLoading)
+                    onPressed:
+                        (_codeController.text.trim().length == 6 && !isLoading)
                         ? _onJoinPressed
                         : null,
-                    icon: isLoading 
+                    icon: isLoading
                         ? const SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Icon(Icons.bolt, size: 18),
                     label: Text(
                       isLoading ? 'Joining...' : 'Join Challenge',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _blue,
@@ -392,10 +393,10 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
       print('Code length invalid: ${code.length}');
       return;
     }
-    
+
     // Unfocus keyboard
     _codeFocus.unfocus();
-    
+
     // Get auth token
     final authState = context.read<AuthCubit>().state;
     print('Auth state: ${authState.runtimeType}');
@@ -408,7 +409,7 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
       );
       return;
     }
-    
+
     print('Calling joinChallenge with token and code: $code');
     // Call join challenge API
     await context.read<ChallengeCubit>().joinChallenge(

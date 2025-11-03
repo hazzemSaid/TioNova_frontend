@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 
 class NotesSection extends StatefulWidget {
   final String chapterId;
@@ -109,15 +111,19 @@ class _NotesSectionState extends State<NotesSection> {
                 height: 52,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => NotesScreen(
-                          chapterId: widget.chapterId,
-                          chapterTitle: widget.chapterTitle,
-                          accentColor:
-                              widget.accentColor ?? const Color(0xFF00D9A0),
-                        ),
-                      ),
+                    final chapterCubit = context.read<ChapterCubit>();
+                    final chapterId = widget.chapterId.isNotEmpty
+                        ? widget.chapterId
+                        : 'temp';
+                    context.pushNamed(
+                      'chapter-notes',
+                      pathParameters: {'chapterId': chapterId},
+                      extra: {
+                        'chapterTitle': widget.chapterTitle,
+                        'accentColor':
+                            widget.accentColor ?? const Color(0xFF00D9A0),
+                        'chapterCubit': chapterCubit,
+                      },
                     );
                   },
                   style: ElevatedButton.styleFrom(

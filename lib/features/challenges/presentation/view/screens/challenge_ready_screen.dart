@@ -22,14 +22,6 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
   late int _seconds;
   Timer? _timer;
 
-  Color get _bg => const Color(0xFF000000);
-  Color get _cardBg => const Color(0xFF121314);
-  Color get _chipBg => const Color(0xFF0F1A13);
-  Color get _textPrimary => const Color(0xFFFFFFFF);
-  Color get _textSecondary => const Color(0xFF8E8E93);
-  Color get _divider => const Color(0xFF2C2C2E);
-  Color get _green => const Color(0xFF30D158);
-
   @override
   void initState() {
     super.initState();
@@ -58,8 +50,17 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
     final width = MediaQuery.of(context).size.width;
     final isWeb = width > 900;
     final maxContentWidth = 420.0;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bg = colorScheme.background;
+    final cardBg = colorScheme.surface;
+    final chipBg = colorScheme.surfaceVariant;
+    final textPrimary = colorScheme.onSurface;
+    final textSecondary = colorScheme.onSurfaceVariant;
+    final divider = colorScheme.outlineVariant.withOpacity(0.6);
+    final accent = colorScheme.primary;
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: bg,
       body: Center(
         child: Padding(
           padding: EdgeInsets.symmetric(
@@ -77,19 +78,26 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
                   width: 96,
                   height: 96,
                   decoration: BoxDecoration(
-                    color: _chipBg,
+                    color: chipBg,
                     shape: BoxShape.circle,
-                    border: Border.all(color: _divider),
+                    border: Border.all(color: divider),
                   ),
-                  child: Icon(Icons.bolt, color: _green, size: 40),
+                  child: Icon(Icons.bolt, color: accent, size: 40),
                 ),
                 const SizedBox(height: 20),
                 Container(
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
                   decoration: BoxDecoration(
-                    color: _cardBg,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _divider),
+                    border: Border.all(color: divider),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withOpacity(0.08),
+                        blurRadius: 18,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -97,7 +105,7 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
                       Text(
                         'Get Ready!',
                         style: TextStyle(
-                          color: _textPrimary,
+                          color: textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
@@ -107,7 +115,7 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
                         widget.challengeName,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: _textSecondary,
+                          color: textSecondary,
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
                         ),
@@ -119,9 +127,9 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: _chipBg,
+                          color: chipBg,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _divider),
+                          border: Border.all(color: divider),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -130,21 +138,21 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.2),
+                                color: colorScheme.surface.withOpacity(0.6),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: _divider),
+                                border: Border.all(color: divider),
                               ),
                               child: Icon(
                                 Icons.group_outlined,
                                 size: 14,
-                                color: _textSecondary,
+                                color: textSecondary,
                               ),
                             ),
                             const SizedBox(width: 10),
                             Text(
                               '${widget.playersCount} players',
                               style: TextStyle(
-                                color: _textPrimary,
+                                color: textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -153,7 +161,7 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
                             Text(
                               'joined and ready',
                               style: TextStyle(
-                                color: _textSecondary,
+                                color: textSecondary,
                                 fontSize: 12,
                               ),
                             ),
@@ -161,13 +169,13 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      _RingLoader(color: _green),
+                      _RingLoader(color: accent, backgroundColor: divider),
                       const SizedBox(height: 16),
                       Text(
                         _seconds > 0
                             ? 'Starting in $_seconds seconds...'
                             : 'Starting...',
-                        style: TextStyle(color: _textSecondary, fontSize: 13),
+                        style: TextStyle(color: textSecondary, fontSize: 13),
                       ),
                     ],
                   ),
@@ -183,7 +191,8 @@ class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
 
 class _RingLoader extends StatefulWidget {
   final Color color;
-  const _RingLoader({required this.color});
+  final Color backgroundColor;
+  const _RingLoader({required this.color, required this.backgroundColor});
 
   @override
   State<_RingLoader> createState() => _RingLoaderState();
@@ -215,7 +224,11 @@ class _RingLoaderState extends State<_RingLoader>
         animation: _c,
         builder: (_, __) {
           return CustomPaint(
-            painter: _RingPainter(progress: _c.value, color: widget.color),
+            painter: _RingPainter(
+              progress: _c.value,
+              color: widget.color,
+              backgroundColor: widget.backgroundColor,
+            ),
           );
         },
       ),
@@ -226,7 +239,12 @@ class _RingLoaderState extends State<_RingLoader>
 class _RingPainter extends CustomPainter {
   final double progress;
   final Color color;
-  _RingPainter({required this.progress, required this.color});
+  final Color backgroundColor;
+  _RingPainter({
+    required this.progress,
+    required this.color,
+    required this.backgroundColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -236,7 +254,7 @@ class _RingPainter extends CustomPainter {
     final bg = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
-      ..color = const Color(0xFF1C1C1E);
+      ..color = backgroundColor;
     final fg = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
@@ -257,5 +275,7 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.color != color;
+      oldDelegate.progress != progress ||
+      oldDelegate.color != color ||
+      oldDelegate.backgroundColor != backgroundColor;
 }

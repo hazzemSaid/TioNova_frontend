@@ -14,18 +14,27 @@ import 'package:tionova/features/auth/presentation/view/screens/login_screen.dar
 import 'package:tionova/features/auth/presentation/view/screens/register_screen.dart';
 import 'package:tionova/features/auth/presentation/view/screens/reset_password_screen.dart';
 import 'package:tionova/features/auth/presentation/view/screens/verify_reset_code_screen.dart';
+import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/EnterCode_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/challenge_completion_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challenge_waiting_lobby_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/create_challenge_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/live_question_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/qr_scanner_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/select_chapter_screen.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/screens/RawSummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/chapter_detail_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/create_chapter_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_detail_screen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/mindmap_screen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
@@ -35,6 +44,7 @@ import 'package:tionova/features/quiz/presentation/view/quiz_results_screen.dart
 import 'package:tionova/features/quiz/presentation/view/quiz_screen.dart';
 import 'package:tionova/features/start/presentation/view/screens/TioNovaspalsh.dart';
 import 'package:tionova/features/start/presentation/view/screens/onboarding_screen.dart';
+import 'package:tionova/features/start/presentation/view/screens/theme_selection_screen.dart';
 import 'package:tionova/utils/mainlayout.dart';
 
 class AuthStateNotifier extends ChangeNotifier {
@@ -102,7 +112,8 @@ class AppRouter {
           // Prevent going back to splash or auth screens after login
           if (path == '/splash' ||
               path.startsWith('/auth') ||
-              path == '/onboarding') {
+              path == '/onboarding' ||
+              path == '/theme-selection') {
             return '/'; // go home
           }
           return null; // stay where they are
@@ -113,6 +124,9 @@ class AppRouter {
             currentAuthState is AuthFailure) {
           // Allow splash to handle first time check
           if (path == '/splash') return null;
+
+          // Allow theme selection before onboarding
+          if (path == '/theme-selection') return null;
 
           // Allow onboarding to be accessed before login
           if (path == '/onboarding') return null;
@@ -139,7 +153,23 @@ class AppRouter {
           path: '/',
           name: 'home',
           builder: (BuildContext context, GoRouterState state) =>
-              const MainLayout(),
+              MultiBlocProvider(
+                providers: [
+                  BlocProvider<FolderCubit>(
+                    create: (context) => getIt<FolderCubit>(),
+                  ),
+                  BlocProvider<ChapterCubit>(
+                    create: (context) => getIt<ChapterCubit>(),
+                  ),
+                ],
+                child: const MainLayout(),
+              ),
+        ),
+        GoRoute(
+          path: '/theme-selection',
+          name: 'theme-selection',
+          builder: (BuildContext context, GoRouterState state) =>
+              const ThemeSelectionScreen(),
         ),
         GoRoute(
           path: '/onboarding',
@@ -180,8 +210,13 @@ class AppRouter {
             GoRoute(
               path: 'reset-password',
               name: 'reset-password',
-              builder: (BuildContext context, GoRouterState state) =>
-                  ResetPasswordScreen(email: state.extra as String),
+              builder: (BuildContext context, GoRouterState state) {
+                final extra = state.extra as Map<String, dynamic>;
+                return ResetPasswordScreen(
+                  email: extra['email'] as String,
+                  code: extra['code'] as String,
+                );
+              },
             ),
             GoRoute(
               path: 'check-email',
@@ -210,11 +245,14 @@ class AppRouter {
           name: 'quiz-questions',
           builder: (BuildContext context, GoRouterState state) {
             final extra = state.extra as Map<String, dynamic>;
-            return QuizQuestionsScreen(
-              quiz: extra['quiz'],
-              answers: extra['answers'] as List<String?>,
-              token: extra['token'] as String,
-              chapterId: extra['chapterId'] as String,
+            return BlocProvider<QuizCubit>(
+              create: (context) => getIt<QuizCubit>(),
+              child: QuizQuestionsScreen(
+                quiz: extra['quiz'],
+                answers: extra['answers'] as List<String?>,
+                token: extra['token'] as String,
+                chapterId: extra['chapterId'] as String,
+              ),
             );
           },
         ),
@@ -223,12 +261,15 @@ class AppRouter {
           name: 'quiz-results',
           builder: (BuildContext context, GoRouterState state) {
             final extra = state.extra as Map<String, dynamic>;
-            return QuizResultsScreen(
-              quiz: extra['quiz'],
-              userAnswers: extra['userAnswers'] as List<String?>,
-              token: extra['token'] as String,
-              chapterId: extra['chapterId'] as String,
-              timeTaken: extra['timeTaken'] as int,
+            return BlocProvider<QuizCubit>(
+              create: (context) => getIt<QuizCubit>(),
+              child: QuizResultsScreen(
+                quiz: extra['quiz'],
+                userAnswers: extra['userAnswers'] as List<String?>,
+                token: extra['token'] as String,
+                chapterId: extra['chapterId'] as String,
+                timeTaken: extra['timeTaken'] as int,
+              ),
             );
           },
         ),
@@ -238,10 +279,13 @@ class AppRouter {
           builder: (BuildContext context, GoRouterState state) {
             final chapterId = state.pathParameters['chapterId']!;
             final extra = state.extra as Map<String, dynamic>;
-            return QuizHistoryScreen(
-              token: extra['token'] as String,
-              chapterId: chapterId,
-              quizTitle: extra['quizTitle'] as String,
+            return BlocProvider<QuizCubit>(
+              create: (context) => getIt<QuizCubit>(),
+              child: QuizHistoryScreen(
+                token: extra['token'] as String,
+                chapterId: chapterId,
+                quizTitle: extra['quizTitle'] as String,
+              ),
             );
           },
         ),
@@ -250,7 +294,10 @@ class AppRouter {
           name: 'quiz-review',
           builder: (BuildContext context, GoRouterState state) {
             final extra = state.extra as Map<String, dynamic>;
-            return QuizReviewScreen(attempt: extra['attempt'] as Attempt);
+            return BlocProvider<QuizCubit>(
+              create: (context) => getIt<QuizCubit>(),
+              child: QuizReviewScreen(attempt: extra['attempt'] as Attempt),
+            );
           },
         ),
         // Folder & Chapter Routes
@@ -260,14 +307,17 @@ class AppRouter {
           builder: (BuildContext context, GoRouterState state) {
             final folderId = state.pathParameters['folderId']!;
             final extra = state.extra as Map<String, dynamic>?;
-            return FolderDetailScreen(
-              folderId: folderId,
-              title: extra?['title'] as String? ?? 'Folder',
-              subtitle: extra?['subtitle'] as String? ?? 'Subtitle',
-              chapters: extra?['chapters'] as int? ?? 0,
-              passed: extra?['passed'] as int? ?? 0,
-              attempted: extra?['attempted'] as int? ?? 0,
-              color: extra?['color'] as Color? ?? Colors.blue,
+            return BlocProvider<ChapterCubit>(
+              create: (context) => getIt<ChapterCubit>(),
+              child: FolderDetailScreen(
+                folderId: folderId,
+                title: extra?['title'] as String? ?? 'Folder',
+                subtitle: extra?['subtitle'] as String? ?? 'Subtitle',
+                chapters: extra?['chapters'] as int? ?? 0,
+                passed: extra?['passed'] as int? ?? 0,
+                attempted: extra?['attempted'] as int? ?? 0,
+                color: extra?['color'] as Color? ?? Colors.blue,
+              ),
             );
           },
         ),
@@ -276,12 +326,18 @@ class AppRouter {
           name: 'chapter-detail',
           builder: (BuildContext context, GoRouterState state) {
             final extra = state.extra as Map<String, dynamic>;
+            final existingCubit =
+                extra['chapterCubit'] as ChapterCubit? ?? null;
+            final child = ChapterDetailScreen(
+              chapter: extra['chapter'] as ChapterModel,
+              folderColor: extra['folderColor'] as Color? ?? Colors.blue,
+            );
+            if (existingCubit != null) {
+              return BlocProvider.value(value: existingCubit, child: child);
+            }
             return BlocProvider<ChapterCubit>(
               create: (context) => getIt<ChapterCubit>(),
-              child: ChapterDetailScreen(
-                chapter: extra['chapter'] as ChapterModel,
-                folderColor: extra['folderColor'] as Color? ?? Colors.blue,
-              ),
+              child: child,
             );
           },
         ),
@@ -291,9 +347,18 @@ class AppRouter {
           builder: (BuildContext context, GoRouterState state) {
             final folderId = state.pathParameters['folderId']!;
             final extra = state.extra as Map<String, dynamic>?;
-            return CreateChapterScreen(
+            final existingCubit =
+                extra?['chapterCubit'] as ChapterCubit? ?? null;
+            final child = CreateChapterScreen(
               folderId: folderId,
               folderTitle: extra?['folderTitle'] as String? ?? 'Folder',
+            );
+            if (existingCubit != null) {
+              return BlocProvider.value(value: existingCubit, child: child);
+            }
+            return BlocProvider<ChapterCubit>(
+              create: (context) => getIt<ChapterCubit>(),
+              child: child,
             );
           },
         ),
@@ -303,10 +368,52 @@ class AppRouter {
           builder: (BuildContext context, GoRouterState state) {
             final chapterId = state.pathParameters['chapterId']!;
             final extra = state.extra as Map<String, dynamic>?;
-            return PDFViewerScreen(
+            final existingCubit =
+                extra?['chapterCubit'] as ChapterCubit? ?? null;
+            final child = PDFViewerScreen(
               chapterId: chapterId,
               chapterTitle: extra?['chapterTitle'] as String? ?? 'PDF Viewer',
             );
+            if (existingCubit != null) {
+              return BlocProvider.value(value: existingCubit, child: child);
+            }
+            return BlocProvider<ChapterCubit>(
+              create: (context) => getIt<ChapterCubit>(),
+              child: child,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/chapter/:chapterId/notes',
+          name: 'chapter-notes',
+          builder: (BuildContext context, GoRouterState state) {
+            final chapterId = state.pathParameters['chapterId']!;
+            final extra = state.extra as Map<String, dynamic>?;
+            final chapterCubit = extra?['chapterCubit'] as ChapterCubit?;
+            final child = NotesScreen(
+              chapterId: chapterId,
+              chapterTitle: extra?['chapterTitle'] as String? ?? 'Notes',
+              accentColor: extra?['accentColor'] as Color?,
+            );
+            if (chapterCubit != null) {
+              return BlocProvider.value(value: chapterCubit, child: child);
+            }
+            return BlocProvider<ChapterCubit>(
+              create: (context) => getIt<ChapterCubit>(),
+              child: child,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/mindmap-viewer',
+          name: 'mindmap-viewer',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            final mindmap = extra?['mindmap'] as Mindmapmodel?;
+            if (mindmap == null) {
+              throw ArgumentError('Mindmap data is required for this route');
+            }
+            return MindmapScreen(mindmap: mindmap);
           },
         ),
         GoRoute(
@@ -337,22 +444,55 @@ class AppRouter {
           path: '/challenges',
           name: 'challenges',
           builder: (BuildContext context, GoRouterState state) =>
-              ChallangeScreen(),
+              BlocProvider<ChallengeCubit>(
+                create: (context) => getIt<ChallengeCubit>(),
+                child: ChallangeScreen(),
+              ),
         ),
         GoRoute(
           path: '/challenges/scan-qr',
           name: 'scan-qr',
           builder: (BuildContext context, GoRouterState state) =>
-              const QrScannerScreen(),
+              BlocProvider<ChallengeCubit>(
+                create: (context) => getIt<ChallengeCubit>(),
+                child: const QrScannerScreen(),
+              ),
         ),
         GoRoute(
           path: '/challenges/waiting/:code',
           name: 'challenge-waiting',
           builder: (BuildContext context, GoRouterState state) {
             final code = state.pathParameters['code']!;
-            return ChallengeWaitingLobbyScreen(
+            final extra = state.extra as Map<String, dynamic>?;
+            final challengeCubit =
+                extra?['challengeCubit'] as ChallengeCubit? ?? null;
+            final authCubit = extra?['authCubit'] as AuthCubit? ?? null;
+            final child = ChallengeWaitingLobbyScreen(
               challengeCode: code,
-              challengeName: 'Challenge', // Will be updated from Firebase
+              challengeName: extra?['challengeName'] as String? ?? 'Challenge',
+            );
+            if (challengeCubit != null || authCubit != null) {
+              return MultiBlocProvider(
+                providers: [
+                  if (challengeCubit != null)
+                    BlocProvider.value(value: challengeCubit)
+                  else
+                    BlocProvider<ChallengeCubit>(
+                      create: (context) => getIt<ChallengeCubit>(),
+                    ),
+                  if (authCubit != null)
+                    BlocProvider.value(value: authCubit)
+                  else
+                    BlocProvider<AuthCubit>(
+                      create: (context) => getIt<AuthCubit>(),
+                    ),
+                ],
+                child: child,
+              );
+            }
+            return BlocProvider<ChallengeCubit>(
+              create: (context) => getIt<ChallengeCubit>(),
+              child: child,
             );
           },
         ),
@@ -360,7 +500,147 @@ class AppRouter {
           path: '/enter-code',
           name: 'enter-code',
           builder: (BuildContext context, GoRouterState state) {
-            return EntercodeScreen();
+            return BlocProvider<ChallengeCubit>(
+              create: (context) => getIt<ChallengeCubit>(),
+              child: EntercodeScreen(),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/challenges/select',
+          name: 'challenge-select',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            final folderCubit = extra?['folderCubit'] as FolderCubit?;
+            final chapterCubit = extra?['chapterCubit'] as ChapterCubit?;
+            final authCubit = extra?['authCubit'] as AuthCubit?;
+            final challengeCubit = extra?['challengeCubit'] as ChallengeCubit?;
+            return MultiBlocProvider(
+              providers: [
+                if (folderCubit != null)
+                  BlocProvider.value(value: folderCubit)
+                else
+                  BlocProvider<FolderCubit>(
+                    create: (context) => getIt<FolderCubit>(),
+                  ),
+                if (chapterCubit != null)
+                  BlocProvider.value(value: chapterCubit)
+                else
+                  BlocProvider<ChapterCubit>(
+                    create: (context) => getIt<ChapterCubit>(),
+                  ),
+                if (authCubit != null)
+                  BlocProvider.value(value: authCubit)
+                else
+                  BlocProvider<AuthCubit>(
+                    create: (context) => getIt<AuthCubit>(),
+                  ),
+                if (challengeCubit != null)
+                  BlocProvider.value(value: challengeCubit)
+                else
+                  BlocProvider<ChallengeCubit>(
+                    create: (context) => getIt<ChallengeCubit>(),
+                  ),
+              ],
+              child: const SelectChapterScreen(),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/challenges/create',
+          name: 'challenge-create',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            final challengeCubit = extra?['challengeCubit'] as ChallengeCubit?;
+            final authCubit = extra?['authCubit'] as AuthCubit?;
+            final folderCubit = extra?['folderCubit'] as FolderCubit?;
+            final chapterCubit = extra?['chapterCubit'] as ChapterCubit?;
+            final child = CreateChallengeScreen(
+              challengeName: extra?['challengeName'] as String?,
+              questionsCount: extra?['questionsCount'] as int? ?? 10,
+              durationMinutes: extra?['durationMinutes'] as int? ?? 15,
+              inviteCode: extra?['inviteCode'] as String? ?? 'Q4DRE9',
+              chapterName: extra?['chapterName'] as String?,
+              chapterDescription: extra?['chapterDescription'] as String?,
+            );
+            return MultiBlocProvider(
+              providers: [
+                if (challengeCubit != null)
+                  BlocProvider.value(value: challengeCubit)
+                else
+                  BlocProvider<ChallengeCubit>(
+                    create: (context) => getIt<ChallengeCubit>(),
+                  ),
+                if (authCubit != null)
+                  BlocProvider.value(value: authCubit)
+                else
+                  BlocProvider<AuthCubit>(
+                    create: (context) => getIt<AuthCubit>(),
+                  ),
+                if (folderCubit != null)
+                  BlocProvider.value(value: folderCubit)
+                else
+                  BlocProvider<FolderCubit>(
+                    create: (context) => getIt<FolderCubit>(),
+                  ),
+                if (chapterCubit != null)
+                  BlocProvider.value(value: chapterCubit)
+                else
+                  BlocProvider<ChapterCubit>(
+                    create: (context) => getIt<ChapterCubit>(),
+                  ),
+              ],
+              child: child,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/challenges/live/:code',
+          name: 'challenge-live',
+          builder: (BuildContext context, GoRouterState state) {
+            final code = state.pathParameters['code']!;
+            final extra = state.extra as Map<String, dynamic>?;
+            final challengeCubit = extra?['challengeCubit'] as ChallengeCubit?;
+            final authCubit = extra?['authCubit'] as AuthCubit?;
+            return MultiBlocProvider(
+              providers: [
+                if (challengeCubit != null)
+                  BlocProvider.value(value: challengeCubit)
+                else
+                  BlocProvider<ChallengeCubit>(
+                    create: (context) => getIt<ChallengeCubit>(),
+                  ),
+                if (authCubit != null)
+                  BlocProvider.value(value: authCubit)
+                else
+                  BlocProvider<AuthCubit>(
+                    create: (context) => getIt<AuthCubit>(),
+                  ),
+              ],
+              child: LiveQuestionScreen(
+                challengeCode: code,
+                challengeName:
+                    extra?['challengeName'] as String? ?? 'Challenge',
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/challenges/completed/:code',
+          name: 'challenge-complete',
+          builder: (BuildContext context, GoRouterState state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            return ChallengeCompletionScreen(
+              challengeName: extra?['challengeName'] as String? ?? 'Challenge',
+              finalScore: extra?['finalScore'] as int? ?? 0,
+              correctAnswers: extra?['correctAnswers'] as int? ?? 0,
+              totalQuestions: extra?['totalQuestions'] as int? ?? 0,
+              accuracy: extra?['accuracy'] as double? ?? 0,
+              rank: extra?['rank'] as int? ?? 0,
+              leaderboard:
+                  extra?['leaderboard'] as List<Map<String, dynamic>>? ??
+                  const <Map<String, dynamic>>[],
+            );
           },
         ),
         // GoRoute(

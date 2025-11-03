@@ -21,6 +21,10 @@ class BuildTab extends StatefulWidget {
 class _BuildTabState extends State<BuildTab> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isActive = widget.isActive;
+
     return GestureDetector(
       onTap: widget.onTap,
       child: AnimatedContainer(
@@ -28,29 +32,42 @@ class _BuildTabState extends State<BuildTab> {
         curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: widget.isActive ? const Color(0xFF2C2C2E) : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: widget.isActive
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
+          gradient: isActive
+              ? LinearGradient(
+                  colors: [
+                    colorScheme.primary,
+                    colorScheme.primaryContainer.withOpacity(0.85),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
               : null,
+          color: isActive ? null : colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isActive
+                ? Colors.transparent
+                : colorScheme.outlineVariant.withOpacity(0.6),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isActive
+                  ? colorScheme.primary.withOpacity(0.25)
+                  : theme.shadowColor.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedScale(
               duration: const Duration(milliseconds: 200),
-              scale: widget.isActive ? 1.1 : 1.0,
+              scale: isActive ? 1.1 : 1.0,
               child: Icon(
                 widget.icon,
-                color: widget.isActive
-                    ? Colors.white
-                    : Colors.white.withOpacity(0.6),
+                color: isActive ? colorScheme.onPrimary : colorScheme.onSurface,
                 size: 20,
               ),
             ),
@@ -58,11 +75,9 @@ class _BuildTabState extends State<BuildTab> {
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
               style: TextStyle(
-                color: widget.isActive
-                    ? Colors.white
-                    : Colors.white.withOpacity(0.6),
+                color: isActive ? colorScheme.onPrimary : colorScheme.onSurface,
                 fontSize: 15,
-                fontWeight: widget.isActive ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                 letterSpacing: 0.2,
               ),
               child: Text(widget.label),

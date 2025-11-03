@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/create_challenge_screen.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
@@ -333,24 +333,19 @@ class _SelectChapterScreenState extends State<SelectChapterScreen> {
           final authCubit = context.read<AuthCubit>();
           final challengeCubit = context.read<ChallengeCubit>();
 
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(value: folderCubit),
-                  BlocProvider.value(value: chapterCubit),
-                  BlocProvider.value(value: authCubit),
-                  BlocProvider.value(value: challengeCubit),
-                ],
-                child: CreateChallengeScreen(
-                  inviteCode: state.inviteCode,
-                  chapterName: _selectedFolder!.title,
-                  challengeName: state.challengeName,
-                  questionsCount: state.questionsCount,
-                  durationMinutes: state.durationMinutes,
-                ),
-              ),
-            ),
+          GoRouter.of(context).pushReplacementNamed(
+            'challenge-create',
+            extra: {
+              'folderCubit': folderCubit,
+              'chapterCubit': chapterCubit,
+              'authCubit': authCubit,
+              'challengeCubit': challengeCubit,
+              'inviteCode': state.inviteCode,
+              'chapterName': _selectedFolder!.title,
+              'challengeName': state.challengeName,
+              'questionsCount': state.questionsCount,
+              'durationMinutes': state.durationMinutes,
+            },
           );
         } else if (state is ChallengeError) {
           // Show error message

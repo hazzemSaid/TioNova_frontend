@@ -6,7 +6,6 @@ import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/SecondaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
-import 'package:tionova/features/theme/presentation/widgets/theme_toggle_button.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -53,7 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ? failure.errMessage
                     : 'Registration failed',
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         } else if (state is AuthSuccess) {
@@ -100,7 +99,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       : Colors.black54,
                                 ),
                               ),
-                              ThemeToggleButton(),
                             ],
                           ),
                         ),
@@ -108,7 +106,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         // Registration Form
                         SliverToBoxAdapter(
                           child: SizedBox(
-                            height: isCompact ? h * 0.1 : h * 0.05,
+                            height: isCompact ? h * 0.09 : h * 0.05,
                           ),
                         ),
                         SliverToBoxAdapter(
@@ -276,7 +274,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(height: 16),
+                                    const SizedBox(height: 26),
                                     BlocBuilder<AuthCubit, AuthState>(
                                       builder: (context, state) {
                                         final isLoading =
@@ -292,11 +290,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                 ScaffoldMessenger.of(
                                                   context,
                                                 ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
+                                                  SnackBar(
+                                                    content: const Text(
                                                       'Passwords do not match',
                                                     ),
-                                                    backgroundColor: Colors.red,
+                                                    backgroundColor: Theme.of(
+                                                      context,
+                                                    ).colorScheme.error,
                                                   ),
                                                 );
                                                 return;
@@ -374,38 +374,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       ),
                                       isDark: isDark,
                                     ),
+                                    const SizedBox(height: 12),
+                                    Align(
+                                      alignment: Alignment.center,
+                                      child: TextButton(
+                                        onPressed: () =>
+                                            context.go('/auth/login'),
+                                        child: Text(
+                                          'Already have an account? Log in here',
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black54,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-
-                        // Bottom sign in link
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              const SizedBox(height: 16),
-                              TextButton(
-                                onPressed: () => context.go('/auth/login'),
-                                child: Text(
-                                  'Already have an account? Login here',
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? Colors.white70
-                                        : Colors.black54,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                height:
-                                    MediaQuery.of(context).viewInsets.bottom +
-                                    16,
-                              ),
-                            ],
                           ),
                         ),
                       ],

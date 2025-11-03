@@ -25,12 +25,21 @@ class FolderTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2C2C2E)),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.6)),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withOpacity(0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: tabs.asMap().entries.map((entry) {
@@ -45,9 +54,7 @@ class FolderTabs extends StatelessWidget {
               onTap: () => onTabSelected(tab),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF0E0E10)
-                      : Colors.transparent,
+                  color: isSelected ? colorScheme.surface : Colors.transparent,
                   borderRadius: BorderRadius.horizontal(
                     left: isFirst ? const Radius.circular(12) : Radius.zero,
                     right: isLast ? const Radius.circular(12) : Radius.zero,
@@ -59,8 +66,8 @@ class FolderTabs extends StatelessWidget {
                     Icon(
                       _getTabIcon(tab),
                       color: isSelected
-                          ? Colors.white
-                          : const Color(0xFF8E8E93),
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
                       size: 14,
                     ),
                     const SizedBox(width: 8),
@@ -68,9 +75,11 @@ class FolderTabs extends StatelessWidget {
                       tab,
                       style: TextStyle(
                         color: isSelected
-                            ? Colors.white
-                            : const Color(0xFF8E8E93),
-                        fontWeight: FontWeight.w500,
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurfaceVariant,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         fontSize: 13,
                       ),
                     ),

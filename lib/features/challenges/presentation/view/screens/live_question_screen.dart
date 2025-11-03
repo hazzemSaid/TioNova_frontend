@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/challenges/presentation/services/challenge_polling_service.dart';
 import 'package:tionova/features/challenges/presentation/services/challenge_sound_service.dart';
 import 'package:tionova/features/challenges/presentation/services/challenge_vibration_service.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/challenge_completion_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/challenge_header.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/challenge_progress_bar.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/challenge_timer_bar.dart';
@@ -1013,25 +1013,18 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
 
     if (!mounted) return;
 
-    final nav = _navigator ?? Navigator.of(context);
-    nav.pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => MultiBlocProvider(
-          providers: [
-            BlocProvider.value(value: context.read<ChallengeCubit>()),
-            BlocProvider.value(value: context.read<AuthCubit>()),
-          ],
-          child: ChallengeCompletionScreen(
-            challengeName: widget.challengeName,
-            finalScore: userScore,
-            correctAnswers: correctAnswers,
-            totalQuestions: totalQuestions,
-            accuracy: accuracy,
-            rank: userRank,
-            leaderboard: _leaderboard,
-          ),
-        ),
-      ),
+    GoRouter.of(context).pushReplacementNamed(
+      'challenge-complete',
+      pathParameters: {'code': widget.challengeCode},
+      extra: {
+        'challengeName': widget.challengeName,
+        'finalScore': userScore,
+        'correctAnswers': correctAnswers,
+        'totalQuestions': totalQuestions,
+        'accuracy': accuracy,
+        'rank': userRank,
+        'leaderboard': _leaderboard,
+      },
     );
   }
 

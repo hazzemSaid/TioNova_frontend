@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen>
                 // Navigate using GoRouter
                 if (context.mounted) {
                   if (isFirst) {
-                    GoRouter.of(context).go('/onboarding');
+                    GoRouter.of(context).go('/theme-selection');
                   } else {
                     GoRouter.of(context).go('/auth');
                   }
@@ -131,8 +131,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

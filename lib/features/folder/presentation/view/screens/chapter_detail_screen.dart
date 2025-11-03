@@ -9,8 +9,6 @@ import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/view/screens/mindmap_screen.dart';
-import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/ai_summary_section.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_detail_app_bar.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_preview_section.dart';
@@ -297,11 +295,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             _isMindmapLoading = false;
           });
           // Navigate to mindmap viewer
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MindmapScreen(mindmap: state.mindmap),
-            ),
+          context.pushNamed(
+            'mindmap-viewer',
+            extra: {'mindmap': state.mindmap},
           );
         } else if (state is CreateMindmapError) {
           setState(() {
@@ -423,7 +419,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFFF8F9FA), // Light background
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: isWeb ? _buildWebLayout() : _buildMobileLayout(),
@@ -433,10 +429,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   }
 
   Widget _buildWebLayout() {
-    final isDark = true; // Always dark mode for web
-
+    // Folder feature uses light mode styling
     return Container(
-      color: const Color(0xFF0A0A0A), // Pure dark background like the image
+      color: const Color(0xFFF8F9FA), // Light background
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -1037,17 +1032,25 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                       height: 44,
                                       child: OutlinedButton(
                                         onPressed: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (context) => NotesScreen(
-                                                chapterId:
-                                                    widget.chapter.id ?? '',
-                                                chapterTitle:
-                                                    widget.chapter.title ??
-                                                    'Chapter',
-                                                accentColor: widget.folderColor,
-                                              ),
-                                            ),
+                                          final chapterCubit = context
+                                              .read<ChapterCubit>();
+                                          final chapterId =
+                                              widget.chapter.id?.isNotEmpty ==
+                                                  true
+                                              ? widget.chapter.id!
+                                              : 'temp';
+                                          context.pushNamed(
+                                            'chapter-notes',
+                                            pathParameters: {
+                                              'chapterId': chapterId,
+                                            },
+                                            extra: {
+                                              'chapterTitle':
+                                                  widget.chapter.title ??
+                                                  'Chapter',
+                                              'accentColor': widget.folderColor,
+                                              'chapterCubit': chapterCubit,
+                                            },
                                           );
                                         },
                                         style: OutlinedButton.styleFrom(

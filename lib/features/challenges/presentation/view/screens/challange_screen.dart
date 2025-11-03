@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/select_chapter_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/OptionCard.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
@@ -23,9 +22,11 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
   @override
   Widget build(BuildContext context) {
     final verticalSpacing = MediaQuery.of(context).size.height * 0.02;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.background,
 
       body: SafeArea(
         child: ScrollConfiguration(
@@ -59,12 +60,19 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                   ),
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1C1C1E),
+                    color: colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
-                      color: const Color(0xFF2C2C2E),
+                      color: colorScheme.outlineVariant.withOpacity(0.6),
                       width: 1,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withOpacity(0.06),
+                        blurRadius: 10,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
@@ -110,7 +118,6 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                           Color(0xFF006B54),
                           Color(0xFF00C46A),
                         ],
-                        backgroundColor: const Color(0xFF0F0F0F),
                         icon: Icons.qr_code_scanner,
                         iconGradient: const [
                           Color(0x3300C46A),
@@ -129,7 +136,6 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                           Color(0xFF0035D4),
                           Color(0xFF0066FF),
                         ],
-                        backgroundColor: Colors.transparent,
                         icon: Icons.person_add_alt_1_outlined,
                         iconGradient: const [
                           Color(0x330066FF),
@@ -152,7 +158,6 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                           Color(0xFF006B54),
                           Color(0xFF00C46A),
                         ],
-                        backgroundColor: const Color(0xFF0F0F0F),
                         leading: Container(
                           width: 10,
                           height: 10,
@@ -180,9 +185,18 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                   width: double.infinity,
                   margin: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: BoxDecoration(
-                    //rgb(20, 20, 20)
-                    color: const Color.fromARGB(255, 20, 20, 20),
+                    color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withOpacity(0.5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withOpacity(0.07),
+                        blurRadius: 16,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
                   ),
                   child: Column(
                     children: [
@@ -222,8 +236,6 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                           child: Icon(
                             Icons.emoji_events_outlined,
                             color: Color.fromRGBO(0, 153, 102, 1),
-
-                            //rgb(0, 153, 102)
                             size: 24,
                           ),
                         ),
@@ -231,8 +243,8 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                       const SizedBox(height: 12),
                       Text(
                         'Create Challenge',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
                           fontSize: 15,
                           letterSpacing: 0.2,
                           fontFamily: 'Inter',
@@ -242,8 +254,8 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'Create a new challenge and challenge your friends',
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
                           fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
@@ -253,7 +265,17 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                       const SizedBox(height: 18),
                       InkWell(
                         onTap: () {
-                          // TODO: Implement Create Challenge action
+                          if (!mounted) return;
+                          final router = GoRouter.maybeOf(context);
+                          router?.pushNamed(
+                            'challenge-select',
+                            extra: {
+                              'folderCubit': context.read<FolderCubit>(),
+                              'chapterCubit': context.read<ChapterCubit>(),
+                              'authCubit': context.read<AuthCubit>(),
+                              'challengeCubit': context.read<ChallengeCubit>(),
+                            },
+                          );
                         },
                         borderRadius: BorderRadius.circular(60),
                         child: Container(
@@ -283,27 +305,16 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                           child: InkWell(
                             onTap: () {
                               if (!mounted) return;
-                              // Navigate to chapter selection screen first
-                              Navigator.of(context, rootNavigator: false).push(
-                                MaterialPageRoute(
-                                  builder: (_) => MultiBlocProvider(
-                                    providers: [
-                                      BlocProvider.value(
-                                        value: context.read<FolderCubit>(),
-                                      ),
-                                      BlocProvider.value(
-                                        value: context.read<ChapterCubit>(),
-                                      ),
-                                      BlocProvider.value(
-                                        value: context.read<AuthCubit>(),
-                                      ),
-                                      BlocProvider.value(
-                                        value: context.read<ChallengeCubit>(),
-                                      ),
-                                    ],
-                                    child: const SelectChapterScreen(),
-                                  ),
-                                ),
+                              final router = GoRouter.maybeOf(context);
+                              router?.pushNamed(
+                                'challenge-select',
+                                extra: {
+                                  'folderCubit': context.read<FolderCubit>(),
+                                  'chapterCubit': context.read<ChapterCubit>(),
+                                  'authCubit': context.read<AuthCubit>(),
+                                  'challengeCubit': context
+                                      .read<ChallengeCubit>(),
+                                },
                               );
                             },
                             child: AnimatedContainer(
@@ -319,7 +330,7 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                                     size: 22,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
+                                  Text(
                                     'Create Challenge',
                                     style: TextStyle(
                                       color: Colors.black,

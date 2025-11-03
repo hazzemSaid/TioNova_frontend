@@ -16,13 +16,17 @@ class AllTimeStatistics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,19 +34,24 @@ class AllTimeStatistics extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.analytics_outlined,
-                color: Colors.white,
+                color: colorScheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'All-Time Statistics',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style:
+                    textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ],
           ),
@@ -54,19 +63,21 @@ class AllTimeStatistics extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildStatItem(
+                  context,
                   '$chapters',
                   'Chapters',
                   Icons.menu_book_outlined,
-                  const Color(0xFF007AFF),
+                  colorScheme.primary,
                 ),
               ),
               const SizedBox(width: 20),
               Expanded(
                 child: _buildStatItem(
+                  context,
                   '$quizzes',
                   'Quizzes',
                   Icons.quiz_outlined,
-                  const Color(0xFF34C759),
+                  colorScheme.tertiary,
                 ),
               ),
             ],
@@ -79,19 +90,21 @@ class AllTimeStatistics extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildStatItem(
+                  context,
                   studyTime,
                   'Studied',
                   Icons.access_time_outlined,
-                  const Color(0xFF8E44AD),
+                  colorScheme.secondary,
                 ),
               ),
               const SizedBox(width: 20),
               Expanded(
                 child: _buildStatItem(
+                  context,
                   '$achievements',
                   'Achievements',
                   Icons.emoji_events_outlined,
-                  const Color(0xFFFF8C42),
+                  colorScheme.primary,
                 ),
               ),
             ],
@@ -102,11 +115,16 @@ class AllTimeStatistics extends StatelessWidget {
   }
 
   Widget _buildStatItem(
+    BuildContext context,
     String value,
     String label,
     IconData icon,
     Color iconColor,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Row(
       children: [
         Container(
@@ -125,15 +143,27 @@ class AllTimeStatistics extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+                style:
+                    textTheme.titleLarge?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
               ),
               Text(
                 label,
-                style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
+                style:
+                    textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
               ),
             ],
           ),

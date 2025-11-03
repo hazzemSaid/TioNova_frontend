@@ -1,5 +1,3 @@
-// Remove this line, it's not needed for DottedBorder
-
 import 'package:flutter/material.dart';
 import 'package:tionova/features/home/presentation/view/widgets/ChapterCard.dart';
 import 'package:tionova/features/home/presentation/view/widgets/CreateFolderButton.dart';
@@ -24,9 +22,49 @@ class HomeScreen extends StatelessWidget {
     final double verticalSpacing = screenHeight * 0.02;
 
     final bool isWeb = MediaQuery.of(context).size.width > 800.0;
-    print(MediaQuery.of(context).size.width);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final chapters = [
+      {
+        'title': 'Binary Search Trees',
+        'subject': 'Computer Science',
+        'status': 'Passed',
+        'color': colorScheme.primary,
+        'days': 'Last opened 606 days ago',
+      },
+      {
+        'title': 'Matrix Operations',
+        'subject': 'Mathematics',
+        'status': 'Failed',
+        'color': colorScheme.error,
+        'days': 'Last opened 607 days ago',
+      },
+      {
+        'title': 'Wave Functions',
+        'subject': 'Physics',
+        'status': 'Not Taken',
+        'color': colorScheme.outline,
+        'days': 'Last opened 608 days ago',
+      },
+    ];
+
+    final folders = [
+      {
+        'title': 'Computer Science',
+        'chapters': '12 chapters',
+        'days': '606 days ago',
+      },
+      {
+        'title': 'Mathematics',
+        'chapters': '8 chapters',
+        'days': '607 days ago',
+      },
+      {'title': 'Physics', 'chapters': '15 chapters', 'days': '608 days ago'},
+    ];
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: ScrollConfiguration(
         behavior: const NoGlowScrollBehavior(),
         child: CustomScrollView(
@@ -80,30 +118,6 @@ class HomeScreen extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  final chapters = [
-                    {
-                      'title': 'Binary Search Trees',
-                      'subject': 'Computer Science',
-                      'status': 'Passed',
-                      'color': const Color(0xFF34C759),
-                      'days': 'Last opened 606 days ago',
-                    },
-                    {
-                      'title': 'Matrix Operations',
-                      'subject': 'Mathematics',
-                      'status': 'Failed',
-                      'color': const Color(0xFFFF3B30),
-                      'days': 'Last opened 607 days ago',
-                    },
-                    {
-                      'title': 'Wave Functions',
-                      'subject': 'Physics',
-                      'status': 'Not Taken',
-                      'color': const Color(0xFF8E8E93),
-                      'days': 'Last opened 608 days ago',
-                    },
-                  ];
-
                   return Padding(
                     padding: EdgeInsets.only(bottom: screenHeight * 0.015),
                     child: ChapterCard(
@@ -114,7 +128,7 @@ class HomeScreen extends StatelessWidget {
                       days: chapters[index]['days'] as String,
                     ),
                   );
-                }, childCount: 3),
+                }, childCount: chapters.length),
               ),
             ),
 
@@ -151,23 +165,6 @@ class HomeScreen extends StatelessWidget {
                       mainAxisExtent: isTablet ? 180 : 160,
                     ),
                     delegate: SliverChildBuilderDelegate((context, index) {
-                      final folders = [
-                        {
-                          'title': 'Computer Science',
-                          'chapters': '12 chapters',
-                          'days': '606 days ago',
-                        },
-                        {
-                          'title': 'Mathematics',
-                          'chapters': '8 chapters',
-                          'days': '607 days ago',
-                        },
-                        {
-                          'title': 'Physics',
-                          'chapters': '15 chapters',
-                          'days': '608 days ago',
-                        },
-                      ];
                       return FolderCardHome(
                         title: folders[index]['title']!,
                         chapters: folders[index]['chapters']!,

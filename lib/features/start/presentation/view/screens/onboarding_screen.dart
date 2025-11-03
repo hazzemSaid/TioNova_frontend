@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/core/router/app_router.dart';
@@ -9,13 +11,25 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with TickerProviderStateMixin {
   final PageController _controller = PageController();
   int _index = 0;
+  late AnimationController _rotationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _rotationController.dispose();
     super.dispose();
   }
 
@@ -48,39 +62,62 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark
+          ? const Color(0xFF0C0A1F)
+          : const Color(0xFFF8F9FA),
       body: SafeArea(
         child: Stack(
           children: [
             PageView(
               controller: _controller,
               onPageChanged: (i) => setState(() => _index = i),
-              children: const [
+              children: [
                 _OnboardPage(
-                  color: Color(0xFFE6F0FF),
+                  rotationController: _rotationController,
                   icon: Icons.track_changes,
+                  centerImage: 'assets/images/Container.png',
+                  orbitIcons: const [
+                    'assets/images/Icon (1).png',
+                    'assets/images/Icon (2).png',
+                    'assets/images/Icon (3).png',
+                  ],
                   title: 'Smart Study Goals',
                   subtitle:
                       'Set personalized learning objectives and track your progress with AI-powered insights that adapt to your study patterns.',
                 ),
                 _OnboardPage(
-                  color: Color(0xFFE9FFF0),
+                  rotationController: _rotationController,
                   icon: Icons.psychology_alt_rounded,
+                  centerImage: 'assets/images/🧠.png',
+                  orbitIcons: const [
+                    'assets/images/Icon (4).png',
+                    'assets/images/Icon (5).png',
+                    'assets/images/Icon (6).png',
+                  ],
                   title: 'AI-Powered Learning',
                   subtitle:
                       'Get instant summaries, interactive quizzes, and personalized study recommendations powered by advanced AI technology.',
                 ),
                 _OnboardPage(
-                  color: Color(0xFFF1E9FF),
+                  rotationController: _rotationController,
                   icon: Icons.rocket_launch_rounded,
+                  centerImage: 'assets/images/🚀.png',
+                  orbitIcons: const [
+                    'assets/images/Icon (7).png',
+                    'assets/images/Icon (5).png',
+                    'assets/images/Vector.png',
+                  ],
                   title: 'Ready to Excel?',
                   subtitle:
                       "Join thousands of students who've improved their learning with TioNova. Start your personalized study journey today!",
-                  bullets: [
+                  bullets: const [
                     'Organize study materials in folders',
                     'AI-generated summaries and quizzes',
                     'Track progress with streaks',
-                    'Challenge friends and compete',
+                    'Challenge friends and classmates',
                   ],
                 ),
               ],
@@ -92,7 +129,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               right: 12,
               child: TextButton(
                 onPressed: _completeOnboarding,
-                child: const Text('Skip'),
+                child: Text(
+                  'Skip',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
+                ),
               ),
             ),
 
@@ -112,8 +154,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: ElevatedButton(
                         onPressed: _index == 0 ? null : _back,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0C0A1F),
-                          foregroundColor: Colors.white,
+                          backgroundColor: isDark
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.black.withOpacity(0.08),
+                          foregroundColor: isDark
+                              ? Colors.white
+                              : Colors.black87,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -142,8 +188,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               height: 6,
                               decoration: BoxDecoration(
                                 color: active
-                                    ? const Color(0xFF0C0A1F)
-                                    : Colors.black12,
+                                    ? (isDark
+                                          ? Colors.white
+                                          : const Color(0xFF9D4EDD))
+                                    : (isDark
+                                          ? Colors.white.withOpacity(0.3)
+                                          : Colors.black.withOpacity(0.2)),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             );
@@ -162,8 +212,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: ElevatedButton(
                         onPressed: _next,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0C0A1F),
-                          foregroundColor: Colors.white,
+                          backgroundColor: isDark
+                              ? Colors.white
+                              : const Color(0xFF0C0A1F),
+                          foregroundColor: isDark
+                              ? const Color(0xFF0C0A1F)
+                              : Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -172,9 +226,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(_index == 2 ? 'Get Started' : 'Next'),
+                            Text(
+                              _index == 2 ? 'Get Started' : 'Continue',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             const SizedBox(width: 8),
-                            const Icon(Icons.chevron_right_rounded),
+                            const Icon(Icons.arrow_forward_rounded),
                           ],
                         ),
                       ),
@@ -191,15 +250,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class _OnboardPage extends StatelessWidget {
-  final Color color;
+  final AnimationController rotationController;
   final IconData icon;
+  final String centerImage;
+  final List<String> orbitIcons;
   final String title;
   final String subtitle;
   final List<String>? bullets;
 
   const _OnboardPage({
-    required this.color,
+    required this.rotationController,
     required this.icon,
+    required this.centerImage,
+    required this.orbitIcons,
     required this.title,
     required this.subtitle,
     this.bullets,
@@ -208,65 +271,211 @@ class _OnboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 88),
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Spacer(),
-          Container(
-            width: 84,
-            height: 84,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(24),
+
+          // Animated circular orbit with icons
+          SizedBox(
+            width: 280,
+            height: 280,
+            child: AnimatedBuilder(
+              animation: rotationController,
+              builder: (context, child) {
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Background circle
+                    Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+
+                    // Center image
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.white.withOpacity(0.15),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Image.asset(centerImage, fit: BoxFit.contain),
+                      ),
+                    ),
+
+                    // Orbiting icons
+                    ...List.generate(orbitIcons.length, (index) {
+                      final angle =
+                          (rotationController.value * 2 * 3.14159) +
+                          (index * 2 * 3.14159 / orbitIcons.length);
+                      final radius = 120.0;
+                      final x = radius * cos(angle);
+                      final y = radius * sin(angle);
+
+                      return Transform.translate(
+                        offset: Offset(x, y),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _getIconColor(index, isDark),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _getIconColor(
+                                  index,
+                                  isDark,
+                                ).withOpacity(0.03),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Image.asset(
+                              orbitIcons[index],
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              },
             ),
-            child: Icon(icon, size: 40, color: const Color(0xFF0C0A1F)),
           ),
-          const SizedBox(height: 24),
+
+          const SizedBox(height: 40),
           Text(
             title,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : const Color(0xFF0C0A1F),
+              fontSize: 26,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black54),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: isDark ? Colors.white70 : Colors.black.withOpacity(0.7),
+              fontSize: 15,
+              height: 1.5,
+            ),
             textAlign: TextAlign.center,
           ),
+
           if (bullets != null) ...[
-            const SizedBox(height: 50),
-            for (final b in bullets!)
-              SizedBox(
-                width: double.infinity,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 60,
-                    vertical: 6,
+            const SizedBox(height: 32),
+            ...bullets!
+                .map(
+                  (bullet) => Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 20,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDark
+                                ? Colors.white.withOpacity(0.15)
+                                : const Color(0xFF9D4EDD).withOpacity(0.15),
+                          ),
+                          child: Icon(
+                            _getBulletIcon(bullets!.indexOf(bullet)),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF9D4EDD),
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            bullet,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0C0A1F),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Text(b, style: theme.textTheme.bodyMedium),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+                )
+                .toList(),
           ],
+
           const Spacer(),
         ],
       ),
     );
+  }
+
+  Color _getIconColor(int index, bool isDark) {
+    // Dark theme colors - deep, muted tones
+    final darkColors = [
+      const Color.fromARGB(167, 5, 5, 50), // Deep blue
+      const Color.fromARGB(92, 39, 19, 55), // Deep purple
+      const Color.fromARGB(152, 63, 26, 26), // Deep red
+      const Color.fromARGB(128, 10, 23, 10), // Deep green
+      const Color.fromARGB(126, 60, 37, 1), // Deep orange
+      const Color.fromARGB(143, 9, 39, 64), // Deep cyan
+    ];
+
+    // Light theme colors - vibrant, lighter tones with brand colors
+    final lightColors = [
+      const Color(0xFF9D4EDD).withOpacity(0.15), // Purple (primary brand)
+      const Color(0xFF00D9FF).withOpacity(0.15), // Cyan (secondary brand)
+      const Color(0xFF2196F3).withOpacity(0.15), // Blue (tertiary brand)
+      const Color(0xFF4CAF50).withOpacity(0.15), // Green
+      const Color(0xFFFF9800).withOpacity(0.15), // Orange
+      const Color(0xFFFF6B6B).withOpacity(0.15), // Red
+    ];
+
+    final colors = isDark ? darkColors : lightColors;
+    return colors[index % colors.length];
+  }
+
+  IconData _getBulletIcon(int index) {
+    final icons = [
+      Icons.folder_rounded,
+      Icons.auto_awesome_rounded,
+      Icons.local_fire_department_rounded,
+      Icons.group_rounded,
+    ];
+    return icons[index % icons.length];
+  }
+
+  double cos(double angle) {
+    return math.cos(angle);
+  }
+
+  double sin(double angle) {
+    return math.sin(angle);
   }
 }

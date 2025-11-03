@@ -45,15 +45,28 @@ class AuthRepoImp implements AuthRepo {
     String username,
     String password,
   ) {
-    return remoteDataSource.register(email, username, password);
+    return remoteDataSource.register(
+      email: email,
+      username: username,
+      password: password,
+    );
   }
 
   @override
-  Future<Either<Failure, void>> resetPassword(
-    String email, {
-    String? newPassword,
-  }) {
-    return remoteDataSource.resetPassword(email, newPassword: newPassword);
+  Future<Either<Failure, UserModel>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final result = await remoteDataSource.resetPassword(
+      email: email,
+      code: code,
+      newPassword: newPassword,
+    );
+    if (result.isRight) {
+      await localDataSource.saveUser(result.right);
+    }
+    return result;
   }
 
   @override
@@ -82,10 +95,23 @@ class AuthRepoImp implements AuthRepo {
     String email,
     String code,
   ) async {
-    final result = await remoteDataSource.verifyEmail(email, code);
+    final result = await remoteDataSource.verifyEmail(email: email, code: code);
     if (result.isRight) {
       await localDataSource.saveUser(result.right);
     }
     return result;
+  }
+
+  @override
+  Future<Either<Failure, void>> forgetPassword({required String email}) {
+    return remoteDataSource.forgetPassword(email: email);
+  }
+
+  @override
+  Future<Either<Failure, void>> verifyCode({
+    required String email,
+    required String code,
+  }) {
+    return remoteDataSource.verifyCode(email: email, code: code);
   }
 }

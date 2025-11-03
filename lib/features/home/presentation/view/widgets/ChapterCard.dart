@@ -18,9 +18,12 @@ class ChapterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final screenSize = MediaQuery.sizeOf(context);
     final isTablet = screenSize.width > 600;
-    
+
     // Responsive dimensions
     final double padding = isTablet ? 20.0 : 16.0;
     final double titleSize = isTablet ? 18.0 : 16.0;
@@ -31,9 +34,9 @@ class ChapterCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(isTablet ? 16.0 : 14.0),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,12 +48,19 @@ class ChapterCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: titleSize,
-                    height: 1.2,
-                  ),
+                  style:
+                      textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: titleSize,
+                        height: 1.2,
+                        color: colorScheme.onSurface,
+                      ) ??
+                      TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                        fontSize: titleSize,
+                        height: 1.2,
+                      ),
                 ),
               ),
               SizedBox(width: spacing),
@@ -90,11 +100,17 @@ class ChapterCard extends StatelessWidget {
           SizedBox(height: spacing / 2),
           Text(
             subject,
-            style: TextStyle(
-              color: const Color(0xFF8E8E93),
-              fontSize: subjectSize,
-              fontWeight: FontWeight.w400,
-            ),
+            style:
+                textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: subjectSize,
+                  fontWeight: FontWeight.w400,
+                ) ??
+                TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: subjectSize,
+                  fontWeight: FontWeight.w400,
+                ),
           ),
           SizedBox(height: spacing),
           Row(
@@ -102,27 +118,39 @@ class ChapterCard extends StatelessWidget {
             children: [
               Text(
                 days,
-                style: TextStyle(
-                  color: const Color(0xFF636366),
-                  fontSize: metaSize,
-                  fontWeight: FontWeight.w400,
-                ),
+                style:
+                    textTheme.bodySmall?.copyWith(
+                      color: colorScheme.outline,
+                      fontSize: metaSize,
+                      fontWeight: FontWeight.w400,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.outline,
+                      fontSize: metaSize,
+                      fontWeight: FontWeight.w400,
+                    ),
               ),
               Row(
                 children: [
                   Icon(
                     Icons.menu_book_outlined,
-                    color: const Color(0xFF636366),
+                    color: colorScheme.outline,
                     size: isTablet ? 16.0 : 14.0,
                   ),
                   SizedBox(width: spacing / 2),
                   Text(
                     "Chapter",
-                    style: TextStyle(
-                      color: const Color(0xFF636366),
-                      fontSize: metaSize,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style:
+                        textTheme.bodySmall?.copyWith(
+                          color: colorScheme.outline,
+                          fontSize: metaSize,
+                          fontWeight: FontWeight.w400,
+                        ) ??
+                        TextStyle(
+                          color: colorScheme.outline,
+                          fontSize: metaSize,
+                          fontWeight: FontWeight.w400,
+                        ),
                   ),
                 ],
               ),

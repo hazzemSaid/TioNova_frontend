@@ -17,13 +17,18 @@ class QuizChatbotTabs extends StatefulWidget {
 class _QuizChatbotTabsState extends State<QuizChatbotTabs> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFF2C2C2E), width: 1),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.6),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [

@@ -1,6 +1,7 @@
 // features/folder/presentation/view/screens/folder_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
@@ -11,9 +12,6 @@ import 'package:tionova/features/folder/presentation/view/screens/EditChapterDia
 import 'package:tionova/features/folder/presentation/view/widgets/DashedBorderPainter.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/static.dart';
-
-import 'chapter_detail_screen.dart';
-import 'create_chapter_screen.dart';
 
 class FolderDetailScreen extends StatelessWidget {
   final String folderId;
@@ -60,8 +58,9 @@ class FolderDetailScreen extends StatelessWidget {
             }
           });
 
+          // Folder feature uses light mode styling
           return Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: const Color(0xFFF8F9FA), // Light background
             body: isWeb
                 ? _buildWebLayout(context, token)
                 : _buildMobileLayout(context, token, horizontalPadding),
@@ -99,13 +98,20 @@ class FolderDetailScreen extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0E0E10),
+                        color: Colors.white,
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF1C1C1E)),
+                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: const Icon(
                         Icons.arrow_back_ios_new,
-                        color: Colors.white,
+                        color: Color(0xFF0C0A1F),
                         size: 16,
                       ),
                     ),
@@ -119,7 +125,7 @@ class FolderDetailScreen extends StatelessWidget {
                         Text(
                           title,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: Color(0xFF0C0A1F),
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
                           ),
@@ -128,7 +134,7 @@ class FolderDetailScreen extends StatelessWidget {
                         Text(
                           subtitle,
                           style: const TextStyle(
-                            color: Color(0xFF8E8E93),
+                            color: Color(0xFF6B7280),
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
                           ),
@@ -145,13 +151,20 @@ class FolderDetailScreen extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0E0E10),
+                        color: Colors.white,
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF1C1C1E)),
+                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: const Icon(
                         Icons.share,
-                        color: Colors.white,
+                        color: Color(0xFF0C0A1F),
                         size: 16,
                       ),
                     ),
@@ -187,13 +200,11 @@ class FolderDetailScreen extends StatelessWidget {
               padding: EdgeInsets.all(horizontalPadding),
               child: GestureDetector(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => CreateChapterScreen(
-                        folderTitle: title,
-                        folderId: folderId,
-                      ),
-                    ),
+                  final chapterCubit = context.read<ChapterCubit>();
+                  context.pushNamed(
+                    'create-chapter',
+                    pathParameters: {'folderId': folderId},
+                    extra: {'folderTitle': title, 'chapterCubit': chapterCubit},
                   );
                 },
                 child: CustomPaint(
@@ -396,13 +407,14 @@ class FolderDetailScreen extends StatelessWidget {
                     flex: 1,
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => CreateChapterScreen(
-                              folderTitle: title,
-                              folderId: folderId,
-                            ),
-                          ),
+                        final chapterCubit = context.read<ChapterCubit>();
+                        context.pushNamed(
+                          'create-chapter',
+                          pathParameters: {'folderId': folderId},
+                          extra: {
+                            'folderTitle': title,
+                            'chapterCubit': chapterCubit,
+                          },
                         );
                       },
                       child: Container(
@@ -535,14 +547,18 @@ class FolderDetailScreen extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
-
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) =>
-                ChapterDetailScreen(chapter: chapter, folderColor: color),
-          ),
+        final chapterCubit = context.read<ChapterCubit>();
+        final chapterId = chapter.id?.isNotEmpty == true ? chapter.id! : 'temp';
+        context.pushNamed(
+          'chapter-detail',
+          pathParameters: {'chapterId': chapterId},
+          extra: {
+            'chapter': chapter,
+            'folderColor': color,
+            'chapterCubit': chapterCubit,
+          },
         );
       },
       onLongPress: () {
@@ -688,11 +704,16 @@ class FolderDetailScreen extends StatelessWidget {
   Widget _buildWebChapterCard(BuildContext context, ChapterModel chapter) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) =>
-                ChapterDetailScreen(chapter: chapter, folderColor: color),
-          ),
+        final chapterCubit = context.read<ChapterCubit>();
+        final chapterId = chapter.id?.isNotEmpty == true ? chapter.id! : 'temp';
+        context.pushNamed(
+          'chapter-detail',
+          pathParameters: {'chapterId': chapterId},
+          extra: {
+            'chapter': chapter,
+            'folderColor': color,
+            'chapterCubit': chapterCubit,
+          },
         );
       },
       onLongPress: () {

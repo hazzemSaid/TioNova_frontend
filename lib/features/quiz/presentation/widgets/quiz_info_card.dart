@@ -20,6 +20,7 @@ class QuizInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       color: Colors.grey[900],
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -52,7 +53,7 @@ class QuizInfoCard extends StatelessWidget {
                 Text(timeLimit, style: const TextStyle(color: Colors.white70)),
                 Text(
                   difficulty,
-                  style: const TextStyle(color: Colors.orangeAccent),
+                  style: TextStyle(color: theme.colorScheme.primary),
                 ),
               ],
             ),
@@ -60,7 +61,7 @@ class QuizInfoCard extends StatelessWidget {
             ElevatedButton(
               onPressed: onStart,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orangeAccent,
+                backgroundColor: theme.colorScheme.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

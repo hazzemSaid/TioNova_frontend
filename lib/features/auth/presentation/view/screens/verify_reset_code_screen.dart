@@ -78,7 +78,7 @@ class _VerifyResetCodeScreenState extends State<VerifyResetCodeScreen> {
   void _verifyCode() {
     final code = _codeDigits.join();
     if (code.length != 8) return;
-    context.read<AuthCubit>().verifyEmail(widget.email, code);
+    context.read<AuthCubit>().verifyCode(email: widget.email, code: code);
   }
 
   @override
@@ -100,14 +100,17 @@ class _VerifyResetCodeScreenState extends State<VerifyResetCodeScreen> {
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is AuthSuccess) {
-          // Verification successful, go to home
-          context.go('/');
-        } else if (state is AuthFailure) {
+        if (state is VerifyCodeSuccess) {
+          // Verification successful, go to reset password screen
+          context.go(
+            '/auth/reset-password',
+            extra: {'email': state.email, 'code': state.code},
+          );
+        } else if (state is VerifyCodeFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.failure.errMessage),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }

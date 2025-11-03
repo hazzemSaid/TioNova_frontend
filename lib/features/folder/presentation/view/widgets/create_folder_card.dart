@@ -9,6 +9,8 @@ class CreateFolderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final screenSize = MediaQuery.sizeOf(context);
     final isTablet = screenSize.width > 600;
     final double padding = isTablet ? 48.0 : 40.0;
@@ -24,10 +26,20 @@ class CreateFolderCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: CustomPaint(
-          painter: DashedBorderPainter(),
+          painter: DashedBorderPainter(
+            color: colorScheme.outlineVariant.withOpacity(0.6),
+          ),
           child: Container(
             padding: EdgeInsets.symmetric(
               vertical: padding,
@@ -40,12 +52,12 @@ class CreateFolderCard extends StatelessWidget {
                   width: isTablet ? 64 : 56,
                   height: isTablet ? 64 : 56,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1C1C1E),
+                    color: colorScheme.primary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
                     Icons.add,
-                    color: Colors.white,
+                    color: colorScheme.primary,
                     size: iconSize,
                   ),
                 ),
@@ -53,7 +65,7 @@ class CreateFolderCard extends StatelessWidget {
                 Text(
                   'Create New Folder',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                     fontSize: titleSize,
                   ),
@@ -62,7 +74,7 @@ class CreateFolderCard extends StatelessWidget {
                 Text(
                   'Organize your study materials into folders',
                   style: TextStyle(
-                    color: const Color(0xFF8E8E93),
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: subtitleSize,
                   ),
                   textAlign: TextAlign.center,
@@ -72,7 +84,7 @@ class CreateFolderCard extends StatelessWidget {
                   width: double.infinity,
                   height: buttonHeight,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: colorScheme.primary,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -80,14 +92,14 @@ class CreateFolderCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.add,
-                        color: Colors.black,
+                        color: colorScheme.onPrimary,
                         size: buttonIconSize,
                       ),
                       SizedBox(width: isTablet ? 10 : 8),
                       Text(
                         'New Folder',
                         style: TextStyle(
-                          color: Colors.black,
+                          color: colorScheme.onPrimary,
                           fontWeight: FontWeight.w600,
                           fontSize: buttonTextSize,
                         ),

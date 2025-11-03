@@ -366,18 +366,18 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
           }
         },
         child: Scaffold(
-          backgroundColor: Colors.black,
+          backgroundColor: const Color(0xFFF8F9FA), // Light background
           appBar: AppBar(
-            backgroundColor: Colors.black,
+            backgroundColor: const Color(0xFFF8F9FA),
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF0C0A1F)),
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
               'New Chapter in ${widget.folderTitle}',
               style: const TextStyle(
-                color: Colors.white,
+                color: Color(0xFF0C0A1F),
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),

@@ -20,13 +20,17 @@ class AchievementsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,19 +38,24 @@ class AchievementsSection extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.emoji_events_outlined,
-                color: Colors.white,
+                color: colorScheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Achievements',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style:
+                    textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ],
           ),
@@ -57,7 +66,7 @@ class AchievementsSection extends StatelessWidget {
           ...achievements.map((achievement) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildAchievementItem(achievement),
+              child: _buildAchievementItem(context, achievement),
             );
           }).toList(),
         ],
@@ -65,13 +74,19 @@ class AchievementsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildAchievementItem(Achievement achievement) {
+  Widget _buildAchievementItem(BuildContext context, Achievement achievement) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final earnedBackground = colorScheme.secondaryContainer;
+    final earnedForeground = colorScheme.onSecondaryContainer;
+    final inactiveBackground = colorScheme.surfaceVariant;
+    final inactiveForeground = colorScheme.onSurfaceVariant;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: achievement.isEarned
-            ? const Color(0xFF2C2C2E)
-            : const Color(0xFF1A1A1A),
+        color: achievement.isEarned ? earnedBackground : inactiveBackground,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -82,15 +97,15 @@ class AchievementsSection extends StatelessWidget {
             height: 36,
             decoration: BoxDecoration(
               color: achievement.isEarned
-                  ? const Color(0xFFFF8C42).withOpacity(0.2)
-                  : const Color(0xFF1C1C1E),
+                  ? earnedForeground.withOpacity(0.2)
+                  : inactiveForeground.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.emoji_events_outlined,
               color: achievement.isEarned
-                  ? const Color(0xFFFF8C42)
-                  : const Color(0xFF6A6A6A),
+                  ? earnedForeground
+                  : inactiveForeground.withOpacity(0.7),
               size: 18,
             ),
           ),
@@ -104,23 +119,36 @@ class AchievementsSection extends StatelessWidget {
               children: [
                 Text(
                   achievement.title,
-                  style: TextStyle(
-                    color: achievement.isEarned
-                        ? Colors.white
-                        : const Color(0xFF8E8E93),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style:
+                      textTheme.bodyLarge?.copyWith(
+                        color: achievement.isEarned
+                            ? earnedForeground
+                            : inactiveForeground,
+                        fontWeight: FontWeight.w600,
+                      ) ??
+                      TextStyle(
+                        color: achievement.isEarned
+                            ? earnedForeground
+                            : inactiveForeground,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   achievement.description,
-                  style: TextStyle(
-                    color: achievement.isEarned
-                        ? const Color(0xFF8E8E93)
-                        : const Color(0xFF6A6A6A),
-                    fontSize: 12,
-                  ),
+                  style:
+                      textTheme.bodySmall?.copyWith(
+                        color: achievement.isEarned
+                            ? earnedForeground.withOpacity(0.8)
+                            : inactiveForeground.withOpacity(0.8),
+                      ) ??
+                      TextStyle(
+                        color: achievement.isEarned
+                            ? earnedForeground.withOpacity(0.8)
+                            : inactiveForeground.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
                 ),
               ],
             ),
@@ -131,16 +159,21 @@ class AchievementsSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF34C759).withOpacity(0.2),
+                color: colorScheme.primary.withOpacity(0.16),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
+              child: Text(
                 'Earned',
-                style: TextStyle(
-                  color: Color(0xFF34C759),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                ),
+                style:
+                    textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.primary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ),
         ],

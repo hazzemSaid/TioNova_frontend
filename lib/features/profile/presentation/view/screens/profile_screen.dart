@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
+import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 import '../widgets/achievements_section.dart';
@@ -57,9 +58,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: ScrollConfiguration(
           behavior: const NoGlowScrollBehavior(),
@@ -70,7 +72,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SliverToBoxAdapter(
                 child: ProfileHeader(
                   onThemeToggle: () {
-                    // TODO: Implement theme toggle
+                    context.read<ThemeCubit>().setTheme(
+                      theme.brightness == Brightness.dark
+                          ? ThemeMode.light
+                          : ThemeMode.dark,
+                    );
                   },
                 ),
               ),

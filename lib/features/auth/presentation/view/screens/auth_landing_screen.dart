@@ -233,7 +233,7 @@ class AuthLandingScreen extends StatelessWidget {
     bool isMobile,
   ) {
     final size = MediaQuery.of(context).size;
-    final horizontalPadding = isTablet ? 60.0 : 24.0;
+    final horizontalPadding = isTablet ? 40.0 : 10.0;
     final maxWidth = isTablet ? 500.0 : double.infinity;
     final isVerySmall = size.height < 650; // Detect very small screens
 
@@ -245,35 +245,14 @@ class AuthLandingScreen extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: horizontalPadding,
-              vertical: 16,
+              vertical: 5,
             ),
             child: Column(
               children: [
-                // Top bar with theme toggle
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [const SizedBox.shrink(), ThemeToggleButton()],
-                ),
-
-                SizedBox(height: isVerySmall ? 24 : (isTablet ? 60 : 40)),
-
                 // Logo section
                 Container(
                   padding: EdgeInsets.all(isVerySmall ? 16 : 24),
-                  // decoration: BoxDecoration(
-                  //   shape: BoxShape.circle,
-                  //   gradient: LinearGradient(
-                  //     colors: isDark
-                  //         ? [
-                  //             Colors.white.withOpacity(0.1),
-                  //             Colors.white.withOpacity(0.05),
-                  //           ]
-                  //         : [
-                  //             Colors.black.withOpacity(0.02),
-                  //             Colors.black.withOpacity(0.05),
-                  //           ],
-                  //   ),
-                  // ),
+
                   child: Image.asset(
                     isDark
                         ? 'assets/images/logo2.png'
@@ -284,20 +263,12 @@ class AuthLandingScreen extends StatelessWidget {
                   ),
                 ),
 
-                SizedBox(height: isVerySmall ? 16 : (isTablet ? 32 : 24)),
+                SizedBox(height: isVerySmall ? 10 : (isTablet ? 24 : 16)),
 
                 // Welcome text with icon
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.waving_hand_rounded,
-                      color: isDark
-                          ? const Color(0xFFFFD700)
-                          : const Color(0xFFFF9800),
-                      size: isVerySmall ? 20 : (isTablet ? 28 : 24),
-                    ),
-                    const SizedBox(width: 10),
                     Flexible(
                       child: Text(
                         'Welcome to TioNova',
@@ -311,8 +282,17 @@ class AuthLandingScreen extends StatelessWidget {
                                   color: isDark ? Colors.white : Colors.black,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: -0.5,
+                                  fontSize: 25,
                                 ),
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.waving_hand_rounded,
+                      color: isDark
+                          ? const Color(0xFFFFD700)
+                          : const Color(0xFFFF9800),
+                      size: isVerySmall ? 20 : (isTablet ? 28 : 24),
                     ),
                   ],
                 ),
@@ -497,7 +477,7 @@ class AuthLandingScreen extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.failure.errMessage),
-                    backgroundColor: Colors.red.shade600,
+                    backgroundColor: Theme.of(context).colorScheme.error,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -528,6 +508,7 @@ class AuthLandingScreen extends StatelessWidget {
                         'assets/icons/google.png',
                         width: 20,
                         height: 20,
+                        color: isDark ? Colors.white : null,
                       ),
                 onPressed: state is AuthLoading
                     ? () {}

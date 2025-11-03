@@ -4,11 +4,11 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/live_question_screen.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 class CreateChallengeScreen extends StatefulWidget {
@@ -181,19 +181,14 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
           );
 
           // Navigate to question screen
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(value: context.read<ChallengeCubit>()),
-                  BlocProvider.value(value: context.read<AuthCubit>()),
-                ],
-                child: LiveQuestionScreen(
-                  challengeCode: widget.inviteCode,
-                  challengeName: widget.challengeName ?? 'Challenge',
-                ),
-              ),
-            ),
+          GoRouter.of(context).pushReplacementNamed(
+            'challenge-live',
+            pathParameters: {'code': widget.inviteCode},
+            extra: {
+              'challengeName': widget.challengeName ?? 'Challenge',
+              'challengeCubit': context.read<ChallengeCubit>(),
+              'authCubit': context.read<AuthCubit>(),
+            },
           );
         } else if (state is ChallengeError) {
           print('CreateChallengeScreen - Error: ${state.message}');

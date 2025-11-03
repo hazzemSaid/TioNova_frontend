@@ -14,6 +14,9 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final screenSize = MediaQuery.sizeOf(context);
     final isTablet = screenSize.width > 600;
     final double titleSize = isTablet ? 20.0 : screenSize.width * 0.045;
@@ -26,35 +29,43 @@ class SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(
-            fontSize: titleSize,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style:
+              textTheme.titleMedium?.copyWith(
+                fontSize: titleSize,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ) ??
+              TextStyle(
+                fontSize: titleSize,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
         ),
         Row(
           children: [
             if (actionIcon == Icons.access_time) ...[
-              Icon(
-                actionIcon,
-                color: const Color(0xFF8E8E93),
-                size: iconSize,
-              ),
+              Icon(actionIcon, color: colorScheme.secondary, size: iconSize),
               SizedBox(width: spacing / 2),
             ],
             Text(
               actionText,
-              style: TextStyle(
-                color: const Color(0xFF8E8E93),
-                fontSize: actionTextSize,
-                fontWeight: FontWeight.w400,
-              ),
+              style:
+                  textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: actionTextSize,
+                    fontWeight: FontWeight.w500,
+                  ) ??
+                  TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: actionTextSize,
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
             if (actionIcon == Icons.arrow_forward_ios) ...[
               SizedBox(width: spacing / 2),
               Icon(
                 actionIcon,
-                color: const Color(0xFF8E8E93),
+                color: colorScheme.onSurfaceVariant,
                 size: isTablet ? 16.0 : screenSize.width * 0.03,
               ),
             ],
