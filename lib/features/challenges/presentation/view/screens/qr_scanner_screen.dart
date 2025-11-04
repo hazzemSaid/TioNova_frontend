@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
@@ -14,7 +16,8 @@ class QrScannerScreen extends StatefulWidget {
   State<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
-class _QrScannerScreenState extends State<QrScannerScreen> {
+class _QrScannerScreenState extends State<QrScannerScreen>
+    with SafeContextMixin {
   MobileScannerController cameraController = MobileScannerController();
   bool _isProcessing = false;
   String? _scannedCode;
@@ -52,16 +55,18 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   Future<void> _joinChallenge(String challengeCode) async {
+    if (!contextIsValid) return;
+
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthSuccess) {
-      if (mounted) {
+      safeContext((ctx) {
         CustomDialogs.showErrorDialog(
-          context,
+          ctx,
           title: 'Authentication Required',
           message: 'Please login first',
-          onPressed: () => context.pop(),
+          onPressed: () => ctx.safePop(fallback: '/challenges'),
         );
-      }
+      });
       return;
     }
 
@@ -81,22 +86,34 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         if (!_isProcessing) return;
 
         if (state is ChallengeJoined) {
-          // Success - navigate to waiting room
+          // Success - navigate to waiting room using pushReplacement
           print('QR Scanner - Successfully joined challenge');
-          context.go('/challenges/waiting/${_scannedCode}');
+          safeContext((ctx) {
+            ctx.pushReplacementNamed(
+              'challenge-waiting',
+              pathParameters: {'code': _scannedCode ?? ''},
+              extra: {
+                'challengeName': state.challengeName,
+                'challengeCubit': ctx.read<ChallengeCubit>(),
+                'authCubit': ctx.read<AuthCubit>(),
+              },
+            );
+          });
         } else if (state is ChallengeError) {
           // Error - show dialog and allow rescan
-          CustomDialogs.showErrorDialog(
-            context,
-            title: 'Error!',
-            message: state.message,
-            onPressed: () {
-              setState(() {
-                _isProcessing = false;
-                _scannedCode = null;
-              });
-            },
-          );
+          safeContext((ctx) {
+            CustomDialogs.showErrorDialog(
+              ctx,
+              title: 'Error!',
+              message: state.message,
+              onPressed: () {
+                setState(() {
+                  _isProcessing = false;
+                  _scannedCode = null;
+                });
+              },
+            );
+          });
         }
       },
       child: Scaffold(
@@ -153,7 +170,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         children: [
           // Back button
           GestureDetector(
-            onTap: () => context.pop(),
+            onTap: () => context.safePop(fallback: '/challenges'),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(

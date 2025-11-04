@@ -92,8 +92,6 @@ class HomeScreen extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  SizedBox(height: verticalSpacing * 1.5),
-
                   // Search Bar
                   const AppSearchBar(hintText: 'Search folders, chapters...'),
 

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
@@ -34,7 +35,8 @@ class CreateChallengeScreen extends StatefulWidget {
   State<CreateChallengeScreen> createState() => _CreateChallengeScreenState();
 }
 
-class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
+class _CreateChallengeScreenState extends State<CreateChallengeScreen>
+    with SafeContextMixin {
   late TextEditingController _titleController;
   late int _questionsCount;
   late int _durationMinutes;
@@ -181,23 +183,27 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
             'CreateChallengeScreen - Questions count: ${state.questions.length}',
           );
 
-          // Navigate to question screen
-          GoRouter.of(context).pushReplacementNamed(
-            'challenge-live',
-            pathParameters: {'code': widget.inviteCode},
-            extra: {
-              'challengeName': widget.challengeName ?? 'Challenge',
-              'challengeCubit': context.read<ChallengeCubit>(),
-              'authCubit': context.read<AuthCubit>(),
-            },
-          );
+          // Navigate to question screen using pushReplacement
+          safeContext((ctx) {
+            GoRouter.of(ctx).pushReplacementNamed(
+              'challenge-live',
+              pathParameters: {'code': widget.inviteCode},
+              extra: {
+                'challengeName': widget.challengeName ?? 'Challenge',
+                'challengeCubit': ctx.read<ChallengeCubit>(),
+                'authCubit': ctx.read<AuthCubit>(),
+              },
+            );
+          });
         } else if (state is ChallengeError) {
           print('CreateChallengeScreen - Error: ${state.message}');
-          CustomDialogs.showErrorDialog(
-            context,
-            title: 'Error!',
-            message: state.message,
-          );
+          safeContext((ctx) {
+            CustomDialogs.showErrorDialog(
+              ctx,
+              title: 'Error!',
+              message: state.message,
+            );
+          });
         }
       },
       child: Scaffold(

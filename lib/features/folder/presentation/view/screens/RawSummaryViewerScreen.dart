@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 
 class RawSummaryViewerScreen extends StatelessWidget {
   final String summaryText;
@@ -15,26 +16,28 @@ class RawSummaryViewerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+          onPressed: () => context.safePop(fallback: '/'),
         ),
-        title: const Text(
+        title: Text(
           'AI Summary',
           style: TextStyle(
-            color: Colors.white,
+            color: colorScheme.onSurface,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.copy, color: Colors.white),
+            icon: Icon(Icons.copy, color: colorScheme.onSurface),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: summaryText));
               ScaffoldMessenger.of(context).showSnackBar(
@@ -57,9 +60,9 @@ class RawSummaryViewerScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF141414),
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1C1C1E)),
+                border: Border.all(color: colorScheme.outline),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,11 +75,11 @@ class RawSummaryViewerScreen extends StatelessWidget {
                         size: 24,
                       ),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'AI-Generated Summary (Text Format)',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -87,7 +90,10 @@ class RawSummaryViewerScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Chapter: $chapterTitle',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -120,14 +126,14 @@ class RawSummaryViewerScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E),
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                border: Border.all(color: colorScheme.outline),
               ),
               child: Text(
                 summaryText,
                 style: TextStyle(
-                  color: Colors.grey[300],
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 16,
                   height: 1.6,
                 ),
@@ -169,29 +175,32 @@ class RawSummaryViewerScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF141414),
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1C1C1E)),
+                border: Border.all(color: colorScheme.outline),
               ),
               child: Column(
                 children: [
                   Icon(
                     Icons.smart_toy_outlined,
-                    color: Colors.grey[500],
+                    color: colorScheme.onSurfaceVariant,
                     size: 32,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Generated by TioNova AI',
                     style: TextStyle(
-                      color: Colors.grey[500],
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   Text(
                     DateTime.now().toString().substring(0, 19),
-                    style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ),

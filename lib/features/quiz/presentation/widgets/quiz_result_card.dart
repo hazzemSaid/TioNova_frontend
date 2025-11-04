@@ -12,6 +12,7 @@ class QuizResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     int correctAnswers = 0;
     for (int i = 0; i < questions.length; i++) {
       if (answers[i] == questions[i]['correct']) {
@@ -22,10 +23,10 @@ class QuizResultCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quiz Results',
           style: TextStyle(
-            color: Colors.white,
+            color: colorScheme.onSurface,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -33,7 +34,7 @@ class QuizResultCard extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           'Score: ${(correctAnswers / questions.length * 100).toStringAsFixed(0)}%',
-          style: const TextStyle(color: Colors.orangeAccent, fontSize: 16),
+          style: TextStyle(color: colorScheme.primary, fontSize: 16),
         ),
         const SizedBox(height: 16),
         ...questions.asMap().entries.map((entry) {
@@ -42,14 +43,14 @@ class QuizResultCard extends StatelessWidget {
           return ListTile(
             title: Text(
               question['question'],
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: colorScheme.onSurface),
             ),
             subtitle: Text(
               answers[index] == question['correct'] ? 'Correct' : 'Incorrect',
               style: TextStyle(
                 color: answers[index] == question['correct']
-                    ? Colors.green
-                    : Colors.red,
+                    ? colorScheme.tertiary
+                    : colorScheme.error,
               ),
             ),
           );

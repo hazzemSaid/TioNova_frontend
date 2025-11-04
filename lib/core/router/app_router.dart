@@ -325,7 +325,7 @@ class AppRouter {
           path: '/chapter/:chapterId',
           name: 'chapter-detail',
           builder: (BuildContext context, GoRouterState state) {
-            final extra = state.extra as Map<String, dynamic>;
+            final extra = (state.extra as Map<String, dynamic>?) ?? {};
             final existingCubit =
                 extra['chapterCubit'] as ChapterCubit? ?? null;
             final child = ChapterDetailScreen(

@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
@@ -55,7 +56,7 @@ class LiveQuestionScreenBody extends StatefulWidget {
 }
 
 class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver, SafeContextMixin {
   // Services
   late final ChallengeSoundService _soundService;
   late final ChallengeVibrationService _vibrationService;
@@ -1012,21 +1013,23 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
         ? (correctAnswers / totalQuestions * 100)
         : 0.0;
 
-    if (!mounted) return;
+    if (!contextIsValid) return;
 
-    GoRouter.of(context).pushReplacementNamed(
-      'challenge-complete',
-      pathParameters: {'code': widget.challengeCode},
-      extra: {
-        'challengeName': widget.challengeName,
-        'finalScore': userScore,
-        'correctAnswers': correctAnswers,
-        'totalQuestions': totalQuestions,
-        'accuracy': accuracy,
-        'rank': userRank,
-        'leaderboard': _leaderboard,
-      },
-    );
+    safeContext((ctx) {
+      GoRouter.of(ctx).pushNamed(
+        'challenge-complete',
+        pathParameters: {'code': widget.challengeCode},
+        extra: {
+          'challengeName': widget.challengeName,
+          'finalScore': userScore,
+          'correctAnswers': correctAnswers,
+          'totalQuestions': totalQuestions,
+          'accuracy': accuracy,
+          'rank': userRank,
+          'leaderboard': _leaderboard,
+        },
+      );
+    });
   }
 
   @override

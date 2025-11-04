@@ -10,27 +10,29 @@ class QuizHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: () => context.pop(),
         ),
         if (title != null)
           Text(
             title!,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colorScheme.onSurface,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           )
         else
-          const Text(
+          Text(
             'Quiz',
             style: TextStyle(
-              color: Colors.white,
+              color: colorScheme.onSurface,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -38,7 +40,7 @@ class QuizHeader extends StatelessWidget {
         if (timer != null)
           Text(
             timer!,
-            style: const TextStyle(color: Colors.white70, fontSize: 16),
+            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 16),
           )
         else
           const SizedBox(width: 48), // Placeholder for alignment

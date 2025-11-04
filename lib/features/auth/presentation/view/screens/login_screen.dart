@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
@@ -76,7 +77,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               IconButton(
-                                onPressed: () => context.pop(),
+                                onPressed: () =>
+                                    context.safePop(fallback: '/auth'),
                                 icon: Icon(
                                   Icons.arrow_back_rounded,
                                   color: isDark

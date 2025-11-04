@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
@@ -15,9 +17,11 @@ class EntercodeScreen extends StatefulWidget {
   State<EntercodeScreen> createState() => _EntercodeScreenState();
 }
 
-class _EntercodeScreenState extends State<EntercodeScreen> {
+class _EntercodeScreenState extends State<EntercodeScreen>
+    with SafeContextMixin {
   final TextEditingController _codeController = TextEditingController();
   final FocusNode _codeFocus = FocusNode();
+  bool _hasNavigated = false; // Track if we've already navigated
 
   // Colors aligned with the app's dark theme
   Color get _bg => const Color(0xFF000000);
@@ -55,71 +59,85 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
 
     return BlocListener<ChallengeCubit, ChallengeState>(
       listener: (context, state) {
-        // Guard against reacting after this widget has been disposed.
-        // Some bloc state changes can arrive while the widget is unmounted
-        // (for example when navigating away), which causes ancestor lookups
-        // like Navigator.of(context) or ScaffoldMessenger.of(context) to fail.
-        if (!mounted) return;
+        // Prevent multiple navigations or actions after disposal
+        if (_hasNavigated || !contextIsValid) return;
 
         print('EnterCodeScreen - BlocListener state: $state');
+
+        // Use SafeContextMixin to prevent "deactivated widget" errors
         if (state is ChallengeJoined) {
           // Navigate to waiting lobby after successfully joining
           print('ChallengeJoined detected - navigating to waiting lobby');
 
-          GoRouter.of(context).pushNamed(
-            'challenge-waiting',
-            pathParameters: {'code': _codeController.text.trim()},
-            extra: {
-              'challengeName': state.challengeName,
-              'challengeCubit': context.read<ChallengeCubit>(),
-              'authCubit': context.read<AuthCubit>(),
-            },
-          );
+          _hasNavigated = true; // Mark as navigated
+          safeContext((ctx) {
+            GoRouter.of(ctx).pushReplacementNamed(
+              'challenge-waiting',
+              pathParameters: {'code': _codeController.text.trim()},
+              extra: {
+                'challengeName': state.challengeName,
+                'challengeCubit': ctx.read<ChallengeCubit>(),
+                'authCubit': ctx.read<AuthCubit>(),
+              },
+            );
+          });
         } else if (state is ChallengeError) {
           // Show error dialog
           print('ChallengeError detected: ${state.message}');
-          CustomDialogs.showErrorDialog(
-            context,
-            title: 'Error!',
-            message: state.message,
-          );
+
+          safeContext((ctx) {
+            CustomDialogs.showErrorDialog(
+              ctx,
+              title: 'Error!',
+              message: state.message,
+            );
+          });
         }
       },
-      child: Scaffold(
-        backgroundColor: _bg,
-        body: SafeArea(
-          child: ScrollConfiguration(
-            behavior: const NoGlowScrollBehavior(),
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isWeb ? (width - maxContentWidth) / 2 : 16,
-                      vertical: 16,
-                    ),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: isWeb ? maxContentWidth : double.infinity,
+      child: PopScope(
+        canPop: true, // Allow normal pop behavior for stack navigation
+        onPopInvoked: (didPop) {
+          if (didPop) {
+            // Reset navigation flag when popping
+            _hasNavigated = false;
+          }
+        },
+        child: Scaffold(
+          backgroundColor: _bg,
+          body: SafeArea(
+            child: ScrollConfiguration(
+              behavior: const NoGlowScrollBehavior(),
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isWeb ? (width - maxContentWidth) / 2 : 16,
+                        vertical: 16,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildHeader(context),
-                          const SizedBox(height: 12),
-                          _buildHeroIcon(),
-                          const SizedBox(height: 16),
-                          _buildTitleSection(),
-                          const SizedBox(height: 16),
-                          _buildCodeInputCard(context),
-                          const SizedBox(height: 16),
-                          _buildRecentChallengesCard(context),
-                        ],
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isWeb ? maxContentWidth : double.infinity,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildHeader(context),
+                            const SizedBox(height: 12),
+                            _buildHeroIcon(),
+                            const SizedBox(height: 16),
+                            _buildTitleSection(),
+                            const SizedBox(height: 16),
+                            _buildCodeInputCard(context),
+                            const SizedBox(height: 16),
+                            _buildRecentChallengesCard(context),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -132,7 +150,12 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
     return Row(
       children: [
         GestureDetector(
-          onTap: () => Navigator.pop(context),
+          onTap: () {
+            safeContext((ctx) {
+              // Use safe navigation to handle cases where there's no history
+              ctx.safePop(fallback: '/challenges');
+            });
+          },
           child: Container(
             width: 32,
             height: 32,
@@ -396,15 +419,20 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
     // Unfocus keyboard
     _codeFocus.unfocus();
 
+    // Check if widget is still mounted before accessing context
+    if (!contextIsValid) return;
+
     // Get auth token
     final authState = context.read<AuthCubit>().state;
     print('Auth state: ${authState.runtimeType}');
     if (authState is! AuthSuccess) {
-      CustomDialogs.showErrorDialog(
-        context,
-        title: 'Authentication Required',
-        message: 'Please login first',
-      );
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Authentication Required',
+          message: 'Please login first',
+        );
+      });
       return;
     }
 

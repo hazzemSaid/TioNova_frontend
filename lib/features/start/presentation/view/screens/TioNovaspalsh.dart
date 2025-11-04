@@ -121,17 +121,19 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  Color _getBaseColor(int index) {
+  Color _getBaseColor(int index, ColorScheme colorScheme) {
     if (index <= 2) {
-      return Colors.grey.shade400;
+      return colorScheme.onSurfaceVariant;
     } else {
-      return Colors.white;
+      return colorScheme.onSurface;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
@@ -152,9 +154,9 @@ class _SplashScreenState extends State<SplashScreen>
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                       colors: [
-                        Colors.white.withOpacity(0.1),
-                        Colors.white.withOpacity(0.6),
-                        Colors.white.withOpacity(0.1),
+                        colorScheme.onSurface.withOpacity(0.1),
+                        colorScheme.onSurface.withOpacity(0.6),
+                        colorScheme.onSurface.withOpacity(0.1),
                       ],
                       stops: [
                         shimmerPosition - 0.3,
@@ -176,7 +178,7 @@ class _SplashScreenState extends State<SplashScreen>
                             style: TextStyle(
                               fontSize: 60,
                               fontWeight: FontWeight.bold,
-                              color: _getBaseColor(index),
+                              color: _getBaseColor(index, colorScheme),
                             ),
                           ),
                         ),
@@ -191,11 +193,11 @@ class _SplashScreenState extends State<SplashScreen>
               position: _slideSubtitle,
               child: FadeTransition(
                 opacity: _fadeSubtitle,
-                child: const Text(
+                child: Text(
                   "AI Study Assistant",
                   style: TextStyle(
                     fontSize: 20,
-                    color: Color.fromARGB(255, 78, 76, 76),
+                    color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.2,
                   ),

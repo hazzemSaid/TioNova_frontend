@@ -8,11 +8,11 @@ class ChapterPreviewSection extends StatelessWidget {
   final String Function(String?) formatDate;
   final VoidCallback onDownloadPDF;
   const ChapterPreviewSection({
-    Key? key,
+    super.key,
     required this.chapter,
     required this.formatDate,
     required this.onDownloadPDF,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
@@ -34,7 +35,10 @@ class ChapterDetailScreen extends StatefulWidget {
 }
 
 class _ChapterDetailScreenState extends State<ChapterDetailScreen>
-    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+    with
+        WidgetsBindingObserver,
+        SingleTickerProviderStateMixin,
+        SafeContextMixin {
   bool _isSummaryLoading = false;
   bool _isMindmapLoading = false;
   String _activeTab = ""; // Empty string means no tab is selected
@@ -417,9 +421,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   }
 
   Widget _buildWebLayout() {
+    final colorScheme = Theme.of(context).colorScheme;
     // Folder feature uses light mode styling
     return Container(
-      color: const Color(0xFFF8F9FA), // Light background
+      color: colorScheme.surface,
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -431,14 +436,14 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                 children: [
                   // Back button
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back,
-                      color: Colors.white,
+                      color: colorScheme.onSurface,
                       size: 24,
                     ),
                     onPressed: () => Navigator.of(context).pop(),
                     style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A1A1A),
+                      backgroundColor: colorScheme.surfaceContainerHighest,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -452,8 +457,8 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                       children: [
                         Text(
                           widget.chapter.title ?? 'Chapter',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 24,
                             fontWeight: FontWeight.w600,
                           ),
@@ -462,7 +467,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                         Text(
                           'Computer Science • 36 pages',
                           style: TextStyle(
-                            color: Colors.grey[500],
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 14,
                           ),
                         ),
@@ -471,14 +476,14 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                   ),
                   // Share button
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.share,
-                      color: Colors.white,
+                      color: colorScheme.onSurface,
                       size: 20,
                     ),
                     onPressed: () {},
                     style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A1A1A),
+                      backgroundColor: colorScheme.surfaceContainerHighest,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -500,22 +505,19 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                     width: 330,
                     padding: const EdgeInsets.all(0),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
+                      color: colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF2A2A2A),
-                        width: 1,
-                      ),
+                      border: Border.all(color: colorScheme.outline, width: 1),
                     ),
                     child: Column(
                       children: [
                         // Document Header
                         Container(
                           padding: const EdgeInsets.all(20),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
-                                color: Color(0xFF2A2A2A),
+                                color: colorScheme.outline,
                                 width: 1,
                               ),
                             ),
@@ -523,10 +525,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
+                              Text(
                                 'Document',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: colorScheme.onSurface,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -537,13 +539,13 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF252525),
+                                  color: colorScheme.surfaceVariant,
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   'pages',
-                                  style: const TextStyle(
-                                    color: Color(0xFF9CA3AF),
+                                  style: TextStyle(
+                                    color: colorScheme.onSurfaceVariant,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -557,10 +559,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                           height: 340,
                           margin: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0F0F0F),
+                            color: colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0xFF2A2A2A),
+                              color: colorScheme.outline,
                               width: 1,
                             ),
                           ),
@@ -570,13 +572,13 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                               Icon(
                                 Icons.description_outlined,
                                 size: 80,
-                                color: Colors.grey[700],
+                                color: colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(height: 16),
-                              const Text(
+                              Text(
                                 'PDF Preview',
                                 style: TextStyle(
-                                  color: Color(0xFF9CA3AF),
+                                  color: colorScheme.onSurface,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -585,7 +587,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                               Text(
                                 'Click to view full document',
                                 style: TextStyle(
-                                  color: Colors.grey[600],
+                                  color: colorScheme.onSurfaceVariant,
                                   fontSize: 13,
                                 ),
                               ),
@@ -602,13 +604,13 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                   Icon(
                                     Icons.access_time,
                                     size: 18,
-                                    color: Colors.grey[600],
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
                                     'Last Opened',
                                     style: TextStyle(
-                                      color: Colors.grey[600],
+                                      color: colorScheme.onSurfaceVariant,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w400,
                                     ),
@@ -616,14 +618,14 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              const Align(
+                              Align(
                                 alignment: Alignment.centerLeft,
                                 child: Padding(
                                   padding: EdgeInsets.only(left: 28),
                                   child: Text(
                                     'Jan 15',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: colorScheme.onSurface,
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -636,13 +638,13 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                   Icon(
                                     Icons.bar_chart_rounded,
                                     size: 18,
-                                    color: Colors.grey[600],
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
                                     'Progress',
                                     style: TextStyle(
-                                      color: Colors.grey[600],
+                                      color: colorScheme.onSurfaceVariant,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w400,
                                     ),
@@ -650,14 +652,14 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              const Align(
+                              Align(
                                 alignment: Alignment.centerLeft,
                                 child: Padding(
                                   padding: EdgeInsets.only(left: 28),
                                   child: Text(
                                     '85%',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: colorScheme.onSurface,
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -672,13 +674,13 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                 child: ElevatedButton(
                                   onPressed: _downloadChapterPDF,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF252525),
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: colorScheme.surfaceVariant,
+                                    foregroundColor: colorScheme.onSurface,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
-                                      side: const BorderSide(
-                                        color: Color(0xFF2A2A2A),
+                                      side: BorderSide(
+                                        color: colorScheme.outline,
                                         width: 1,
                                       ),
                                     ),
@@ -707,9 +709,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                 child: OutlinedButton(
                                   onPressed: () {},
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    side: const BorderSide(
-                                      color: Color(0xFF2A2A2A),
+                                    foregroundColor: colorScheme.onSurface,
+                                    side: BorderSide(
+                                      color: colorScheme.outline,
                                       width: 1,
                                     ),
                                     shape: RoundedRectangleBorder(
@@ -748,10 +750,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                         Container(
                           padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A1A),
+                            color: colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: const Color(0xFF2A2A2A),
+                              color: colorScheme.outline,
                               width: 1,
                             ),
                           ),
@@ -761,12 +763,12 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                 width: 64,
                                 height: 64,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2D2640),
+                                  color: colorScheme.primaryContainer,
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.auto_awesome_rounded,
-                                  color: Color(0xFF9D8FFF),
+                                  color: colorScheme.primary,
                                   size: 32,
                                 ),
                               ),
@@ -775,10 +777,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'AI-Powered Summary',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: colorScheme.onSurface,
                                         fontSize: 20,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: -0.3,
@@ -788,7 +790,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                     Text(
                                       'Get key points, definitions, practice questions, and quick reference cards generated by AI',
                                       style: TextStyle(
-                                        color: Colors.grey[500],
+                                        color: colorScheme.onSurfaceVariant,
                                         fontSize: 14,
                                         height: 1.5,
                                       ),
@@ -805,8 +807,8 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                     ? _viewSummary
                                     : _generateSummary,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF8B5CF6),
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: colorScheme.primary,
+                                  foregroundColor: colorScheme.onPrimary,
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 20,
@@ -839,9 +841,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                               OutlinedButton(
                                 onPressed: _downloadChapterPDF,
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  side: const BorderSide(
-                                    color: Color(0xFF2A2A2A),
+                                  foregroundColor: colorScheme.onSurface,
+                                  side: BorderSide(
+                                    color: colorScheme.outline,
                                     width: 1,
                                   ),
                                   padding: const EdgeInsets.symmetric(
@@ -877,10 +879,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                               child: Container(
                                 padding: const EdgeInsets.all(28),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1A1A1A),
+                                  color: colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: const Color(0xFF2A2A2A),
+                                    color: colorScheme.outline,
                                     width: 1,
                                   ),
                                 ),
@@ -891,20 +893,20 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                       width: 56,
                                       height: 56,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF252525),
+                                        color: colorScheme.surfaceVariant,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.account_tree_rounded,
-                                        color: Colors.white,
+                                        color: colorScheme.onSurface,
                                         size: 28,
                                       ),
                                     ),
                                     const SizedBox(height: 20),
-                                    const Text(
+                                    Text(
                                       'Mind Map',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: colorScheme.onSurface,
                                         fontSize: 20,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: -0.3,
@@ -914,7 +916,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                     Text(
                                       'Visualize concepts in an interactive mind map with AI-generated insights',
                                       style: TextStyle(
-                                        color: Colors.grey[500],
+                                        color: colorScheme.onSurfaceVariant,
                                         fontSize: 14,
                                         height: 1.6,
                                       ),
@@ -928,9 +930,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                             ? null
                                             : _generateMindmap,
                                         style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.white,
-                                          side: const BorderSide(
-                                            color: Color(0xFF2A2A2A),
+                                          foregroundColor:
+                                              colorScheme.onSurface,
+                                          side: BorderSide(
+                                            color: colorScheme.outline,
                                             width: 1,
                                           ),
                                           shape: RoundedRectangleBorder(
@@ -972,10 +975,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                               child: Container(
                                 padding: const EdgeInsets.all(28),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0A1F0F),
+                                  color: colorScheme.secondaryContainer,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: const Color(0xFF1A3A20),
+                                    color: colorScheme.outline,
                                     width: 1,
                                   ),
                                 ),
@@ -986,20 +989,21 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                       width: 56,
                                       height: 56,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF1A3A20),
+                                        color: colorScheme.secondary
+                                            .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.description_outlined,
-                                        color: Color(0xFF22C55E),
+                                        color: colorScheme.secondary,
                                         size: 28,
                                       ),
                                     ),
                                     const SizedBox(height: 20),
-                                    const Text(
+                                    Text(
                                       'Smart Notes',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: colorScheme.onSecondaryContainer,
                                         fontSize: 20,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: -0.3,
@@ -1009,7 +1013,8 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                     Text(
                                       'Add text, voice, or image notes with advanced organization',
                                       style: TextStyle(
-                                        color: const Color(0xFF6B7280),
+                                        color: colorScheme.onSecondaryContainer
+                                            .withOpacity(0.7),
                                         fontSize: 14,
                                         height: 1.6,
                                       ),
@@ -1042,9 +1047,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                           );
                                         },
                                         style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.white,
-                                          side: const BorderSide(
-                                            color: Color(0xFF1A3A20),
+                                          foregroundColor:
+                                              colorScheme.onSecondaryContainer,
+                                          side: BorderSide(
+                                            color: colorScheme.secondary,
                                             width: 1,
                                           ),
                                           shape: RoundedRectangleBorder(
@@ -1090,10 +1096,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                               child: Container(
                                 padding: const EdgeInsets.all(32),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1A1A1A),
+                                  color: colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: const Color(0xFF2A2A2A),
+                                    color: colorScheme.outline,
                                     width: 1,
                                   ),
                                 ),
@@ -1106,19 +1112,19 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                           width: 64,
                                           height: 64,
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF252525),
+                                            color: colorScheme.surfaceVariant,
                                             borderRadius: BorderRadius.circular(
                                               14,
                                             ),
                                           ),
-                                          child: const Icon(
+                                          child: Icon(
                                             Icons.emoji_events_outlined,
-                                            color: Colors.white,
+                                            color: colorScheme.onSurface,
                                             size: 32,
                                           ),
                                         ),
                                         const SizedBox(width: 20),
-                                        const Expanded(
+                                        Expanded(
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -1126,17 +1132,18 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                               Text(
                                                 'Test Your Knowledge',
                                                 style: TextStyle(
-                                                  color: Colors.white,
+                                                  color: colorScheme.onSurface,
                                                   fontSize: 22,
                                                   fontWeight: FontWeight.w600,
                                                   letterSpacing: -0.3,
                                                 ),
                                               ),
-                                              SizedBox(height: 8),
+                                              const SizedBox(height: 8),
                                               Text(
                                                 'Challenge yourself with interactive quizzes based on this chapter. Track your progress and identify areas for improvement.',
                                                 style: TextStyle(
-                                                  color: Color(0xFF6B7280),
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
                                                   fontSize: 14,
                                                   height: 1.6,
                                                 ),
@@ -1171,8 +1178,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                               }
                                             },
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.white,
-                                              foregroundColor: Colors.black,
+                                              backgroundColor:
+                                                  colorScheme.primary,
+                                              foregroundColor:
+                                                  colorScheme.onPrimary,
                                               elevation: 0,
                                               padding:
                                                   const EdgeInsets.symmetric(
@@ -1215,9 +1224,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                             );
                                           },
                                           style: OutlinedButton.styleFrom(
-                                            foregroundColor: Colors.white,
-                                            side: const BorderSide(
-                                              color: Color(0xFF2A2A2A),
+                                            foregroundColor:
+                                                colorScheme.onSurface,
+                                            side: BorderSide(
+                                              color: colorScheme.outline,
                                               width: 1,
                                             ),
                                             padding: const EdgeInsets.symmetric(
@@ -1262,11 +1272,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                             );
                                           },
                                           style: OutlinedButton.styleFrom(
-                                            foregroundColor: const Color(
-                                              0xFF9CA3AF,
-                                            ),
-                                            side: const BorderSide(
-                                              color: Color(0xFF2A2A2A),
+                                            foregroundColor:
+                                                colorScheme.onSurfaceVariant,
+                                            side: BorderSide(
+                                              color: colorScheme.outline,
                                               width: 1,
                                             ),
                                             padding: const EdgeInsets.symmetric(
@@ -1305,20 +1314,20 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                               child: Container(
                                 padding: const EdgeInsets.all(28),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1A1A1A),
+                                  color: colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: const Color(0xFF2A2A2A),
+                                    color: colorScheme.outline,
                                     width: 1,
                                   ),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Your Stats',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: colorScheme.onSurface,
                                         fontSize: 20,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: -0.3,
@@ -1333,14 +1342,14 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                         Text(
                                           'Best Score',
                                           style: TextStyle(
-                                            color: Colors.grey[500],
+                                            color: colorScheme.onSurfaceVariant,
                                             fontSize: 14,
                                           ),
                                         ),
-                                        const Text(
+                                        Text(
                                           '92%',
                                           style: TextStyle(
-                                            color: Colors.white,
+                                            color: colorScheme.onSurface,
                                             fontSize: 18,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -1353,12 +1362,11 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                       borderRadius: BorderRadius.circular(4),
                                       child: LinearProgressIndicator(
                                         value: 0.92,
-                                        backgroundColor: const Color(
-                                          0xFF252525,
-                                        ),
+                                        backgroundColor:
+                                            colorScheme.surfaceVariant,
                                         valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              Color(0xFF22C55E),
+                                            AlwaysStoppedAnimation<Color>(
+                                              colorScheme.tertiary,
                                             ),
                                         minHeight: 6,
                                       ),
@@ -1372,14 +1380,14 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                         Text(
                                           'Attempts',
                                           style: TextStyle(
-                                            color: Colors.grey[500],
+                                            color: colorScheme.onSurfaceVariant,
                                             fontSize: 14,
                                           ),
                                         ),
-                                        const Text(
+                                        Text(
                                           '5',
                                           style: TextStyle(
-                                            color: Colors.white,
+                                            color: colorScheme.onSurface,
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -1395,14 +1403,14 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                         Text(
                                           'Avg. Time',
                                           style: TextStyle(
-                                            color: Colors.grey[500],
+                                            color: colorScheme.onSurfaceVariant,
                                             fontSize: 14,
                                           ),
                                         ),
-                                        const Text(
+                                        Text(
                                           '8m 32s',
                                           style: TextStyle(
-                                            color: Colors.white,
+                                            color: colorScheme.onSurface,
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -1420,10 +1428,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                         Container(
                           padding: const EdgeInsets.all(32),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A1A),
+                            color: colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: const Color(0xFF2A2A2A),
+                              color: colorScheme.outline,
                               width: 1,
                             ),
                           ),
@@ -1433,12 +1441,12 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                 width: 64,
                                 height: 64,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF252525),
+                                  color: colorScheme.surfaceVariant,
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.chat_bubble_outline,
-                                  color: Colors.white,
+                                  color: colorScheme.onSurface,
                                   size: 32,
                                 ),
                               ),
@@ -1447,10 +1455,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'AI Learning Assistant',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: colorScheme.onSurface,
                                         fontSize: 22,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: -0.3,
@@ -1460,7 +1468,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                     Text(
                                       'Get instant answers to your questions about this chapter. Our AI assistant can explain concepts, provide examples, and help you understand complex topics.',
                                       style: TextStyle(
-                                        color: Colors.grey[500],
+                                        color: colorScheme.onSurfaceVariant,
                                         fontSize: 14,
                                         height: 1.6,
                                       ),
@@ -1474,8 +1482,8 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                   setState(() => _activeTab = "chatbot");
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: Colors.black,
+                                  backgroundColor: colorScheme.primary,
+                                  foregroundColor: colorScheme.onPrimary,
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 32,

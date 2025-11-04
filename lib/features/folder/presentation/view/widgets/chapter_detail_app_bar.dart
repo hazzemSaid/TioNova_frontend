@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 
 class ChapterDetailAppBar extends StatelessWidget {
   final String? title;
@@ -13,7 +13,7 @@ class ChapterDetailAppBar extends StatelessWidget {
       pinned: true,
       leading: IconButton(
         icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-        onPressed: () => context.pop(),
+        onPressed: () => context.safePop(fallback: '/'),
       ),
       title: Text(
         title ?? 'Chapter Preview',

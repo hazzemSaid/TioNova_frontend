@@ -23,35 +23,20 @@ class CustomHeaderDelegate extends SliverPersistentHeaderDelegate {
     final isDarkMode = theme.brightness == Brightness.dark;
     return SizedBox(
       height: maxHeight,
-      child: Container(
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Image.asset(
-                  !isDarkMode
-                      ? 'assets/images/logo1.png'
-                      : 'assets/images/logo2.png',
-                  width: screenWidth * 0.25,
-                  fit: BoxFit.contain,
-                ),
-                Container(
-                  width: screenWidth * 0.11,
-                  height: screenWidth * 0.11,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(screenWidth * 0.025),
-                  ),
-                  child: Icon(
-                    Icons.wb_sunny_outlined,
-                    color: colorScheme.onSurface,
-                    size: screenWidth * 0.055,
-                  ),
-                ),
-              ],
-            ),
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.005),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Image.asset(
+                !isDarkMode
+                    ? 'assets/images/logo1.png'
+                    : 'assets/images/logo2.png',
+                width: screenWidth * 0.25,
+                fit: BoxFit.contain,
+              ),
+            ],
           ),
         ),
       ),

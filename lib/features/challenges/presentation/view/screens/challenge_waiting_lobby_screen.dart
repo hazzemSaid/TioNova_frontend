@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 
@@ -25,7 +26,8 @@ class ChallengeWaitingLobbyScreen extends StatefulWidget {
 }
 
 class _ChallengeWaitingLobbyScreenState
-    extends State<ChallengeWaitingLobbyScreen> {
+    extends State<ChallengeWaitingLobbyScreen>
+    with SafeContextMixin {
   DatabaseReference? _statusRef;
   DatabaseReference? _participantsRef;
   StreamSubscription<DatabaseEvent>? _statusSubscription;
@@ -284,15 +286,17 @@ class _ChallengeWaitingLobbyScreenState
     print('WaitingLobbyScreen - Challenge code: ${widget.challengeCode}');
     print('WaitingLobbyScreen - Challenge name: ${widget.challengeName}');
 
-    GoRouter.of(context).pushReplacementNamed(
-      'challenge-live',
-      pathParameters: {'code': widget.challengeCode},
-      extra: {
-        'challengeName': widget.challengeName,
-        'challengeCubit': context.read<ChallengeCubit>(),
-        'authCubit': context.read<AuthCubit>(),
-      },
-    );
+    safeContext((ctx) {
+      GoRouter.of(ctx).pushNamed(
+        'challenge-live',
+        pathParameters: {'code': widget.challengeCode},
+        extra: {
+          'challengeName': widget.challengeName,
+          'challengeCubit': ctx.read<ChallengeCubit>(),
+          'authCubit': ctx.read<AuthCubit>(),
+        },
+      );
+    });
 
     print('WaitingLobbyScreen - Navigation initiated successfully');
   }

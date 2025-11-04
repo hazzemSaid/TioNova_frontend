@@ -24,6 +24,8 @@ class _NotesSectionState extends State<NotesSection> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return MouseRegion(
       onEnter: (_) {
         if (mounted) {
@@ -39,18 +41,18 @@ class _NotesSectionState extends State<NotesSection> {
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E0E10),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: _isHovered
-                ? const Color(0xFF00D9A0).withOpacity(0.5)
-                : const Color(0xFF1B4D3E),
+                ? colorScheme.primary.withOpacity(0.5)
+                : colorScheme.outline,
             width: 1.5,
           ),
           boxShadow: _isHovered
               ? [
                   BoxShadow(
-                    color: const Color(0xFF00D9A0).withOpacity(0.15),
+                    color: colorScheme.primary.withOpacity(0.15),
                     blurRadius: 16,
                     spreadRadius: 0,
                   ),
@@ -68,12 +70,17 @@ class _NotesSectionState extends State<NotesSection> {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C1E),
+                      color: colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(14),
+                      gradient: LinearGradient(
+                        colors: [colorScheme.primary, colorScheme.secondary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.description_outlined,
-                      color: Color(0xFF00D9A0),
+                      color: colorScheme.onPrimary,
                       size: 26,
                     ),
                   ),
@@ -82,10 +89,10 @@ class _NotesSectionState extends State<NotesSection> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Notes',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.5,
@@ -95,7 +102,7 @@ class _NotesSectionState extends State<NotesSection> {
                         Text(
                           'Add text, voice, or image notes',
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 14,
                             height: 1.4,
                           ),
@@ -121,32 +128,29 @@ class _NotesSectionState extends State<NotesSection> {
                       extra: {
                         'chapterTitle': widget.chapterTitle,
                         'accentColor':
-                            widget.accentColor ?? const Color(0xFF00D9A0),
+                            widget.accentColor ?? colorScheme.primary,
                         'chapterCubit': chapterCubit,
                       },
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 52),
-                    backgroundColor: const Color(0xFF1C1C1E),
+                    backgroundColor: colorScheme.surfaceVariant,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(26),
-                      side: const BorderSide(
-                        color: Color(0xFF2C2C2E),
-                        width: 1,
-                      ),
+                      side: BorderSide(color: colorScheme.outline, width: 1),
                     ),
                   ),
                   icon: Icon(
                     Icons.description_outlined,
-                    color: Colors.white.withOpacity(0.9),
+                    color: colorScheme.onSurface,
                     size: 22,
                   ),
                   label: Text(
                     'Open',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.2,

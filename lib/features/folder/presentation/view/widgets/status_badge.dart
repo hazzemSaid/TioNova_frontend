@@ -2,23 +2,30 @@ import 'package:flutter/material.dart';
 
 class StatusBadge extends StatelessWidget {
   final String status;
-  const StatusBadge({Key? key, required this.status}) : super(key: key);
+  const StatusBadge({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     Color bgColor;
+    Color textColor;
+
     switch (status.toLowerCase()) {
       case 'passed':
-        bgColor = const Color(0xFF28A745);
+        bgColor = colorScheme.tertiary;
+        textColor = colorScheme.onTertiary;
         break;
       case 'failed':
-        bgColor = const Color(0xFFDC3545);
+        bgColor = colorScheme.error;
+        textColor = colorScheme.onError;
         break;
       case 'in progress':
-        bgColor = const Color(0xFFFFC107);
+        bgColor = colorScheme.primaryContainer;
+        textColor = colorScheme.onPrimaryContainer;
         break;
       default:
-        bgColor = const Color(0xFF6C757D);
+        bgColor = colorScheme.surfaceVariant;
+        textColor = colorScheme.onSurfaceVariant;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -29,9 +36,7 @@ class StatusBadge extends StatelessWidget {
       child: Text(
         status,
         style: TextStyle(
-          color: status.toLowerCase() == 'in progress'
-              ? Colors.black
-              : Colors.white,
+          color: textColor,
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),

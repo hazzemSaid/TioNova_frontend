@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tionova/core/services/download_service.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
@@ -24,7 +25,8 @@ class PDFViewerScreen extends StatefulWidget {
   State<PDFViewerScreen> createState() => _PDFViewerScreenState();
 }
 
-class _PDFViewerScreenState extends State<PDFViewerScreen> {
+class _PDFViewerScreenState extends State<PDFViewerScreen>
+    with SafeContextMixin {
   String? localPath;
   PDFViewController? controller;
   int currentPage = 0;

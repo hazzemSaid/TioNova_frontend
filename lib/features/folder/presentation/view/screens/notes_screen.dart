@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/data/models/NoteModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
@@ -23,7 +24,7 @@ class NotesScreen extends StatefulWidget {
   State<NotesScreen> createState() => _NotesScreenState();
 }
 
-class _NotesScreenState extends State<NotesScreen> {
+class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
   String _selectedFilter = 'all';
   final TextEditingController _searchController = TextEditingController();
   List<Notemodel> _filteredNotes = [];

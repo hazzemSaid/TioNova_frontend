@@ -273,6 +273,9 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
     bool reviewing,
     VoidCallback onTap,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
       child: InkWell(
@@ -280,12 +283,14 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
         child: Container(
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : const Color(0xFF2C2C2E),
+            color: isSelected
+                ? colorScheme.primaryContainer
+                : colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12.0),
             border: Border.all(
               color: isSelected
-                  ? const Color(0xFFFE9500)
-                  : const Color(0xFF3A3A3C),
+                  ? colorScheme.primary
+                  : colorScheme.outline.withOpacity(0.3),
               width: 1.0,
             ),
           ),
@@ -297,13 +302,15 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? Colors.black : Colors.white70,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
                     width: 2.0,
                   ),
-                  color: isSelected ? Colors.black : Colors.transparent,
+                  color: isSelected ? colorScheme.primary : Colors.transparent,
                 ),
                 child: isSelected
-                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    ? Icon(Icons.check, size: 16, color: colorScheme.onPrimary)
                     : null,
               ),
               const SizedBox(width: 16),
@@ -311,7 +318,9 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                 child: Text(
                   option,
                   style: TextStyle(
-                    color: isSelected ? Colors.black : Colors.white,
+                    color: isSelected
+                        ? colorScheme.onPrimaryContainer
+                        : colorScheme.onSurface,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -334,10 +343,11 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 900;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     if (reviewing) {
       return Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
+        backgroundColor: colorScheme.surface,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -362,7 +372,7 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: isWeb ? _buildWebLayout(context) : _buildMobileLayout(context),
       ),
@@ -371,6 +381,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
 
   Widget _buildWebLayout(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Row(
@@ -387,9 +399,12 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                   children: [
                     IconButton(
                       onPressed: () => context.pop(),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: colorScheme.onSurface,
+                      ),
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A1A1A),
+                        backgroundColor: colorScheme.surfaceContainerHighest,
                       ),
                     ),
                     const Spacer(),
@@ -399,21 +414,21 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.access_time,
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                             size: 18,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             _formatTime(_remainingTimeInSeconds),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -424,12 +439,12 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                     const SizedBox(width: 16),
                     IconButton(
                       onPressed: () {},
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.visibility_outlined,
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                       ),
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A1A1A),
+                        backgroundColor: colorScheme.surfaceContainerHighest,
                       ),
                       tooltip: 'Review',
                     ),
@@ -445,9 +460,9 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                         child: LinearProgressIndicator(
                           value:
                               (currentStep + 1) / widget.quiz.questions.length,
-                          backgroundColor: const Color(0xFF2A2A2A),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            colorScheme.primary,
                           ),
                           minHeight: 8,
                         ),
@@ -457,7 +472,7 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                     Text(
                       '${((currentStep + 1) / widget.quiz.questions.length * 100).toInt()}%',
                       style: TextStyle(
-                        color: Colors.grey[500],
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -468,8 +483,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                 // Question
                 Text(
                   widget.quiz.questions[currentStep].question,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
                     height: 1.4,
@@ -502,13 +517,13 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                               padding: const EdgeInsets.all(20.0),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color(0xFF1A1A1A)
-                                    : const Color(0xFF0F0F0F),
+                                    ? colorScheme.primaryContainer
+                                    : colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12.0),
                                 border: Border.all(
                                   color: isSelected
-                                      ? Colors.white
-                                      : const Color(0xFF2A2A2A),
+                                      ? colorScheme.primary
+                                      : colorScheme.outline.withOpacity(0.3),
                                   width: 1.5,
                                 ),
                               ),
@@ -521,12 +536,12 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                                       shape: BoxShape.circle,
                                       border: Border.all(
                                         color: isSelected
-                                            ? Colors.white
-                                            : const Color(0xFF4A4A4A),
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurfaceVariant,
                                         width: 2.0,
                                       ),
                                       color: isSelected
-                                          ? Colors.white
+                                          ? colorScheme.primary
                                           : Colors.transparent,
                                     ),
                                     child: isSelected
@@ -534,7 +549,7 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                                             child: CircleAvatar(
                                               radius: 6,
                                               backgroundColor:
-                                                  theme.colorScheme.onPrimary,
+                                                  colorScheme.onPrimary,
                                             ),
                                           )
                                         : null,
@@ -545,8 +560,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                                       option,
                                       style: TextStyle(
                                         color: isSelected
-                                            ? Colors.white
-                                            : const Color(0xFFAAAAAA),
+                                            ? colorScheme.onPrimaryContainer
+                                            : colorScheme.onSurfaceVariant,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -568,8 +583,10 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                       OutlinedButton(
                         onPressed: _previousQuestion,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Color(0xFF2A2A2A)),
+                          foregroundColor: colorScheme.onSurface,
+                          side: BorderSide(
+                            color: colorScheme.outline.withOpacity(0.3),
+                          ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
                             vertical: 16,
@@ -596,8 +613,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                     ElevatedButton(
                       onPressed: _nextQuestion,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.surface,
-                        foregroundColor: theme.colorScheme.onSurface,
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 32,
                           vertical: 16,
@@ -634,17 +651,17 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
             width: 320,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F0F0F),
+              color: colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF2A2A2A)),
+              border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Question Navigator',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -672,17 +689,17 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                         height: 48,
                         decoration: BoxDecoration(
                           color: isCurrent
-                              ? Colors.white
+                              ? colorScheme.primary
                               : isAnswered
-                              ? const Color(0xFF1A1A1A)
-                              : const Color(0xFF0F0F0F),
+                              ? colorScheme.primaryContainer
+                              : colorScheme.surface,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isCurrent
-                                ? Colors.white
+                                ? colorScheme.primary
                                 : isAnswered
-                                ? const Color(0xFF4A4A4A)
-                                : const Color(0xFF2A2A2A),
+                                ? colorScheme.primary.withOpacity(0.5)
+                                : colorScheme.outline.withOpacity(0.3),
                             width: 1.5,
                           ),
                         ),
@@ -691,10 +708,10 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                             '${index + 1}',
                             style: TextStyle(
                               color: isCurrent
-                                  ? Colors.black
+                                  ? colorScheme.onPrimary
                                   : isAnswered
-                                  ? Colors.white
-                                  : const Color(0xFF6A6A6A),
+                                  ? colorScheme.onPrimaryContainer
+                                  : colorScheme.onSurfaceVariant,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -710,13 +727,16 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                   children: [
                     Text(
                       'Answered',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 14,
+                      ),
                     ),
                     const Spacer(),
                     Text(
                       '${answersMap.length} / ${widget.quiz.questions.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -728,8 +748,10 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                 OutlinedButton(
                   onPressed: currentStep > 0 ? _previousQuestion : null,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Color(0xFF2A2A2A)),
+                    foregroundColor: colorScheme.onSurface,
+                    side: BorderSide(
+                      color: colorScheme.outline.withOpacity(0.3),
+                    ),
                     minimumSize: const Size(double.infinity, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -751,8 +773,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                 ElevatedButton(
                   onPressed: _nextQuestion,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.surface,
-                    foregroundColor: theme.colorScheme.onSurface,
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
                     minimumSize: const Size(double.infinity, 48),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -782,6 +804,9 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
   }
 
   Widget _buildMobileLayout(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
@@ -795,14 +820,14 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
           const SizedBox(height: 16),
           LinearProgressIndicator(
             value: (currentStep + 1) / widget.quiz.questions.length,
-            backgroundColor: const Color(0xFF2C2C2E),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
           ),
           const SizedBox(height: 24),
           Text(
             widget.quiz.questions[currentStep].question,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colorScheme.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -827,7 +852,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
               ElevatedButton(
                 onPressed: currentStep == 0 ? null : _previousQuestion,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2C2C2E),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  foregroundColor: colorScheme.onSurface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.0),
                   ),
@@ -836,15 +862,19 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                     vertical: 12,
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'Previous',
-                  style: TextStyle(fontSize: 16, color: Colors.white70),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               ElevatedButton(
                 onPressed: reviewing ? _submitQuiz : _nextQuestion,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFE9500),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.0),
                   ),
@@ -857,9 +887,9 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
                   currentStep == widget.quiz.questions.length - 1
                       ? 'Review Answers'
                       : 'Next',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
-                    color: Colors.black,
+                    color: colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

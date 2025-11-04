@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
@@ -248,8 +249,25 @@ class FolderDetailScreen extends StatelessWidget {
           BlocBuilder<ChapterCubit, ChapterState>(
             builder: (context, state) {
               if (state is ChapterLoading) {
-                return const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
+                // Show skeleton loading cards with skeletonizer
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (ctx, idx) => Skeletonizer(
+                      enabled: true,
+                      child: _buildChapterCard(
+                        context,
+                        ChapterModel(
+                          id: 'loading',
+                          title: 'Loading Chapter Title',
+                          description:
+                              'Loading chapter description text that will be replaced with actual content',
+                          createdAt: DateTime.now().toIso8601String(),
+                          quizStatus: 'Not Taken',
+                        ),
+                      ),
+                    ),
+                    childCount: 3, // Show 3 skeleton cards
+                  ),
                 );
               } else if (state is ChapterLoaded) {
                 return SliverList(
@@ -472,8 +490,35 @@ class FolderDetailScreen extends StatelessWidget {
           BlocBuilder<ChapterCubit, ChapterState>(
             builder: (context, state) {
               if (state is ChapterLoading) {
-                return const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
+                // Show skeleton loading cards in grid for web
+                return SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: effectivePadding),
+                  sliver: SliverGrid(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 20,
+                          crossAxisSpacing: 20,
+                          childAspectRatio: 2.5,
+                        ),
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, idx) => Skeletonizer(
+                        enabled: true,
+                        child: _buildWebChapterCard(
+                          context,
+                          ChapterModel(
+                            id: 'loading',
+                            title: 'Loading Chapter Title',
+                            description:
+                                'Loading chapter description text that will be replaced with actual content',
+                            createdAt: DateTime.now().toIso8601String(),
+                            quizStatus: 'Not Taken',
+                          ),
+                        ),
+                      ),
+                      childCount: 4, // Show 4 skeleton cards for web
+                    ),
+                  ),
                 );
               } else if (state is ChapterLoaded) {
                 return SliverPadding(
@@ -609,7 +654,10 @@ class FolderDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                _buildStatusChip(chapter.quizStatus ?? 'Not Taken'),
+                _buildStatusChip(
+                  chapter.quizStatus ?? 'Not Taken',
+                  colorScheme,
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -651,17 +699,17 @@ class FolderDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(String status) {
+  Widget _buildStatusChip(String status, ColorScheme colorScheme) {
     Color chipColor;
     switch (status) {
       case 'Passed':
-        chipColor = const Color(0xFF34C759);
+        chipColor = colorScheme.tertiary;
         break;
       case 'Failed':
-        chipColor = const Color(0xFFFF3B30);
+        chipColor = colorScheme.error;
         break;
       default:
-        chipColor = const Color(0xFF8E8E93);
+        chipColor = colorScheme.onSurfaceVariant;
     }
 
     return Container(
@@ -768,7 +816,10 @@ class FolderDetailScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                _buildStatusChip(chapter.quizStatus ?? 'Not Taken'),
+                _buildStatusChip(
+                  chapter.quizStatus ?? 'Not Taken',
+                  colorScheme,
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -887,7 +938,7 @@ class ShowChapterOptionsBottomSheet {
                 buildActionButton(
                   chapter: chapter,
                   context: context,
-                  color: Colors.blue,
+                  color: colorScheme.primary,
                   icon: Icons.edit,
                   label: 'Edit',
                   onTap: () {
@@ -898,7 +949,7 @@ class ShowChapterOptionsBottomSheet {
                 buildActionButton(
                   chapter: chapter,
                   context: context,
-                  color: Colors.red,
+                  color: colorScheme.error,
                   icon: Icons.delete,
                   label: 'Delete',
                   onTap: () {
@@ -916,15 +967,11 @@ class ShowChapterOptionsBottomSheet {
   }
 
   void _showEditChapterDialog(ChapterModel chapter, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: Colors.black.withValues(
-        alpha: 153,
-        red: 0,
-        green: 0,
-        blue: 0,
-      ), // 0.6 opacity
+      barrierColor: colorScheme.scrim.withValues(alpha: 153),
       builder: (dialogContext) => MultiBlocProvider(
         providers: [
           BlocProvider.value(value: context.read<ChapterCubit>()),

@@ -20,9 +20,9 @@ class QuizInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
-      color: Colors.grey[900],
+      color: colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -31,8 +31,8 @@ class QuizInfoCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colorScheme.onSurface,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -40,7 +40,10 @@ class QuizInfoCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               description,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 16),
             Row(
@@ -48,20 +51,20 @@ class QuizInfoCard extends StatelessWidget {
               children: [
                 Text(
                   '$questions Questions',
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
                 ),
-                Text(timeLimit, style: const TextStyle(color: Colors.white70)),
                 Text(
-                  difficulty,
-                  style: TextStyle(color: theme.colorScheme.primary),
+                  timeLimit,
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
                 ),
+                Text(difficulty, style: TextStyle(color: colorScheme.primary)),
               ],
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: onStart,
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
+                backgroundColor: colorScheme.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

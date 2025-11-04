@@ -7,6 +7,8 @@ class ThemeToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return BlocBuilder<ThemeCubit, ThemeMode>(
       builder: (context, themeMode) {
         final isDark =
@@ -17,7 +19,7 @@ class ThemeToggleButton extends StatelessWidget {
         return IconButton(
           icon: Icon(
             isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-            color: isDark ? Colors.white : Colors.black,
+            color: colorScheme.onSurface,
           ),
           onPressed: () {
             // Toggle between light and dark (skip system for toggle button)

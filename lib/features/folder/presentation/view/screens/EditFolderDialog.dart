@@ -1,6 +1,7 @@
 // features/folder/presentation/view/screens/EditFolderDialog.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
@@ -23,7 +24,8 @@ class EditFolderDialog extends StatefulWidget {
   State<EditFolderDialog> createState() => _EditFolderDialogState();
 }
 
-class _EditFolderDialogState extends State<EditFolderDialog> {
+class _EditFolderDialogState extends State<EditFolderDialog>
+    with SafeContextMixin {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late Status _selectedStatus;

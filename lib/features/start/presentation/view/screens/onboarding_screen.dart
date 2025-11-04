@@ -62,12 +62,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0C0A1F)
-          : const Color(0xFFF8F9FA),
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Stack(
           children: [
@@ -131,9 +129,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 onPressed: _completeOnboarding,
                 child: Text(
                   'Skip',
-                  style: TextStyle(
-                    color: isDark ? Colors.white70 : Colors.black54,
-                  ),
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
                 ),
               ),
             ),
@@ -154,12 +150,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       child: ElevatedButton(
                         onPressed: _index == 0 ? null : _back,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark
-                              ? Colors.white.withOpacity(0.1)
-                              : Colors.black.withOpacity(0.08),
-                          foregroundColor: isDark
-                              ? Colors.white
-                              : Colors.black87,
+                          backgroundColor: colorScheme.surfaceVariant,
+                          foregroundColor: colorScheme.onSurface,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -188,12 +180,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               height: 6,
                               decoration: BoxDecoration(
                                 color: active
-                                    ? (isDark
-                                          ? Colors.white
-                                          : const Color(0xFF9D4EDD))
-                                    : (isDark
-                                          ? Colors.white.withOpacity(0.3)
-                                          : Colors.black.withOpacity(0.2)),
+                                    ? colorScheme.primary
+                                    : colorScheme.outline.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             );
@@ -212,12 +200,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       child: ElevatedButton(
                         onPressed: _next,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark
-                              ? Colors.white
-                              : const Color(0xFF0C0A1F),
-                          foregroundColor: isDark
-                              ? const Color(0xFF0C0A1F)
-                              : Colors.white,
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -271,6 +255,7 @@ class _OnboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
@@ -296,9 +281,7 @@ class _OnboardPage extends StatelessWidget {
                       height: 200,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isDark
-                            ? Colors.white.withOpacity(0.05)
-                            : Colors.white.withOpacity(0.1),
+                        color: colorScheme.surfaceVariant.withOpacity(0.3),
                       ),
                     ),
 
@@ -308,9 +291,7 @@ class _OnboardPage extends StatelessWidget {
                       height: 120,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isDark
-                            ? Colors.white.withOpacity(0.1)
-                            : Colors.white.withOpacity(0.15),
+                        color: colorScheme.surfaceVariant.withOpacity(0.5),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(20),
@@ -367,7 +348,7 @@ class _OnboardPage extends StatelessWidget {
             title,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : const Color(0xFF0C0A1F),
+              color: colorScheme.onSurface,
               fontSize: 26,
             ),
             textAlign: TextAlign.center,
@@ -376,7 +357,7 @@ class _OnboardPage extends StatelessWidget {
           Text(
             subtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: isDark ? Colors.white70 : Colors.black.withOpacity(0.7),
+              color: colorScheme.onSurfaceVariant,
               fontSize: 15,
               height: 1.5,
             ),
@@ -399,15 +380,11 @@ class _OnboardPage extends StatelessWidget {
                           height: 32,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isDark
-                                ? Colors.white.withOpacity(0.15)
-                                : const Color(0xFF9D4EDD).withOpacity(0.15),
+                            color: colorScheme.primaryContainer,
                           ),
                           child: Icon(
                             _getBulletIcon(bullets!.indexOf(bullet)),
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF9D4EDD),
+                            color: colorScheme.primary,
                             size: 18,
                           ),
                         ),
@@ -416,9 +393,7 @@ class _OnboardPage extends StatelessWidget {
                           child: Text(
                             bullet,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF0C0A1F),
+                              color: colorScheme.onSurface,
                               fontSize: 14,
                             ),
                           ),
@@ -437,27 +412,15 @@ class _OnboardPage extends StatelessWidget {
   }
 
   Color _getIconColor(int index, bool isDark) {
-    // Dark theme colors - deep, muted tones
-    final darkColors = [
-      const Color.fromARGB(167, 5, 5, 50), // Deep blue
-      const Color.fromARGB(92, 39, 19, 55), // Deep purple
-      const Color.fromARGB(152, 63, 26, 26), // Deep red
-      const Color.fromARGB(128, 10, 23, 10), // Deep green
-      const Color.fromARGB(126, 60, 37, 1), // Deep orange
-      const Color.fromARGB(143, 9, 39, 64), // Deep cyan
+    // Use theme-based colors with opacity for orbit icons
+    final colors = [
+      const Color.fromARGB(100, 157, 78, 221), // Purple
+      const Color.fromARGB(100, 0, 217, 255), // Cyan
+      const Color.fromARGB(100, 33, 150, 243), // Blue
+      const Color.fromARGB(100, 76, 175, 80), // Green
+      const Color.fromARGB(100, 255, 152, 0), // Orange
+      const Color.fromARGB(100, 255, 107, 107), // Red
     ];
-
-    // Light theme colors - vibrant, lighter tones with brand colors
-    final lightColors = [
-      const Color(0xFF9D4EDD).withOpacity(0.15), // Purple (primary brand)
-      const Color(0xFF00D9FF).withOpacity(0.15), // Cyan (secondary brand)
-      const Color(0xFF2196F3).withOpacity(0.15), // Blue (tertiary brand)
-      const Color(0xFF4CAF50).withOpacity(0.15), // Green
-      const Color(0xFFFF9800).withOpacity(0.15), // Orange
-      const Color(0xFFFF6B6B).withOpacity(0.15), // Red
-    ];
-
-    final colors = isDark ? darkColors : lightColors;
     return colors[index % colors.length];
   }
 

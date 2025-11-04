@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 
 class ChallengeReadyScreen extends StatefulWidget {
   final String challengeName;
@@ -18,7 +19,8 @@ class ChallengeReadyScreen extends StatefulWidget {
   State<ChallengeReadyScreen> createState() => _ChallengeReadyScreenState();
 }
 
-class _ChallengeReadyScreenState extends State<ChallengeReadyScreen> {
+class _ChallengeReadyScreenState extends State<ChallengeReadyScreen>
+    with SafeContextMixin {
   late int _seconds;
   Timer? _timer;
 

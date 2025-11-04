@@ -24,19 +24,19 @@ class QuizQuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Question ${current + 1} of $total',
-          style: const TextStyle(color: Colors.white70, fontSize: 16),
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 16),
         ),
         const SizedBox(height: 8),
         Text(
           question,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: colorScheme.onSurface,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -49,17 +49,19 @@ class QuizQuestionCard extends StatelessWidget {
             title: Text(
               option,
               style: TextStyle(
-                color: selected == index ? Colors.orangeAccent : Colors.white,
+                color: selected == index
+                    ? colorScheme.primary
+                    : colorScheme.onSurface,
               ),
             ),
             leading: Radio<int>(
               value: index,
               groupValue: selected,
               onChanged: (value) => onSelect(index),
-              activeColor: Colors.orangeAccent,
+              activeColor: colorScheme.primary,
             ),
           );
-        }).toList(),
+        }),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -67,14 +69,14 @@ class QuizQuestionCard extends StatelessWidget {
             ElevatedButton(
               onPressed: onPrevious,
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                backgroundColor: colorScheme.surfaceContainerHighest,
               ),
               child: const Text('Previous'),
             ),
             ElevatedButton(
               onPressed: onNext,
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
+                backgroundColor: colorScheme.primary,
               ),
               child: const Text('Next'),
             ),

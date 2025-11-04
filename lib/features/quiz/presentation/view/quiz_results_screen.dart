@@ -38,6 +38,9 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
     required bool isCorrect,
     String? explanation,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final int selectedIdx = selectedLetter.isNotEmpty
         ? (selectedLetter.toLowerCase().codeUnitAt(0) - 'a'.codeUnitAt(0))
         : -1;
@@ -47,7 +50,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1C1C1E),
+      backgroundColor: colorScheme.surfaceContainerHighest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -70,8 +73,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                     Expanded(
                       child: Text(
                         question,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -85,9 +88,9 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                   final text = entry.value;
                   final bool isSelected = idx == selectedIdx;
                   final bool isRight = idx == correctIdx;
-                  Color borderColor = const Color(0xFF3A3A3C);
-                  Color bgColor = const Color(0xFF2C2C2E);
-                  Color textColor = Colors.white;
+                  Color borderColor = colorScheme.outline;
+                  Color bgColor = colorScheme.surfaceContainer;
+                  Color textColor = colorScheme.onSurface;
                   IconData? icon;
                   Color? iconColor;
 
@@ -131,10 +134,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                 }).toList(),
                 if ((explanation ?? '').isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Explanation',
                     style: TextStyle(
-                      color: Colors.blueAccent,
+                      color: colorScheme.primary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -142,7 +145,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                   const SizedBox(height: 6),
                   Text(
                     explanation!,
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 8),
@@ -183,9 +189,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 900;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: BlocConsumer<QuizCubit, QuizState>(
           listener: (context, state) {
@@ -199,8 +206,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
           },
           builder: (context, state) {
             if (state is UserQuizStatusLoading || _attempt == null) {
-              return const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFE9500)),
+              return Center(
+                child: CircularProgressIndicator(color: colorScheme.primary),
               );
             }
 
@@ -241,16 +248,17 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                   context.go('/');
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0A84FF),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'Finish',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -269,6 +277,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
     Map<String, dynamic> questionById,
   ) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Row(
@@ -285,16 +295,19 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                   children: [
                     IconButton(
                       onPressed: () => context.go('/'),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: colorScheme.onSurface,
+                      ),
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A1A1A),
+                        backgroundColor: colorScheme.surfaceContainerHighest,
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
+                    Text(
                       'Quiz Results',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                       ),
@@ -302,10 +315,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                const Text(
+                Text(
                   'Question Breakdown',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                   ),
@@ -360,12 +373,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                         margin: const EdgeInsets.only(bottom: 16.0),
                         padding: const EdgeInsets.all(20.0),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F0F0F),
+                          color: colorScheme.surface,
                           borderRadius: BorderRadius.circular(12.0),
                           border: Border.all(
-                            color: isCorrect
-                                ? const Color(0xFF22C55E)
-                                : const Color(0xFFEF4444),
+                            color: isCorrect ? Colors.green : Colors.red,
                             width: 1.5,
                           ),
                         ),
@@ -376,13 +387,11 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
-                                color: isCorrect
-                                    ? const Color(0xFF22C55E)
-                                    : const Color(0xFFEF4444),
+                                color: isCorrect ? Colors.green : Colors.red,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(
-                                isCorrect ? Icons.check : Icons.close,
+                              child: const Icon(
+                                Icons.check,
                                 color: Colors.white,
                                 size: 20,
                               ),
@@ -394,8 +403,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                 children: [
                                   Text(
                                     'Question ${index + 1}',
-                                    style: const TextStyle(
-                                      color: Color(0xFFFE9500),
+                                    style: TextStyle(
+                                      color: colorScheme.primary,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -403,8 +412,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     resolvedQuestionText,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: colorScheme.onSurface,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                       height: 1.4,
@@ -417,7 +426,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                       Text(
                                         'Your answer: ',
                                         style: TextStyle(
-                                          color: Colors.grey[500],
+                                          color: colorScheme.onSurfaceVariant,
                                           fontSize: 14,
                                         ),
                                       ),
@@ -429,8 +438,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                               : selectedOptionText,
                                           style: TextStyle(
                                             color: isCorrect
-                                                ? const Color(0xFF22C55E)
-                                                : const Color(0xFFEF4444),
+                                                ? Colors.green
+                                                : Colors.red,
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14,
                                           ),
@@ -446,7 +455,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                         Text(
                                           'Correct answer: ',
                                           style: TextStyle(
-                                            color: Colors.grey[500],
+                                            color: colorScheme.onSurfaceVariant,
                                             fontSize: 14,
                                           ),
                                         ),
@@ -454,7 +463,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                           child: Text(
                                             correctOptionText,
                                             style: const TextStyle(
-                                              color: Color(0xFF22C55E),
+                                              color: Colors.green,
                                               fontWeight: FontWeight.w600,
                                               fontSize: 14,
                                             ),
@@ -470,16 +479,17 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF1A1A1A),
+                                        color:
+                                            colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const Icon(
+                                          Icon(
                                             Icons.lightbulb_outline,
-                                            color: Color(0xFFFE9500),
+                                            color: colorScheme.primary,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 8),
@@ -487,7 +497,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                             child: Text(
                                               answer.explanation!,
                                               style: TextStyle(
-                                                color: Colors.grey[300],
+                                                color: colorScheme.onSurface,
                                                 fontSize: 13,
                                                 height: 1.4,
                                               ),
@@ -516,8 +526,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                         icon: const Icon(Icons.share, size: 18),
                         label: const Text('Share Results'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Color(0xFF2A2A2A)),
+                          foregroundColor: colorScheme.onSurface,
+                          side: BorderSide(color: colorScheme.outline),
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -532,8 +542,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                         icon: const Icon(Icons.refresh, size: 18),
                         label: const Text('Retry Quiz'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Color(0xFF2A2A2A)),
+                          foregroundColor: colorScheme.onSurface,
+                          side: BorderSide(color: colorScheme.outline),
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -546,8 +556,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                       child: ElevatedButton(
                         onPressed: () => context.go('/'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.surface,
-                          foregroundColor: theme.colorScheme.onSurface,
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -576,9 +586,9 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                   Container(
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F0F0F),
+                      color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      border: Border.all(color: colorScheme.outline),
                     ),
                     child: Column(
                       children: [
@@ -594,11 +604,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                 child: CircularProgressIndicator(
                                   value: percentage / 100,
                                   strokeWidth: 8,
-                                  backgroundColor: const Color(0xFF2A2A2A),
+                                  backgroundColor:
+                                      colorScheme.surfaceContainerHighest,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    isPassed
-                                        ? const Color(0xFF22C55E)
-                                        : const Color(0xFFEF4444),
+                                    isPassed ? Colors.green : Colors.red,
                                   ),
                                 ),
                               ),
@@ -608,8 +617,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                   children: [
                                     Text(
                                       '$percentage%',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: colorScheme.onSurface,
                                         fontSize: 36,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -618,7 +627,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                     Text(
                                       '${attempt.correct}/${attempt.totalQuestions}',
                                       style: TextStyle(
-                                        color: Colors.grey[500],
+                                        color: colorScheme.onSurfaceVariant,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -631,8 +640,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                         const SizedBox(height: 24),
                         Text(
                           isPassed ? 'Great Job!' : 'Keep Practicing!',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -643,7 +652,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                               ? 'You passed the quiz successfully'
                               : 'Review the material and try again',
                           style: TextStyle(
-                            color: Colors.grey[500],
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 14,
                           ),
                           textAlign: TextAlign.center,
@@ -656,17 +665,17 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F0F0F),
+                      color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      border: Border.all(color: colorScheme.outline),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Quiz Statistics',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
@@ -680,13 +689,13 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                         _buildStatRow(
                           'Correct Answers',
                           '${attempt.correct}',
-                          const Color(0xFF22C55E),
+                          Colors.green,
                         ),
                         const SizedBox(height: 16),
                         _buildStatRow(
                           'Incorrect Answers',
                           '${attempt.totalQuestions - attempt.correct}',
-                          const Color(0xFFEF4444),
+                          Colors.red,
                         ),
                         const SizedBox(height: 16),
                         _buildStatRow(
@@ -697,9 +706,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                         _buildStatRow(
                           'Status',
                           isPassed ? 'Passed' : 'Failed',
-                          isPassed
-                              ? const Color(0xFF22C55E)
-                              : const Color(0xFFEF4444),
+                          isPassed ? Colors.green : Colors.red,
                         ),
                       ],
                     ),
@@ -720,14 +727,20 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
     bool isPassed,
     Map<String, dynamic> questionById,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return CustomScrollView(
       slivers: [
         // App Bar
         SliverAppBar(
-          backgroundColor: const Color(0xFF1C1C1E),
-          title: const Text(
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          title: Text(
             'Quiz Results',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           centerTitle: true,
           pinned: true,
@@ -740,7 +753,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
             margin: const EdgeInsets.all(16.0),
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12.0),
               border: Border.all(
                 color: isPassed
@@ -751,9 +764,12 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
             ),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'Your Score',
-                  style: TextStyle(color: Colors.white70, fontSize: 18),
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 18,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -847,7 +863,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                   margin: const EdgeInsets.only(bottom: 16.0),
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1C1C1E),
+                    color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12.0),
                     border: Border.all(
                       color: isCorrect
@@ -884,8 +900,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                               children: [
                                 Text(
                                   'Question ${index + 1}: $resolvedQuestionText',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: colorScheme.onSurface,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -895,10 +911,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Your answer:',
                                       style: TextStyle(
-                                        color: Colors.white70,
+                                        color: colorScheme.onSurfaceVariant,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -921,10 +937,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                 // Show correct answer if wrong
                                 if (!isCorrect) ...[
                                   const SizedBox(height: 12),
-                                  const Text(
+                                  Text(
                                     'Correct answer:',
                                     style: TextStyle(
-                                      color: Colors.white70,
+                                      color: colorScheme.onSurfaceVariant,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -942,10 +958,10 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                 // Explanation (if present)
                                 if ((answer.explanation ?? '').isNotEmpty) ...[
                                   const SizedBox(height: 12),
-                                  const Text(
+                                  Text(
                                     'Explanation:',
                                     style: TextStyle(
-                                      color: Colors.blueAccent,
+                                      color: colorScheme.primary,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -953,8 +969,8 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     answer.explanation!,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -979,14 +995,18 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
   }
 
   Widget _buildStatRow(String label, String value, [Color? valueColor]) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+        Text(
+          label,
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
+        ),
         const Spacer(),
         Text(
           value,
           style: TextStyle(
-            color: valueColor ?? Colors.white,
+            color: valueColor ?? colorScheme.onSurface,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
@@ -17,7 +18,8 @@ class SelectChapterScreen extends StatefulWidget {
   State<SelectChapterScreen> createState() => _SelectChapterScreenState();
 }
 
-class _SelectChapterScreenState extends State<SelectChapterScreen> {
+class _SelectChapterScreenState extends State<SelectChapterScreen>
+    with SafeContextMixin {
   Foldermodel? _selectedFolder;
   final Set<String> _selectedChapterIds = {};
   bool _showChapters = false;
@@ -36,7 +38,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen> {
     super.initState();
     // Fetch all folders on open
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!contextIsValid) return;
       final authState = context.read<AuthCubit>().state;
       if (authState is AuthSuccess) {
         context.read<FolderCubit>().fetchAllFolders(authState.token);
@@ -326,36 +328,39 @@ class _SelectChapterScreenState extends State<SelectChapterScreen> {
       listener: (context, state) {
         if (state is ChallengeCreated) {
           // Navigate to Share Challenge screen with the generated code
-          if (!mounted) return;
+          if (!contextIsValid) return;
 
           // Store cubit references before navigation
-          final folderCubit = context.read<FolderCubit>();
-          final chapterCubit = context.read<ChapterCubit>();
-          final authCubit = context.read<AuthCubit>();
-          final challengeCubit = context.read<ChallengeCubit>();
+          safeContext((ctx) {
+            final folderCubit = ctx.read<FolderCubit>();
+            final chapterCubit = ctx.read<ChapterCubit>();
+            final authCubit = ctx.read<AuthCubit>();
+            final challengeCubit = ctx.read<ChallengeCubit>();
 
-          GoRouter.of(context).pushReplacementNamed(
-            'challenge-create',
-            extra: {
-              'folderCubit': folderCubit,
-              'chapterCubit': chapterCubit,
-              'authCubit': authCubit,
-              'challengeCubit': challengeCubit,
-              'inviteCode': state.inviteCode,
-              'chapterName': _selectedFolder!.title,
-              'challengeName': state.challengeName,
-              'questionsCount': state.questionsCount,
-              'durationMinutes': state.durationMinutes,
-            },
-          );
+            GoRouter.of(ctx).pushNamed(
+              'challenge-create',
+              extra: {
+                'folderCubit': folderCubit,
+                'chapterCubit': chapterCubit,
+                'authCubit': authCubit,
+                'challengeCubit': challengeCubit,
+                'inviteCode': state.inviteCode,
+                'chapterName': _selectedFolder!.title,
+                'challengeName': state.challengeName,
+                'questionsCount': state.questionsCount,
+                'durationMinutes': state.durationMinutes,
+              },
+            );
+          });
         } else if (state is ChallengeError) {
           // Show error dialog
-          if (!mounted) return;
-          CustomDialogs.showErrorDialog(
-            context,
-            title: 'Error!',
-            message: state.message,
-          );
+          safeContext((ctx) {
+            CustomDialogs.showErrorDialog(
+              ctx,
+              title: 'Error!',
+              message: state.message,
+            );
+          });
         }
       },
       builder: (context, state) {
@@ -369,15 +374,17 @@ class _SelectChapterScreenState extends State<SelectChapterScreen> {
             child: ElevatedButton(
               onPressed: (canContinue && !isLoading)
                   ? () async {
-                      if (_selectedFolder == null || !mounted) return;
+                      if (_selectedFolder == null || !contextIsValid) return;
 
                       final authState = context.read<AuthCubit>().state;
                       if (authState is! AuthSuccess) {
-                        CustomDialogs.showErrorDialog(
-                          context,
-                          title: 'Authentication Required',
-                          message: 'Please login first',
-                        );
+                        safeContext((ctx) {
+                          CustomDialogs.showErrorDialog(
+                            ctx,
+                            title: 'Authentication Required',
+                            message: 'Please login first',
+                          );
+                        });
                         return;
                       }
 

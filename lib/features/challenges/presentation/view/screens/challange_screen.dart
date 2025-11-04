@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/OptionCard.dart';
@@ -17,7 +18,8 @@ class ChallangeScreen extends StatefulWidget {
   State<ChallangeScreen> createState() => _ChallangeScreenState();
 }
 
-class _ChallangeScreenState extends State<ChallangeScreen> {
+class _ChallangeScreenState extends State<ChallangeScreen>
+    with SafeContextMixin {
   var boolean = true;
   @override
   Widget build(BuildContext context) {
@@ -145,10 +147,8 @@ class _ChallangeScreenState extends State<ChallangeScreen> {
                         subtitle: 'Enter code manually to join',
                         actionLabel: 'Enter Code',
                         onTap: () {
-                          if (!mounted) return;
-                          // Use GoRouter safely with mounted check
-                          final router = GoRouter.maybeOf(context);
-                          router?.go('/enter-code');
+                          // Use push instead of go to maintain navigation stack
+                          context.push('/enter-code');
                         },
                         outlined: true,
                       ),

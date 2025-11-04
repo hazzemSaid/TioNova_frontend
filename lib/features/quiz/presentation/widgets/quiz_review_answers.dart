@@ -21,9 +21,16 @@ class QuizReviewAnswers extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 900;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     if (isWeb) {
-      return _buildWebLayout(context, answeredCount, unansweredCount, theme);
+      return _buildWebLayout(
+        context,
+        answeredCount,
+        unansweredCount,
+        theme,
+        colorScheme,
+      );
     }
 
     return CustomScrollView(
@@ -35,10 +42,10 @@ class QuizReviewAnswers extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(20.0),
               decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E),
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16.0),
                 border: Border.all(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: colorScheme.outline.withOpacity(0.5),
                   width: 1,
                 ),
               ),
@@ -50,16 +57,19 @@ class QuizReviewAnswers extends StatelessWidget {
                       children: [
                         Text(
                           '$answeredCount/${questions.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Answered',
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -69,7 +79,7 @@ class QuizReviewAnswers extends StatelessWidget {
                   Container(
                     width: 1,
                     height: 40,
-                    color: Colors.grey.withOpacity(0.3),
+                    color: colorScheme.outline.withOpacity(0.3),
                   ),
 
                   // Unanswered Section
@@ -78,16 +88,19 @@ class QuizReviewAnswers extends StatelessWidget {
                       children: [
                         Text(
                           '$unansweredCount',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Unanswered',
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -112,10 +125,10 @@ class QuizReviewAnswers extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12.0),
                 padding: const EdgeInsets.all(20.0),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C1C1E),
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12.0),
                   border: Border.all(
-                    color: Colors.grey.withOpacity(0.2),
+                    color: colorScheme.outline.withOpacity(0.5),
                     width: 1,
                   ),
                 ),
@@ -127,8 +140,8 @@ class QuizReviewAnswers extends StatelessWidget {
                         children: [
                           Text(
                             'Question ${index + 1}',
-                            style: const TextStyle(
-                              color: Color(0xFFFE9500),
+                            style: TextStyle(
+                              color: colorScheme.primary,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -136,8 +149,8 @@ class QuizReviewAnswers extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             questions[index]['question'],
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
                               height: 1.4,
@@ -147,8 +160,8 @@ class QuizReviewAnswers extends StatelessWidget {
                             const SizedBox(height: 8),
                             Text(
                               'Your answer: ${questions[index]['options'][answers[index]!]}',
-                              style: const TextStyle(
-                                color: Color(0xFF34C759),
+                              style: TextStyle(
+                                color: colorScheme.tertiary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -165,18 +178,18 @@ class QuizReviewAnswers extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isAnswered
-                              ? const Color(0xFF34C759)
-                              : Colors.grey,
+                              ? colorScheme.tertiary
+                              : colorScheme.outline,
                           width: isAnswered ? 0 : 2,
                         ),
                         color: isAnswered
-                            ? const Color(0xFF34C759)
+                            ? colorScheme.tertiary
                             : Colors.transparent,
                       ),
                       child: isAnswered
-                          ? const Icon(
+                          ? Icon(
                               Icons.check,
-                              color: Colors.white,
+                              color: colorScheme.onTertiary,
                               size: 16,
                             )
                           : null,
@@ -204,17 +217,17 @@ class QuizReviewAnswers extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: onSubmit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.surface,
-                      foregroundColor: theme.colorScheme.onSurface,
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Submit Quiz',
                       style: TextStyle(
-                        color: Colors.black,
+                        color: colorScheme.onPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -230,21 +243,21 @@ class QuizReviewAnswers extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: onContinue,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1C1C1E),
-                      foregroundColor: Colors.white,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
+                      foregroundColor: colorScheme.onSurface,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12.0),
                         side: BorderSide(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: colorScheme.outline.withOpacity(0.5),
                           width: 1,
                         ),
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Continue Answering',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -264,6 +277,7 @@ class QuizReviewAnswers extends StatelessWidget {
     int answeredCount,
     int unansweredCount,
     ThemeData theme,
+    ColorScheme colorScheme,
   ) {
     return Padding(
       padding: const EdgeInsets.all(32.0),
@@ -279,10 +293,10 @@ class QuizReviewAnswers extends StatelessWidget {
                 // Header
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Review Answers',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                       ),
@@ -307,10 +321,10 @@ class QuizReviewAnswers extends StatelessWidget {
                       return Container(
                         padding: const EdgeInsets.all(20.0),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F0F0F),
+                          color: colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(12.0),
                           border: Border.all(
-                            color: const Color(0xFF2A2A2A),
+                            color: colorScheme.outline,
                             width: 1,
                           ),
                         ),
@@ -323,8 +337,8 @@ class QuizReviewAnswers extends StatelessWidget {
                                 children: [
                                   Text(
                                     'Question ${index + 1}',
-                                    style: const TextStyle(
-                                      color: Color(0xFFFE9500),
+                                    style: TextStyle(
+                                      color: colorScheme.primary,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -332,8 +346,8 @@ class QuizReviewAnswers extends StatelessWidget {
                                   const SizedBox(height: 6),
                                   Text(
                                     questions[index]['question'],
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: colorScheme.onSurface,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w400,
                                       height: 1.3,
@@ -346,7 +360,7 @@ class QuizReviewAnswers extends StatelessWidget {
                                     Text(
                                       'Answered',
                                       style: TextStyle(
-                                        color: const Color(0xFF22C55E),
+                                        color: colorScheme.tertiary,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -363,18 +377,18 @@ class QuizReviewAnswers extends StatelessWidget {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: isAnswered
-                                      ? const Color(0xFF22C55E)
-                                      : const Color(0xFF4A4A4A),
+                                      ? colorScheme.tertiary
+                                      : colorScheme.outline,
                                   width: isAnswered ? 0 : 2,
                                 ),
                                 color: isAnswered
-                                    ? const Color(0xFF22C55E)
+                                    ? colorScheme.tertiary
                                     : Colors.transparent,
                               ),
                               child: isAnswered
-                                  ? const Icon(
+                                  ? Icon(
                                       Icons.check,
-                                      color: Colors.white,
+                                      color: colorScheme.onTertiary,
                                       size: 18,
                                     )
                                   : null,
@@ -393,8 +407,8 @@ class QuizReviewAnswers extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: onContinue,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Color(0xFF2A2A2A)),
+                          foregroundColor: colorScheme.onSurface,
+                          side: BorderSide(color: colorScheme.outline),
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -414,8 +428,8 @@ class QuizReviewAnswers extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: onSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.surface,
-                          foregroundColor: theme.colorScheme.onSurface,
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -442,18 +456,18 @@ class QuizReviewAnswers extends StatelessWidget {
             width: 320,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F0F0F),
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF2A2A2A)),
+              border: Border.all(color: colorScheme.outline),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'Quiz Summary',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -462,32 +476,35 @@ class QuizReviewAnswers extends StatelessWidget {
                 _buildStatRow(
                   'Answered',
                   '$answeredCount / ${questions.length}',
-                  const Color(0xFF22C55E),
+                  colorScheme.tertiary,
+                  colorScheme,
                 ),
                 const SizedBox(height: 16),
                 _buildStatRow(
                   'Unanswered',
                   '$unansweredCount',
-                  const Color(0xFFFE9500),
+                  colorScheme.primary,
+                  colorScheme,
                 ),
                 const SizedBox(height: 16),
                 _buildStatRow(
                   'Total Questions',
                   '${questions.length}',
-                  Colors.white,
+                  colorScheme.onSurface,
+                  colorScheme,
                 ),
                 const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
+                    color: colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.info_outline,
-                        color: Color(0xFFFE9500),
+                        color: colorScheme.primary,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -495,7 +512,7 @@ class QuizReviewAnswers extends StatelessWidget {
                         child: Text(
                           'Make sure to answer all questions before submitting',
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 13,
                             height: 1.4,
                           ),
@@ -512,10 +529,18 @@ class QuizReviewAnswers extends StatelessWidget {
     );
   }
 
-  Widget _buildStatRow(String label, String value, Color valueColor) {
+  Widget _buildStatRow(
+    String label,
+    String value,
+    Color valueColor,
+    ColorScheme colorScheme,
+  ) {
     return Row(
       children: [
-        Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+        Text(
+          label,
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
+        ),
         const Spacer(),
         Text(
           value,

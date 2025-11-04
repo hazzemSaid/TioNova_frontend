@@ -65,6 +65,12 @@ class _MindMapSectionState extends State<MindMapSection> {
                     height: 52,
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceVariant,
+
+                      gradient: LinearGradient(
+                        colors: [colorScheme.primary, colorScheme.secondary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(

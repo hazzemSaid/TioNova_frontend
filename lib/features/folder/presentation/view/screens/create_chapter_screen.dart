@@ -5,12 +5,15 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
+import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class CreateChapterScreen extends StatefulWidget {
   final String folderTitle;
@@ -26,7 +29,8 @@ class CreateChapterScreen extends StatefulWidget {
   State<CreateChapterScreen> createState() => _CreateChapterScreenState();
 }
 
-class _CreateChapterScreenState extends State<CreateChapterScreen> {
+class _CreateChapterScreenState extends State<CreateChapterScreen>
+    with SafeContextMixin {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   FileData? _selectedFile;
@@ -111,60 +115,54 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
               _selectedFileName = file.name;
             });
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('File "${file.name}" selected successfully!'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 2),
-              ),
+            CustomDialogs.showSuccessDialog(
+              context,
+              title: 'Success!',
+              message: 'File "${file.name}" selected successfully!',
             );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'File content could not be read. Please try again.',
-                ),
-                backgroundColor: Colors.red,
-              ),
+            CustomDialogs.showErrorDialog(
+              context,
+              title: 'Error!',
+              message: 'File content could not be read. Please try again.',
             );
           }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please select a PDF file only.'),
-              backgroundColor: Colors.red,
-            ),
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error!',
+            message: 'Please select a PDF file only.',
           );
         }
       }
     } catch (e) {
       print('File picker error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error picking file: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
+      CustomDialogs.showErrorDialog(
+        context,
+        title: 'Error!',
+        message: 'Error picking file: ${e.toString()}',
       );
     }
   }
 
   void _showManualFileInputDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0E0E10),
-        title: const Text(
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        title: Text(
           'File Picker Not Available',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: colorScheme.onSurface),
         ),
-        content: const Text(
+        content: Text(
           'The file picker is not working on this device. For now, you can create a chapter without uploading a PDF file. The PDF upload feature will be available in a future update.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: Colors.blue)),
+            child: Text('OK', style: TextStyle(color: colorScheme.primary)),
           ),
         ],
       ),
@@ -176,32 +174,29 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
 
     if (_titleController.text.trim().isEmpty) {
       print('❌ Title is empty');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a title'),
-          backgroundColor: Colors.red,
-        ),
+      CustomDialogs.showErrorDialog(
+        context,
+        title: 'Error!',
+        message: 'Please enter a title',
       );
       return;
     }
     print('✅ Title validation passed: ${_titleController.text.trim()}');
 
     if (_descriptionController.text.trim().length < 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Description must be at least 10 characters'),
-          backgroundColor: Colors.red,
-        ),
+      CustomDialogs.showErrorDialog(
+        context,
+        title: 'Error!',
+        message: 'Description must be at least 10 characters',
       );
       return;
     }
 
     if (_selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a PDF file'),
-          backgroundColor: Colors.red,
-        ),
+      CustomDialogs.showErrorDialog(
+        context,
+        title: 'Error!',
+        message: 'Please select a PDF file',
       );
       return;
     }
@@ -232,21 +227,22 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
 
         // Show success message
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Chapter created successfully!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
+          CustomDialogs.showSuccessDialog(
+            context,
+            title: 'Success!',
+            message: 'Chapter created successfully!',
           );
 
-          // Navigate back to previous screen after a short delay
+          // Navigate back to folder detail screen after a short delay
           Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) {
-              Navigator.of(
-                context,
-              ).pop(true); // Return true to indicate success
-            }
+            // Use safe context to prevent "deactivated widget" error
+            safeContext((ctx) {
+              // Close success dialog
+              if (ctx.canPop()) Navigator.of(ctx).pop();
+              // Navigate back from create chapter screen with success result
+              if (ctx.canPop())
+                ctx.pop(true); // Return true to indicate success
+            });
           });
         }
       } catch (e) {
@@ -255,12 +251,10 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
 
         // Show error message
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to create chapter: ${e.toString()}'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error!',
+            message: 'Failed to create chapter: ${e.toString()}',
           );
         }
       }
@@ -268,11 +262,10 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
       // Close the loading dialog
       if (mounted) Navigator.of(context).pop();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Authentication required'),
-          backgroundColor: Colors.red,
-        ),
+      CustomDialogs.showErrorDialog(
+        context,
+        title: 'Error!',
+        message: 'Authentication required',
       );
     }
   }
@@ -296,42 +289,18 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
       child: BlocListener<ChapterCubit, ChapterState>(
         listener: (context, state) {
           if (state is CreateChapterLoading) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Text('Creating chapter...'),
-                  ],
-                ),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: Colors.blue,
-                duration: Duration(seconds: 2),
-              ),
+            CustomDialogs.showInfoDialog(
+              context,
+              title: 'Creating...',
+              message: 'Creating chapter, please wait...',
             );
           }
           if (state is CreateChapterSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.white, size: 16),
-                    SizedBox(width: 8),
-                    Text('Chapter created successfully!'),
-                  ],
-                ),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 2),
-              ),
+            Navigator.pop(context); // Close info dialog
+            CustomDialogs.showSuccessDialog(
+              context,
+              title: 'Success!',
+              message: 'Chapter created successfully!',
             );
             final authState = context.read<AuthCubit>().state;
             if (authState is AuthSuccess) {
@@ -340,44 +309,37 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
                 token: authState.token,
               );
             }
-            Navigator.pop(context, true); // Return true to indicate success
+            Future.delayed(const Duration(milliseconds: 1500), () {
+              if (context.mounted) {
+                Navigator.pop(context, true); // Return true to indicate success
+              }
+            });
           }
           if (state is CreateChapterError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Icon(Icons.error, color: Colors.white, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Failed to create chapter: ${state.message.errMessage}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 4),
-              ),
+            Navigator.pop(context); // Close info dialog if showing
+            CustomDialogs.showErrorDialog(
+              context,
+              title: 'Error!',
+              message: 'Failed to create chapter: ${state.message.errMessage}',
             );
           }
         },
         child: Scaffold(
-          backgroundColor: const Color(0xFFF8F9FA), // Light background
+          backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
-            backgroundColor: const Color(0xFFF8F9FA),
+            backgroundColor: Theme.of(context).colorScheme.surface,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Color(0xFF0C0A1F)),
+              icon: Icon(
+                Icons.arrow_back,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
               'New Chapter in ${widget.folderTitle}',
-              style: const TextStyle(
-                color: Color(0xFF0C0A1F),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
@@ -403,420 +365,506 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
                             // Upload PDF section
                             Align(
                               alignment: Alignment.center,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF0E0E10),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: const Color(0xFF1C1C1E),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
+                              child: Builder(
+                                builder: (context) {
+                                  final colorScheme = Theme.of(
+                                    context,
+                                  ).colorScheme;
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: colorScheme.outline,
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Icon(
-                                            Icons.upload_file,
-                                            color: Colors.white,
-                                            size: isTablet ? 24 : 22,
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.upload_file,
+                                                color: colorScheme.onSurface,
+                                                size: isTablet ? 24 : 22,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Upload PDF Document',
+                                                style: TextStyle(
+                                                  color: colorScheme.onSurface,
+                                                  fontSize: isTablet ? 22 : 20,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(width: 8),
+                                          const SizedBox(height: 8),
                                           Text(
-                                            'Upload PDF Document',
+                                            "Upload your study material as a PDF file (max 10MB)",
                                             style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: isTablet ? 22 : 20,
-                                              fontWeight: FontWeight.w600,
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                              fontSize: isTablet ? 16 : 14,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+
+                                          // Drop zone
+                                          Align(
+                                            alignment: Alignment.center,
+                                            child: GestureDetector(
+                                              onTap: _pickFile,
+                                              child: Container(
+                                                margin: EdgeInsets.all(
+                                                  isTablet ? 20 : 16,
+                                                ),
+                                                height: isTablet ? 160 : 140,
+                                                decoration: BoxDecoration(
+                                                  color: colorScheme
+                                                      .surfaceVariant,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                    color: colorScheme.outline,
+                                                    style: BorderStyle.solid,
+                                                  ),
+                                                ),
+                                                child: SingleChildScrollView(
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      SizedBox(
+                                                        height: isTablet
+                                                            ? 12
+                                                            : 8,
+                                                      ),
+                                                      if (_selectedFile !=
+                                                          null) ...[
+                                                        Container(
+                                                          width: 48,
+                                                          height: 48,
+                                                          decoration: BoxDecoration(
+                                                            color: colorScheme
+                                                                .tertiary
+                                                                .withOpacity(
+                                                                  0.2,
+                                                                ),
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  12,
+                                                                ),
+                                                            border: Border.all(
+                                                              color: colorScheme
+                                                                  .tertiary,
+                                                              width: 2,
+                                                            ),
+                                                          ),
+                                                          child: Icon(
+                                                            Icons.check_circle,
+                                                            color: colorScheme
+                                                                .tertiary,
+                                                            size: 24,
+                                                          ),
+                                                        ),
+                                                        SizedBox(
+                                                          height: isTablet
+                                                              ? 10
+                                                              : 6,
+                                                        ),
+                                                        Text(
+                                                          'File Selected',
+                                                          style: TextStyle(
+                                                            color: colorScheme
+                                                                .tertiary,
+                                                            fontSize: isTablet
+                                                                ? 16
+                                                                : 14,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                        SizedBox(
+                                                          height: isTablet
+                                                              ? 4
+                                                              : 2,
+                                                        ),
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                horizontal: 12,
+                                                              ),
+                                                          child: Text(
+                                                            _selectedFileName ??
+                                                                'Unknown file',
+                                                            style: TextStyle(
+                                                              color: colorScheme
+                                                                  .onSurface,
+                                                              fontSize: isTablet
+                                                                  ? 12
+                                                                  : 10,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        ),
+                                                        SizedBox(
+                                                          height: isTablet
+                                                              ? 6
+                                                              : 4,
+                                                        ),
+                                                        Container(
+                                                          padding:
+                                                              EdgeInsets.symmetric(
+                                                                horizontal:
+                                                                    isTablet
+                                                                    ? 14
+                                                                    : 12,
+                                                                vertical:
+                                                                    isTablet
+                                                                    ? 6
+                                                                    : 4,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color: colorScheme
+                                                                .tertiary
+                                                                .withOpacity(
+                                                                  0.1,
+                                                                ),
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                          ),
+                                                          child: Text(
+                                                            'Tap to change file',
+                                                            style: TextStyle(
+                                                              color: colorScheme
+                                                                  .tertiary,
+                                                              fontSize: isTablet
+                                                                  ? 10
+                                                                  : 9,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ] else ...[
+                                                        Container(
+                                                          width: 48,
+                                                          height: 48,
+                                                          decoration: BoxDecoration(
+                                                            color: colorScheme
+                                                                .surface,
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  12,
+                                                                ),
+                                                          ),
+                                                          child: Icon(
+                                                            Icons
+                                                                .description_outlined,
+                                                            color: colorScheme
+                                                                .onSurface,
+                                                            size: 24,
+                                                          ),
+                                                        ),
+                                                        SizedBox(
+                                                          height: isTablet
+                                                              ? 10
+                                                              : 6,
+                                                        ),
+                                                        Text(
+                                                          'Choose PDF file',
+                                                          style: TextStyle(
+                                                            color: colorScheme
+                                                                .onSurface,
+                                                            fontSize: isTablet
+                                                                ? 16
+                                                                : 14,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                        SizedBox(
+                                                          height: isTablet
+                                                              ? 4
+                                                              : 2,
+                                                        ),
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                horizontal: 12,
+                                                              ),
+                                                          child: Text(
+                                                            'Click to browse or drag and drop your PDF here',
+                                                            style: TextStyle(
+                                                              color: colorScheme
+                                                                  .onSurfaceVariant,
+                                                              fontSize: isTablet
+                                                                  ? 12
+                                                                  : 10,
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        ),
+                                                        SizedBox(
+                                                          height: isTablet
+                                                              ? 6
+                                                              : 4,
+                                                        ),
+                                                        Container(
+                                                          padding:
+                                                              EdgeInsets.symmetric(
+                                                                horizontal:
+                                                                    isTablet
+                                                                    ? 14
+                                                                    : 12,
+                                                                vertical:
+                                                                    isTablet
+                                                                    ? 6
+                                                                    : 4,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color: colorScheme
+                                                                .surfaceContainerHighest,
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                          ),
+                                                          child: Text(
+                                                            'PDF files only',
+                                                            style: TextStyle(
+                                                              color: colorScheme
+                                                                  .onSurfaceVariant,
+                                                              fontSize: isTablet
+                                                                  ? 10
+                                                                  : 9,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                      SizedBox(
+                                                        height: isTablet
+                                                            ? 12
+                                                            : 8,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        "Upload your study material as a PDF file (max 10MB)",
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(.5),
-                                          fontSize: isTablet ? 16 : 14,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      // Drop zone
-                                      Align(
-                                        alignment: Alignment.center,
-                                        child: GestureDetector(
-                                          onTap: _pickFile,
-                                          child: Container(
-                                            margin: EdgeInsets.all(
-                                              isTablet ? 20 : 16,
-                                            ),
-                                            height: isTablet ? 160 : 140,
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF1C1C1E),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              border: Border.all(
-                                                color: const Color(0xFF2C2C2E),
-                                                style: BorderStyle.solid,
-                                              ),
-                                            ),
-                                            child: SingleChildScrollView(
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  SizedBox(
-                                                    height: isTablet ? 12 : 8,
-                                                  ),
-                                                  if (_selectedFile !=
-                                                      null) ...[
-                                                    Container(
-                                                      width: 48,
-                                                      height: 48,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.green
-                                                            .withOpacity(0.2),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              12,
-                                                            ),
-                                                        border: Border.all(
-                                                          color: Colors.green,
-                                                          width: 2,
-                                                        ),
-                                                      ),
-                                                      child: const Icon(
-                                                        Icons.check_circle,
-                                                        color: Colors.green,
-                                                        size: 24,
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      height: isTablet ? 10 : 6,
-                                                    ),
-                                                    Text(
-                                                      'File Selected',
-                                                      style: TextStyle(
-                                                        color: Colors.green,
-                                                        fontSize: isTablet
-                                                            ? 16
-                                                            : 14,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      height: isTablet ? 4 : 2,
-                                                    ),
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 12,
-                                                          ),
-                                                      child: Text(
-                                                        _selectedFileName ??
-                                                            'Unknown file',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: isTablet
-                                                              ? 12
-                                                              : 10,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      height: isTablet ? 6 : 4,
-                                                    ),
-                                                    Container(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                            horizontal: isTablet
-                                                                ? 14
-                                                                : 12,
-                                                            vertical: isTablet
-                                                                ? 6
-                                                                : 4,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.green
-                                                            .withOpacity(0.1),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                      ),
-                                                      child: Text(
-                                                        'Tap to change file',
-                                                        style: TextStyle(
-                                                          color: Colors.green,
-                                                          fontSize: isTablet
-                                                              ? 10
-                                                              : 9,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ] else ...[
-                                                    Container(
-                                                      width: 48,
-                                                      height: 48,
-                                                      decoration: BoxDecoration(
-                                                        color: const Color(
-                                                          0xFF2C2C2E,
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              12,
-                                                            ),
-                                                      ),
-                                                      child: const Icon(
-                                                        Icons
-                                                            .description_outlined,
-                                                        color: Colors.white,
-                                                        size: 24,
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      height: isTablet ? 10 : 6,
-                                                    ),
-                                                    Text(
-                                                      'Choose PDF file',
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: isTablet
-                                                            ? 16
-                                                            : 14,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      height: isTablet ? 4 : 2,
-                                                    ),
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 12,
-                                                          ),
-                                                      child: Text(
-                                                        'Click to browse or drag and drop your PDF here',
-                                                        style: TextStyle(
-                                                          color: const Color(
-                                                            0xFF8E8E93,
-                                                          ),
-                                                          fontSize: isTablet
-                                                              ? 12
-                                                              : 10,
-                                                        ),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      height: isTablet ? 6 : 4,
-                                                    ),
-                                                    Container(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                            horizontal: isTablet
-                                                                ? 14
-                                                                : 12,
-                                                            vertical: isTablet
-                                                                ? 6
-                                                                : 4,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: const Color(
-                                                          0xFF0E0E10,
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                      ),
-                                                      child: Text(
-                                                        'PDF files only',
-                                                        style: TextStyle(
-                                                          color: const Color(
-                                                            0xFF8E8E93,
-                                                          ),
-                                                          fontSize: isTablet
-                                                              ? 10
-                                                              : 9,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                  SizedBox(
-                                                    height: isTablet ? 12 : 8,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
 
                             const SizedBox(height: 24),
 
                             // Chapter Details Section
-                            Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0E0E10),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFF1C1C1E),
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Chapter Details',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: isTablet ? 22 : 20,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                            Builder(
+                              builder: (context) {
+                                final colorScheme = Theme.of(
+                                  context,
+                                ).colorScheme;
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: colorScheme.outline,
                                     ),
-                                    const SizedBox(height: 16),
-                                    _buildFormField(
-                                      label: 'Title',
-                                      hint: 'Enter chapter title',
-                                      controller: _titleController,
-                                      isRequired: true,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Chapter Details',
+                                          style: TextStyle(
+                                            color: colorScheme.onSurface,
+                                            fontSize: isTablet ? 22 : 20,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildFormField(
+                                          label: 'Title',
+                                          hint: 'Enter chapter title',
+                                          controller: _titleController,
+                                          isRequired: true,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildFormField(
+                                          label: 'Description',
+                                          hint:
+                                              'Enter chapter description (at least 10 characters)',
+                                          controller: _descriptionController,
+                                          isRequired: true,
+                                          maxLines: 3,
+                                          showCharCount: true,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        // _buildDropdown(),
+                                      ],
                                     ),
-                                    const SizedBox(height: 16),
-                                    _buildFormField(
-                                      label: 'Description',
-                                      hint:
-                                          'Enter chapter description (at least 10 characters)',
-                                      controller: _descriptionController,
-                                      isRequired: true,
-                                      maxLines: 3,
-                                      showCharCount: true,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    // _buildDropdown(),
-                                  ],
-                                ),
-                              ),
+                                  ),
+                                );
+                              },
                             ),
 
                             SizedBox(height: isTablet ? 50 : 40),
 
                             // Bottom buttons
-                            isDesktop
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      // Cancel button
-                                      SizedBox(
-                                        width: 180,
-                                        child: GestureDetector(
-                                          onTap: () => Navigator.pop(context),
-                                          child: Container(
-                                            height: isTablet ? 54 : 48,
-                                            decoration: BoxDecoration(
-                                              color: Colors.transparent,
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    isTablet ? 27 : 24,
-                                                  ),
-                                              border: Border.all(
-                                                color: const Color(0xFF1C1C1E),
-                                              ),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                'Cancel',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: isTablet ? 18 : 16,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-
-                                      SizedBox(width: isTablet ? 20 : 12),
-
-                                      // Create Chapter button
-                                      SizedBox(
-                                        width: 180,
-                                        child: BlocBuilder<ChapterCubit, ChapterState>(
-                                          builder: (context, state) {
-                                            final isLoading =
-                                                state is CreateChapterLoading;
-                                            return GestureDetector(
-                                              onTap: isLoading
-                                                  ? null
-                                                  : _createChapter,
+                            Builder(
+                              builder: (context) {
+                                final colorScheme = Theme.of(
+                                  context,
+                                ).colorScheme;
+                                return isDesktop
+                                    ? Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          // Cancel button
+                                          SizedBox(
+                                            width: 180,
+                                            child: GestureDetector(
+                                              onTap: () =>
+                                                  Navigator.pop(context),
                                               child: Container(
                                                 height: isTablet ? 54 : 48,
                                                 decoration: BoxDecoration(
-                                                  color: isLoading
-                                                      ? Colors.grey
-                                                      : Colors.white,
+                                                  color: Colors.transparent,
                                                   borderRadius:
                                                       BorderRadius.circular(
                                                         isTablet ? 27 : 24,
                                                       ),
+                                                  border: Border.all(
+                                                    color: colorScheme.outline,
+                                                  ),
                                                 ),
                                                 child: Center(
-                                                  child: isLoading
-                                                      ? Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            SizedBox(
-                                                              width: 16,
-                                                              height: 16,
-                                                              child: CircularProgressIndicator(
-                                                                strokeWidth: 2,
-                                                                valueColor:
-                                                                    AlwaysStoppedAnimation<
-                                                                      Color
-                                                                    >(
-                                                                      Colors
-                                                                          .black,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 8),
-                                                            Text(
-                                                              'Creating...',
+                                                  child: Text(
+                                                    'Cancel',
+                                                    style: TextStyle(
+                                                      color:
+                                                          colorScheme.onSurface,
+                                                      fontSize: isTablet
+                                                          ? 18
+                                                          : 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(width: isTablet ? 20 : 12),
+
+                                          // Create Chapter button
+                                          SizedBox(
+                                            width: 180,
+                                            child: BlocBuilder<ChapterCubit, ChapterState>(
+                                              builder: (context, state) {
+                                                final isLoading =
+                                                    state
+                                                        is CreateChapterLoading;
+                                                return GestureDetector(
+                                                  onTap: isLoading
+                                                      ? null
+                                                      : _createChapter,
+                                                  child: Container(
+                                                    height: isTablet ? 54 : 48,
+                                                    decoration: BoxDecoration(
+                                                      color: isLoading
+                                                          ? colorScheme
+                                                                .surfaceVariant
+                                                          : colorScheme.primary,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            isTablet ? 27 : 24,
+                                                          ),
+                                                    ),
+                                                    child: Center(
+                                                      child: isLoading
+                                                          ? Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                SizedBox(
+                                                                  width: 16,
+                                                                  height: 16,
+                                                                  child: CircularProgressIndicator(
+                                                                    strokeWidth:
+                                                                        2,
+                                                                    valueColor:
+                                                                        AlwaysStoppedAnimation<
+                                                                          Color
+                                                                        >(
+                                                                          colorScheme
+                                                                              .onPrimary,
+                                                                        ),
+                                                                  ),
+                                                                ),
+                                                                SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                Text(
+                                                                  'Creating...',
+                                                                  style: TextStyle(
+                                                                    color: colorScheme
+                                                                        .onPrimary,
+                                                                    fontSize:
+                                                                        isTablet
+                                                                        ? 18
+                                                                        : 16,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            )
+                                                          : Text(
+                                                              'Create Chapter',
                                                               style: TextStyle(
-                                                                color: Colors
-                                                                    .black,
+                                                                color: colorScheme
+                                                                    .onPrimary,
                                                                 fontSize:
                                                                     isTablet
                                                                     ? 18
@@ -826,109 +874,122 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
                                                                         .w600,
                                                               ),
                                                             ),
-                                                          ],
-                                                        )
-                                                      : Text(
-                                                          'Create Chapter',
-                                                          style: TextStyle(
-                                                            color: Colors.black,
-                                                            fontSize: isTablet
-                                                                ? 18
-                                                                : 16,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                        ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Row(
-                                    children: [
-                                      // Cancel button
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () => Navigator.pop(context),
-                                          child: Container(
-                                            height: isTablet ? 54 : 48,
-                                            decoration: BoxDecoration(
-                                              color: Colors.transparent,
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    isTablet ? 27 : 24,
+                                                    ),
                                                   ),
-                                              border: Border.all(
-                                                color: const Color(0xFF1C1C1E),
-                                              ),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                'Cancel',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: isTablet ? 18 : 16,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
+                                                );
+                                              },
                                             ),
                                           ),
-                                        ),
-                                      ),
-
-                                      SizedBox(width: isTablet ? 20 : 12),
-
-                                      // Create Chapter button
-                                      Expanded(
-                                        child: BlocBuilder<ChapterCubit, ChapterState>(
-                                          builder: (context, state) {
-                                            final isLoading =
-                                                state is CreateChapterLoading;
-                                            return GestureDetector(
-                                              onTap: isLoading
-                                                  ? null
-                                                  : _createChapter,
+                                        ],
+                                      )
+                                    : Row(
+                                        children: [
+                                          // Cancel button
+                                          Expanded(
+                                            child: GestureDetector(
+                                              onTap: () =>
+                                                  Navigator.pop(context),
                                               child: Container(
                                                 height: isTablet ? 54 : 48,
                                                 decoration: BoxDecoration(
-                                                  color: isLoading
-                                                      ? Colors.grey
-                                                      : Colors.white,
+                                                  color: Colors.transparent,
                                                   borderRadius:
                                                       BorderRadius.circular(
                                                         isTablet ? 27 : 24,
                                                       ),
+                                                  border: Border.all(
+                                                    color: colorScheme.outline,
+                                                  ),
                                                 ),
                                                 child: Center(
-                                                  child: isLoading
-                                                      ? Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            SizedBox(
-                                                              width: 16,
-                                                              height: 16,
-                                                              child: CircularProgressIndicator(
-                                                                strokeWidth: 2,
-                                                                valueColor:
-                                                                    AlwaysStoppedAnimation<
-                                                                      Color
-                                                                    >(
-                                                                      Colors
-                                                                          .black,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 8),
-                                                            Text(
-                                                              'Creating...',
+                                                  child: Text(
+                                                    'Cancel',
+                                                    style: TextStyle(
+                                                      color:
+                                                          colorScheme.onSurface,
+                                                      fontSize: isTablet
+                                                          ? 18
+                                                          : 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+
+                                          SizedBox(width: isTablet ? 20 : 12),
+
+                                          // Create Chapter button
+                                          Expanded(
+                                            child: BlocBuilder<ChapterCubit, ChapterState>(
+                                              builder: (context, state) {
+                                                final isLoading =
+                                                    state
+                                                        is CreateChapterLoading;
+                                                return GestureDetector(
+                                                  onTap: isLoading
+                                                      ? null
+                                                      : _createChapter,
+                                                  child: Container(
+                                                    height: isTablet ? 54 : 48,
+                                                    decoration: BoxDecoration(
+                                                      color: isLoading
+                                                          ? colorScheme
+                                                                .surfaceVariant
+                                                          : colorScheme.primary,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            isTablet ? 27 : 24,
+                                                          ),
+                                                    ),
+                                                    child: Center(
+                                                      child: isLoading
+                                                          ? Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                SizedBox(
+                                                                  width: 16,
+                                                                  height: 16,
+                                                                  child: CircularProgressIndicator(
+                                                                    strokeWidth:
+                                                                        2,
+                                                                    valueColor:
+                                                                        AlwaysStoppedAnimation<
+                                                                          Color
+                                                                        >(
+                                                                          colorScheme
+                                                                              .onPrimary,
+                                                                        ),
+                                                                  ),
+                                                                ),
+                                                                SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                Text(
+                                                                  'Creating...',
+                                                                  style: TextStyle(
+                                                                    color: colorScheme
+                                                                        .onPrimary,
+                                                                    fontSize:
+                                                                        isTablet
+                                                                        ? 18
+                                                                        : 16,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            )
+                                                          : Text(
+                                                              'Create Chapter',
                                                               style: TextStyle(
-                                                                color: Colors
-                                                                    .black,
+                                                                color: colorScheme
+                                                                    .onPrimary,
                                                                 fontSize:
                                                                     isTablet
                                                                     ? 18
@@ -938,27 +999,16 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
                                                                         .w600,
                                                               ),
                                                             ),
-                                                          ],
-                                                        )
-                                                      : Text(
-                                                          'Create Chapter',
-                                                          style: TextStyle(
-                                                            color: Colors.black,
-                                                            fontSize: isTablet
-                                                                ? 18
-                                                                : 16,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                        ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -983,6 +1033,7 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 768;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -991,7 +1042,7 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
           text: TextSpan(
             text: label,
             style: TextStyle(
-              color: Colors.white,
+              color: colorScheme.onSurface,
               fontSize: isTablet ? 18 : 16,
               fontWeight: FontWeight.w500,
             ),
@@ -1000,7 +1051,7 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
                 TextSpan(
                   text: ' *',
                   style: TextStyle(
-                    color: Colors.red,
+                    color: colorScheme.error,
                     fontSize: isTablet ? 18 : 16,
                   ),
                 ),
@@ -1010,9 +1061,9 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
         SizedBox(height: isTablet ? 10 : 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1E),
+            color: colorScheme.surfaceVariant,
             borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-            border: Border.all(color: const Color(0xFF2C2C2E)),
+            border: Border.all(color: colorScheme.outline),
           ),
           child: Stack(
             children: [
@@ -1020,13 +1071,13 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
                 controller: controller,
                 maxLines: maxLines,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: colorScheme.onSurface,
                   fontSize: isTablet ? 16 : 14,
                 ),
                 decoration: InputDecoration(
                   hintText: hint,
                   hintStyle: TextStyle(
-                    color: const Color(0xFF8E8E93),
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: isTablet ? 16 : 14,
                   ),
                   border: InputBorder.none,
@@ -1044,8 +1095,8 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
                     '${_descriptionController.text.length}/200',
                     style: TextStyle(
                       color: _descriptionController.text.length < 10
-                          ? Colors.red
-                          : const Color(0xFF8E8E93),
+                          ? colorScheme.error
+                          : colorScheme.onSurfaceVariant,
                       fontSize: isTablet ? 14 : 12,
                     ),
                   ),

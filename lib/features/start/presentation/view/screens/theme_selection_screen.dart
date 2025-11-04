@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
 
 class ThemeSelectionScreen extends StatefulWidget {
@@ -28,6 +29,8 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
     return BlocBuilder<ThemeCubit, ThemeMode>(
       builder: (context, currentThemeMode) {
         final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+
         return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           body: SafeArea(
@@ -42,10 +45,10 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   Center(
                     child: Text(
                       'Tionova',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -54,23 +57,26 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   const SizedBox(height: 60),
 
                   // Title
-                  const Text(
+                  Text(
                     'Choose Your Theme',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: colorScheme.onSurface,
                     ),
                   ),
 
                   const SizedBox(height: 12),
 
                   // Subtitle
-                  const Text(
+                  Text(
                     'Select your preferred appearance',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: Colors.white70),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
 
                   const SizedBox(height: 48),
@@ -84,6 +90,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                       setState(() {
                         _selectedTheme = ThemeMode.light;
                       });
+                      context.read<ThemeCubit>().setTheme(ThemeMode.light);
                     },
                   ),
 
@@ -98,6 +105,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                       setState(() {
                         _selectedTheme = ThemeMode.dark;
                       });
+                      context.read<ThemeCubit>().setTheme(ThemeMode.dark);
                     },
                   ),
 
@@ -112,6 +120,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                       setState(() {
                         _selectedTheme = ThemeMode.system;
                       });
+                      context.read<ThemeCubit>().setTheme(ThemeMode.system);
                     },
                   ),
 
@@ -126,8 +135,8 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                         context.go('/onboarding');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -148,11 +157,15 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   // Back Button
                   TextButton(
                     onPressed: () {
-                      context.pop();
+                      // Safely pop back or navigate to auth if no history
+                      context.safePop(fallback: '/auth');
                     },
-                    child: const Text(
+                    child: Text(
                       'Back',
-                      style: TextStyle(color: Colors.white70, fontSize: 15),
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
 
@@ -182,16 +195,20 @@ class _ThemeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.white.withOpacity(0.15)
-              : Colors.white.withOpacity(0.05),
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceVariant,
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.2),
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.outline.withOpacity(0.5),
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(16),
@@ -202,24 +219,24 @@ class _ThemeOption extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white.withOpacity(0.2)
-                    : Colors.white.withOpacity(0.1),
+                    ? colorScheme.primary.withOpacity(0.2)
+                    : colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: Colors.white, size: 22),
+              child: Icon(icon, color: colorScheme.onSurface, size: 22),
             ),
             const SizedBox(width: 16),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: colorScheme.onSurface,
               ),
             ),
             const Spacer(),
             if (isSelected)
-              const Icon(Icons.check_rounded, color: Colors.white, size: 24),
+              Icon(Icons.check_rounded, color: colorScheme.primary, size: 24),
           ],
         ),
       ),

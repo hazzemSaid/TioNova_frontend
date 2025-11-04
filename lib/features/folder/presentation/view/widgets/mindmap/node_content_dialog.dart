@@ -15,23 +15,9 @@ class NodeContentDialog extends StatelessWidget {
     required this.onAddSubNode,
   }) : super(key: key);
 
-  Color _parseColor(String? colorString) {
-    if (colorString == null || colorString.isEmpty) {
-      return const Color(0xFF4A90E2);
-    }
-
-    try {
-      final hexString = colorString.replaceAll('#', '');
-      return Color(int.parse('FF$hexString', radix: 16));
-    } catch (e) {
-      return const Color(0xFF4A90E2);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final nodeColor = _parseColor(node.color);
-    final isRoot = node.isRoot ?? false;
+    final colorScheme = Theme.of(context).colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Dialog(
@@ -40,12 +26,12 @@ class NodeContentDialog extends StatelessWidget {
         width: screenWidth > 600 ? 440 : screenWidth * 0.9,
         constraints: const BoxConstraints(maxWidth: 440),
         decoration: BoxDecoration(
-          color: const Color(0xFF0A0E27), // Dark background like image
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF1E2139), width: 1),
+          border: Border.all(color: colorScheme.outline, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: colorScheme.scrim.withOpacity(0.5),
               blurRadius: 30,
               spreadRadius: 5,
             ),
@@ -57,9 +43,9 @@ class NodeContentDialog extends StatelessWidget {
             // Header with icon, title and close button
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Color(0xFF0A0E27),
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
                 ),
@@ -72,7 +58,7 @@ class NodeContentDialog extends StatelessWidget {
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1F3A),
+                      color: colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Center(
@@ -90,8 +76,8 @@ class NodeContentDialog extends StatelessWidget {
                       children: [
                         Text(
                           node.title ?? 'Untitled',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
@@ -100,7 +86,7 @@ class NodeContentDialog extends StatelessWidget {
                         Text(
                           'Subtopic',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 13,
                           ),
                         ),
@@ -112,14 +98,14 @@ class NodeContentDialog extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1F3A),
+                      color: colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: IconButton(
                       padding: EdgeInsets.zero,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close,
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         size: 18,
                       ),
                       onPressed: () => Navigator.of(context).pop(),
@@ -142,14 +128,14 @@ class NodeContentDialog extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.menu_book,
-                          color: Colors.white.withOpacity(0.6),
+                          color: colorScheme.onSurfaceVariant,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Content',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -166,14 +152,14 @@ class NodeContentDialog extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1F3A),
+                      color: colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: SingleChildScrollView(
                       child: Text(
                         node.content ?? 'No content available',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.85),
+                          color: colorScheme.onSurface,
                           fontSize: 13,
                           height: 1.6,
                           letterSpacing: 0.2,
@@ -189,7 +175,7 @@ class NodeContentDialog extends StatelessWidget {
             Container(
               height: 1,
               margin: const EdgeInsets.symmetric(horizontal: 20),
-              color: const Color(0xFF1E2139),
+              color: colorScheme.outline,
             ),
 
             // Action buttons
@@ -206,19 +192,19 @@ class NodeContentDialog extends StatelessWidget {
                           child: OutlinedButton(
                             onPressed: () => Navigator.of(context).pop(),
                             style: OutlinedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A1F3A),
+                              backgroundColor: colorScheme.surfaceVariant,
                               side: BorderSide(
-                                color: Colors.white.withOpacity(0.1),
+                                color: colorScheme.outline.withOpacity(0.5),
                                 width: 1,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Close',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: colorScheme.onSurface,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -236,7 +222,7 @@ class NodeContentDialog extends StatelessWidget {
                               onAddSubNode();
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
+                              backgroundColor: colorScheme.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -246,9 +232,9 @@ class NodeContentDialog extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.add,
-                                  color: Colors.black,
+                                  color: colorScheme.onPrimary,
                                   size: 18,
                                 ),
                                 const SizedBox(width: 6),
@@ -257,8 +243,8 @@ class NodeContentDialog extends StatelessWidget {
                                     screenWidth < 350
                                         ? 'Add Node'
                                         : 'Add Sub-Node',
-                                    style: const TextStyle(
-                                      color: Colors.black,
+                                    style: TextStyle(
+                                      color: colorScheme.onPrimary,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                     ),

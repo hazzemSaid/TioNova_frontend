@@ -11,12 +11,14 @@ class QuizContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -27,20 +29,20 @@ class QuizContent extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E),
+                color: colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 Icons.description_outlined,
                 size: 32,
-                color: Colors.white.withOpacity(0.9),
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Test Your Knowledge',
               style: TextStyle(
-                color: Colors.white,
+                color: colorScheme.onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
@@ -49,10 +51,13 @@ class QuizContent extends StatelessWidget {
             Text(
               'Take a quiz based on this chapter to test your understanding',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[400], fontSize: 14),
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
+            OutlinedButton(
               onPressed: () async {
                 final token = await TokenStorage.getAccessToken();
                 if (!context.mounted) return;
@@ -72,16 +77,20 @@ class QuizContent extends StatelessWidget {
               },
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(26),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'Start New Quiz',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onPrimary,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -92,7 +101,7 @@ class QuizContent extends StatelessWidget {
                     onPressed: () {},
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 46),
-                      side: const BorderSide(color: Color(0xFF1C1C1E)),
+                      side: BorderSide(color: colorScheme.outline),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(23),
                       ),
@@ -100,7 +109,7 @@ class QuizContent extends StatelessWidget {
                     child: Text(
                       'Practice Mode',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: colorScheme.onSurface,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -131,20 +140,20 @@ class QuizContent extends StatelessWidget {
                     },
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 46),
-                      side: const BorderSide(color: Color(0xFF1C1C1E)),
+                      side: BorderSide(color: colorScheme.outline),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(23),
                       ),
                     ),
                     icon: Icon(
                       Icons.history,
-                      color: Colors.white.withOpacity(0.8),
+                      color: colorScheme.onSurface,
                       size: 18,
                     ),
                     label: Text(
                       'History',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: colorScheme.onSurface,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),

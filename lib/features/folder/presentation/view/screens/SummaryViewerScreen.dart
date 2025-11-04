@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tionova/core/services/download_service.dart';
+import 'package:tionova/core/utils/safe_context_mixin.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/services/SummaryPdfService.dart';
 
@@ -9,18 +11,18 @@ class SummaryViewerScreen extends StatefulWidget {
   final Color accentColor;
 
   const SummaryViewerScreen({
-    Key? key,
+    super.key,
     required this.summaryData,
     required this.chapterTitle,
     this.accentColor = Colors.blue,
-  }) : super(key: key);
+  });
 
   @override
   State<SummaryViewerScreen> createState() => _SummaryViewerScreenState();
 }
 
 class _SummaryViewerScreenState extends State<SummaryViewerScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, SafeContextMixin {
   late TabController _tabController;
   bool _isGeneratingPdf = false;
   int _currentFlashcardIndex = 0;
@@ -100,14 +102,17 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+          onPressed: () => context.safePop(fallback: '/'),
         ),
         title: Row(
           children: [
@@ -128,10 +133,10 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'AI Summary',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -140,7 +145,10 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                     widget.summaryData.chapterTitle.isNotEmpty
                         ? widget.summaryData.chapterTitle
                         : widget.chapterTitle,
-                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -153,32 +161,36 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(
               onPressed: _isGeneratingPdf ? null : _downloadPdf,
               icon: _isGeneratingPdf
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         strokeWidth: 2,
                       ),
                     )
-                  : const Icon(Icons.save_alt, color: Colors.white, size: 22),
+                  : Icon(
+                      Icons.save_alt,
+                      color: colorScheme.onSurface,
+                      size: 22,
+                    ),
             ),
           ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
-            color: Colors.black,
+            color: colorScheme.surface,
             child: TabBar(
               controller: _tabController,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey[600],
+              labelColor: colorScheme.onSurface,
+              unselectedLabelColor: colorScheme.onSurfaceVariant,
               indicatorColor: widget.accentColor,
               indicatorWeight: 3,
               labelStyle: const TextStyle(
@@ -208,6 +220,8 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
   }
 
   Widget _buildOverviewTab() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -217,9 +231,9 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF2C2C2E)),
+              border: Border.all(color: colorScheme.outline),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,11 +246,11 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                       size: 24,
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Chapter Overview',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colorScheme.onSurface,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -248,7 +262,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                 Text(
                   widget.summaryData.chapterOverview.summary,
                   style: TextStyle(
-                    color: Colors.grey[300],
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: 15,
                     height: 1.6,
                   ),
@@ -266,10 +280,10 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                   size: 22,
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Key Takeaways',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -282,7 +296,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C1C1E),
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: widget.accentColor.withOpacity(0.3),
@@ -314,7 +328,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                       child: Text(
                         entry.value,
                         style: TextStyle(
-                          color: Colors.grey[300],
+                          color: colorScheme.onSurfaceVariant,
                           fontSize: 14,
                           height: 1.5,
                         ),
@@ -330,17 +344,24 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.auto_awesome, color: Colors.grey[600], size: 16),
+                Icon(
+                  Icons.auto_awesome,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Generated by TioNova AI',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -352,6 +373,8 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
   }
 
   Widget _buildKeyPointsTab() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -366,12 +389,15 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                     Icon(
                       Icons.lightbulb_outline,
                       size: 64,
-                      color: Colors.grey[700],
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'No key points available',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -382,7 +408,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
               (keyPoint) => Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C1C1E),
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _getTypeColor(keyPoint.type).withOpacity(0.3),
@@ -413,8 +439,8 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                             ),
                             child: Text(
                               keyPoint.type.toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: colorScheme.onSurface,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
@@ -425,10 +451,10 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                           Expanded(
                             child: Text(
                               keyPoint.title,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -440,7 +466,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                       child: Text(
                         keyPoint.content,
                         style: TextStyle(
-                          color: Colors.grey[300],
+                          color: colorScheme.onSurfaceVariant,
                           fontSize: 14,
                           height: 1.6,
                         ),
@@ -457,6 +483,8 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
   }
 
   Widget _buildDefinitionsTab() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -471,12 +499,15 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                     Icon(
                       Icons.menu_book_outlined,
                       size: 64,
-                      color: Colors.grey[700],
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'No definitions available',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -488,9 +519,9 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C1C1E),
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF2C2C2E)),
+                  border: Border.all(color: colorScheme.outline),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,8 +548,8 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                             children: [
                               Text(
                                 definition.term,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: colorScheme.onSurface,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -527,7 +558,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                               Text(
                                 definition.definition,
                                 style: TextStyle(
-                                  color: Colors.grey[400],
+                                  color: colorScheme.onSurfaceVariant,
                                   fontSize: 14,
                                   height: 1.5,
                                 ),
@@ -548,16 +579,25 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
   }
 
   Widget _buildFlashcardsTab() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (widget.summaryData.flashcards.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.style_outlined, size: 64, color: Colors.grey[700]),
+            Icon(
+              Icons.style_outlined,
+              size: 64,
+              color: colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'No flashcards available',
-              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 16,
+              ),
             ),
           ],
         ),
@@ -574,13 +614,13 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               'Card ${_currentFlashcardIndex + 1} of $totalCards',
               style: TextStyle(
-                color: Colors.grey[400],
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -598,7 +638,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                 duration: const Duration(milliseconds: 300),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C1C1E),
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: _showFlashcardAnswer
@@ -650,8 +690,8 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                             _showFlashcardAnswer
                                 ? currentCard.answer
                                 : currentCard.question,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
                               fontSize: 18,
                               height: 1.6,
                             ),
@@ -666,7 +706,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                           ? 'Tap to see question'
                           : 'Tap to reveal answer',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
                       ),
@@ -717,6 +757,8 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
     required String label,
     required VoidCallback? onPressed,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Opacity(
       opacity: onPressed != null ? 1.0 : 0.3,
       child: ElevatedButton.icon(
@@ -724,8 +766,8 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
         icon: Icon(icon, size: 20),
         label: Text(label),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF2C2C2E),
-          foregroundColor: Colors.white,
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          foregroundColor: colorScheme.onSurface,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
