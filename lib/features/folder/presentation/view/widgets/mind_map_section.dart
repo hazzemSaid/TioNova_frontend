@@ -19,6 +19,7 @@ class _MindMapSectionState extends State<MindMapSection> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return MouseRegion(
       onEnter: (_) {
         if (mounted) {
@@ -34,18 +35,18 @@ class _MindMapSectionState extends State<MindMapSection> {
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E0E10),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: _isHovered
-                ? const Color(0xFF2C2C2E)
-                : const Color(0xFF1C1C1E),
+                ? colorScheme.outlineVariant
+                : colorScheme.outline,
             width: 1.5,
           ),
           boxShadow: _isHovered
               ? [
                   BoxShadow(
-                    color: Colors.white.withOpacity(0.05),
+                    color: colorScheme.shadow.withOpacity(0.05),
                     blurRadius: 16,
                     spreadRadius: 0,
                   ),
@@ -63,12 +64,12 @@ class _MindMapSectionState extends State<MindMapSection> {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C1E),
+                      color: colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       Icons.account_tree_outlined,
-                      color: Colors.white.withOpacity(0.9),
+                      color: colorScheme.onSurface,
                       size: 26,
                     ),
                   ),
@@ -77,10 +78,10 @@ class _MindMapSectionState extends State<MindMapSection> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Mind Map',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.5,
@@ -90,7 +91,7 @@ class _MindMapSectionState extends State<MindMapSection> {
                         Text(
                           'Visualize concepts in an interactive map',
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 14,
                             height: 1.4,
                           ),
@@ -108,39 +109,35 @@ class _MindMapSectionState extends State<MindMapSection> {
                   onPressed: widget.isLoading ? null : widget.onOpen,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 52),
-                    backgroundColor: const Color(0xFF1C1C1E),
+                    backgroundColor: colorScheme.surfaceVariant,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(26),
-                      side: BorderSide(
-                        color: const Color(0xFF2C2C2E),
-                        width: 1,
-                      ),
+                      side: BorderSide(color: colorScheme.outline, width: 1),
                     ),
-                    disabledBackgroundColor: const Color(
-                      0xFF1C1C1E,
-                    ).withOpacity(0.5),
+                    disabledBackgroundColor: colorScheme.surfaceVariant
+                        .withOpacity(0.5),
                   ),
                   icon: widget.isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            color: Colors.white,
+                            color: colorScheme.primary,
                           ),
                         )
                       : Icon(
                           Icons.hub_outlined,
-                          color: Colors.white.withOpacity(0.9),
+                          color: colorScheme.onSurface,
                           size: 22,
                         ),
                   label: Text(
                     widget.isLoading ? 'Generating...' : 'Generate Mind Map',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(
-                        widget.isLoading ? 0.5 : 0.9,
-                      ),
+                      color: widget.isLoading
+                          ? colorScheme.onSurface.withOpacity(0.5)
+                          : colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.2,

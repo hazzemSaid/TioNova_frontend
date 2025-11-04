@@ -6,11 +6,11 @@ class FolderTabs extends StatelessWidget {
   final ValueChanged<String> onTabSelected;
 
   const FolderTabs({
-    Key? key,
+    super.key,
     required this.tabs,
     required this.selectedTab,
     required this.onTabSelected,
-  }) : super(key: key);
+  });
 
   IconData _getTabIcon(String tab) {
     switch (tab) {
@@ -50,8 +50,14 @@ class FolderTabs extends StatelessWidget {
           final isLast = index == tabs.length - 1;
 
           return Expanded(
-            child: GestureDetector(
+            child: InkWell(
               onTap: () => onTabSelected(tab),
+              borderRadius: BorderRadius.horizontal(
+                left: isFirst ? const Radius.circular(12) : Radius.zero,
+                right: isLast ? const Radius.circular(12) : Radius.zero,
+              ),
+              splashColor: colorScheme.primary.withOpacity(0.1),
+              highlightColor: colorScheme.primary.withOpacity(0.05),
               child: Container(
                 decoration: BoxDecoration(
                   color: isSelected ? colorScheme.surface : Colors.transparent,
@@ -60,30 +66,33 @@ class FolderTabs extends StatelessWidget {
                     right: isLast ? const Radius.circular(12) : Radius.zero,
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _getTabIcon(tab),
-                      color: isSelected
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      tab,
-                      style: TextStyle(
-                        color: isSelected
-                            ? colorScheme.onSurface
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getTabIcon(tab),
+                        color: !isSelected
+                            ? colorScheme.primary
                             : colorScheme.onSurfaceVariant,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        fontSize: 13,
+                        size: 14,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        tab,
+                        style: TextStyle(
+                          color: isSelected
+                              ? colorScheme.onSurface
+                              : colorScheme.onSurfaceVariant,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

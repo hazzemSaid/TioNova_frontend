@@ -10,6 +10,7 @@ import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
+import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class CreateChallengeScreen extends StatefulWidget {
   final String? challengeName;
@@ -192,8 +193,10 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen> {
           );
         } else if (state is ChallengeError) {
           print('CreateChallengeScreen - Error: ${state.message}');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error!',
+            message: state.message,
           );
         }
       },

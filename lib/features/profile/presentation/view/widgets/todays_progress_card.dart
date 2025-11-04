@@ -61,7 +61,7 @@ class TodaysProgressCard extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
-              color: streakBackground,
+              color: colorScheme.surfaceVariant,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -72,7 +72,6 @@ class TodaysProgressCard extends StatelessWidget {
                   '$dayStreak',
                   style:
                       textTheme.headlineSmall?.copyWith(
-                        color: streakForeground,
                         fontWeight: FontWeight.w700,
                       ) ??
                       TextStyle(
@@ -90,11 +89,9 @@ class TodaysProgressCard extends StatelessWidget {
                         'Day Streak',
                         style:
                             textTheme.bodyMedium?.copyWith(
-                              color: streakForeground,
                               fontWeight: FontWeight.w600,
                             ) ??
                             TextStyle(
-                              color: streakForeground,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -102,14 +99,7 @@ class TodaysProgressCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         "Don't lose your streak!",
-                        style:
-                            textTheme.bodySmall?.copyWith(
-                              color: streakForeground.withOpacity(0.8),
-                            ) ??
-                            TextStyle(
-                              color: streakForeground.withOpacity(0.8),
-                              fontSize: 12,
-                            ),
+                        style: TextStyle(fontSize: 12),
                       ),
                     ],
                   ),
@@ -143,14 +133,7 @@ class TodaysProgressCard extends StatelessWidget {
               children: [
                 Text(
                   'Keep up the great work! 💪',
-                  style:
-                      textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ) ??
-                      TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 14,
-                      ),
+                  style: TextStyle(fontSize: 14),
                 ),
               ],
             ),

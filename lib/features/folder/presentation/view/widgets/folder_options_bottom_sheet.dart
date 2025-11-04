@@ -27,9 +27,10 @@ class FolderOptionsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1C1C1E),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SingleChildScrollView(
@@ -50,9 +51,9 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.close,
-                      color: Color(0xFF8E8E93),
+                      color: colorScheme.onSurfaceVariant,
                       size: 22,
                     ),
                   ),
@@ -67,10 +68,10 @@ class FolderOptionsBottomSheet extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2E),
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.folder, color: Colors.white, size: 40),
+              child: Icon(Icons.folder, color: colorScheme.onSurface, size: 40),
             ),
 
             const SizedBox(height: 16),
@@ -80,8 +81,8 @@ class FolderOptionsBottomSheet extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
                 folder.title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
@@ -95,15 +96,15 @@ class FolderOptionsBottomSheet extends StatelessWidget {
             const SizedBox(height: 6),
 
             // Private label
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.lock, color: Color(0xFF8E8E93), size: 14),
+                Icon(Icons.lock, color: colorScheme.onSurfaceVariant, size: 14),
                 SizedBox(width: 4),
                 Text(
                   'Private',
                   style: TextStyle(
-                    color: Color(0xFF8E8E93),
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                     letterSpacing: 0.1,
@@ -118,7 +119,7 @@ class FolderOptionsBottomSheet extends StatelessWidget {
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2E),
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -126,15 +127,15 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                   FolderOptionItem(
                     icon: Icons.edit_outlined,
                     label: 'Edit Folder',
-                    iconColor: const Color(0xFFFFFFFF),
-                    textColor: const Color(0xFFFFFFFF),
+                    iconColor: colorScheme.onSurface,
+                    textColor: colorScheme.onSurface,
                     onTap: () {
                       Navigator.pop(context);
                       onEdit();
                     },
                   ),
-                  const Divider(
-                    color: Color(0xFF3A3A3C),
+                  Divider(
+                    color: colorScheme.outline,
                     height: 1,
                     thickness: 0.5,
                     indent: 52,
@@ -142,15 +143,15 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                   FolderOptionItem(
                     icon: Icons.share_outlined,
                     label: 'Share Folder',
-                    iconColor: const Color(0xFF0A84FF),
-                    textColor: const Color(0xFFFFFFFF),
+                    iconColor: colorScheme.primary,
+                    textColor: colorScheme.onSurface,
                     onTap: () {
                       Navigator.pop(context);
                       onShare();
                     },
                   ),
-                  const Divider(
-                    color: Color(0xFF3A3A3C),
+                  Divider(
+                    color: colorScheme.outline,
                     height: 1,
                     thickness: 0.5,
                     indent: 52,
@@ -158,15 +159,15 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                   FolderOptionItem(
                     icon: Icons.content_copy_outlined,
                     label: 'Duplicate Folder',
-                    iconColor: const Color(0xFFBF5AF2),
-                    textColor: const Color(0xFFFFFFFF),
+                    iconColor: Color(0xFFBF5AF2),
+                    textColor: colorScheme.onSurface,
                     onTap: () {
                       Navigator.pop(context);
                       onDuplicate();
                     },
                   ),
-                  const Divider(
-                    color: Color(0xFF3A3A3C),
+                  Divider(
+                    color: colorScheme.outline,
                     height: 1,
                     thickness: 0.5,
                     indent: 52,
@@ -174,15 +175,15 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                   FolderOptionItem(
                     icon: Icons.picture_as_pdf_outlined,
                     label: 'Export as PDF',
-                    iconColor: const Color(0xFF32D74B),
-                    textColor: const Color(0xFFFFFFFF),
+                    iconColor: Colors.green,
+                    textColor: colorScheme.onSurface,
                     onTap: () {
                       Navigator.pop(context);
                       onExportPDF();
                     },
                   ),
-                  const Divider(
-                    color: Color(0xFF3A3A3C),
+                  Divider(
+                    color: colorScheme.outline,
                     height: 1,
                     thickness: 0.5,
                     indent: 52,
@@ -190,8 +191,8 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                   FolderOptionItem(
                     icon: Icons.archive_outlined,
                     label: 'Archive Folder',
-                    iconColor: const Color(0xFFFF9500),
-                    textColor: const Color(0xFFFFFFFF),
+                    iconColor: Colors.orange,
+                    textColor: colorScheme.onSurface,
                     onTap: () {
                       Navigator.pop(context);
                       onArchive();
@@ -207,14 +208,14 @@ class FolderOptionsBottomSheet extends StatelessWidget {
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2E),
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: FolderOptionItem(
                 icon: Icons.delete_outline,
                 label: 'Delete Folder',
-                iconColor: const Color(0xFFFF3B30),
-                textColor: const Color(0xFFFF3B30),
+                iconColor: colorScheme.error,
+                textColor: colorScheme.error,
                 onTap: () {
                   Navigator.pop(context);
                   onDelete();
@@ -230,7 +231,7 @@ class FolderOptionsBottomSheet extends StatelessWidget {
               width: double.infinity,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2E),
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextButton(
@@ -241,10 +242,10 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                   ),
                   padding: EdgeInsets.zero,
                 ),
-                child: const Text(
+                child: Text(
                   'Cancel',
                   style: TextStyle(
-                    color: Color(0xFFFFFFFF),
+                    color: colorScheme.onSurface,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.1,

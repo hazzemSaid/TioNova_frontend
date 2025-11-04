@@ -8,6 +8,7 @@ import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
+import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class SelectChapterScreen extends StatefulWidget {
   const SelectChapterScreen({super.key});
@@ -348,14 +349,12 @@ class _SelectChapterScreenState extends State<SelectChapterScreen> {
             },
           );
         } else if (state is ChallengeError) {
-          // Show error message
+          // Show error dialog
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Colors.red,
-              content: Text(state.message),
-              behavior: SnackBarBehavior.floating,
-            ),
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error!',
+            message: state.message,
           );
         }
       },
@@ -374,11 +373,10 @@ class _SelectChapterScreenState extends State<SelectChapterScreen> {
 
                       final authState = context.read<AuthCubit>().state;
                       if (authState is! AuthSuccess) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please login first'),
-                            backgroundColor: Colors.red,
-                          ),
+                        CustomDialogs.showErrorDialog(
+                          context,
+                          title: 'Authentication Required',
+                          message: 'Please login first',
                         );
                         return;
                       }

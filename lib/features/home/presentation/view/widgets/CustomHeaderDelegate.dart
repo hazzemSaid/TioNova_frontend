@@ -20,10 +20,10 @@ class CustomHeaderDelegate extends SliverPersistentHeaderDelegate {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDarkMode = theme.brightness == Brightness.dark;
     return SizedBox(
       height: maxHeight,
       child: Container(
-        color: colorScheme.surface,
         child: SafeArea(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
@@ -31,7 +31,9 @@ class CustomHeaderDelegate extends SliverPersistentHeaderDelegate {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Image.asset(
-                  'assets/images/logo2.png',
+                  !isDarkMode
+                      ? 'assets/images/logo1.png'
+                      : 'assets/images/logo2.png',
                   width: screenWidth * 0.25,
                   fit: BoxFit.contain,
                 ),

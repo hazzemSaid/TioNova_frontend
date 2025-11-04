@@ -5,6 +5,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
+import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
@@ -54,13 +55,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthSuccess) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please login first'),
-            backgroundColor: Colors.red,
-          ),
+        CustomDialogs.showErrorDialog(
+          context,
+          title: 'Authentication Required',
+          message: 'Please login first',
+          onPressed: () => context.pop(),
         );
-        context.pop();
       }
       return;
     }
@@ -85,18 +85,18 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           print('QR Scanner - Successfully joined challenge');
           context.go('/challenges/waiting/${_scannedCode}');
         } else if (state is ChallengeError) {
-          // Error - show message and allow rescan
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
+          // Error - show dialog and allow rescan
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error!',
+            message: state.message,
+            onPressed: () {
+              setState(() {
+                _isProcessing = false;
+                _scannedCode = null;
+              });
+            },
           );
-          setState(() {
-            _isProcessing = false;
-            _scannedCode = null;
-          });
         }
       },
       child: Scaffold(

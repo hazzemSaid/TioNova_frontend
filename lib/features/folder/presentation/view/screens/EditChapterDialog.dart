@@ -9,6 +9,7 @@ class EditChapterDialog extends StatelessWidget {
   final TextEditingController titleController;
   final TextEditingController descriptionController;
   const EditChapterDialog({
+    super.key,
     required this.chapter,
     required this.defaultcolors,
     required this.icons,
@@ -18,14 +19,19 @@ class EditChapterDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     // Make a dialog with the chapter title, description, and dropdown for the status
     return AlertDialog(
-      backgroundColor: const Color(0xFF0E0E10),
+      backgroundColor: colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFF1C1C1E)),
+        side: BorderSide(color: colorScheme.outline),
       ),
-      title: Text('Edit Chapter', style: TextStyle(color: Colors.white)),
+      title: Text(
+        'Edit Chapter',
+        style: TextStyle(color: colorScheme.onSurface),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -33,44 +39,44 @@ class EditChapterDialog extends StatelessWidget {
             TextField(
               controller: titleController,
               maxLines: 2,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: colorScheme.onSurface),
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.all(12),
                 labelText: 'Title',
-                labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Color(0xFF1C1C1E)),
+                  borderSide: BorderSide(color: colorScheme.outline),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.blue),
+                  borderSide: BorderSide(color: colorScheme.primary),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.red),
+                  borderSide: BorderSide(color: colorScheme.error),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
-                fillColor: const Color(0xFF1C1C1E),
+                fillColor: colorScheme.surfaceVariant,
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: descriptionController,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: colorScheme.onSurface),
               decoration: InputDecoration(
                 labelText: 'Description',
-                labelStyle: const TextStyle(color: Color(0xFF8E8E93)),
+                labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Color(0xFF1C1C1E)),
+                  borderSide: BorderSide(color: colorScheme.outline),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.blue),
+                  borderSide: BorderSide(color: colorScheme.primary),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
-                fillColor: const Color(0xFF1C1C1E),
+                fillColor: colorScheme.surfaceVariant,
               ),
               maxLines: 3,
             ),
@@ -81,15 +87,19 @@ class EditChapterDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel', style: TextStyle(color: Colors.white)),
+          child: Text('Cancel', style: TextStyle(color: colorScheme.onSurface)),
         ),
         ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+          ),
           onPressed: () {
             // Save logic here
             //logic to update the chapter
             Navigator.of(context).pop();
           },
-          child: Text('Save', style: TextStyle(color: Colors.black)),
+          child: Text('Save'),
         ),
       ],
     );

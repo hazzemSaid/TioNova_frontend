@@ -6,6 +6,7 @@ import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
+import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class EntercodeScreen extends StatefulWidget {
   const EntercodeScreen({super.key});
@@ -75,14 +76,12 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
             },
           );
         } else if (state is ChallengeError) {
-          // Show error message
+          // Show error dialog
           print('ChallengeError detected: ${state.message}');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Colors.red,
-              content: Text(state.message),
-              behavior: SnackBarBehavior.floating,
-            ),
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error!',
+            message: state.message,
           );
         }
       },
@@ -401,11 +400,10 @@ class _EntercodeScreenState extends State<EntercodeScreen> {
     final authState = context.read<AuthCubit>().state;
     print('Auth state: ${authState.runtimeType}');
     if (authState is! AuthSuccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please login first'),
-          backgroundColor: Colors.red,
-        ),
+      CustomDialogs.showErrorDialog(
+        context,
+        title: 'Authentication Required',
+        message: 'Please login first',
       );
       return;
     }

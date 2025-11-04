@@ -6,25 +6,32 @@ class CategoryFilter extends StatelessWidget {
   final ValueChanged<String> onCategorySelected;
 
   const CategoryFilter({
-    Key? key,
+    super.key,
     required this.categories,
     required this.selectedCategory,
     required this.onCategorySelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.tune, color: Color(0xFF8E8E93), size: 16),
+            Icon(
+              Icons.tune,
+              color: isDarkMode ? Color(0xFF8E8E93) : Colors.black,
+              size: 16,
+            ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Categories',
               style: TextStyle(
-                color: Color(0xFF8E8E93),
+                color: isDarkMode ? Color(0xFF8E8E93) : Colors.black,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -40,7 +47,7 @@ class CategoryFilter extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final category = categories[index];
-              final isSelected = category == selectedCategory;
+              final isSelected = category != selectedCategory;
 
               return GestureDetector(
                 onTap: () => onCategorySelected(category),
@@ -50,17 +57,24 @@ class CategoryFilter extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.white : const Color(0xFF1C1C1E),
+                    color: isSelected
+                        ? colorScheme.primaryContainer
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(16),
                     border: isSelected
                         ? null
-                        : Border.all(color: const Color(0xFF2C2C2E)),
+                        : Border.all(
+                            color: isDarkMode ? Colors.white : Colors.black,
+                            width: 1,
+                          ),
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     category,
                     style: TextStyle(
-                      color: isSelected ? Colors.black : Colors.white,
+                      color: isSelected
+                          ? colorScheme.onPrimaryContainer
+                          : (isDarkMode ? Colors.white : Colors.black),
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
                     ),

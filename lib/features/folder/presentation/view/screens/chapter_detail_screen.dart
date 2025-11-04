@@ -17,6 +17,7 @@ import 'package:tionova/features/folder/presentation/view/widgets/mind_map_secti
 import 'package:tionova/features/folder/presentation/view/widgets/notes_section.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/quiz_chatbot_tabs.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/quiz_content.dart';
+import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class ChapterDetailScreen extends StatefulWidget {
   final ChapterModel chapter;
@@ -121,11 +122,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
     try {
       final token = await TokenStorage.getAccessToken();
       if (token == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Authentication required'),
-            backgroundColor: Colors.red,
-          ),
+        CustomDialogs.showErrorDialog(
+          context,
+          title: 'Error!',
+          message: 'Authentication required',
         );
         return;
       }
@@ -137,11 +137,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
         chapterTitle: widget.chapter.title,
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate summary: $e'),
-          backgroundColor: Colors.red,
-        ),
+      CustomDialogs.showErrorDialog(
+        context,
+        title: 'Error!',
+        message: 'Failed to generate summary: $e',
       );
     }
   }
@@ -176,11 +175,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
     try {
       final token = await TokenStorage.getAccessToken();
       if (token == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Authentication required'),
-            backgroundColor: Colors.red,
-          ),
+        CustomDialogs.showErrorDialog(
+          context,
+          title: 'Error!',
+          message: 'Authentication required',
         );
         return;
       }
@@ -198,11 +196,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       setState(() {
         _isMindmapLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate mindmap: $e'),
-          backgroundColor: Colors.red,
-        ),
+      CustomDialogs.showErrorDialog(
+        context,
+        title: 'Error!',
+        message: 'Failed to generate mindmap: $e',
       );
     }
   }
@@ -229,11 +226,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           );
 
           if (success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('PDF downloaded from cache'),
-                backgroundColor: Colors.green,
-              ),
+            CustomDialogs.showSuccessDialog(
+              context,
+              title: 'Success!',
+              message: 'PDF downloaded from cache',
             );
           }
           return;
@@ -244,11 +240,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       print('Fetching PDF from API for download');
       final token = await TokenStorage.getAccessToken();
       if (token == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Authentication required'),
-            backgroundColor: Colors.red,
-          ),
+        CustomDialogs.showErrorDialog(
+          context,
+          title: 'Error!',
+          message: 'Authentication required',
         );
         return;
       }
@@ -257,8 +252,11 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) =>
-            const Center(child: CircularProgressIndicator(color: Colors.white)),
+        builder: (context) => Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
       );
 
       // Fetch PDF content using the cubit
@@ -269,11 +267,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       );
     } catch (e) {
       Navigator.of(context).pop(); // Close loading dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Download failed: $e'),
-          backgroundColor: Colors.red,
-        ),
+      CustomDialogs.showErrorDialog(
+        context,
+        title: 'Error!',
+        message: 'Download failed: $e',
       );
     }
   }
@@ -303,13 +300,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           setState(() {
             _isMindmapLoading = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Failed to generate mindmap: ${state.message.errMessage}',
-              ),
-              backgroundColor: Colors.red,
-            ),
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error!',
+            message: 'Failed to generate mindmap: ${state.message.errMessage}',
           );
         }
         // Handle PDF download
@@ -338,11 +332,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           // Only close dialog and show error when it was a download request
           if (state.forDownload) {
             Navigator.of(context).pop(); // Close loading dialog
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Download failed: ${state.message.errMessage}'),
-                backgroundColor: Colors.red,
-              ),
+            CustomDialogs.showErrorDialog(
+              context,
+              title: 'Error!',
+              message: 'Download failed: ${state.message.errMessage}',
             );
           }
         } else if (state is SummaryCachedFound) {
@@ -350,11 +343,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             _isSummaryLoading = false;
             _summaryData = state.summaryData;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Summary loaded from cache (${state.cacheAge})'),
-              backgroundColor: Colors.blue,
-            ),
+          CustomDialogs.showInfoDialog(
+            context,
+            title: 'Cache',
+            message: 'Summary loaded from cache (${state.cacheAge})',
           );
         } else if (state is GenerateSummaryLoading ||
             state is SummaryRegenerateLoading) {
@@ -376,8 +368,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           final message = state is SummaryRegenerateSuccess
               ? 'Summary regenerated successfully!'
               : 'Summary generated successfully!';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message), backgroundColor: Colors.green),
+          CustomDialogs.showSuccessDialog(
+            context,
+            title: 'Success!',
+            message: message,
           );
         } else if (state is SummaryCachedFound) {
           setState(() {
@@ -386,11 +380,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             _rawSummaryText =
                 null; // Clear raw text when we get cached structured data
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Found cached summary (${state.cacheAge})'),
-              backgroundColor: Colors.blue,
-            ),
+          CustomDialogs.showInfoDialog(
+            context,
+            title: 'Cache',
+            message: 'Found cached summary (${state.cacheAge})',
           );
         } else if (state is GenerateSummarySuccess) {
           setState(() {
@@ -398,28 +391,23 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             _rawSummaryText = state.summary; // Store the raw text summary
             _summaryData = null; // Clear structured data when we get raw text
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Summary generated (text format)'),
-              backgroundColor: Colors.orange,
-            ),
+          CustomDialogs.showInfoDialog(
+            context,
+            title: 'Info',
+            message: 'Summary generated (text format)',
           );
         } else if (state is GenerateSummaryError) {
           setState(() {
             _isSummaryLoading = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Failed to generate summary: ${state.message.errMessage}',
-              ),
-              backgroundColor: Colors.red,
-            ),
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error!',
+            message: 'Failed to generate summary: ${state.message.errMessage}',
           );
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA), // Light background
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: isWeb ? _buildWebLayout() : _buildMobileLayout(),
@@ -1174,14 +1162,11 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                                 );
                                               } else {
                                                 if (!mounted) return;
-                                                ScaffoldMessenger.of(
+                                                CustomDialogs.showErrorDialog(
                                                   context,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
+                                                  title: 'Error!',
+                                                  message:
                                                       'Please login to take the quiz',
-                                                    ),
-                                                  ),
                                                 );
                                               }
                                             },
@@ -1222,14 +1207,11 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                         OutlinedButton(
                                           onPressed: () {
                                             // Practice mode - can be implemented later
-                                            ScaffoldMessenger.of(
+                                            CustomDialogs.showInfoDialog(
                                               context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
+                                              title: 'Info',
+                                              message:
                                                   'Practice mode coming soon!',
-                                                ),
-                                              ),
                                             );
                                           },
                                           style: OutlinedButton.styleFrom(
@@ -1262,14 +1244,11 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                                 await TokenStorage.getAccessToken();
                                             if (!mounted) return;
                                             if (token == null) {
-                                              ScaffoldMessenger.of(
+                                              CustomDialogs.showErrorDialog(
                                                 context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
+                                                title: 'Error!',
+                                                message:
                                                     'Please login to view history',
-                                                  ),
-                                                ),
                                               );
                                               return;
                                             }

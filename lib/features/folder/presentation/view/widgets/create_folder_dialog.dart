@@ -77,12 +77,14 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
 
   @override
   Widget build(BuildContext context) {
-  final canCreate = _nameCtrl.text.trim().isNotEmpty;
-  _token ??= context.read<AuthCubit>().state is AuthSuccess
-    ? (context.read<AuthCubit>().state as AuthSuccess).token
-    : null;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final canCreate = _nameCtrl.text.trim().isNotEmpty;
+    _token ??= context.read<AuthCubit>().state is AuthSuccess
+        ? (context.read<AuthCubit>().state as AuthSuccess).token
+        : null;
 
-  return BlocListener<FolderCubit, FolderState>(
+    return BlocListener<FolderCubit, FolderState>(
       listener: (context, state) {
         if (state is CreateFolderSuccess) {
           // Close the dialog with success result
@@ -94,7 +96,7 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error: ${state.message.errMessage}'),
-              backgroundColor: Colors.red,
+              backgroundColor: colorScheme.error,
             ),
           );
         }
@@ -110,9 +112,9 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
             ),
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF121214),
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF2C2C2E), width: 1),
+                border: Border.all(color: colorScheme.outline, width: 1),
               ),
               clipBehavior: Clip.antiAlias,
               child: Material(
@@ -134,7 +136,6 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                                 child: Text(
                                   'Create New Folder',
                                   style: TextStyle(
-                                    color: Colors.white,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -209,25 +210,43 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                                     GestureDetector(
                                       onTap: _openShareWithDialog,
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF232325),
-                                          borderRadius: BorderRadius.circular(10),
-                                          border: Border.all(color: Color(0xFF2C2C2E)),
+                                          color: colorScheme.surfaceContainer,
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          border: Border.all(
+                                            color: colorScheme.outline,
+                                          ),
                                         ),
                                         child: Row(
                                           children: [
-                                            const Icon(Icons.person_add, color: Color(0xFF8E8E93)),
+                                            Icon(
+                                              Icons.person_add,
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
                                             const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
                                                 _sharedUserIds.isEmpty
                                                     ? 'Select users to share with'
                                                     : '${_sharedUserIds.length} user(s) selected',
-                                                style: const TextStyle(color: Colors.white, fontSize: 14),
+                                                style: TextStyle(
+                                                  color: colorScheme.onSurface,
+                                                  fontSize: 14,
+                                                ),
                                               ),
                                             ),
-                                            const Icon(Icons.chevron_right, color: Color(0xFF8E8E93)),
+                                            Icon(
+                                              Icons.chevron_right,
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -272,27 +291,47 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                                       enabled: canCreate && !isLoading,
                                       onTap: canCreate && !isLoading
                                           ? () {
-                                              final authState = context.read<AuthCubit>().state;
+                                              final authState = context
+                                                  .read<AuthCubit>()
+                                                  .state;
                                               if (authState is AuthSuccess) {
                                                 final status =
-                                                    _privacy == FolderPrivacy.private
-                                                        ? Status.private
-                                                        : Status.public;
-                                                context.read<FolderCubit>().createfolder(
-                                                  title: _nameCtrl.text.trim(),
-                                                  description: _descCtrl.text.trim(),
-                                                  category: 'General',
-                                                  token: authState.token,
-                                                  status: status,
-                                                  icon: _selectedIcon.toString(),
-                                                  color: '#${_colors[_selectedColor].value.toRadixString(16).padLeft(8, '0').substring(2)}',
-                                                  sharedWith: _privacy == FolderPrivacy.shared ? _sharedUserIds : null,
-                                                );
+                                                    _privacy ==
+                                                        FolderPrivacy.private
+                                                    ? Status.private
+                                                    : Status.public;
+                                                context
+                                                    .read<FolderCubit>()
+                                                    .createfolder(
+                                                      title: _nameCtrl.text
+                                                          .trim(),
+                                                      description: _descCtrl
+                                                          .text
+                                                          .trim(),
+                                                      category: 'General',
+                                                      token: authState.token,
+                                                      status: status,
+                                                      icon: _selectedIcon
+                                                          .toString(),
+                                                      color:
+                                                          '#${_colors[_selectedColor].value.toRadixString(16).padLeft(8, '0').substring(2)}',
+                                                      sharedWith:
+                                                          _privacy ==
+                                                              FolderPrivacy
+                                                                  .shared
+                                                          ? _sharedUserIds
+                                                          : null,
+                                                    );
                                               } else {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text('Authentication required'),
-                                                    backgroundColor: Colors.red,
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Authentication required',
+                                                    ),
+                                                    backgroundColor:
+                                                        colorScheme.error,
                                                   ),
                                                 );
                                                 Navigator.of(context).pop();
@@ -319,12 +358,14 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
   }
 
   Widget _previewCard() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2C2C2E)),
+        border: Border.all(color: colorScheme.outline),
       ),
       child: Row(
         children: [
@@ -344,8 +385,8 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
               children: [
                 Text(
                   _nameCtrl.text.isEmpty ? 'Folder Name' : _nameCtrl.text,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -355,8 +396,8 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                   _descCtrl.text.isEmpty
                       ? 'Folder description'
                       : _descCtrl.text,
-                  style: const TextStyle(
-                    color: Color(0xFF8E8E93),
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: 12,
                   ),
                   maxLines: 1,
@@ -370,39 +411,43 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
     );
   }
 
-  Widget _label(String text) => Text(
-    text,
-    style: const TextStyle(
-      color: Colors.white,
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-    ),
-  );
+  Widget _label(String text) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Text(
+      text,
+      style: TextStyle(
+        color: colorScheme.onSurface,
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 
   Widget _textField(
     TextEditingController ctrl, {
     required String hint,
     ValueChanged<String>? onChanged,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return TextField(
       controller: ctrl,
       onChanged: onChanged,
-      style: const TextStyle(color: Colors.white, fontSize: 14),
+      style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Color(0xFF8E8E93)),
+        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
         filled: true,
-        fillColor: const Color(0xFF111113),
+        fillColor: colorScheme.surfaceContainerHighest,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
         ),
         enabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Color(0xFF2C2C2E)),
+          borderSide: BorderSide(color: colorScheme.outline),
           borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Color(0xFF007AFF)),
+          borderSide: BorderSide(color: colorScheme.primary),
           borderRadius: BorderRadius.circular(12),
         ),
       ),
@@ -410,6 +455,7 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
   }
 
   Widget _iconGrid() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -421,16 +467,14 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF111113),
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: selected
-                    ? const Color(0xFF007AFF)
-                    : const Color(0xFF2C2C2E),
+                color: selected ? colorScheme.primary : colorScheme.outline,
                 width: selected ? 1.4 : 1,
               ),
             ),
-            child: Icon(_icons[i], color: Colors.white, size: 20),
+            child: Icon(_icons[i], color: colorScheme.onSurface, size: 20),
           ),
         );
       }),
@@ -438,6 +482,7 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
   }
 
   Widget _colorRow() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -452,9 +497,7 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
               color: _colors[i].withOpacity(0.22),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: selected
-                    ? const Color(0xFF007AFF)
-                    : const Color(0xFF2C2C2E),
+                color: selected ? colorScheme.primary : colorScheme.outline,
                 width: selected ? 1.4 : 1,
               ),
             ),
@@ -480,16 +523,17 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
     required String subtitle,
     required FolderPrivacy value,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     final selected = _privacy == value;
     return GestureDetector(
       onTap: () => setState(() => _privacy = value),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E0E10),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? const Color(0xFF3A3A3C) : const Color(0xFF2C2C2E),
+            color: selected ? colorScheme.primary : colorScheme.outline,
             width: 1,
           ),
         ),
@@ -499,10 +543,10 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2E),
+                color: colorScheme.surfaceContainer,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: Colors.white, size: 18),
+              child: Icon(icon, color: colorScheme.onSurface, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -511,8 +555,8 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -520,8 +564,8 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF8E8E93),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 12,
                     ),
                   ),
@@ -529,11 +573,15 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
               ),
             ),
             if (selected)
-              const Icon(Icons.check_circle, color: Colors.white, size: 18)
+              Icon(
+                Icons.check_circle,
+                color: colorScheme.onPrimaryContainer,
+                size: 18,
+              )
             else
-              const Icon(
+              Icon(
                 Icons.radio_button_unchecked,
-                color: Color(0xFF6A6A6A),
+                color: colorScheme.onSurfaceVariant,
                 size: 18,
               ),
           ],
@@ -543,35 +591,37 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
   }
 
   Widget _iconButton({required IconData icon, VoidCallback? onTap}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
+          color: colorScheme.surfaceContainer,
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: Colors.white, size: 16),
+        child: Icon(icon, color: colorScheme.onSurface, size: 16),
       ),
     );
   }
 
   Widget _outlinedButton({required String label, VoidCallback? onTap}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
+          color: colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2C2C2E)),
+          border: Border.all(color: colorScheme.outline),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 16,
           ),
@@ -585,8 +635,9 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
     bool enabled = true,
     VoidCallback? onTap,
   }) {
-    final bg = enabled ? Colors.white : const Color(0xFF3A3A3C);
-    final fg = enabled ? Colors.black : const Color(0xFF8E8E93);
+    final colorScheme = Theme.of(context).colorScheme;
+    final bg = enabled ? colorScheme.primary : colorScheme.surfaceVariant;
+    final fg = enabled ? colorScheme.onPrimary : colorScheme.onSurfaceVariant;
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(

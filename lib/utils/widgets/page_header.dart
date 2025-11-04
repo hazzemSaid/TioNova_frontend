@@ -14,6 +14,10 @@ class PageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -23,8 +27,8 @@ class PageHeader extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black,
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
               ),
@@ -33,7 +37,12 @@ class PageHeader extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 subtitle!,
-                style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+                style: TextStyle(
+                  color: isDarkMode
+                      ? Color(0xFF8E8E93)
+                      : Color.fromARGB(255, 68, 68, 69).withOpacity(0.8),
+                  fontSize: 14,
+                ),
               ),
             ],
           ],

@@ -23,7 +23,7 @@ class CustomSearchBar extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
+        color: theme.scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(borderRadius),
       ),
       child: TextField(
@@ -57,7 +57,6 @@ class CustomSearchBar extends StatelessWidget {
           ),
           contentPadding: contentPadding,
           filled: true,
-          fillColor: Colors.transparent,
           isDense: true,
         ),
       ),

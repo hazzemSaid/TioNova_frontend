@@ -5,36 +5,45 @@ class StudyStats extends StatelessWidget {
   final int totalChaptersCount;
 
   const StudyStats({
-    Key? key,
+    super.key,
     required this.myFoldersCount,
     required this.totalChaptersCount,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Study Stats',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+            style: textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary),
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatItem(myFoldersCount.toString(), 'My Folders'),
-              _buildStatItem(totalChaptersCount.toString(), 'Total Chapters'),
+              _buildStatItem(
+                myFoldersCount.toString(),
+                'My Folders',
+                textTheme,
+                colorScheme,
+              ),
+              _buildStatItem(
+                totalChaptersCount.toString(),
+                'Total Chapters',
+                textTheme,
+                colorScheme,
+              ),
             ],
           ),
         ],
@@ -42,21 +51,50 @@ class StudyStats extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String count, String label) {
+  Widget _buildStatItem(
+    String count,
+    String label,
+    dynamic textTheme,
+    dynamic colorScheme,
+  ) {
     return Column(
       children: [
         Text(
           count,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 32,
-          ),
+          style: textTheme.titleLarge?.copyWith(color: colorScheme.onSurface),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
+        ),
+      ],
+    );
+  }
+}
+
+class StudyStatItem extends StatelessWidget {
+  final String count;
+  final String label;
+
+  const StudyStatItem({Key? key, required this.count, required this.label})
+    : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      children: [
+        Text(
+          count,
+          style: textTheme.titleLarge?.copyWith(color: colorScheme.onSurface),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
         ),
       ],
     );

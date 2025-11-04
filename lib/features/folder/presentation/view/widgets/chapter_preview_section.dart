@@ -16,12 +16,13 @@ class ChapterPreviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
+        border: Border.all(color: colorScheme.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,10 +32,10 @@ class ChapterPreviewSection extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Chapter Preview',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -43,8 +44,8 @@ class ChapterPreviewSection extends StatelessWidget {
                   children: [
                     Text(
                       '${chapter.quizScore ?? 0} pages',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 14,
                       ),
                     ),
@@ -66,9 +67,9 @@ class ChapterPreviewSection extends StatelessWidget {
               height: 200,
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E),
+                color: colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1C1C1E)),
+                border: Border.all(color: colorScheme.outline),
               ),
               child: Center(
                 child: Column(
@@ -78,20 +79,20 @@ class ChapterPreviewSection extends StatelessWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2C2C2E),
+                        color: colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         Icons.description_outlined,
                         size: 24,
-                        color: Colors.white.withOpacity(0.7),
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'PDF Preview',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -100,7 +101,7 @@ class ChapterPreviewSection extends StatelessWidget {
                     Text(
                       'Tap to view full document',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 14,
                       ),
                     ),
@@ -113,16 +114,26 @@ class ChapterPreviewSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
               children: [
-                Icon(Icons.access_time, size: 16, color: Colors.grey[500]),
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Last opened',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
                 const Spacer(),
                 Text(
                   formatDate(chapter.createdAt),
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -133,21 +144,21 @@ class ChapterPreviewSection extends StatelessWidget {
               onPressed: onDownloadPDF,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
-                backgroundColor: const Color(0xFF1C1C1E),
+                backgroundColor: colorScheme.surfaceVariant,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(26),
                 ),
               ),
-              icon: const Icon(
+              icon: Icon(
                 Icons.download_outlined,
-                color: Colors.white,
+                color: colorScheme.onSurface,
                 size: 20,
               ),
-              label: const Text(
+              label: Text(
                 'Download PDF',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: colorScheme.onSurface,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

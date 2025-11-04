@@ -39,6 +39,7 @@ class FolderDetailScreen extends StatelessWidget {
     final isWeb = screenWidth > 900;
     final isTablet = screenWidth > 600;
     final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return BlocProvider(
       create: (_) => getIt<ChapterCubit>(),
@@ -58,12 +59,16 @@ class FolderDetailScreen extends StatelessWidget {
             }
           });
 
-          // Folder feature uses light mode styling
           return Scaffold(
-            backgroundColor: const Color(0xFFF8F9FA), // Light background
+            backgroundColor: colorScheme.surface,
             body: isWeb
-                ? _buildWebLayout(context, token)
-                : _buildMobileLayout(context, token, horizontalPadding),
+                ? _buildWebLayout(context, token, colorScheme)
+                : _buildMobileLayout(
+                    context,
+                    token,
+                    horizontalPadding,
+                    colorScheme,
+                  ),
           );
         },
       ),
@@ -74,6 +79,7 @@ class FolderDetailScreen extends StatelessWidget {
     BuildContext context,
     String token,
     double horizontalPadding,
+    ColorScheme colorScheme,
   ) {
     return ScrollConfiguration(
       behavior: NoGlowScrollBehavior(),
@@ -98,20 +104,20 @@ class FolderDetailScreen extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colorScheme.surface,
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                        border: Border.all(color: colorScheme.outline),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: colorScheme.shadow.withOpacity(0.05),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new,
-                        color: Color(0xFF0C0A1F),
+                        color: colorScheme.onSurface,
                         size: 16,
                       ),
                     ),
@@ -124,8 +130,8 @@ class FolderDetailScreen extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
-                            color: Color(0xFF0C0A1F),
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
                           ),
@@ -133,8 +139,8 @@ class FolderDetailScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           subtitle,
-                          style: const TextStyle(
-                            color: Color(0xFF6B7280),
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
                           ),
@@ -151,20 +157,20 @@ class FolderDetailScreen extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colorScheme.surface,
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                        border: Border.all(color: colorScheme.outline),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: colorScheme.shadow.withOpacity(0.05),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.share,
-                        color: Color(0xFF0C0A1F),
+                        color: colorScheme.onSurface,
                         size: 16,
                       ),
                     ),
@@ -218,15 +224,15 @@ class FolderDetailScreen extends StatelessWidget {
                     height: 44,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0E0E10),
+                      color: colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: const Color(0xFF1C1C1E)),
+                      border: Border.all(color: colorScheme.outline),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'Add Chapter',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colorScheme.onSurface,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -257,7 +263,7 @@ class FolderDetailScreen extends StatelessWidget {
                   child: Center(
                     child: Text(
                       'Failed to load chapters: ${state.message}',
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(color: colorScheme.error),
                     ),
                   ),
                 );
@@ -266,7 +272,7 @@ class FolderDetailScreen extends StatelessWidget {
                   child: Center(
                     child: Text(
                       'No chapters found',
-                      style: const TextStyle(color: Colors.white70),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   ),
                 );
@@ -278,7 +284,11 @@ class FolderDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWebLayout(BuildContext context, String token) {
+  Widget _buildWebLayout(
+    BuildContext context,
+    String token,
+    ColorScheme colorScheme,
+  ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final maxWidth = 1400.0;
     final horizontalPadding = (screenWidth - maxWidth) / 2;
@@ -307,13 +317,13 @@ class FolderDetailScreen extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0E0E10),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF1C1C1E)),
+                        border: Border.all(color: colorScheme.outline),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new,
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         size: 18,
                       ),
                     ),
@@ -326,8 +336,8 @@ class FolderDetailScreen extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
                           ),
@@ -335,8 +345,8 @@ class FolderDetailScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           subtitle,
-                          style: const TextStyle(
-                            color: Color(0xFF8E8E93),
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
                           ),
@@ -353,13 +363,13 @@ class FolderDetailScreen extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0E0E10),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF1C1C1E)),
+                        border: Border.all(color: colorScheme.outline),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.share,
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         size: 18,
                       ),
                     ),
@@ -487,7 +497,7 @@ class FolderDetailScreen extends StatelessWidget {
                   child: Center(
                     child: Text(
                       'Failed to load chapters: ${state.message}',
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(color: colorScheme.error),
                     ),
                   ),
                 );
@@ -496,7 +506,7 @@ class FolderDetailScreen extends StatelessWidget {
                   child: Center(
                     child: Text(
                       'No chapters found',
-                      style: const TextStyle(color: Colors.white70),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   ),
                 );
@@ -511,35 +521,40 @@ class FolderDetailScreen extends StatelessWidget {
   }
 
   Widget _buildStatCard(String title, String value) {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1C1C1E)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-            ),
+    return Builder(
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return Container(
+          height: 80,
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outline),
           ),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Color(0xFF8E8E93),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -547,6 +562,7 @@ class FolderDetailScreen extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
@@ -573,9 +589,9 @@ class FolderDetailScreen extends StatelessWidget {
         ),
         padding: EdgeInsets.all(isTablet ? 20 : 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E0E10),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF1C1C1E)),
+          border: Border.all(color: colorScheme.outline),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,8 +602,8 @@ class FolderDetailScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     chapter.title ?? 'Untitled Chapter',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -600,8 +616,8 @@ class FolderDetailScreen extends StatelessWidget {
             // Description
             Text(
               chapter.description ?? 'No description available',
-              style: const TextStyle(
-                color: Color(0xFF8E8E93),
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
               ),
@@ -613,8 +629,8 @@ class FolderDetailScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Chapter • Created ${_formatDate(chapter.createdAt)}',
-                    style: const TextStyle(
-                      color: Color(0xFF8E8E93),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
                     ),
@@ -667,27 +683,32 @@ class FolderDetailScreen extends StatelessWidget {
   }
 
   Widget _buildActionButton(String label, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 12),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
+    return Builder(
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceVariant,
+            borderRadius: BorderRadius.circular(6),
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: colorScheme.onSurface, size: 12),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -702,6 +723,7 @@ class FolderDetailScreen extends StatelessWidget {
   }
 
   Widget _buildWebChapterCard(BuildContext context, ChapterModel chapter) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
@@ -722,9 +744,9 @@ class FolderDetailScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E0E10),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF1C1C1E)),
+          border: Border.all(color: colorScheme.outline),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -736,8 +758,8 @@ class FolderDetailScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     chapter.title ?? 'Untitled Chapter',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
@@ -754,8 +776,8 @@ class FolderDetailScreen extends StatelessWidget {
             Expanded(
               child: Text(
                 chapter.description ?? 'No description available',
-                style: const TextStyle(
-                  color: Color(0xFF8E8E93),
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                 ),
@@ -770,8 +792,8 @@ class FolderDetailScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Created ${_formatDate(chapter.createdAt)}',
-                    style: const TextStyle(
-                      color: Color(0xFF8E8E93),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
                     ),
@@ -793,27 +815,32 @@ class FolderDetailScreen extends StatelessWidget {
   }
 
   Widget _buildWebActionButton(String label, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 14),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+    return Builder(
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceVariant,
+            borderRadius: BorderRadius.circular(8),
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: colorScheme.onSurface, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -824,9 +851,10 @@ class ShowChapterOptionsBottomSheet {
   ShowChapterOptionsBottomSheet({required this.chapter});
 
   void show(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0E0E10),
+      backgroundColor: colorScheme.surfaceContainerHighest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -840,14 +868,14 @@ class ShowChapterOptionsBottomSheet {
               height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: const Color(0xFF636366),
+                color: colorScheme.onSurfaceVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             Text(
               chapter.title ?? 'Untitled Chapter',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colorScheme.onSurface,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),

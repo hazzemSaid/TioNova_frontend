@@ -78,6 +78,8 @@ class _BottomNavItemState extends State<BottomNavItem>
   @override
   Widget build(BuildContext context) {
     final isSelected = widget.currentIndex == widget.index;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return AnimatedBuilder(
       animation: _animationController,
@@ -87,19 +89,21 @@ class _BottomNavItemState extends State<BottomNavItem>
           child: InkWell(
             onTap: _handleTap,
             borderRadius: BorderRadius.circular(12),
-            splashColor: const Color(0xFF3C3C3E),
-            highlightColor: const Color(0xFF3C3C3E).withOpacity(0.3),
+            splashColor: colorScheme.surfaceVariant.withOpacity(0.5),
+            highlightColor: colorScheme.surfaceVariant.withOpacity(0.3),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: isSelected
                   ? BoxDecoration(
-                      color: const Color(0xFF2C2C2E),
+                      color: colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
                     )
                   : null,
               child: Icon(
                 widget.icon,
-                color: isSelected ? Colors.white : const Color(0xFF8E8E93),
+                color: isSelected
+                    ? colorScheme.onPrimaryContainer
+                    : colorScheme.onSurfaceVariant,
                 size: 26,
               ),
             ),

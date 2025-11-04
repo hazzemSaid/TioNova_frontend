@@ -146,6 +146,9 @@ class _FolderScreenState extends State<FolderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
@@ -153,9 +156,9 @@ class _FolderScreenState extends State<FolderScreen> {
     final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
     final verticalSpacing = screenHeight * 0.02;
 
-    // Folder feature uses light mode styling
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Light background
+      backgroundColor: theme.scaffoldBackgroundColor,
+
       body: SafeArea(
         child: ScrollConfiguration(
           behavior: const NoGlowScrollBehavior(),
@@ -173,7 +176,7 @@ class _FolderScreenState extends State<FolderScreen> {
                           child: CircularProgressIndicator(
                             strokeWidth: isTablet ? 2.5 : 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                              colorScheme.onPrimary,
                             ),
                           ),
                         ),
@@ -182,7 +185,7 @@ class _FolderScreenState extends State<FolderScreen> {
                       ],
                     ),
                     behavior: SnackBarBehavior.floating,
-                    backgroundColor: Colors.blue,
+                    backgroundColor: colorScheme.primary,
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -192,7 +195,11 @@ class _FolderScreenState extends State<FolderScreen> {
                   SnackBar(
                     content: Row(
                       children: [
-                        Icon(Icons.check_circle, color: Colors.white, size: 16),
+                        Icon(
+                          Icons.check_circle,
+                          color: colorScheme.onPrimary,
+                          size: 16,
+                        ),
                         SizedBox(width: 8),
                         Text('Folder updated successfully'),
                       ],
@@ -208,7 +215,11 @@ class _FolderScreenState extends State<FolderScreen> {
                   SnackBar(
                     content: Row(
                       children: [
-                        Icon(Icons.check_circle, color: Colors.white, size: 16),
+                        Icon(
+                          Icons.check_circle,
+                          color: colorScheme.onPrimary,
+                          size: 16,
+                        ),
                         SizedBox(width: 8),
                         Text('Folder deleted successfully'),
                       ],
@@ -224,7 +235,7 @@ class _FolderScreenState extends State<FolderScreen> {
                   SnackBar(
                     content: Row(
                       children: [
-                        Icon(Icons.error, color: Colors.white, size: 16),
+                        Icon(Icons.error, color: colorScheme.onError, size: 16),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -236,11 +247,11 @@ class _FolderScreenState extends State<FolderScreen> {
                       ],
                     ),
                     behavior: SnackBarBehavior.floating,
-                    backgroundColor: Colors.red,
+                    backgroundColor: colorScheme.error,
                     duration: Duration(seconds: 4),
                     action: SnackBarAction(
                       label: 'Retry',
-                      textColor: Colors.white,
+                      textColor: colorScheme.onError,
                       onPressed: () {
                         // Auto-refresh folders after error
                         _fetchFolders();
@@ -254,7 +265,7 @@ class _FolderScreenState extends State<FolderScreen> {
                   SnackBar(
                     content: Row(
                       children: [
-                        Icon(Icons.error, color: Colors.white, size: 16),
+                        Icon(Icons.error, color: colorScheme.onError, size: 16),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -266,11 +277,11 @@ class _FolderScreenState extends State<FolderScreen> {
                       ],
                     ),
                     behavior: SnackBarBehavior.floating,
-                    backgroundColor: Colors.red,
+                    backgroundColor: colorScheme.error,
                     duration: Duration(seconds: 4),
                     action: SnackBarAction(
                       label: 'Retry',
-                      textColor: Colors.white,
+                      textColor: colorScheme.onError,
                       onPressed: () {
                         // Auto-refresh folders after error
                         _fetchFolders();
@@ -317,12 +328,7 @@ class _FolderScreenState extends State<FolderScreen> {
                             final result = await showDialog<dynamic>(
                               context: context,
                               barrierDismissible: true,
-                              barrierColor: Colors.black.withValues(
-                                alpha: 153,
-                                red: 0,
-                                green: 0,
-                                blue: 0,
-                              ),
+                              barrierColor: Colors.black.withOpacity(0.5),
                               builder: (dialogContext) => BlocProvider(
                                 create: (dialogContext) => FolderCubit(
                                   getAllFolderUseCase:
@@ -369,9 +375,7 @@ class _FolderScreenState extends State<FolderScreen> {
                   ),
                   if (state is FolderLoading)
                     const SliverFillRemaining(
-                      child: Center(
-                        child: CircularProgressIndicator(color: Colors.blue),
-                      ),
+                      child: Center(child: CircularProgressIndicator()),
                     )
                   else if (state is FolderError)
                     SliverFillRemaining(
@@ -380,15 +384,15 @@ class _FolderScreenState extends State<FolderScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.error_outline,
-                                color: Colors.red,
+                                color: colorScheme.error,
                                 size: 48,
                               ),
                               const SizedBox(height: 16),
-                              const Text(
+                              Text(
                                 'Failed to load folders',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(color: colorScheme.onSurface),
                               ),
                               TextButton(
                                 onPressed: () {
@@ -411,7 +415,7 @@ class _FolderScreenState extends State<FolderScreen> {
                       onFolderLongPress: (context, folder, color) {
                         showModalBottomSheet(
                           context: context,
-                          backgroundColor: const Color(0xFF1C1C1E),
+                          backgroundColor: colorScheme.surfaceContainerHighest,
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.vertical(
                               top: Radius.circular(24),
@@ -444,11 +448,11 @@ class _FolderScreenState extends State<FolderScreen> {
                       },
                     )
                   else
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       child: Center(
                         child: Text(
                           'No folders available',
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: colorScheme.onSurfaceVariant),
                         ),
                       ),
                     ),

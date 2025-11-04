@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
+import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class QuizContent extends StatelessWidget {
   final String? chapterId;
@@ -62,10 +63,10 @@ class QuizContent extends StatelessWidget {
                   );
                 } else {
                   if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please login to take the quiz'),
-                    ),
+                  CustomDialogs.showErrorDialog(
+                    context,
+                    title: 'Error!',
+                    message: 'Please login to take the quiz',
                   );
                 }
               },
@@ -113,10 +114,10 @@ class QuizContent extends StatelessWidget {
                       final token = await TokenStorage.getAccessToken();
                       if (!context.mounted) return;
                       if (token == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please login to view history'),
-                          ),
+                        CustomDialogs.showErrorDialog(
+                          context,
+                          title: 'Error!',
+                          message: 'Please login to view history',
                         );
                         return;
                       }

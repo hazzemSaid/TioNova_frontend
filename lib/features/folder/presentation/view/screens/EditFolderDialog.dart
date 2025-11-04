@@ -78,6 +78,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return BlocListener<FolderCubit, FolderState>(
       listener: (context, state) {
         if (state is UpdateFolderSuccess) {
@@ -86,7 +87,11 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
             SnackBar(
               content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 16),
+                  Icon(
+                    Icons.check_circle,
+                    color: colorScheme.onPrimary,
+                    size: 16,
+                  ),
                   SizedBox(width: 8),
                   Text('Folder updated successfully!'),
                 ],
@@ -103,7 +108,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
             SnackBar(
               content: Row(
                 children: [
-                  Icon(Icons.error, color: Colors.white, size: 16),
+                  Icon(Icons.error, color: colorScheme.onError, size: 16),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -114,7 +119,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                   ),
                 ],
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colorScheme.error,
               duration: Duration(seconds: 4),
               behavior: SnackBarBehavior.floating,
             ),
@@ -130,15 +135,15 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
           return Stack(
             children: [
               AlertDialog(
-                backgroundColor: const Color(0xFF0E0E10),
+                backgroundColor: colorScheme.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Color(0xFF1C1C1E)),
+                  side: BorderSide(color: colorScheme.outline),
                 ),
-                title: const Text(
+                title: Text(
                   'Edit Folder',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -156,60 +161,64 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                         TextField(
                           maxLines: 2,
                           controller: _titleController,
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: colorScheme.onSurface),
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.all(12),
                             labelText: 'Title',
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF8E8E93),
+                            labelStyle: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1C1C1E),
+                              borderSide: BorderSide(
+                                color: colorScheme.outline,
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.blue),
+                              borderSide: BorderSide(
+                                color: colorScheme.primary,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             errorBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.red),
+                              borderSide: BorderSide(color: colorScheme.error),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             filled: true,
-                            fillColor: const Color(0xFF1C1C1E),
+                            fillColor: colorScheme.surfaceContainerHighest,
                           ),
                         ),
                         const SizedBox(height: 16),
                         TextField(
                           controller: _descriptionController,
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: colorScheme.onSurface),
                           decoration: InputDecoration(
                             labelText: 'Description',
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF8E8E93),
+                            labelStyle: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1C1C1E),
+                              borderSide: BorderSide(
+                                color: colorScheme.outline,
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.blue),
+                              borderSide: BorderSide(
+                                color: colorScheme.primary,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             filled: true,
-                            fillColor: const Color(0xFF1C1C1E),
+                            fillColor: colorScheme.surfaceContainerHighest,
                           ),
                           maxLines: 3,
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Choose Icon',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -217,10 +226,10 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                         const SizedBox(height: 12),
                         _iconGrid(),
                         const SizedBox(height: 20),
-                        const Text(
+                        Text(
                           'Choose Color',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -230,32 +239,34 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                         const SizedBox(height: 16),
                         DropdownButtonFormField<Status>(
                           value: _selectedStatus,
-                          style: const TextStyle(color: Colors.white),
-                          dropdownColor: const Color(0xFF1C1C1E),
+                          style: TextStyle(color: colorScheme.onSurface),
+                          dropdownColor: colorScheme.surfaceContainerHighest,
                           decoration: InputDecoration(
                             labelText: 'Privacy',
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF8E8E93),
+                            labelStyle: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1C1C1E),
+                              borderSide: BorderSide(
+                                color: colorScheme.outline,
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Colors.blue),
+                              borderSide: BorderSide(
+                                color: colorScheme.primary,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             filled: true,
-                            fillColor: const Color(0xFF1C1C1E),
+                            fillColor: colorScheme.surfaceContainerHighest,
                           ),
                           items: Status.values.map((status) {
                             return DropdownMenuItem(
                               value: status,
                               child: Text(
                                 status.name,
-                                style: const TextStyle(color: Colors.white),
+                                style: TextStyle(color: colorScheme.onSurface),
                               ),
                             );
                           }).toList(),
@@ -284,9 +295,9 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                         vertical: 12,
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Cancel',
-                      style: const TextStyle(color: Color(0xFF8E8E93)),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   ),
                   BlocBuilder<FolderCubit, FolderState>(
@@ -297,8 +308,8 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                             ? null
                             : () => _updateFolder(context),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
                             vertical: 12,
@@ -316,7 +327,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
                                     height: 16,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: colorScheme.onPrimary,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -338,12 +349,12 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
               ),
               if (isLoading)
                 Container(
-                  color: Colors.black.withOpacity(0.5),
+                  color: colorScheme.scrim.withOpacity(0.5),
                   child: Center(
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1C1C1E),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -376,9 +387,9 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
   void _updateFolder(BuildContext context) {
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Title cannot be empty'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
       return;
@@ -408,6 +419,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
   }
 
   Widget _iconGrid() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -419,14 +431,18 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.grey[800],
+              color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: selected ? Colors.blue : Colors.grey,
+                color: selected ? colorScheme.primary : colorScheme.outline,
                 width: selected ? 2 : 1,
               ),
             ),
-            child: Icon(widget.icons[i], color: Colors.white, size: 20),
+            child: Icon(
+              widget.icons[i],
+              color: colorScheme.onSurface,
+              size: 20,
+            ),
           ),
         );
       }),
@@ -434,6 +450,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
   }
 
   Widget _colorRow() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -448,7 +465,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
               color: widget.defaultcolors[i].withValues(alpha: 0.22),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: selected ? Colors.blue : Colors.grey,
+                color: selected ? colorScheme.primary : colorScheme.outline,
                 width: selected ? 2 : 1,
               ),
             ),
@@ -469,6 +486,7 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
   }
 
   Widget _buildShareWithTile(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () async {
         final selectedUsers = await showDialog<List<String>>(
@@ -494,42 +512,45 @@ class _EditFolderDialogState extends State<EditFolderDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2C2C2E)),
+          border: Border.all(color: colorScheme.outline),
         ),
         child: Row(
           children: [
-            const Icon(Icons.share, color: Colors.white),
+            Icon(Icons.share, color: colorScheme.onSurface),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Share With',
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 14,
+                    ),
                   ),
                   if (_sharedUsers.isNotEmpty)
                     Text(
                       '${_sharedUsers.length} users selected',
-                      style: const TextStyle(
-                        color: Color(0xFF8E8E93),
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     )
                   else
-                    const Text(
+                    Text(
                       'Select users to share with',
-                      style: const TextStyle(
-                        color: Color(0xFF8E8E93),
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFF8E8E93)),
+            Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
           ],
         ),
       ),

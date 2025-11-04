@@ -5,12 +5,13 @@ import 'package:tionova/features/folder/presentation/view/widgets/DashedBorderPa
 class CreateFolderCard extends StatelessWidget {
   final VoidCallback? onTap;
 
-  const CreateFolderCard({Key? key, this.onTap}) : super(key: key);
+  const CreateFolderCard({super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final screenSize = MediaQuery.sizeOf(context);
     final isTablet = screenSize.width > 600;
     final double padding = isTablet ? 48.0 : 40.0;
@@ -52,12 +53,12 @@ class CreateFolderCard extends StatelessWidget {
                   width: isTablet ? 64 : 56,
                   height: isTablet ? 64 : 56,
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.12),
+                    color: colorScheme.onPrimary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
                     Icons.add,
-                    color: colorScheme.primary,
+                    color: colorScheme.onPrimary,
                     size: iconSize,
                   ),
                 ),

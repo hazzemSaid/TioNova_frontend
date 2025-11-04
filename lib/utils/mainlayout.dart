@@ -113,7 +113,7 @@ class _MainLayoutState extends State<MainLayout> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.onPrimary,
       body: IndexedStack(
         index: _currentIndex,
         sizing: StackFit.expand,
@@ -135,7 +135,7 @@ class _MainLayoutState extends State<MainLayout> {
     return Container(
       width: 240,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: colorScheme.surface,
         border: Border(
           right: BorderSide(
             color: colorScheme.outline.withOpacity(0.4),
@@ -148,7 +148,7 @@ class _MainLayoutState extends State<MainLayout> {
           children: [
             // Logo/Header
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(8.0),
               child: Row(
                 children: [
                   Container(
@@ -156,7 +156,7 @@ class _MainLayoutState extends State<MainLayout> {
                     height: 40,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [colorScheme.primary, colorScheme.secondary],
+                        colors: [colorScheme.primary, colorScheme.primary],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -164,8 +164,8 @@ class _MainLayoutState extends State<MainLayout> {
                     ),
                     child: Icon(
                       Icons.school,
-                      color: colorScheme.onPrimary,
                       size: 24,
+                      color: colorScheme.onPrimary,
                     ),
                   ),
                   SizedBox(width: 12),
@@ -174,15 +174,15 @@ class _MainLayoutState extends State<MainLayout> {
                     style:
                         theme.textTheme.titleMedium?.copyWith(
                           fontSize: 20,
-                          color: colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
+                          color: colorScheme.onSurface,
                         ) ??
                         TextStyle(
                           fontSize: 20,
-                          color: colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
+                          color: colorScheme.onSurface,
                         ),
                   ),
                 ],
@@ -244,8 +244,8 @@ class _MainLayoutState extends State<MainLayout> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? colorScheme.primary.withOpacity(0.35)
-                    : Colors.transparent,
+                    ? colorScheme.primaryContainer
+                    : colorScheme.outline.withOpacity(0.4),
                 width: 1,
               ),
             ),
@@ -253,10 +253,10 @@ class _MainLayoutState extends State<MainLayout> {
               children: [
                 Icon(
                   icon,
-                  color: isSelected
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
                   size: 24,
+                  color: isSelected
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -271,10 +271,10 @@ class _MainLayoutState extends State<MainLayout> {
                             : FontWeight.w400,
                       ) ??
                       TextStyle(
+                        fontSize: 16,
                         color: isSelected
                             ? colorScheme.onPrimaryContainer
                             : colorScheme.onSurfaceVariant,
-                        fontSize: 16,
                         fontWeight: isSelected
                             ? FontWeight.w600
                             : FontWeight.w400,
@@ -299,14 +299,14 @@ class _MainLayoutState extends State<MainLayout> {
         color: colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: colorScheme.outline.withOpacity(0.3),
+            color: colorScheme.outline.withOpacity(0.4),
             width: 0.5,
           ),
         ),
         boxShadow: isIOS
             ? [
                 BoxShadow(
-                  color: colorScheme.shadow.withOpacity(0.12),
+                  color: colorScheme.shadow.withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -318,7 +318,6 @@ class _MainLayoutState extends State<MainLayout> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           child: Material(
-            color: Colors.transparent,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.center,

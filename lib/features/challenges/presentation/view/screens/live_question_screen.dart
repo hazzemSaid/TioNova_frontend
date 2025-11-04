@@ -18,6 +18,7 @@ import 'package:tionova/features/challenges/presentation/view/widgets/leaderboar
 import 'package:tionova/features/challenges/presentation/view/widgets/live_question_option_button.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/submit_button.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/waiting_state.dart';
+import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class LiveQuestionScreen extends StatelessWidget {
   final String challengeCode;
@@ -1128,9 +1129,10 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
           _navigateToCompletion();
         } else if (state is ChallengeError) {
           print('LiveQuestionScreen - Error state: ${state.message}');
-          final messenger = _scaffoldMessenger ?? ScaffoldMessenger.of(context);
-          messenger.showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error!',
+            message: state.message,
           );
         } else if (state is AnswerSubmitted) {
           print(

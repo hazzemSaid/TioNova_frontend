@@ -3,9 +3,9 @@ import 'package:tionova/features/home/presentation/view/widgets/ChapterCard.dart
 import 'package:tionova/features/home/presentation/view/widgets/CreateFolderButton.dart';
 import 'package:tionova/features/home/presentation/view/widgets/CustomHeaderDelegate.dart';
 import 'package:tionova/features/home/presentation/view/widgets/FolderCard.dart';
-import 'package:tionova/features/home/presentation/view/widgets/SearchBar.dart';
 import 'package:tionova/features/home/presentation/view/widgets/SectionHeader.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
+import 'package:tionova/utils/widgets/app_search_bar.dart';
 
 // Home Screen with Slivers
 class HomeScreen extends StatelessWidget {
@@ -95,7 +95,8 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(height: verticalSpacing * 1.5),
 
                   // Search Bar
-                  CustomSearchBar(),
+                  const AppSearchBar(hintText: 'Search folders, chapters...'),
+
                   SizedBox(height: verticalSpacing * 1.5),
 
                   // Create Folder Button

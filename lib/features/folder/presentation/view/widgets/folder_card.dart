@@ -103,13 +103,13 @@ class FolderCard extends StatelessWidget {
     Color categoryColor;
     switch (category) {
       case 'Technology':
-        categoryColor = const Color(0xFF007AFF);
+        categoryColor = colorScheme.primary;
         break;
       case 'Science':
-        categoryColor = const Color(0xFF34C759);
+        categoryColor = Colors.green;
         break;
       default:
-        categoryColor = const Color(0xFF8E8E93);
+        categoryColor = colorScheme.onSurfaceVariant;
     }
 
     final isPrivate = privacy.toLowerCase() == 'private';
@@ -201,7 +201,7 @@ class FolderCard extends StatelessWidget {
                       _buildTag(
                         category,
                         categoryColor,
-                        Colors.white,
+                        colorScheme.onPrimary,
                         null,
                         isTablet: isTablet,
                       ),

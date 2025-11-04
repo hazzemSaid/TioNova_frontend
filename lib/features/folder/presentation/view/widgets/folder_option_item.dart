@@ -18,18 +18,23 @@ class FolderOptionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
+    final colorScheme = Theme.of(context).colorScheme;
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        padding: EdgeInsets.zero,
+        backgroundColor: colorScheme.surfaceDim,
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12.0),
         child: Row(
           children: [
-            Icon(icon, color: iconColor ?? Colors.white, size: 24),
+            Icon(icon, color: colorScheme.onSurface, size: 24),
             const SizedBox(width: 16),
             Text(
               label,
               style: TextStyle(
-                color: textColor ?? Colors.white,
+                color: textColor ?? colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),

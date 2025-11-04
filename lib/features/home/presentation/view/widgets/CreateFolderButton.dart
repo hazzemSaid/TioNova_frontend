@@ -48,20 +48,22 @@ class CreateFolderButton extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.add, color: colorScheme.primary, size: iconSize),
+                  Icon(Icons.add, color: colorScheme.onPrimary, size: iconSize),
                   const SizedBox(width: 6.0),
                   Text(
                     'Create New Study Folder',
                     style:
                         textTheme.labelLarge?.copyWith(
-                          color: colorScheme.primary,
+                          color: colorScheme.onPrimary,
                           fontSize: fontSize,
                           fontWeight: FontWeight.w600,
+                          fontFamily: 'Inter',
                         ) ??
                         TextStyle(
-                          color: colorScheme.primary,
+                          color: colorScheme.onPrimary,
                           fontSize: fontSize,
                           fontWeight: FontWeight.w600,
+                          fontFamily: 'Inter',
                         ),
                   ),
                 ],

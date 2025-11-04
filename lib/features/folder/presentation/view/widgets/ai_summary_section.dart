@@ -22,6 +22,7 @@ class _AISummarySectionState extends State<AISummarySection> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return MouseRegion(
       onEnter: (_) {
         if (mounted) {
@@ -37,18 +38,18 @@ class _AISummarySectionState extends State<AISummarySection> {
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E0E10),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: _isHovered
-                ? const Color(0xFF5E3CFF).withOpacity(0.5)
-                : const Color(0xFF1C1C1E),
+                ? colorScheme.primary.withOpacity(0.5)
+                : colorScheme.outline,
             width: 1.5,
           ),
           boxShadow: _isHovered
               ? [
                   BoxShadow(
-                    color: const Color(0xFF5E3CFF).withOpacity(0.2),
+                    color: colorScheme.primary.withOpacity(0.2),
                     blurRadius: 20,
                     spreadRadius: 0,
                   ),
@@ -67,16 +68,16 @@ class _AISummarySectionState extends State<AISummarySection> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF5E3CFF), Color(0xFFB558FF)],
+                      gradient: LinearGradient(
+                        colors: [colorScheme.primary, colorScheme.secondary],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.auto_awesome,
-                      color: Colors.white,
+                      color: colorScheme.onPrimary,
                       size: 24,
                     ),
                   ),
@@ -85,10 +86,10 @@ class _AISummarySectionState extends State<AISummarySection> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'AI Summary',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.5,
@@ -98,7 +99,7 @@ class _AISummarySectionState extends State<AISummarySection> {
                         Text(
                           'Get key points, definitions, practice questions,\nand quick reference cards',
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 14,
                             height: 1.5,
                           ),
@@ -123,20 +124,21 @@ class _AISummarySectionState extends State<AISummarySection> {
   }
 
   Widget _buildViewSummaryButton() {
+    final colorScheme = Theme.of(context).colorScheme;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       height: 56,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5E3CFF), Color(0xFFB558FF)],
+        gradient: LinearGradient(
+          colors: [colorScheme.primary, colorScheme.secondary],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5E3CFF).withOpacity(0.4),
+            color: colorScheme.primary.withOpacity(0.4),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -151,12 +153,16 @@ class _AISummarySectionState extends State<AISummarySection> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.auto_awesome, color: Colors.white, size: 22),
+                Icon(
+                  Icons.auto_awesome,
+                  color: colorScheme.onPrimary,
+                  size: 22,
+                ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'View Full Summary',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
@@ -171,12 +177,13 @@ class _AISummarySectionState extends State<AISummarySection> {
   }
 
   Widget _buildLoadingButton() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 56,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: const Color(0xFF1C1C1E),
+        color: colorScheme.surfaceVariant,
       ),
       child: Center(
         child: Row(
@@ -187,16 +194,14 @@ class _AISummarySectionState extends State<AISummarySection> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  const Color(0xFF5E3CFF),
-                ),
+                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Generating Summary...',
               style: TextStyle(
-                color: Colors.white70,
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -208,13 +213,14 @@ class _AISummarySectionState extends State<AISummarySection> {
   }
 
   Widget _buildGenerateButton() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 56,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: const Color(0xFF1C1C1E),
-        border: Border.all(color: const Color(0xFF2C2C2E), width: 1),
+        color: colorScheme.surfaceVariant,
+        border: Border.all(color: colorScheme.outline, width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -227,14 +233,14 @@ class _AISummarySectionState extends State<AISummarySection> {
               children: [
                 Icon(
                   Icons.auto_awesome_outlined,
-                  color: Colors.white.withOpacity(0.9),
+                  color: colorScheme.onSurface,
                   size: 22,
                 ),
                 const SizedBox(width: 10),
                 Text(
                   'Generate Summary',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: colorScheme.onSurface,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
