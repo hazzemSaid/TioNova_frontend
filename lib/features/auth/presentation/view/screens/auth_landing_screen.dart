@@ -6,7 +6,7 @@ import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/SecondaryBtn.dart';
-import 'package:tionova/features/theme/presentation/widgets/theme_toggle_button.dart';
+import 'package:tionova/features/auth/presentation/view/widgets/auth_background.dart';
 
 class AuthLandingScreen extends StatelessWidget {
   const AuthLandingScreen({super.key});
@@ -16,212 +16,17 @@ class AuthLandingScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
-    final isWeb = size.width > 900;
     final isTablet = size.width >= 600 && size.width <= 900;
     final isMobile = size.width < 600;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    const Color(0xFF0A0A0A),
-                    const Color(0xFF1A1A1A),
-                    const Color(0xFF0D0D0D),
-                  ]
-                : [
-                    const Color(0xFFFAFAFA),
-                    const Color(0xFFFFFFFF),
-                    const Color(0xFFF5F5F5),
-                  ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
+      resizeToAvoidBottomInset: true,
+      body: AuthBackground(
+        isDark: isDark,
         child: SafeArea(
-          child: isWeb
-              ? _buildWebLayout(context, isDark, theme)
-              : _buildMobileLayout(context, isDark, theme, isTablet, isMobile),
+          child: _buildMobileLayout(context, isDark, theme, isTablet, isMobile),
         ),
       ),
-    );
-  }
-
-  Widget _buildWebLayout(BuildContext context, bool isDark, ThemeData theme) {
-    final size = MediaQuery.of(context).size;
-
-    return Row(
-      children: [
-        // Left side - Branding
-        Expanded(
-          flex: 5,
-          child: Container(
-            padding: const EdgeInsets.all(60),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Logo
-                Image.asset(
-                  isDark
-                      ? 'assets/images/logo2.png'
-                      : 'assets/images/logo1.png',
-                  color: isDark ? null : Colors.black87,
-                  fit: BoxFit.contain,
-                  width: 280,
-                ),
-                const SizedBox(height: 48),
-                // Headline
-                Text(
-                  'Your intelligent\nstudy companion',
-                  style: theme.textTheme.displaySmall?.copyWith(
-                    color: isDark ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Description
-                Text(
-                  'Organize, learn, and excel with AI-powered insights.\nTransform your study experience with intelligent tools.',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: isDark ? Colors.white70 : Colors.black54,
-                    height: 1.6,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                // Features
-                _buildFeatureRow(
-                  Icons.auto_awesome_rounded,
-                  'AI-Powered Learning',
-                  isDark,
-                ),
-                const SizedBox(height: 16),
-                _buildFeatureRow(
-                  Icons.folder_rounded,
-                  'Smart Organization',
-                  isDark,
-                ),
-                const SizedBox(height: 16),
-                _buildFeatureRow(
-                  Icons.trending_up_rounded,
-                  'Track Progress',
-                  isDark,
-                ),
-              ],
-            ),
-          ),
-        ),
-        // Right side - Auth Form
-        Expanded(
-          flex: 4,
-          child: Container(
-            margin: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.black.withOpacity(0.4)
-                  : Colors.white.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.black.withOpacity(0.05),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withOpacity(0.3)
-                      : Colors.black.withOpacity(0.05),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
-              child: Stack(
-                children: [
-                  // Glassmorphism effect
-                  if (isDark)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withOpacity(0.05),
-                              Colors.white.withOpacity(0.02),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.all(48),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Theme toggle
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: ThemeToggleButton(),
-                        ),
-                        const Spacer(),
-                        // Welcome text
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.waving_hand_rounded,
-                              color: isDark
-                                  ? const Color(0xFFFFD700)
-                                  : const Color(0xFFFF9800),
-                              size: 28,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Welcome!',
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                color: isDark ? Colors.white : Colors.black,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Get started with your account',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: isDark ? Colors.white60 : Colors.black54,
-                          ),
-                        ),
-                        const SizedBox(height: 48),
-                        // Auth buttons
-                        _buildAuthButtons(
-                          context,
-                          isDark,
-                          false,
-                          size.width * 0.3,
-                        ),
-                        const Spacer(),
-                        // Terms
-                        _buildTermsText(isDark, 13),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -236,7 +41,7 @@ class AuthLandingScreen extends StatelessWidget {
     final horizontalPadding = isTablet ? 40.0 : 10.0;
     final maxWidth = isTablet ? 500.0 : double.infinity;
     final isVerySmall = size.height < 650; // Detect very small screens
-
+    print(isDark);
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
@@ -254,10 +59,7 @@ class AuthLandingScreen extends StatelessWidget {
                   padding: EdgeInsets.all(isVerySmall ? 16 : 24),
 
                   child: Image.asset(
-                    isDark
-                        ? 'assets/images/logo2.png'
-                        : 'assets/images/logo1.png',
-                    color: isDark ? null : Colors.black87,
+                    'assets/images/logo2.png',
                     fit: BoxFit.contain,
                     width: isVerySmall ? 130 : (isTablet ? 200 : 140),
                   ),
@@ -279,7 +81,7 @@ class AuthLandingScreen extends StatelessWidget {
                                           ? theme.textTheme.headlineMedium
                                           : theme.textTheme.headlineSmall))
                                 ?.copyWith(
-                                  color: isDark ? Colors.white : Colors.black,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: -0.5,
                                   fontSize: 25,
@@ -289,9 +91,7 @@ class AuthLandingScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Icon(
                       Icons.waving_hand_rounded,
-                      color: isDark
-                          ? const Color(0xFFFFD700)
-                          : const Color(0xFFFF9800),
+                      color: const Color(0xFFFFD700),
                       size: isVerySmall ? 20 : (isTablet ? 28 : 24),
                     ),
                   ],
@@ -309,7 +109,7 @@ class AuthLandingScreen extends StatelessWidget {
                                     ? theme.textTheme.titleMedium
                                     : theme.textTheme.bodyLarge))
                           ?.copyWith(
-                            color: isDark ? Colors.white54 : Colors.black54,
+                            color: Colors.white54,
                             height: 1.5,
                             fontWeight: FontWeight.w400,
                           ),
@@ -321,26 +121,25 @@ class AuthLandingScreen extends StatelessWidget {
                 // Main card with buttons
                 Container(
                   padding: EdgeInsets.all(
-                    isVerySmall ? 16 : (isTablet ? 32 : 24),
+                    isVerySmall ? 20 : (isTablet ? 32 : 28),
                   ),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? Colors.black.withOpacity(0.3)
-                        : Colors.white.withOpacity(0.03),
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.white.withOpacity(0.95),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.black.withOpacity(0.05),
-                      width: 1,
-                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: isDark
-                            ? Colors.black.withOpacity(0.3)
-                            : Colors.black.withOpacity(0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                        spreadRadius: 0,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                        spreadRadius: -5,
                       ),
                     ],
                   ),
@@ -364,36 +163,6 @@ class AuthLandingScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFeatureRow(IconData icon, String text, bool isDark) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withOpacity(0.05)
-                : Colors.black.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: isDark ? Colors.white : Colors.black,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          text,
-          style: TextStyle(
-            color: isDark ? Colors.white54 : Colors.black54,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 
@@ -526,29 +295,35 @@ class AuthLandingScreen extends StatelessWidget {
       textAlign: TextAlign.center,
       text: TextSpan(
         style: TextStyle(
-          color: isDark ? Colors.white54 : Colors.black54,
+          color: Colors.white54,
           fontSize: fontSize,
           height: 1.5,
         ),
         children: [
-          const TextSpan(text: 'By continuing, you agree to our '),
+          const TextSpan(
+            text: 'By continuing, you agree to our ',
+            style: TextStyle(color: Colors.white),
+          ),
           TextSpan(
             text: 'Terms of Service',
             style: TextStyle(
-              color: isDark ? Colors.white : Colors.black,
+              color: Colors.white,
               fontWeight: FontWeight.w600,
               decoration: TextDecoration.underline,
-              decorationColor: isDark ? Colors.white : Colors.black,
+              decorationColor: Colors.white,
             ),
           ),
-          const TextSpan(text: ' and '),
+          const TextSpan(
+            text: ' and ',
+            style: TextStyle(color: Colors.white),
+          ),
           TextSpan(
             text: 'Privacy Policy',
             style: TextStyle(
-              color: isDark ? Colors.white : Colors.black,
+              color: Colors.white,
               fontWeight: FontWeight.w600,
               decoration: TextDecoration.underline,
-              decorationColor: isDark ? Colors.white : Colors.black,
+              decorationColor: Colors.white,
             ),
           ),
         ],

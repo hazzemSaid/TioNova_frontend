@@ -14,11 +14,11 @@ class CheckEmailScreen extends StatefulWidget {
 class _CheckEmailScreenState extends State<CheckEmailScreen> {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final maskedEmail = _maskEmail(widget.email);
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -71,17 +71,24 @@ class _CheckEmailScreenState extends State<CheckEmailScreen> {
                           ),
                           child: Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(32),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(24),
                               color: isDark
-                                  ? Colors.white10
-                                  : Colors.black.withAlpha(5),
+                                  ? const Color(0xFF1E1E1E)
+                                  : Colors.white.withOpacity(0.95),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withAlpha(25),
-                                  blurRadius: 20,
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 30,
                                   offset: const Offset(0, 10),
+                                  spreadRadius: 0,
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                  spreadRadius: -5,
                                 ),
                               ],
                             ),

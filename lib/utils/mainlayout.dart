@@ -1,5 +1,4 @@
 // Main Layout with Adaptive Navigation
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
@@ -64,48 +63,9 @@ class _MainLayoutState extends State<MainLayout> {
     return _screens[index]!;
   }
 
-  // Check if the layout should use side navigation
-  bool _shouldUseSideNav(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    return kIsWeb && width >= 768; // Tablet/Desktop web view
-  }
-
   @override
   Widget build(BuildContext context) {
-    final useSideNav = _shouldUseSideNav(context);
-
-    if (useSideNav) {
-      return _buildWebLayout(context);
-    } else {
-      return _buildMobileLayout(context);
-    }
-  }
-
-  // Web layout with side navigation
-  Widget _buildWebLayout(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Row(
-        children: [
-          // Side Navigation
-          _buildSideNavigation(context),
-          // Main content
-          Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              sizing: StackFit.expand,
-              children: List.generate(
-                _screens.length,
-                (index) => _currentIndex == index || _screens[index] != null
-                    ? _getScreen(index)
-                    : Container(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return _buildMobileLayout(context);
   }
 
   // Mobile layout with bottom navigation
@@ -128,166 +88,7 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  // Side navigation for web/tablet
-  Widget _buildSideNavigation(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Container(
-      width: 240,
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          right: BorderSide(
-            color: colorScheme.outline.withOpacity(0.4),
-            width: 1,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Logo/Header
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [colorScheme.primary, colorScheme.primary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.school,
-                      size: 24,
-                      color: colorScheme.onPrimary,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'TIONOVA',
-                    style:
-                        theme.textTheme.titleMedium?.copyWith(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          color: colorScheme.onSurface,
-                        ) ??
-                        TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          color: colorScheme.onSurface,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            Divider(color: colorScheme.outline.withOpacity(0.4), height: 1),
-            const SizedBox(height: 16),
-            // Navigation items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                children: [
-                  _buildSideNavItem(icon: Icons.home, label: "Home", index: 0),
-                  _buildSideNavItem(
-                    icon: Icons.folder_outlined,
-                    label: "Folders",
-                    index: 1,
-                  ),
-                  _buildSideNavItem(
-                    icon: Icons.emoji_events_outlined,
-                    label: "Challenges",
-                    index: 2,
-                  ),
-                  _buildSideNavItem(
-                    icon: Icons.person_outline,
-                    label: "Profile",
-                    index: 3,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSideNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-  }) {
-    final isSelected = _currentIndex == index;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _safeSetState(() => _currentIndex = index),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? colorScheme.primaryContainer
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? colorScheme.primaryContainer
-                    : colorScheme.outline.withOpacity(0.4),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  size: 24,
-                  color: isSelected
-                      ? colorScheme.onPrimaryContainer
-                      : colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style:
-                      theme.textTheme.bodyLarge?.copyWith(
-                        color: isSelected
-                            ? colorScheme.onPrimaryContainer
-                            : colorScheme.onSurfaceVariant,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                      ) ??
-                      TextStyle(
-                        fontSize: 16,
-                        color: isSelected
-                            ? colorScheme.onPrimaryContainer
-                            : colorScheme.onSurfaceVariant,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
+  // Custom Bottom Navigation Bar
   Widget _customBottomNavigationBar(BuildContext context) {
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
     final theme = Theme.of(context);

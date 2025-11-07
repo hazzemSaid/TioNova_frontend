@@ -5,7 +5,7 @@ import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
-import 'package:tionova/features/theme/presentation/widgets/theme_toggle_button.dart';
+import 'package:tionova/features/auth/presentation/view/widgets/auth_background.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -32,7 +32,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return BlocListener<AuthCubit, AuthState>(
@@ -49,206 +48,229 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         }
       },
       child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [const Color(0xFF121212), const Color(0xFF000000)]
-                  : [const Color(0xFFE0E0E0), const Color(0xFFBDBDBD)],
-            ),
-          ),
+        resizeToAvoidBottomInset: true,
+        body: AuthBackground(
+          isDark: isDark,
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final w = constraints.maxWidth;
-                  final h = constraints.maxHeight;
-                  final isTablet = w >= 800;
-                  final isCompact = h < 700 || w < 360;
-                  final logoWidth = isTablet ? w * 0.15 : w * 0.25;
-                  return CustomScrollView(
-                    slivers: [
-                      // Top bar
-                      SliverToBoxAdapter(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton(
-                              onPressed: () => context.pop(),
-                              icon: Icon(
-                                Icons.arrow_back_rounded,
-                                color: isDark ? Colors.white70 : Colors.black54,
-                              ),
-                            ),
-                            ThemeToggleButton(),
-                          ],
-                        ),
-                      ),
+            child: Column(
+              children: [
+                // Main content - centered and scrollable
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final keyboardHeight = MediaQuery.of(
+                        context,
+                      ).viewInsets.bottom;
+                      final w = MediaQuery.of(context).size.width;
+                      final h = MediaQuery.of(context).size.height;
+                      final isTablet = w >= 800;
+                      final isCompact = h < 650;
+                      final logoWidth = isTablet ? w * 0.15 : w * 0.25;
 
-                      // Spacing
-                      SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: isCompact ? h * 0.03 : h * 0.05,
+                      return SingleChildScrollView(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: keyboardHeight > 0 ? 8 : 16,
                         ),
-                      ),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight:
+                                constraints.maxHeight -
+                                (keyboardHeight > 0 ? 16 : 32),
+                            maxWidth: isTablet ? 520 : double.infinity,
+                          ),
+                          child: IntrinsicHeight(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Add flexible space on top when keyboard is closed
+                                if (keyboardHeight == 0) const Spacer(),
 
-                      // Forgot Password Form
-                      SliverToBoxAdapter(
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: isTablet ? 520 : double.infinity,
-                            ),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                color: isDark
-                                    ? Colors.white10
-                                    : Colors.black.withAlpha(5),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withAlpha(25),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
+                                // Form Container
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(
+                                    keyboardHeight > 0
+                                        ? 16
+                                        : (isCompact ? 24 : 32),
                                   ),
-                                ],
-                              ),
-                              child: Form(
-                                key: formKey,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    SizedBox(height: isCompact ? 10 : 15),
-                                    Center(
-                                      child: Image.asset(
-                                        isDark
-                                            ? 'assets/images/logo2.png'
-                                            : 'assets/images/logo1.png',
-                                        width: logoWidth.clamp(60.0, 80.0),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(24),
+                                    color: isDark
+                                        ? const Color(0xFF1E1E1E)
+                                        : Colors.white.withOpacity(0.95),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 30,
+                                        offset: const Offset(0, 10),
+                                        spreadRadius: 0,
                                       ),
-                                    ),
-                                    SizedBox(height: isCompact ? 20 : 25),
-                                    Text(
-                                      'Forgot Password?',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: isDark
-                                            ? Colors.white
-                                            : Colors.black,
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 5),
+                                        spreadRadius: -5,
                                       ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'Enter your email and we\'ll send you a code\nto reset your password',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: isDark
-                                            ? Colors.white70
-                                            : Colors.black54,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 32),
+                                    ],
+                                  ),
+                                  child: Form(
+                                    key: formKey,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          height: keyboardHeight > 0
+                                              ? 4
+                                              : (isCompact ? 8 : 15),
+                                        ),
+                                        Center(
+                                          child: Image.asset(
+                                            isDark
+                                                ? 'assets/images/logo2.png'
+                                                : 'assets/images/logo1.png',
+                                            width: keyboardHeight > 0
+                                                ? 50
+                                                : (isCompact
+                                                      ? 60
+                                                      : logoWidth.clamp(
+                                                          60.0,
+                                                          80.0,
+                                                        )),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          height: keyboardHeight > 0
+                                              ? 8
+                                              : (isCompact ? 16 : 25),
+                                        ),
+                                        Text(
+                                          'Forgot Password?',
+                                          style: TextStyle(
+                                            fontSize: isCompact ? 20 : 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black,
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          height: keyboardHeight > 0
+                                              ? 6
+                                              : (isCompact ? 8 : 12),
+                                        ),
+                                        Text(
+                                          'Enter your email and we\'ll send you a code\nto reset your password',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: isCompact ? 13 : 14,
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black54,
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          height: keyboardHeight > 0
+                                              ? 16
+                                              : (isCompact ? 24 : 32),
+                                        ),
 
-                                    // Email
-                                    Text(
-                                      'Email',
-                                      style: TextStyle(
-                                        color: isDark
-                                            ? Colors.white70
-                                            : Colors.black54,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ThemedTextFormField(
-                                      controller: _emailController,
-                                      hintText: 'Email',
-                                      prefixIcon: Icons.email_rounded,
-                                      keyboardType: TextInputType.emailAddress,
-                                      isDark: isDark,
-                                    ),
-                                    const SizedBox(height: 24),
-
-                                    // Send Reset Code button with loading
-                                    BlocBuilder<AuthCubit, AuthState>(
-                                      builder: (context, state) {
-                                        final isLoading = state is AuthLoading;
-                                        return Column(
-                                          children: [
-                                            PrimaryBtn(
-                                              label: isLoading
-                                                  ? 'Sending...'
-                                                  : 'Send Reset Code',
-                                              onPressed: isLoading
-                                                  ? null
-                                                  : _sendResetCode,
-                                              buttonColor: isDark
-                                                  ? Colors.white10
-                                                  : Colors.black87,
-                                              textColor: Colors.white,
+                                        // Email
+                                        Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                                            'Email',
+                                            style: TextStyle(
+                                              color: isDark
+                                                  ? Colors.white70
+                                                  : Colors.black54,
                                             ),
-                                            if (isLoading)
-                                              const Padding(
-                                                padding: EdgeInsets.only(
-                                                  top: 16.0,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        ThemedTextFormField(
+                                          controller: _emailController,
+                                          hintText: 'Email',
+                                          prefixIcon: Icons.email_rounded,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          isDark: isDark,
+                                        ),
+                                        SizedBox(
+                                          height: keyboardHeight > 0
+                                              ? 12
+                                              : (isCompact ? 20 : 24),
+                                        ),
+
+                                        // Send Reset Code button with loading
+                                        BlocBuilder<AuthCubit, AuthState>(
+                                          builder: (context, state) {
+                                            final isLoading =
+                                                state is AuthLoading;
+                                            return Column(
+                                              children: [
+                                                PrimaryBtn(
+                                                  label: isLoading
+                                                      ? 'Sending...'
+                                                      : 'Send Reset Code',
+                                                  onPressed: isLoading
+                                                      ? null
+                                                      : _sendResetCode,
+                                                  buttonColor: isDark
+                                                      ? Colors.white10
+                                                      : Colors.black87,
+                                                  textColor: Colors.white,
                                                 ),
-                                                child:
-                                                    CircularProgressIndicator(),
-                                              ),
-                                          ],
-                                        );
-                                      },
+                                                if (isLoading)
+                                                  const Padding(
+                                                    padding: EdgeInsets.only(
+                                                      top: 16.0,
+                                                    ),
+                                                    child:
+                                                        CircularProgressIndicator(),
+                                                  ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+
+                                // Add flexible space on bottom when keyboard is closed
+                                if (keyboardHeight == 0) const Spacer(),
+                              ],
                             ),
                           ),
                         ),
-                      ),
+                      );
+                    },
+                  ),
+                ),
 
-                      // Bottom login link
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            const SizedBox(height: 16),
-                            TextButton.icon(
-                              onPressed: () => context.go('/auth/login'),
-                              icon: Icon(
-                                Icons.arrow_back_rounded,
-                                size: 16,
-                                color: isDark ? Colors.white70 : Colors.black54,
-                              ),
-                              label: Text(
-                                'Back to Login',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark
-                                      ? Colors.white70
-                                      : Colors.black54,
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              height:
-                                  MediaQuery.of(context).viewInsets.bottom + 16,
-                            ),
-                          ],
-                        ),
+                // Back to Login button - fixed at bottom
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: TextButton.icon(
+                    onPressed: () => context.go('/auth/login'),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      size: 16,
+                      color: Colors.white70,
+                    ),
+                    label: const Text(
+                      'Back to Login',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white70,
                       ),
-                    ],
-                  );
-                },
-              ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
