@@ -86,10 +86,21 @@ dev_dependencies:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 flutter_native_splash:
-  color: "#000000"
-  image: assets/images/logo2.png
   android: true
   ios: true
+  web: false
+
+  # Android <= 11
+  color: "#000000"
+  color_dark: "#000000"
+  image: assets/images/logo2.png
+
+  # Android 12+
+  android_12:
+    color: "#000000"
+    color_dark: "#000000"
+    image: assets/images/logo2.png
+
 # The following section is specific to Flutter packages.
 flutter:
   # The following line ensures that the Material Icons font is
@@ -126,7 +137,10 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
+
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/images/app.icon.png"
+  adaptive_icon_background: "#000000"   # or your brand color
+  adaptive_icon_foreground: "assets/images/app.icon.png"

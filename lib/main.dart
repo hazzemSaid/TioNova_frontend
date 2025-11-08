@@ -13,6 +13,7 @@ import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/models/pdf_cache_model.dart';
 import 'package:tionova/core/models/summary_cache_model.dart';
 import 'package:tionova/core/router/app_router.dart';
+import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/hive_manager.dart';
 // import 'package:tionova/core/services/summary_background_service.dart'; // DISABLED
@@ -114,6 +115,12 @@ Future<void> main() async {
   await setupServiceLocator();
   await DownloadService.initialize();
   await SummaryCacheService.initialize();
+
+  // Initialize App Usage Tracker
+  print('🚀 Main: Initializing AppUsageTrackerService...');
+  final usageTracker = getIt<AppUsageTrackerService>();
+  await usageTracker.initialize();
+  print('✅ Main: AppUsageTrackerService initialized');
 
   // Initialize background summary service - DISABLED FOR NOW
   // print('🚀 Main: Initializing SummaryBackgroundService...');

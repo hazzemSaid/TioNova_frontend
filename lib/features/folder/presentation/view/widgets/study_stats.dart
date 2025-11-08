@@ -17,7 +17,7 @@ class StudyStats extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
+        color: colorScheme.outlineVariant,
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),

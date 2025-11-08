@@ -4,12 +4,12 @@ class ShareWithmodel extends Equatable {
   final String id;
   final String email;
   final String username;
-  final String profilePicture;
+  final String? profilePicture;
   const ShareWithmodel({
     required this.id,
     required this.email,
     required this.username,
-    required this.profilePicture,
+    this.profilePicture,
   });
 
   factory ShareWithmodel.fromJson(Map<String, dynamic> json) {
@@ -17,7 +17,7 @@ class ShareWithmodel extends Equatable {
       id: json['_id'],
       email: json['email'],
       username: json['username'],
-      profilePicture: json['profilePicture'],
+      profilePicture: json['profilePicture'] ?? null,
     );
   }
 

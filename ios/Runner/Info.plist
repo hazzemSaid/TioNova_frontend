@@ -69,7 +69,6 @@
 		<string>This app needs access to documents to upload PDF files for chapters.</string>
 		<key>NSDownloadsFolderUsageDescription</key>
 		<string>This app needs access to downloads to upload PDF files for chapters.</string>
-		
 		<!-- Permissions for notes feature -->
 		<key>NSCameraUsageDescription</key>
 		<string>This app needs access to your camera to take photos for notes.</string>
@@ -79,7 +78,6 @@
 		<string>This app needs access to your photo library to select images for notes.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>This app needs access to save photos to your photo library.</string>
-		
 		<key>keychain-access-groups</key>
 		<array>
 			<string>$(AppIdentifierPrefix)$(CFBundleIdentifier)</string>

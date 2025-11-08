@@ -49,7 +49,7 @@ class _FolderScreenState extends State<FolderScreen> {
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthSuccess) return;
     final userId = authState.user.id;
-    final sseUrl = 'http://192.168.1.12:3000/api/v1/subscribe?userId=$userId';
+    final sseUrl = 'http://192.168.1.15:3000/api/v1/subscribe?userId=$userId';
     context.read<FolderCubit>().subscribeToFolderSse(sseUrl);
   }
 

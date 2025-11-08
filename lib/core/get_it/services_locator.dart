@@ -2,6 +2,7 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
+import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/localauthdatasource.dart';
@@ -50,6 +51,10 @@ import 'package:tionova/features/folder/domain/usecases/createMindmapUseCase.dar
 import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
+import 'package:tionova/features/home/data/datasource/analysis_remote_datasource.dart';
+import 'package:tionova/features/home/data/repoImp/analysis_repo_imp.dart';
+import 'package:tionova/features/home/domain/usecases/analysisusecase.dart';
+import 'package:tionova/features/home/presentation/bloc/Analysiscubit.dart';
 import 'package:tionova/features/quiz/data/datasources/remotequizdatasource.dart';
 import 'package:tionova/features/quiz/data/repo/Quizrepoimp.dart';
 import 'package:tionova/features/quiz/domain/repo/Quizrepo.dart';
@@ -136,6 +141,12 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<AuthService>(() => AuthService(dio: dio));
   // Register TokenStorage just once
   getIt.registerLazySingleton<TokenStorage>(() => TokenStorage());
+
+  // Register App Usage Tracker Service
+  getIt.registerLazySingleton<AppUsageTrackerService>(
+    () => AppUsageTrackerService(),
+  );
+
   // Data Sources
   getIt.registerLazySingleton<IAuthDataSource>(
     () => Remoteauthdatasource(
@@ -352,5 +363,23 @@ Future<void> setupServiceLocator() async {
       startLiveChallengeUseCase: getIt<StartLiveChallengeUseCase>(),
       joinLiveChallengeUseCase: getIt<JoinLiveChallengeUseCase>(),
     ),
+  );
+  //data source analysis
+  getIt.registerLazySingleton<AnalysisRemoteDataSource>(
+    () => AnalysisRemoteDataSourceImpl(dio: getIt<Dio>()),
+  );
+  //repo analysis
+  getIt.registerLazySingleton<AnalysisRepositoryImpl>(
+    () => AnalysisRepositoryImpl(
+      analysisRemoteDataSource: getIt<AnalysisRemoteDataSourceImpl>(),
+    ),
+  );
+  //usecase analysis
+  getIt.registerLazySingleton<AnalysisUseCase>(
+    () => AnalysisUseCase(repository: getIt<AnalysisRepositoryImpl>()),
+  );
+  // Register AnalysisCubit
+  getIt.registerFactory(
+    () => AnalysisCubit(analysisUseCase: getIt<AnalysisUseCase>()),
   );
 }
