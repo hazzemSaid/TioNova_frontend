@@ -35,7 +35,7 @@ class AnalysisRemoteDataSourceImpl implements AnalysisRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final analysisData = Analysismodel.fromJson(response.data);
+        final analysisData = Analysismodel.fromJson(response.data['data']);
         return Right(analysisData);
       } else {
         return Left(

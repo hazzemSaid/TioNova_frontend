@@ -54,6 +54,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
   ];
 
+  void _handleSignOut() {
+    // Get the AuthCubit reference before any async operations
+    final authCubit = context.read<AuthCubit>();
+    // Call signOut without using context
+    authCubit.signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -154,9 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onExportData: () {},
                       onShareProgress: () {},
                       onHelpSupport: () {},
-                      onSignOut: () {
-                        context.read<AuthCubit>().signOut();
-                      },
+                      onSignOut: _handleSignOut,
                     ),
                     SizedBox(height: 12),
                   ]),

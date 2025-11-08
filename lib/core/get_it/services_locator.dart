@@ -371,7 +371,7 @@ Future<void> setupServiceLocator() async {
   //repo analysis
   getIt.registerLazySingleton<AnalysisRepositoryImpl>(
     () => AnalysisRepositoryImpl(
-      analysisRemoteDataSource: getIt<AnalysisRemoteDataSourceImpl>(),
+      analysisRemoteDataSource: getIt<AnalysisRemoteDataSource>(),
     ),
   );
   //usecase analysis

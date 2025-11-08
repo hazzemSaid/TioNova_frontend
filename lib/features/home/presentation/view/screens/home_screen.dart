@@ -10,7 +10,6 @@ import 'package:tionova/features/home/presentation/bloc/Analysisstate.dart';
 import 'package:tionova/features/home/presentation/view/widgets/CustomHeaderDelegate.dart';
 import 'package:tionova/features/home/presentation/view/widgets/SectionHeader.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
-import 'package:tionova/utils/widgets/app_search_bar.dart';
 
 // Home Screen with Enhanced UI/UX - Provider Wrapper
 class HomeScreen extends StatelessWidget {
@@ -44,11 +43,20 @@ class _HomeScreenContent extends StatefulWidget {
 
 class _HomeScreenContentState extends State<_HomeScreenContent> {
   final _usageTracker = getIt<AppUsageTrackerService>();
+  late final AnalysisCubit _analysisCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    // Get cubit reference in initState to avoid context issues during disposal
+    _analysisCubit = context.read<AnalysisCubit>();
+  }
 
   Future<void> _loadAnalysisData() async {
+    if (!mounted) return;
     final token = await TokenStorage.getAccessToken();
-    if (token != null) {
-      context.read<AnalysisCubit>().loadAnalysisData(token);
+    if (token != null && mounted) {
+      _analysisCubit.loadAnalysisData(token);
     }
   }
 
@@ -87,13 +95,9 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline,
-                      size: 64, color: colorScheme.error),
+                  Icon(Icons.error_outline, size: 64, color: colorScheme.error),
                   const SizedBox(height: 16),
-                  Text(
-                    'Failed to load data',
-                    style: textTheme.titleLarge,
-                  ),
+                  Text('Failed to load data', style: textTheme.titleLarge),
                   const SizedBox(height: 8),
                   Text(
                     state.message,
@@ -113,8 +117,9 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
         }
 
         // Extract data from loaded state
-        final analysisData =
-            state is AnalysisLoaded ? state.analysisData : null;
+        final analysisData = state is AnalysisLoaded
+            ? state.analysisData
+            : null;
         if (analysisData == null) {
           return Scaffold(
             backgroundColor: theme.scaffoldBackgroundColor,
@@ -141,40 +146,41 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
           {
             'value': '${analysisData.totalChapters ?? 0}',
             'label': 'Chapters',
-            'icon': Icons.menu_book
+            'icon': Icons.menu_book,
           },
           {
             'value': '${analysisData.avgScore ?? 0}%',
             'label': 'Avg Score',
-            'icon': Icons.insights
+            'icon': Icons.insights,
           },
           {
             'value': analysisData.lastRank != null
                 ? '#${analysisData.lastRank}'
                 : '-',
             'label': 'Rank',
-            'icon': Icons.emoji_events
+            'icon': Icons.emoji_events,
           },
         ];
 
         // Prepare chapters data from API
         final chapters = (analysisData.recentChapters ?? [])
-            .map((chapter) => {
-                  'id': chapter.id,
-                  'title': chapter.title,
-                  'subject': chapter.category ?? 'General',
-                  'progress': 0.0, // TODO: Calculate based on actual progress
-                  'pages': '${chapter.description?.length ?? 0} content',
-                  'timeAgo': chapter.createdAt ?? 'Recently',
-                  'chapterModel': chapter,
-                })
+            .map(
+              (chapter) => {
+                'id': chapter.id,
+                'title': chapter.title,
+                'subject': chapter.category ?? 'General',
+                'progress': 0.0, // TODO: Calculate based on actual progress
+                'pages': '${chapter.description?.length ?? 0} content',
+                'timeAgo': chapter.createdAt ?? 'Recently',
+                'chapterModel': chapter,
+              },
+            )
             .toList();
 
         // Prepare folders data from API
-        final folders = (analysisData.recentFolders ?? [])
-            .asMap()
-            .entries
-            .map((entry) {
+        final folders = (analysisData.recentFolders ?? []).asMap().entries.map((
+          entry,
+        ) {
           final index = entry.key;
           final folder = entry.value;
           // Rotate through theme colors
@@ -195,14 +201,13 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
         }).toList();
 
         // Prepare last summary data
-        final lastSummary = (analysisData.lastSummary != null &&
-                analysisData.lastSummary!.isNotEmpty)
+        final lastSummary = (analysisData.lastSummary != null)
             ? {
-                'title': analysisData.lastSummary!.first.chapterTitle,
+                'title': analysisData.lastSummary!.chapterTitle,
                 'chapterId':
                     'unknown', // SummaryModel doesn't have chapterId directly
                 'timeAgo': 'Recently',
-                'keyPoints': analysisData.lastSummary!.first.keyPoints.length,
+                'keyPoints': analysisData.lastSummary!.keyPoints.length,
                 'readTime': 8, // TODO: Calculate read time
                 'badge': 'AI Generated',
               }
@@ -210,272 +215,575 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
 
         // Prepare mind maps data
         final mindMaps = (analysisData.lastMindmaps ?? [])
-            .map((mindmap) => {
-                  'title': mindmap.title ?? 'Mind Map',
-                  'subject': 'Chapter', // TODO: Get chapter name
-                  'chapterId': mindmap.chapterId,
-                  'nodes': 20, // TODO: Calculate nodes if available
-                  'timeAgo': 'Recently',
-                })
+            .map(
+              (mindmap) => {
+                'title': mindmap.title ?? 'Mind Map',
+                'subject': 'Chapter', // TODO: Get chapter name
+                'chapterId': mindmap.chapterId,
+                'nodes': 20, // TODO: Calculate nodes if available
+                'timeAgo': 'Recently',
+              },
+            )
             .toList();
 
-        return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: ScrollConfiguration(
-        behavior: const NoGlowScrollBehavior(),
-        child: CustomScrollView(
-          physics: const ClampingScrollPhysics(),
-          slivers: [
-            // Custom Header
-            if (!isWeb)
-              SliverPersistentHeader(
-                delegate: CustomHeaderDelegate(
-                  minHeight: topPadding + (isTablet ? 60 : 80),
-                  maxHeight: topPadding + (isTablet ? 70 : 100),
-                  screenWidth: screenWidth,
-                ),
-              ),
+        // Check if all content sections are empty
+        final hasChapters = chapters.isNotEmpty;
+        final hasFolders = folders.isNotEmpty;
+        final hasSummary = lastSummary != null;
+        final hasMindMaps = mindMaps.isNotEmpty;
+        final hasAnyContent =
+            hasChapters || hasFolders || hasSummary || hasMindMaps;
 
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // Search Bar
-                  const AppSearchBar(hintText: 'Search folders, chapters...'),
-                  SizedBox(height: verticalSpacing * 1.5),
-                ]),
-              ),
-            ),
+        // Show empty state if no content
+        if (!hasAnyContent) {
+          return Scaffold(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            body: CustomScrollView(
+              physics: const ClampingScrollPhysics(),
+              slivers: [
+                // Custom Header
+                if (!isWeb)
+                  SliverPersistentHeader(
+                    delegate: CustomHeaderDelegate(
+                      minHeight: topPadding + (isTablet ? 60 : 80),
+                      maxHeight: topPadding + (isTablet ? 70 : 100),
+                      screenWidth: screenWidth,
+                    ),
+                  ),
 
-            // Statistics Cards
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.0,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  return _StatCard(
-                    value: stats[index]['value'] as String,
-                    label: stats[index]['label'] as String,
-                    icon: stats[index]['icon'] as IconData,
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyStateWidget(
                     colorScheme: colorScheme,
                     textTheme: textTheme,
-                  );
-                }, childCount: stats.length),
-              ),
+                    horizontalPadding: horizontalPadding,
+                  ),
+                ),
+              ],
             ),
+          );
+        }
 
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  SizedBox(height: verticalSpacing * 2),
+        return Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          body: ScrollConfiguration(
+            behavior: const NoGlowScrollBehavior(),
+            child: CustomScrollView(
+              physics: const ClampingScrollPhysics(),
+              slivers: [
+                // Custom Header
+                if (!isWeb)
+                  SliverPersistentHeader(
+                    delegate: CustomHeaderDelegate(
+                      minHeight: topPadding + (isTablet ? 60 : 80),
+                      maxHeight: topPadding + (isTablet ? 70 : 100),
+                      screenWidth: screenWidth,
+                    ),
+                  ),
 
-                  // Today's Progress Section with real-time updates
-                  StreamBuilder<int>(
-                    stream: _usageTracker.getTodayUsageStream(),
-                    initialData: _usageTracker.getTodayUsageMinutes(),
-                    builder: (context, snapshot) {
-                      final realTimeUsage = snapshot.data ?? 0;
-                      final updatedProgress = {
-                        ...todayProgress,
-                        'studyTime': realTimeUsage,
-                      };
-                      return _TodayProgressCard(
-                        progress: updatedProgress,
+                // SliverPadding(
+                //   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                //   sliver: SliverList(
+                //     delegate: SliverChildListDelegate([
+                //       // Search Bar
+                //       const AppSearchBar(
+                //         hintText: 'Search folders, chapters...',
+                //       ),
+                //       SizedBox(height: verticalSpacing * 1.5),
+                //     ]),
+                //   ),
+                // ),
+
+                // Statistics Cards
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.0,
+                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      return _StatCard(
+                        value: stats[index]['value'] as String,
+                        label: stats[index]['label'] as String,
+                        icon: stats[index]['icon'] as IconData,
                         colorScheme: colorScheme,
                         textTheme: textTheme,
                       );
-                    },
+                    }, childCount: stats.length),
                   ),
-                  SizedBox(height: verticalSpacing * 2),
+                ),
 
-                  SizedBox(height: verticalSpacing * 2),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      SizedBox(height: verticalSpacing * 2),
 
-                  // Recent Chapters Section Header
-                  SectionHeader(
-                    title: "Recent Chapters",
-                    actionText: "View All",
-                    actionIcon: Icons.arrow_forward_ios,
+                      // Today's Progress Section with real-time updates
+                      StreamBuilder<int>(
+                        stream: _usageTracker.getTodayUsageStream(),
+                        initialData: _usageTracker.getTodayUsageMinutes(),
+                        builder: (context, snapshot) {
+                          final realTimeUsage = snapshot.data ?? 0;
+                          final updatedProgress = {
+                            ...todayProgress,
+                            'studyTime': realTimeUsage,
+                          };
+                          return _TodayProgressCard(
+                            progress: updatedProgress,
+                            colorScheme: colorScheme,
+                            textTheme: textTheme,
+                          );
+                        },
+                      ),
+                      SizedBox(height: verticalSpacing * 2),
+
+                      SizedBox(height: verticalSpacing * 2),
+                    ]),
                   ),
-                  SizedBox(height: verticalSpacing),
-                ]),
-              ),
-            ),
+                ),
 
-            // Recent Chapters List
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final chapter = chapters[index];
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: screenHeight * 0.015),
-                    child: _EnhancedChapterCard(
-                      title: chapter['title'] as String,
-                      subject: chapter['subject'] as String,
-                      progress: chapter['progress'] as double,
-                      pages: chapter['pages'] as String,
-                      timeAgo: chapter['timeAgo'] as String,
-                      colorScheme: colorScheme,
-                      textTheme: textTheme,
-                      onTap: () {
-                        // Navigate to chapter detail
-                        final chapterModel =
-                            chapter['chapterModel'] as ChapterModel;
-                        context.push(
-                          '/chapter/${chapterModel.id}',
-                          extra: {
-                            'chapter': chapterModel,
-                            'folderColor': colorScheme.primary,
+                // Recent Chapters Section - Only show if has chapters
+                if (hasChapters)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        // Recent Chapters Section Header
+                        SectionHeader(
+                          title: "Recent Chapters",
+                          actionText: "View All",
+                          actionIcon: Icons.arrow_forward_ios,
+                        ),
+                        SizedBox(height: verticalSpacing),
+                      ]),
+                    ),
+                  ),
+
+                // Recent Chapters List
+                if (hasChapters)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final chapter = chapters[index];
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: screenHeight * 0.015,
+                          ),
+                          child: _EnhancedChapterCard(
+                            title: chapter['title'] as String,
+                            subject: chapter['subject'] as String,
+                            progress: chapter['progress'] as double,
+                            pages: chapter['pages'] as String,
+                            timeAgo: chapter['timeAgo'] as String,
+                            colorScheme: colorScheme,
+                            textTheme: textTheme,
+                            onTap: () {
+                              // Navigate to chapter detail
+                              final chapterModel =
+                                  chapter['chapterModel'] as ChapterModel;
+                              context.push(
+                                '/chapter/${chapterModel.id}',
+                                extra: {
+                                  'chapter': chapterModel,
+                                  'folderColor': colorScheme.primary,
+                                },
+                              );
+                            },
+                          ),
+                        );
+                      }, childCount: chapters.length),
+                    ),
+                  ),
+
+                // Recent Folders Section - Only show if has folders
+                if (hasFolders)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        SizedBox(height: verticalSpacing * 2),
+                        SectionHeader(
+                          title: "Recent Folders",
+                          actionText: "View All",
+                          actionIcon: Icons.arrow_forward_ios,
+                        ),
+                        SizedBox(height: verticalSpacing),
+                      ]),
+                    ),
+                  ),
+
+                // Folders Grid
+                if (hasFolders)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    sliver: SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: isTablet ? 3 : 2,
+                        crossAxisSpacing:
+                            screenWidth * (isTablet ? 0.03 : 0.04),
+                        mainAxisSpacing: screenHeight * 0.02,
+                        childAspectRatio: isTablet ? 1.2 : 1.0,
+                        mainAxisExtent: isTablet ? 180 : 160,
+                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final folder = folders[index];
+                        return _EnhancedFolderCard(
+                          title: folder['title'] as String,
+                          chapters: folder['chapters'] as int,
+                          timeAgo: folder['timeAgo'] as String,
+                          color: folder['color'] as Color,
+                          colorScheme: colorScheme,
+                          textTheme: textTheme,
+                          onTap: () {
+                            // Navigate to folder detail
+                            final folderId = folder['id'] as String;
+                            context.push(
+                              '/folder/$folderId',
+                              extra: {
+                                'title': folder['title'],
+                                'subtitle': folder['subject'] ?? '',
+                                'chapters': folder['chapters'],
+                                'passed': 0,
+                                'attempted': 0,
+                                'color': folder['color'],
+                              },
+                            );
                           },
                         );
-                      },
+                      }, childCount: folders.length),
                     ),
-                  );
-                }, childCount: chapters.length),
-              ),
-            ),
-
-            // Recent Folders Section
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  SizedBox(height: verticalSpacing * 2),
-                  SectionHeader(
-                    title: "Recent Folders",
-                    actionText: "View All",
-                    actionIcon: Icons.arrow_forward_ios,
                   ),
-                  SizedBox(height: verticalSpacing),
-                ]),
-              ),
-            ),
 
-            // Folders Grid
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isTablet ? 3 : 2,
-                  crossAxisSpacing: screenWidth * (isTablet ? 0.03 : 0.04),
-                  mainAxisSpacing: screenHeight * 0.02,
-                  childAspectRatio: isTablet ? 1.2 : 1.0,
-                  mainAxisExtent: isTablet ? 180 : 160,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final folder = folders[index];
-                  return _EnhancedFolderCard(
-                    title: folder['title'] as String,
-                    chapters: folder['chapters'] as int,
-                    timeAgo: folder['timeAgo'] as String,
-                    color: folder['color'] as Color,
-                    colorScheme: colorScheme,
-                    textTheme: textTheme,
-                    onTap: () {
-                      // Navigate to folder detail
-                      final folderId = folder['id'] as String;
-                      context.push(
-                        '/folder/$folderId',
-                        extra: {
-                          'title': folder['title'],
-                          'subtitle': folder['subject'] ?? '',
-                          'chapters': folder['chapters'],
-                          'passed': 0,
-                          'attempted': 0,
-                          'color': folder['color'],
-                        },
-                      );
-                    },
-                  );
-                }, childCount: folders.length),
-              ),
-            ),
-
-            // Last Summary Section
-            if (lastSummary != null)
-              SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    SizedBox(height: verticalSpacing * 2),
-                    SectionHeader(
-                      title: "Last Summary",
-                      actionText: "",
-                      actionIcon: Icons.description,
+                // Last Summary Section
+                if (lastSummary != null)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
                     ),
-                    SizedBox(height: verticalSpacing),
-                    _SummaryCard(
-                      summary: lastSummary,
-                      colorScheme: colorScheme,
-                      textTheme: textTheme,
-                      onTap: () {
-                        // Navigate to chapter detail to view summary
-                        // For now, show a snackbar since we need actual summary data
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Opening summary for: ${lastSummary['title']}',
-                            ),
-                            duration: const Duration(seconds: 2),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        SizedBox(height: verticalSpacing * 2),
+                        SectionHeader(
+                          title: "Last Summary",
+                          actionText: "",
+                          actionIcon: Icons.description,
+                        ),
+                        SizedBox(height: verticalSpacing),
+                        _SummaryCard(
+                          summary: lastSummary,
+                          colorScheme: colorScheme,
+                          textTheme: textTheme,
+                          onTap: () {
+                            // Navigate to chapter detail to view summary
+                            // For now, show a snackbar since we need actual summary data
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Opening summary for: ${lastSummary['title']}',
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(height: verticalSpacing * 2),
+                      ]),
+                    ),
+                  ),
+
+                // Recent Mind Maps Section - Only show if has mind maps
+                if (hasMindMaps)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        // Recent Mind Maps Section Header
+                        SectionHeader(
+                          title: "Recent Mind Maps",
+                          actionText: "View All",
+                          actionIcon: Icons.arrow_forward_ios,
+                        ),
+                        SizedBox(height: verticalSpacing),
+                      ]),
+                    ),
+                  ),
+
+                // Mind Maps List
+                if (hasMindMaps)
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final mindMap = mindMaps[index];
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: screenHeight * 0.015,
+                          ),
+                          child: _MindMapCard(
+                            mindMap: mindMap,
+                            colorScheme: colorScheme,
+                            textTheme: textTheme,
+                            onTap: () {
+                              // Show snackbar for mind map navigation
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Opening mind map: ${mindMap['title']}',
+                                  ),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
                           ),
                         );
-                      },
+                      }, childCount: mindMaps.length),
                     ),
-                    SizedBox(height: verticalSpacing * 2),
+                  ),
 
-                    // Recent Mind Maps Section Header
-                    SectionHeader(
-                      title: "Recent Mind Maps",
-                      actionText: "View All",
-                      actionIcon: Icons.arrow_forward_ios,
-                    ),
-                    SizedBox(height: verticalSpacing),
-                  ]),
+                // Bottom spacing
+                SliverToBoxAdapter(
+                  child: SizedBox(height: verticalSpacing * 2),
                 ),
-              ),
-
-            // Mind Maps List
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final mindMap = mindMaps[index];
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: screenHeight * 0.015),
-                    child: _MindMapCard(
-                      mindMap: mindMap,
-                      colorScheme: colorScheme,
-                      textTheme: textTheme,
-                      onTap: () {
-                        // Show snackbar for mind map navigation
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Opening mind map: ${mindMap['title']}',
-                            ),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                }, childCount: mindMaps.length),
-              ),
+              ],
             ),
-
-            // Bottom spacing
-            SliverToBoxAdapter(child: SizedBox(height: verticalSpacing * 2)),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
       },
+    );
+  }
+}
+
+// Empty State Widget
+class _EmptyStateWidget extends StatelessWidget {
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final double horizontalPadding;
+
+  const _EmptyStateWidget({
+    required this.colorScheme,
+    required this.textTheme,
+    required this.horizontalPadding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final bool isTablet = screenSize.width > 600;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(flex: 2),
+          // Animated Icon with gradient background
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 1000),
+            curve: Curves.easeOutBack,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: value,
+                child: Container(
+                  width: isTablet ? 140 : 120,
+                  height: isTablet ? 140 : 120,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        colorScheme.primaryContainer,
+                        colorScheme.secondaryContainer,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withOpacity(0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.auto_awesome,
+                    size: isTablet ? 72 : 64,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 40),
+
+          // Title with animation
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeOut,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 20 * (1 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              'Your Learning Journey\nAwaits!',
+              style: textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+                height: 1.3,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Subtitle with animation
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 1000),
+            curve: Curves.easeOut,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 20 * (1 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Start by creating your first folder and adding chapters to begin your amazing learning experience',
+                style: textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.6,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          const SizedBox(height: 48),
+
+          // Action Buttons with animation
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 1200),
+            curve: Curves.easeOut,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 20 * (1 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/folder');
+                  },
+                  icon: const Icon(Icons.create_new_folder),
+                  label: const Text('Create Folder'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 32 : 24,
+                      vertical: isTablet ? 16 : 14,
+                    ),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    context.push('/folder');
+                  },
+                  icon: const Icon(Icons.explore),
+                  label: const Text('Explore'),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 32 : 24,
+                      vertical: isTablet ? 16 : 14,
+                    ),
+                    side: BorderSide(color: colorScheme.outline),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(flex: 3),
+
+          // Bottom hint
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 1400),
+            curve: Curves.easeOut,
+            builder: (context, value, child) {
+              return Opacity(opacity: value, child: child);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'Tip: Organize your content in folders for better learning',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
     );
   }
 }
@@ -507,12 +815,19 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            style: textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
+          Flexible(
+            child: Text(
+              value,
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+                fontSize: 18, // Fixed size to prevent overflow
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 4),
@@ -546,7 +861,10 @@ class _TodayProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progressPercent = progress['completed'] / progress['total'];
+    final total = progress['total'] as int;
+    final completed = progress['completed'] as int;
+    // Prevent division by zero - if total is 0, progress is 0
+    final progressPercent = total > 0 ? completed / total : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(20),

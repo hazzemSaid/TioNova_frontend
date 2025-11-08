@@ -42,17 +42,15 @@ import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/data/models/mindmapModel.dart';
 
 class Analysismodel extends Equatable {
-  final String id;
   final String userId;
   final List<ChapterModel>? recentChapters;
   final List<Foldermodel>? recentFolders;
   final List<Mindmapmodel>? lastMindmaps;
   final int? totalChapters;
-  final List<SummaryModel>? lastSummary;
+  final SummaryModel? lastSummary;
   final double? avgScore;
   final int? lastRank;
   const Analysismodel({
-    required this.id,
     required this.userId,
     this.recentChapters,
     this.recentFolders,
@@ -65,7 +63,6 @@ class Analysismodel extends Equatable {
   //from json
   factory Analysismodel.fromJson(Map<String, dynamic> json) {
     return Analysismodel(
-      id: json['_id'],
       userId: json['userId'],
       recentChapters: json['recentChapters'] != null
           ? (json['recentChapters'] as List)
@@ -84,9 +81,7 @@ class Analysismodel extends Equatable {
           : null,
       totalChapters: json['totalChapters'] ?? 0,
       lastSummary: json['lastSummary'] != null
-          ? (json['lastSummary'] as List)
-                .map((e) => SummaryModel.fromJson(e))
-                .toList()
+          ? SummaryModel.fromJson(json['lastSummary']['summary'])
           : null,
       avgScore: json['avgScore'] != null
           ? (json['avgScore'] as num).toDouble()
@@ -97,7 +92,6 @@ class Analysismodel extends Equatable {
   @override
   // TODO: implement props
   List<Object?> get props => [
-    id,
     userId,
     recentChapters,
     recentFolders,

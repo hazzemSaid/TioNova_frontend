@@ -174,30 +174,18 @@ class SummaryModel extends Equatable {
   });
 
   factory SummaryModel.fromJson(Map<String, dynamic> json) {
-    try {
-      return SummaryModel(
-        chapterTitle: _sanitizeUtf8(json['chapter_title'] as String? ?? ''),
-        chapterOverview: json['chapter_overview'] != null
-            ? ChapterOverview.fromJson(
-                json['chapter_overview'] as Map<String, dynamic>,
-              )
-            : const ChapterOverview(title: '', summary: ''),
-        keyTakeaways: _parseStringList(json['key_takeaways']),
-        keyPoints: _parseKeyPoints(json['key_points']),
-        definitions: _parseDefinitions(json['definitions']),
-        flashcards: _parseFlashcards(json['flashcards']),
-      );
-    } catch (e) {
-      print('Error parsing SummaryModel: $e');
-      return const SummaryModel(
-        chapterTitle: '',
-        chapterOverview: ChapterOverview(title: '', summary: ''),
-        keyTakeaways: [],
-        keyPoints: [],
-        definitions: [],
-        flashcards: [],
-      );
-    }
+    return SummaryModel(
+      chapterTitle: _sanitizeUtf8(json['chapter_title'] as String? ?? ''),
+      chapterOverview: json['chapter_overview'] != null
+          ? ChapterOverview.fromJson(
+              json['chapter_overview'] as Map<String, dynamic>,
+            )
+          : const ChapterOverview(title: '', summary: ''),
+      keyTakeaways: _parseStringList(json['key_takeaways']),
+      keyPoints: _parseKeyPoints(json['key_points']),
+      definitions: _parseDefinitions(json['definitions']),
+      flashcards: _parseFlashcards(json['flashcards']),
+    );
   }
 
   static List<String> _parseStringList(dynamic data) {
