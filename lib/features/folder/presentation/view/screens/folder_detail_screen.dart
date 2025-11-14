@@ -206,13 +206,16 @@ class FolderDetailScreen extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.all(horizontalPadding),
               child: GestureDetector(
-                onTap: () {
+                onTap: () async {
                   final chapterCubit = context.read<ChapterCubit>();
-                  context.pushNamed(
+                  final result = await context.pushNamed(
                     'create-chapter',
                     pathParameters: {'folderId': folderId},
                     extra: {'folderTitle': title, 'chapterCubit': chapterCubit},
                   );
+                  if (result == true && token.isNotEmpty) {
+                    chapterCubit.getChapters(folderId: folderId, token: token);
+                  }
                 },
                 child: CustomPaint(
                   size: Size(double.infinity, 44),
@@ -434,9 +437,9 @@ class FolderDetailScreen extends StatelessWidget {
                   Expanded(
                     flex: 1,
                     child: GestureDetector(
-                      onTap: () {
+                      onTap: () async {
                         final chapterCubit = context.read<ChapterCubit>();
-                        context.pushNamed(
+                        final result = await context.pushNamed(
                           'create-chapter',
                           pathParameters: {'folderId': folderId},
                           extra: {
@@ -444,6 +447,12 @@ class FolderDetailScreen extends StatelessWidget {
                             'chapterCubit': chapterCubit,
                           },
                         );
+                        if (result == true && token.isNotEmpty) {
+                          chapterCubit.getChapters(
+                            folderId: folderId,
+                            token: token,
+                          );
+                        }
                       },
                       child: Container(
                         height: 80,

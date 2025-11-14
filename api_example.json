@@ -1,0 +1,29 @@
+{
+  "update_check_endpoint": "https://your-api.com/api/check-update",
+  "method": "GET",
+  "query_parameters": {
+    "current_version": "1.0.0",
+    "current_build": "1",
+    "platform": "android"
+  },
+  "response_when_update_available": {
+    "update_available": true,
+    "latest_version": "1.0.1",
+    "latest_build_number": 2,
+    "download_url": "https://your-server.com/downloads/tionova-1.0.1.apk",
+    "release_notes": "• إصلاح أخطاء حرجة\n• تحسين استقرار التطبيق\n• تحسين واجهة المستخدم\n• إضافة ميزات جديدة",
+    "file_size_mb": 93.5,
+    "is_mandatory": false,
+    "min_required_version": "1.0.0"
+  },
+  "response_when_no_update": {
+    "update_available": false
+  },
+  "notes": [
+    "is_mandatory: true يجبر المستخدم على التحديث",
+    "file_size_mb: حجم APK بالميجابايت",
+    "download_url: يجب أن يكون direct download link للـ APK",
+    "release_notes: استخدم \\n للسطر الجديد",
+    "min_required_version: أقل نسخة مطلوبة للتشغيل"
+  ]
+}

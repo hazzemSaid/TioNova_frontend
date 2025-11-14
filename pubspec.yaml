@@ -55,7 +55,6 @@ dependencies:
   internet_connection_checker: ^3.0.1
   get_it: ^8.2.0
   bloc: ^8.1.4
-  flutter_native_splash: ^2.4.6
   intl: ^0.19.0
   pdf: ^3.10.4
   flutter_pdfview: ^1.3.2
@@ -70,6 +69,10 @@ dependencies:
   qr_flutter: ^4.1.0
   mobile_scanner: ^5.2.3
   skeletonizer: ^2.1.0+1
+  package_info_plus: ^8.0.0
+  open_file: ^3.5.10
+  shorebird_code_push: ^2.0.5
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -85,21 +88,8 @@ dev_dependencies:
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
-flutter_native_splash:
-  android: true
-  ios: true
-  web: false
 
-  # Android <= 11
-  color: "#000000"
-  color_dark: "#000000"
-  image: assets/images/logo2.png
-
-  # Android 12+
-  android_12:
-    color: "#000000"
-    color_dark: "#000000"
-    image: assets/images/logo2.png
+# flutter_native_splash removed - using transparent native splash + custom Flutter splash (TioNovaspalsh.dart)
 
 # The following section is specific to Flutter packages.
 flutter:
@@ -110,6 +100,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - shorebird.yaml
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

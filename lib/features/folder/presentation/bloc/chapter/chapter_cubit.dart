@@ -1,8 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
+import 'package:flutter_client_sse/flutter_client_sse.dart';
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
+import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
@@ -40,12 +46,13 @@ class ChapterCubit extends Cubit<ChapterState> {
   final CreateChapterUseCase createChapterUseCase;
   final GetChapterContentPdfUseCase getChapterContentPdfUseCase;
   final GenerateSummaryUseCase generateSummaryUseCase;
+  StreamSubscription<SSEModel>? _chapterCreationSubscription;
   void getChapters({required String folderId, required String token}) async {
-    emit(ChapterLoading());
+    safeEmit(ChapterLoading());
     final result = await getChaptersUseCase(folderId: folderId, token: token);
     result.fold(
-      (failure) => emit(ChapterError(failure)),
-      (chapters) => emit(ChapterLoaded(chapters)),
+      (failure) => safeEmit(ChapterError(failure)),
+      (chapters) => safeEmit(ChapterLoaded(chapters)),
     );
   }
 
@@ -56,7 +63,7 @@ class ChapterCubit extends Cubit<ChapterState> {
     required String token,
     required FileData file,
   }) async {
-    emit(CreateChapterLoading());
+    safeEmit(CreateChapterLoading());
     final result = await createChapterUseCase(
       title: title,
       description: description,
@@ -64,10 +71,86 @@ class ChapterCubit extends Cubit<ChapterState> {
       token: token,
       file: file,
     );
-    result.fold((failure) => emit(CreateChapterError(failure)), (_) {
-      emit(CreateChapterSuccess());
-      getChapters(folderId: folderId, token: token);
-    });
+    result.fold(
+      (failure) {
+        safeEmit(CreateChapterError(failure));
+        unsubscribeFromChapterCreationProgress();
+      },
+      (_) {
+        if (_chapterCreationSubscription == null) {
+          safeEmit(const CreateChapterSuccess());
+        }
+      },
+    );
+  }
+
+  void subscribeToChapterCreationProgress({required String userId}) {
+    final sseUrl = '$baseUrl/sse/subscribe?userId=$userId';
+    _chapterCreationSubscription?.cancel();
+    _chapterCreationSubscription = SSEClient.subscribeToSSE(
+      url: sseUrl,
+      method: SSERequestType.GET,
+      header: const {},
+    ).listen(
+      _handleChapterCreationEvent,
+      onError: (error) {
+        unsubscribeFromChapterCreationProgress();
+        if (!isClosed) {
+          safeEmit(
+            const CreateChapterError(
+              ServerFailure('Lost connection to creation progress stream'),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  void unsubscribeFromChapterCreationProgress() {
+    _chapterCreationSubscription?.cancel();
+    _chapterCreationSubscription = null;
+  }
+
+  void _handleChapterCreationEvent(SSEModel event) {
+    if (isClosed || event.data == null || event.data!.isEmpty) return;
+
+    try {
+      final decodedPayload = json.decode(event.data!);
+      if (decodedPayload is! Map<String, dynamic>) return;
+
+      if (!decodedPayload.containsKey('progress') ||
+          !decodedPayload.containsKey('message')) {
+        return;
+      }
+
+      final num? rawProgress = decodedPayload['progress'] as num?;
+      final int? progressValue =
+          rawProgress != null ? rawProgress.clamp(0, 100).toInt() : null;
+      if (progressValue == null) return;
+      final message = decodedPayload['message'] as String? ?? '';
+      final chapterId = decodedPayload['chapterId'] as String?;
+
+      ChapterModel? chapter;
+      if (decodedPayload['chapter'] != null) {
+        chapter = ChapterModel.fromJson(decodedPayload['chapter']);
+      }
+
+      safeEmit(
+        CreateChapterProgress(
+          progress: progressValue,
+          message: message,
+          chapterId: chapterId,
+          chapter: chapter,
+        ),
+      );
+
+      if (progressValue >= 100 && chapter != null) {
+        safeEmit(CreateChapterSuccess(chapter: chapter));
+        unsubscribeFromChapterCreationProgress();
+      }
+    } catch (_) {
+      // Ignore malformed SSE payloads silently
+    }
   }
 
   void getChapterContentPdf({
@@ -75,16 +158,16 @@ class ChapterCubit extends Cubit<ChapterState> {
     required String chapterId,
     bool forDownload = false, // Add flag to indicate if this is for download
   }) async {
-    emit(GetChapterContentPdfLoading());
+    safeEmit(GetChapterContentPdfLoading());
     final result = await getChapterContentPdfUseCase(
       token: token,
       chapterId: chapterId,
     );
     result.fold(
       (failure) =>
-          emit(GetChapterContentPdfError(failure, forDownload: forDownload)),
+          safeEmit(GetChapterContentPdfError(failure, forDownload: forDownload)),
       (pdfData) =>
-          emit(GetChapterContentPdfSuccess(pdfData, forDownload: forDownload)),
+          safeEmit(GetChapterContentPdfSuccess(pdfData, forDownload: forDownload)),
     );
   }
 
@@ -132,7 +215,7 @@ class ChapterCubit extends Cubit<ChapterState> {
     result.fold(
       (failure) {
         print('❌ UseCase failed: ${failure.errMessage}');
-        emit(GenerateSummaryError(failure));
+        safeEmit(GenerateSummaryError(failure));
       },
       (summaryResponse) async {
         print('✅ UseCase success - SummaryResponse received');
@@ -164,15 +247,15 @@ class ChapterCubit extends Cubit<ChapterState> {
 
           if (forceRegenerate) {
             print('🔄 Emitting SummaryRegenerateSuccess');
-            emit(SummaryRegenerateSuccess(summaryData));
+            safeEmit(SummaryRegenerateSuccess(summaryData));
           } else {
             print('✅ Emitting GenerateSummaryStructuredSuccess');
-            emit(GenerateSummaryStructuredSuccess(summaryData));
+            safeEmit(GenerateSummaryStructuredSuccess(summaryData));
           }
         } catch (e) {
           // If there's any issue with the parsed data, log it
           print('⚠️ Error processing summary data: $e');
-          emit(
+          safeEmit(
             GenerateSummaryError(
               ServerFailure('Failed to process summary data: $e'),
             ),
@@ -188,7 +271,7 @@ class ChapterCubit extends Cubit<ChapterState> {
         chapterId,
       );
       if (cachedData != null) {
-        emit(SummaryCachedFound(cachedData.summaryData, cachedData.cacheAge));
+        safeEmit(SummaryCachedFound(cachedData.summaryData, cachedData.cacheAge));
       }
     }
   }
@@ -207,14 +290,14 @@ class ChapterCubit extends Cubit<ChapterState> {
   }
 
   void createMindmap({required String token, required String chapterId}) async {
-    emit(CreateMindmapLoading());
+    safeEmit(CreateMindmapLoading());
     final result = await createMindmapUseCase(
       token: token,
       chapterId: chapterId,
     );
     result.fold(
-      (failure) => emit(CreateMindmapError(failure)),
-      (mindmap) => emit(CreateMindmapSuccess(mindmap)),
+      (failure) => safeEmit(CreateMindmapError(failure)),
+      (mindmap) => safeEmit(CreateMindmapSuccess(mindmap)),
     );
   }
 
@@ -222,14 +305,14 @@ class ChapterCubit extends Cubit<ChapterState> {
     required String chapterId,
     required String token,
   }) async {
-    emit(GetNotesByChapterIdLoading());
+    safeEmit(GetNotesByChapterIdLoading());
     final result = await getNotesByChapterIdUseCase(
       chapterId: chapterId,
       token: token,
     );
     result.fold(
-      (failure) => emit(GetNotesByChapterIdError(failure)),
-      (notes) => emit(GetNotesByChapterIdSuccess(notes)),
+      (failure) => safeEmit(GetNotesByChapterIdError(failure)),
+      (notes) => safeEmit(GetNotesByChapterIdSuccess(notes)),
     );
   }
 
@@ -239,7 +322,7 @@ class ChapterCubit extends Cubit<ChapterState> {
     required String token,
     required Map<String, dynamic> rawData,
   }) async {
-    emit(AddNoteLoading());
+    safeEmit(AddNoteLoading());
     final result = await addNoteUseCase(
       title: title,
       chapterId: chapterId,
@@ -247,8 +330,8 @@ class ChapterCubit extends Cubit<ChapterState> {
       rawData: rawData,
     );
     result.fold(
-      (failure) => emit(AddNoteError(failure)),
-      (note) => emit(AddNoteSuccess(note)),
+      (failure) => safeEmit(AddNoteError(failure)),
+      (note) => safeEmit(AddNoteSuccess(note)),
     );
   }
 
@@ -257,11 +340,17 @@ class ChapterCubit extends Cubit<ChapterState> {
     required String token,
     required String chapterId,
   }) async {
-    emit(DeleteNoteLoading());
+    safeEmit(DeleteNoteLoading());
     final result = await deleteNoteUseCase(noteId: noteId, token: token);
-    result.fold((failure) => emit(DeleteNoteError(failure)), (_) {
-      emit(DeleteNoteSuccess());
+    result.fold((failure) => safeEmit(DeleteNoteError(failure)), (_) {
+      safeEmit(DeleteNoteSuccess());
       getNotesByChapterId(chapterId: chapterId, token: token);
     });
+  }
+
+  @override
+  Future<void> close() {
+    unsubscribeFromChapterCreationProgress();
+    return super.close();
   }
 }

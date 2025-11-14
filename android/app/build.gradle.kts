@@ -75,12 +75,28 @@ android {
 flutter {
     source = "../.."
 }
+
 dependencies {
     // Core library desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-    
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
+
+    // Android 12+ Splash Screen API
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // Firebase - Using older BOM compatible with Kotlin 2.0.21
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
+
+    // Fix for R8: Force Kotlin stdlib version to match plugin version
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
+    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.21")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.21")
+    }
 }

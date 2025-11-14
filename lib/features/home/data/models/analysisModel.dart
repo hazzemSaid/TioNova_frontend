@@ -41,6 +41,58 @@ import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/data/models/mindmapModel.dart';
 
+class ProfileModel extends Equatable {
+  final int streak;
+  final String? lastActiveDate;
+  final int totalQuizzesTaken;
+  final int totalMindmapsCreated;
+  final int totalSummariesCreated;
+  final double averageQuizScore;
+
+  const ProfileModel({
+    required this.streak,
+    this.lastActiveDate,
+    required this.totalQuizzesTaken,
+    required this.totalMindmapsCreated,
+    required this.totalSummariesCreated,
+    required this.averageQuizScore,
+  });
+
+  factory ProfileModel.fromJson(Map<String, dynamic> json) {
+    return ProfileModel(
+      streak: json['streak'] ?? 0,
+      lastActiveDate: json['lastActiveDate'],
+      totalQuizzesTaken: json['totalQuizzesTaken'] ?? 0,
+      totalMindmapsCreated: json['totalMindmapsCreated'] ?? 0,
+      totalSummariesCreated: json['totalSummariesCreated'] ?? 0,
+      averageQuizScore: json['averageQuizScore'] != null
+          ? (json['averageQuizScore'] as num).toDouble()
+          : 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'streak': streak,
+      'lastActiveDate': lastActiveDate,
+      'totalQuizzesTaken': totalQuizzesTaken,
+      'totalMindmapsCreated': totalMindmapsCreated,
+      'totalSummariesCreated': totalSummariesCreated,
+      'averageQuizScore': averageQuizScore,
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+    streak,
+    lastActiveDate,
+    totalQuizzesTaken,
+    totalMindmapsCreated,
+    totalSummariesCreated,
+    averageQuizScore,
+  ];
+}
+
 class Analysismodel extends Equatable {
   final String userId;
   final List<ChapterModel>? recentChapters;
@@ -50,6 +102,7 @@ class Analysismodel extends Equatable {
   final SummaryModel? lastSummary;
   final double? avgScore;
   final int? lastRank;
+  final ProfileModel? profile;
   const Analysismodel({
     required this.userId,
     this.recentChapters,
@@ -59,6 +112,7 @@ class Analysismodel extends Equatable {
     this.lastSummary,
     this.avgScore,
     this.lastRank,
+    this.profile,
   });
   //from json
   factory Analysismodel.fromJson(Map<String, dynamic> json) {
@@ -87,6 +141,9 @@ class Analysismodel extends Equatable {
           ? (json['avgScore'] as num).toDouble()
           : 0,
       lastRank: json['lastRank'] ?? 0,
+      profile: json['profile'] != null
+          ? ProfileModel.fromJson(json['profile'])
+          : null,
     );
   }
   @override
@@ -100,5 +157,6 @@ class Analysismodel extends Equatable {
     lastSummary,
     avgScore,
     lastRank,
+    profile,
   ];
 }

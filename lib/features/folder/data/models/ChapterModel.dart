@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 class ChapterModel extends Equatable {
-  final String? id;
+  final String id;
   final String? title;
   final String? description;
   final String? createdBy;
@@ -13,7 +13,7 @@ class ChapterModel extends Equatable {
   final String? summaryId;
 
   const ChapterModel({
-    this.id,
+    required this.id,
     this.summaryId,
     this.title,
     this.description,

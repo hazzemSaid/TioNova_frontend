@@ -1,5 +1,6 @@
 // features/quiz/presentation/bloc/quizcubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/features/quiz/domain/usecases/CreateQuizUseCase.dart';
 import 'package:tionova/features/quiz/domain/usecases/GetHistoryUseCase.dart';
 import 'package:tionova/features/quiz/domain/usecases/UserQuizStatusUseCase.dart';
@@ -15,14 +16,14 @@ class QuizCubit extends Cubit<QuizState> {
   final CreateQuizUseCase createQuizUseCase;
   final UserQuizStatusUseCase userQuizStatusUseCase;
   void createQuiz({required String token, required String chapterId}) async {
-    emit(CreateQuizLoading());
+    safeEmit(CreateQuizLoading());
     final result = await createQuizUseCase.call(
       token: token,
       chapterId: chapterId,
     );
     result.fold(
-      (failure) => emit(CreateQuizFailure(failure: failure)),
-      (quiz) => emit(CreateQuizSuccess(quiz: quiz)),
+      (failure) => safeEmit(CreateQuizFailure(failure: failure)),
+      (quiz) => safeEmit(CreateQuizSuccess(quiz: quiz)),
     );
   }
 
@@ -32,7 +33,7 @@ class QuizCubit extends Cubit<QuizState> {
     required Map<String, dynamic> body,
     required String chapterId,
   }) async {
-    emit(UserQuizStatusLoading());
+    safeEmit(UserQuizStatusLoading());
     final result = await userQuizStatusUseCase.call(
       token: token,
       quizId: quizId,
@@ -40,20 +41,20 @@ class QuizCubit extends Cubit<QuizState> {
       chapterId: chapterId,
     );
     result.fold(
-      (failure) => emit(UserQuizStatusFailure(failure: failure)),
-      (status) => emit(UserQuizStatusSuccess(status: status)),
+      (failure) => safeEmit(UserQuizStatusFailure(failure: failure)),
+      (status) => safeEmit(UserQuizStatusSuccess(status: status)),
     );
   }
 
   void gethistory({required String token, required String chapterId}) async {
-    emit(GetHistoryLoading());
+    safeEmit(GetHistoryLoading());
     final result = await getHistoryUseCase.call(
       token: token,
       chapterId: chapterId,
     );
     result.fold(
-      (failure) => emit(GetHistoryFailure(failure: failure)),
-      (history) => emit(GetHistorySuccess(history: history)),
+      (failure) => safeEmit(GetHistoryFailure(failure: failure)),
+      (history) => safeEmit(GetHistorySuccess(history: history)),
     );
-  }
+}
 }

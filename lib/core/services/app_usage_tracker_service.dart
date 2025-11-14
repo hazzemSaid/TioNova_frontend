@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-/// Service to track app usage time
+/// Service to track app usage time and cache streak from API
 class AppUsageTrackerService with WidgetsBindingObserver {
   static final AppUsageTrackerService _instance =
       AppUsageTrackerService._internal();
@@ -225,25 +225,118 @@ class AppUsageTrackerService with WidgetsBindingObserver {
     return usage;
   }
 
-  /// Get current streak (consecutive days with usage)
+  /// Update profile data from API
+  Future<void> updateProfileFromApi({
+    required int streak,
+    String? lastActiveDate,
+    int? totalQuizzesTaken,
+    int? totalMindmapsCreated,
+    int? totalSummariesCreated,
+    double? averageQuizScore,
+  }) async {
+    if (_usageBox == null) return;
+
+    final profileData = {
+      'streak': streak,
+      'lastActiveDate': lastActiveDate,
+      'totalQuizzesTaken': totalQuizzesTaken,
+      'totalMindmapsCreated': totalMindmapsCreated,
+      'totalSummariesCreated': totalSummariesCreated,
+      'averageQuizScore': averageQuizScore,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    await _usageBox!.put('api_profile', profileData);
+    debugPrint(
+      'AppUsageTracker: Profile updated from API - Streak: $streak days',
+    );
+  }
+
+  /// Get current streak (from API, cached locally)
   int getCurrentStreak() {
     if (_usageBox == null) return 0;
 
-    int streak = 0;
-    final now = DateTime.now();
-
-    for (int i = 0; i < 365; i++) {
-      final date = now.subtract(Duration(days: i));
-      final data = getUsageForDate(date);
-
-      if (data != null && (data['totalSeconds'] ?? 0) > 0) {
-        streak++;
-      } else {
-        break;
-      }
+    final profileData = _usageBox!.get('api_profile');
+    if (profileData != null) {
+      return (profileData as Map)['streak'] ?? 0;
     }
 
-    return streak;
+    return 0;
+  }
+
+  /// Get total quizzes taken
+  int getTotalQuizzesTaken() {
+    if (_usageBox == null) return 0;
+
+    final profileData = _usageBox!.get('api_profile');
+    if (profileData != null) {
+      return (profileData as Map)['totalQuizzesTaken'] ?? 0;
+    }
+
+    return 0;
+  }
+
+  /// Get total mindmaps created
+  int getTotalMindmapsCreated() {
+    if (_usageBox == null) return 0;
+
+    final profileData = _usageBox!.get('api_profile');
+    if (profileData != null) {
+      return (profileData as Map)['totalMindmapsCreated'] ?? 0;
+    }
+
+    return 0;
+  }
+
+  /// Get total summaries created
+  int getTotalSummariesCreated() {
+    if (_usageBox == null) return 0;
+
+    final profileData = _usageBox!.get('api_profile');
+    if (profileData != null) {
+      return (profileData as Map)['totalSummariesCreated'] ?? 0;
+    }
+
+    return 0;
+  }
+
+  /// Get average quiz score
+  double getAverageQuizScore() {
+    if (_usageBox == null) return 0.0;
+
+    final profileData = _usageBox!.get('api_profile');
+    if (profileData != null) {
+      final score = (profileData as Map)['averageQuizScore'];
+      return score != null ? (score as num).toDouble() : 0.0;
+    }
+
+    return 0.0;
+  }
+
+  /// Get last active date
+  String? getLastActiveDate() {
+    if (_usageBox == null) return null;
+
+    final profileData = _usageBox!.get('api_profile');
+    if (profileData != null) {
+      return (profileData as Map)['lastActiveDate'];
+    }
+
+    return null;
+  }
+
+  /// Get the last time profile was updated from API
+  DateTime? getProfileLastUpdated() {
+    if (_usageBox == null) return null;
+
+    final profileData = _usageBox!.get('api_profile');
+    if (profileData != null) {
+      final updatedAt = (profileData as Map)['updatedAt'];
+      if (updatedAt != null) {
+        return DateTime.parse(updatedAt as String);
+      }
+    }
+    return null;
   }
 
   /// Get total usage this week (in minutes)

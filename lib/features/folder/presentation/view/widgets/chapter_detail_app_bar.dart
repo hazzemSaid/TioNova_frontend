@@ -23,12 +23,6 @@ class ChapterDetailAppBar extends StatelessWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.share_outlined, color: colorScheme.onSurface),
-          onPressed: () {},
-        ),
-      ],
     );
   }
 }

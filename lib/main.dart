@@ -16,9 +16,10 @@ import 'package:tionova/core/router/app_router.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/hive_manager.dart';
-// import 'package:tionova/core/services/summary_background_service.dart'; // DISABLED
+import 'package:tionova/core/services/shorebird_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/core/theme/app_theme.dart';
+import 'package:tionova/core/widgets/update_checker_widget.dart';
 import 'package:tionova/features/auth/data/models/UserModel.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
@@ -37,6 +38,10 @@ import 'package:tionova/firebase_options.dart';
 Future<void> main() async {
   // Initialize Flutter bindings and services
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ==========================================
+  // CRITICAL INITIALIZATION ONLY (Fast Path)
+  // ==========================================
 
   // Initialize Firebase - check using Firebase.apps list
   print('🔧 Checking Firebase initialization...');
@@ -78,72 +83,46 @@ Future<void> main() async {
     rethrow;
   }
 
+  // Initialize Hive (needed for theme and auth)
   await HiveManager.initializeHive();
 
-  // Register all Hive adapters here to ensure they're registered before any box is opened
-  // Only register if not already registered
+  // Register Hive adapters
   if (!Hive.isAdapterRegistered(0)) {
-    // PdfCacheModel uses typeId 0
     Hive.registerAdapter(PdfCacheModelAdapter());
     print('Main: Registered PdfCacheModelAdapter with typeId 0');
-  } else {
-    print('Main: PdfCacheModelAdapter already registered with typeId 0');
   }
-
   if (!Hive.isAdapterRegistered(1)) {
-    // UserModel now uses typeId 1
     Hive.registerAdapter(UserModelAdapter());
     print('Main: Registered UserModelAdapter with typeId 1');
-  } else {
-    print('Main: UserModelAdapter already registered with typeId 1');
   }
-
   if (!Hive.isAdapterRegistered(2)) {
-    // SummaryCacheModel uses typeId 2
     Hive.registerAdapter(SummaryCacheModelAdapter());
     print('Main: Registered SummaryCacheModelAdapter with typeId 2');
-  } else {
-    print('Main: SummaryCacheModelAdapter already registered with typeId 2');
   }
 
-  // Open Hive boxes with safe error handling
+  // Open only critical boxes
   await Hive.openBox("themeBox");
-  await HiveManager.safeOpenBox<PdfCacheModel>('pdfCache');
-  await HiveManager.safeOpenBox<SummaryCacheModel>('summaryCache');
 
-  // Don't open auth_box here - let service locator handle it
+  // Setup service locator (critical for auth)
   await setupServiceLocator();
-  await DownloadService.initialize();
-  await SummaryCacheService.initialize();
 
-  // Initialize App Usage Tracker
-  print('🚀 Main: Initializing AppUsageTrackerService...');
-  final usageTracker = getIt<AppUsageTrackerService>();
-  await usageTracker.initialize();
-  print('✅ Main: AppUsageTrackerService initialized');
-
-  // Initialize background summary service - DISABLED FOR NOW
-  // print('🚀 Main: Initializing SummaryBackgroundService...');
-  // final backgroundService = SummaryBackgroundService();
-  // await backgroundService.initialize(
-  //   generateSummaryUseCase: getIt<GenerateSummaryUseCase>(),
-  // );
-  // print('✅ Main: SummaryBackgroundService initialized');
-
-  Bloc.observer = AppBlocObserver();
-
-  AppRouter.initialize();
-
-  // Debug: Check auth state in detail
+  // Initialize auth cubit
   final authCubit = getIt<AuthCubit>();
   await authCubit.start();
-  // Initialize SharedPreferences
+
+  // Initialize SharedPreferences (needed for theme)
   final prefs = await SharedPreferences.getInstance();
 
+  // Initialize router
+  AppRouter.initialize();
+  Bloc.observer = AppBlocObserver();
+
+  // ==========================================
+  // START APP IMMEDIATELY - Show splash screen!
+  // ==========================================
   runApp(
     MultiBlocProvider(
       providers: [
-        // Global providers - needed throughout the app
         BlocProvider<ThemeCubit>(create: (context) => ThemeCubit(prefs: prefs)),
         BlocProvider<AuthCubit>.value(value: authCubit),
       ],
@@ -151,12 +130,14 @@ Future<void> main() async {
         builder: (context, authState) {
           return BlocBuilder<ThemeCubit, ThemeMode>(
             builder: (context, themeMode) {
-              return MaterialApp.router(
-                debugShowCheckedModeBanner: false,
-                routerConfig: AppRouter.router,
-                theme: AppTheme.lightTheme,
-                darkTheme: AppTheme.darkTheme,
-                themeMode: themeMode,
+              return UpdateCheckerWidget(
+                child: MaterialApp.router(
+                  debugShowCheckedModeBanner: false,
+                  routerConfig: AppRouter.router,
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: themeMode,
+                ),
               );
             },
           );
@@ -164,6 +145,43 @@ Future<void> main() async {
       ),
     ),
   );
+
+  // ==========================================
+  // DEFERRED INITIALIZATION (After first frame)
+  // ==========================================
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    print('🔄 Starting deferred initialization...');
+
+    try {
+      // Open cache boxes in background
+      await HiveManager.safeOpenBox<PdfCacheModel>('pdfCache');
+      await HiveManager.safeOpenBox<SummaryCacheModel>('summaryCache');
+      print('✅ Cache boxes opened');
+
+      // Initialize download service
+      await DownloadService.initialize();
+      print('✅ DownloadService initialized');
+
+      // Initialize summary cache service
+      await SummaryCacheService.initialize();
+      print('✅ SummaryCacheService initialized');
+
+      // Initialize App Usage Tracker
+      final usageTracker = getIt<AppUsageTrackerService>();
+      await usageTracker.initialize();
+      print('✅ AppUsageTrackerService initialized');
+
+      // Initialize Shorebird Code Push
+      final shorebirdService = ShorebirdService();
+      await shorebirdService.initialize();
+      print('✅ Shorebird Code Push initialized');
+
+      print('✅ All deferred services initialized successfully');
+    } catch (e) {
+      print('⚠️ Error during deferred initialization: $e');
+      // Don't crash the app, just log the error
+    }
+  });
 }
 
 class MyApp extends StatelessWidget {

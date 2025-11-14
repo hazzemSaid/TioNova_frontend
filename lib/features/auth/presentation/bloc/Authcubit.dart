@@ -1,5 +1,6 @@
 // features/auth/presentation/bloc/Authcubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
@@ -15,27 +16,27 @@ import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 class AuthCubit extends Cubit<AuthState> {
   // --- Forget Password Flow ---
   Future<void> forgetPassword(String email) async {
-    emit(AuthLoading());
+    safeEmit(AuthLoading());
     final result = await forgetPasswordUseCase.call(email: email);
     await result.fold(
       (failure) {
-        emit(ForgetPasswordFailure(failure: failure));
+        safeEmit(ForgetPasswordFailure(failure: failure));
       },
       (void_) {
-        emit(ForgetPasswordEmailSent(email: email));
+        safeEmit(ForgetPasswordEmailSent(email: email));
       },
     );
   }
 
   Future<void> verifyCode({required String email, required String code}) async {
-    emit(AuthLoading());
+    safeEmit(AuthLoading());
     final result = await verifyCodeUseCase.call(email: email, code: code);
     await result.fold(
       (failure) {
-        emit(VerifyCodeFailure(failure: failure));
+        safeEmit(VerifyCodeFailure(failure: failure));
       },
       (void_) {
-        emit(VerifyCodeSuccess(email: email, code: code));
+        safeEmit(VerifyCodeSuccess(email: email, code: code));
       },
     );
   }
@@ -45,7 +46,7 @@ class AuthCubit extends Cubit<AuthState> {
     required String code,
     required String newPassword,
   }) async {
-    emit(AuthLoading());
+    safeEmit(AuthLoading());
     final result = await resetPasswordUseCase.execute(
       email: email,
       code: code,
@@ -53,11 +54,11 @@ class AuthCubit extends Cubit<AuthState> {
     );
     await result.fold(
       (failure) {
-        emit(ResetPasswordFailure(failure: failure));
+        safeEmit(ResetPasswordFailure(failure: failure));
       },
       (user) async {
         final token = await TokenStorage.getAccessToken() ?? "";
-        emit(AuthSuccess(user: user, token: token));
+        safeEmit(AuthSuccess(user: user, token: token));
       },
     );
   }
@@ -84,38 +85,38 @@ class AuthCubit extends Cubit<AuthState> {
   final VerifyCodeUseCase verifyCodeUseCase;
 
   Future<void> googleSignIn() async {
-    emit(AuthLoading());
+    safeEmit(AuthLoading());
     final result = await googleauthusecase.call();
 
     await result.fold(
       (failure) {
-        emit(AuthFailure(failure: failure));
+        safeEmit(AuthFailure(failure: failure));
       },
       (user) async {
         final token = await TokenStorage.getAccessToken() ?? "";
-        emit(AuthSuccess(user: user, token: token));
+        safeEmit(AuthSuccess(user: user, token: token));
       },
     );
   }
 
   Future<void> start() async {
-    emit(AuthLoading()); // Add loading state while checking auth
+    safeEmit(AuthLoading()); // Add loading state while checking auth
 
     final result = await localAuthDataSource.getCurrentUser();
 
     await result.fold(
       (failure) async {
         // If no user found locally, emit AuthInitial instead of AuthFailure
-        emit(AuthInitial());
+        safeEmit(AuthInitial());
       },
       (user) async {
         final token = await TokenStorage.getAccessToken();
         if (token != null && token.isNotEmpty) {
-          emit(AuthSuccess(user: user, token: token));
+          safeEmit(AuthSuccess(user: user, token: token));
         } else {
           // Clear corrupted user data and emit AuthInitial
           await localAuthDataSource.signOut();
-          emit(AuthInitial());
+          safeEmit(AuthInitial());
         }
       },
     );
@@ -123,7 +124,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   // Method to sign out
   Future<void> signOut({bool isTokenExpired = false}) async {
-    emit(AuthLoading());
+    safeEmit(AuthLoading());
 
     try {
       await TokenStorage.clearTokens();
@@ -131,7 +132,7 @@ class AuthCubit extends Cubit<AuthState> {
 
       // If token expired, emit AuthFailure to indicate re-authentication is required
       if (isTokenExpired) {
-        emit(
+        safeEmit(
           AuthFailure(
             failure: ServerFailure(
               "Your session has expired. Please login again.",
@@ -140,11 +141,11 @@ class AuthCubit extends Cubit<AuthState> {
           ),
         );
       } else {
-        emit(AuthInitial());
+        safeEmit(AuthInitial());
       }
     } catch (e) {
       if (isTokenExpired) {
-        emit(
+        safeEmit(
           AuthFailure(
             failure: ServerFailure(
               "Your session has expired. Please login again.",
@@ -153,7 +154,7 @@ class AuthCubit extends Cubit<AuthState> {
           ),
         );
       } else {
-        emit(AuthInitial()); // Still emit AuthInitial for normal sign out
+        safeEmit(AuthInitial()); // Still emit AuthInitial for normal sign out
       }
     }
   }
@@ -165,33 +166,33 @@ class AuthCubit extends Cubit<AuthState> {
 
   // Method to register a new user
   Future<void> register(String email, String username, String password) async {
-    emit(AuthLoading());
+    safeEmit(AuthLoading());
     final result = await registerUseCase.call(email, username, password);
     await result.fold(
       (failure) {
-        emit(AuthFailure(failure: failure));
+        safeEmit(AuthFailure(failure: failure));
       },
       (void_) {
-        emit(RegisterSuccess(email: email));
+        safeEmit(RegisterSuccess(email: email));
       },
     );
   }
 
   // Method to verify email
   Future<void> verifyEmail(String email, String code) async {
-    emit(AuthLoading());
+    safeEmit(AuthLoading());
     final result = await verifyEmailUseCase.call(email, code);
 
     await result.fold(
       (failure) {
-        emit(AuthFailure(failure: failure));
+        safeEmit(AuthFailure(failure: failure));
       },
       (user) async {
         final token = await TokenStorage.getAccessToken();
         if (token != null && token.isNotEmpty) {
-          emit(AuthSuccess(user: user, token: token));
+          safeEmit(AuthSuccess(user: user, token: token));
         } else {
-          emit(
+          safeEmit(
             AuthFailure(
               failure: ServerFailure(
                 "Failed to get token after verification",
@@ -206,18 +207,18 @@ class AuthCubit extends Cubit<AuthState> {
 
   // Method to login a user
   Future<void> login(String email, String password) async {
-    emit(AuthLoading());
+    safeEmit(AuthLoading());
     final result = await loginUseCase.call(email, password);
     await result.fold(
       (failure) {
-        emit(AuthFailure(failure: failure));
+        safeEmit(AuthFailure(failure: failure));
       },
       (user) async {
         final token = await TokenStorage.getAccessToken();
         if (token != null && token.isNotEmpty) {
-          emit(AuthSuccess(user: user, token: token));
+          safeEmit(AuthSuccess(user: user, token: token));
         } else {
-          emit(
+          safeEmit(
             AuthFailure(failure: ServerFailure("Failed to get token", "401")),
           );
         }

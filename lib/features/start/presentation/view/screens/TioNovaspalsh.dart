@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tionova/core/router/app_router.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -31,13 +31,13 @@ class _SplashScreenState extends State<SplashScreen>
     _controller =
         AnimationController(
           duration: const Duration(
-            seconds: 3,
-          ), // Reduced duration for better UX
+            seconds: 2, // Faster animation - 2 seconds instead of 3
+          ),
           vsync: this,
         )..addStatusListener((status) {
           if (status == AnimationStatus.completed) {
-            // Navigate to the main app after animation completes
-            Future.delayed(const Duration(milliseconds: 500), () async {
+            // Navigate immediately after animation completes
+            Future.delayed(const Duration(milliseconds: 300), () async {
               if (mounted) {
                 // Check if it's the first time opening the app
                 final isFirst = await AppRouter.isFirstTime();
@@ -79,13 +79,13 @@ class _SplashScreenState extends State<SplashScreen>
 
     _shimmerController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 2), // Match main animation duration
     )..repeat();
 
     // subtitle controller
     _subtitleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600), // Slightly faster
     );
 
     _slideSubtitle =
@@ -135,7 +135,8 @@ class _SplashScreenState extends State<SplashScreen>
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      // Use a solid background color to prevent any flashing
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

@@ -213,7 +213,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
 
             final attempt = _attempt!;
             final percentage = attempt.degree;
-            final isPassed = attempt.state.toLowerCase() == 'passed';
+            final isPassed = attempt.state.toLowerCase() != 'failed';
             // Map questionId -> question model for enriching graded answers
             final Map<String, dynamic> questionById = {
               for (final q in widget.quiz.questions) q.id: q,

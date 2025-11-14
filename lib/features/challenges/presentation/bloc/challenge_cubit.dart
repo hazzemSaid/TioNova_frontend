@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/features/challenges/domain/usecase/checkAndAdvanceusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/createLiveChallengeusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/disconnectFromLiveChallengeusecase.dart';
@@ -47,7 +48,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     required String title,
   }) async {
     try {
-      emit(ChallengeLoading());
+      safeEmit(ChallengeLoading());
 
       final result = await createLiveChallengeUseCase.call(
         token: token,
@@ -55,10 +56,10 @@ class ChallengeCubit extends Cubit<ChallengeState> {
         chapterId: chapterId,
       );
 
-      result.fold((failure) => emit(ChallengeError(failure.toString())), (
+      result.fold((failure) => safeEmit(ChallengeError(failure.toString())), (
         challengeCode,
       ) {
-        emit(
+        safeEmit(
           ChallengeCreated(
             inviteCode: challengeCode.challengeCode,
             challengeName: title,
@@ -68,7 +69,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
         );
       });
     } catch (e) {
-      emit(ChallengeError('Failed to create challenge: ${e.toString()}'));
+      safeEmit(ChallengeError('Failed to create challenge: ${e.toString()}'));
     }
   }
 
@@ -79,7 +80,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   }) async {
     try {
       print('ChallengeCubit - joinChallenge called with code: $challengeCode');
-      emit(ChallengeLoading());
+      safeEmit(ChallengeLoading());
 
       final result = await joinLiveChallengeUseCase.call(
         token: token,
@@ -90,7 +91,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
         (failure) {
           print('ChallengeCubit - joinChallenge failed: ${failure.errMessage}');
           print('ChallengeCubit - Status code: ${failure.statusCode}');
-          emit(ChallengeError(failure.errMessage));
+          safeEmit(ChallengeError(failure.errMessage));
         },
         (_) {
           print(
@@ -99,7 +100,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
           _currentChallengeCode = challengeCode;
 
-          emit(
+          safeEmit(
             ChallengeJoined(
               challengeId: challengeCode,
               participantId: '', // Will be set from backend response
@@ -113,7 +114,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       );
     } catch (e) {
       print('ChallengeCubit - joinChallenge exception: ${e.toString()}');
-      emit(ChallengeError('Failed to join challenge: ${e.toString()}'));
+      safeEmit(ChallengeError('Failed to join challenge: ${e.toString()}'));
     }
   }
 
@@ -133,7 +134,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   }) async {
     try {
       print('ChallengeCubit - startChallenge called for code: $challengeCode');
-      emit(ChallengeLoading());
+      safeEmit(ChallengeLoading());
 
       final result = await startLiveChallengeUseCase.call(
         token: token,
@@ -145,7 +146,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
           print(
             'ChallengeCubit - startChallenge failed: ${failure.toString()}',
           );
-          emit(ChallengeError(failure.toString()));
+          safeEmit(ChallengeError(failure.toString()));
         },
         (_) {
           print(
@@ -156,7 +157,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
           // Set up Firebase listeners for real-time updates
           _setupFirebaseListeners(challengeCode);
 
-          emit(
+          safeEmit(
             ChallengeStarted(
               challengeId: challengeCode,
               startTime: DateTime.now(),
@@ -169,7 +170,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       );
     } catch (e) {
       print('ChallengeCubit - startChallenge exception: ${e.toString()}');
-      emit(ChallengeError('Failed to start challenge: ${e.toString()}'));
+      safeEmit(ChallengeError('Failed to start challenge: ${e.toString()}'));
     }
   }
 
@@ -193,13 +194,13 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       result.fold(
         (failure) {
           print('ChallengeCubit - Submit answer failed: ${failure.toString()}');
-          emit(ChallengeError(failure.toString()));
+          safeEmit(ChallengeError(failure.toString()));
         },
         (response) {
           print('ChallengeCubit - Answer submitted successfully');
 
           // Emit answer submitted state
-          emit(
+          safeEmit(
             AnswerSubmitted(
               challengeId: challengeCode,
               questionIndex: _currentQuestionIndex,
@@ -214,7 +215,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
           if (state is AnswerSubmitted && _questions.isNotEmpty) {
             Future.delayed(const Duration(milliseconds: 500), () {
               if (_currentChallengeCode != null) {
-                emit(
+                safeEmit(
                   ChallengeStarted(
                     challengeId: _currentChallengeCode!,
                     startTime: DateTime.now(),
@@ -230,7 +231,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       );
     } catch (e) {
       print('ChallengeCubit - Submit answer exception: ${e.toString()}');
-      emit(ChallengeError('Failed to submit answer: ${e.toString()}'));
+      safeEmit(ChallengeError('Failed to submit answer: ${e.toString()}'));
     }
   }
 
@@ -240,7 +241,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       final currentState = state as ChallengeStarted;
       if (currentState.currentQuestionIndex <
           currentState.questions.length - 1) {
-        emit(
+        safeEmit(
           currentState.copyWith(
             currentQuestionIndex: currentState.currentQuestionIndex + 1,
           ),
@@ -255,7 +256,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   /// Complete the challenge and show results
   void _completeChallenge(String challengeId) {
     // This would typically fetch final results from backend
-    emit(
+    safeEmit(
       ChallengeCompleted(
         challengeId: challengeId,
         finalScore: 0, // Will be updated from backend
@@ -286,12 +287,12 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       _currentQuestionIndex = 0;
       _questions = [];
 
-      emit(const ChallengeDisconnected());
+      safeEmit(const ChallengeDisconnected());
 
       print('ChallengeCubit - Successfully disconnected');
     } catch (e) {
       print('ChallengeCubit - Disconnect failed: ${e.toString()}');
-      emit(ChallengeError('Failed to disconnect: ${e.toString()}'));
+      safeEmit(ChallengeError('Failed to disconnect: ${e.toString()}'));
     }
   }
 
@@ -345,7 +346,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     required String challengeId,
     required List<String> participants,
   }) {
-    emit(
+    safeEmit(
       ParticipantsUpdated(
         challengeId: challengeId,
         participants: participants,
@@ -359,7 +360,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     required String challengeId,
     required List<dynamic> leaderboard,
   }) {
-    emit(
+    safeEmit(
       LeaderboardUpdated(challengeId: challengeId, leaderboard: leaderboard),
     );
   }
@@ -410,7 +411,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
         // Update state with questions
         if (state is ChallengeStarted) {
           final currentState = state as ChallengeStarted;
-          emit(currentState.copyWith(questions: _questions));
+          safeEmit(currentState.copyWith(questions: _questions));
         }
       }
     });
@@ -461,7 +462,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   void _updateCurrentQuestion(int questionIndex) {
     if (state is ChallengeStarted) {
       final currentState = state as ChallengeStarted;
-      emit(currentState.copyWith(currentQuestionIndex: questionIndex));
+      safeEmit(currentState.copyWith(currentQuestionIndex: questionIndex));
     }
   }
 
@@ -479,7 +480,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
             // Find current user's rank and score
             // This would need user ID to find their specific data
-            emit(
+            safeEmit(
               ChallengeCompleted(
                 challengeId: _currentChallengeCode!,
                 finalScore: 0, // Will be updated with actual score
@@ -516,7 +517,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     _currentChallengeCode = null;
     _currentQuestionIndex = 0;
     _questions = [];
-    emit(ChallengeInitial());
+    safeEmit(ChallengeInitial());
   }
 
   @override

@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/data/models/nodeModel.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 
 part 'mindmap_state.dart';
 
@@ -10,7 +11,7 @@ class MindmapCubit extends Cubit<MindmapState> {
   MindmapCubit() : super(MindmapInitial());
 
   void loadMindmap(Mindmapmodel mindmap) {
-    emit(
+    safeEmit(
       MindmapLoaded(mindmap: mindmap, selectedNode: null, nodePositions: {}),
     );
   }
@@ -18,7 +19,7 @@ class MindmapCubit extends Cubit<MindmapState> {
   void selectNode(NodeModel? node) {
     if (state is MindmapLoaded) {
       final currentState = state as MindmapLoaded;
-      emit(currentState.copyWith(selectedNode: node));
+      safeEmit(currentState.copyWith(selectedNode: node));
     }
   }
 
@@ -29,7 +30,7 @@ class MindmapCubit extends Cubit<MindmapState> {
         currentState.nodePositions,
       );
       updatedPositions[nodeId] = position;
-      emit(currentState.copyWith(nodePositions: updatedPositions));
+      safeEmit(currentState.copyWith(nodePositions: updatedPositions));
     }
   }
 
@@ -63,11 +64,11 @@ class MindmapCubit extends Cubit<MindmapState> {
   void updateZoom(double zoom) {
     if (state is MindmapLoaded) {
       final currentState = state as MindmapLoaded;
-      emit(currentState.copyWith(zoomLevel: zoom));
+      safeEmit(currentState.copyWith(zoomLevel: zoom));
     }
   }
 
   void reset() {
-    emit(MindmapInitial());
+    safeEmit(MindmapInitial());
   }
 }

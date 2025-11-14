@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeCubit extends Cubit<ThemeMode> {
@@ -13,12 +14,12 @@ class ThemeCubit extends Cubit<ThemeMode> {
   void _loadTheme() {
     final themeModeString = prefs.getString(_themeModeKey) ?? 'system';
     final themeMode = _getThemeModeFromString(themeModeString);
-    emit(themeMode);
+    safeEmit(themeMode);
   }
 
   Future<void> setTheme(ThemeMode themeMode) async {
     await prefs.setString(_themeModeKey, _getStringFromThemeMode(themeMode));
-    emit(themeMode);
+    safeEmit(themeMode);
   }
 
   ThemeMode _getThemeModeFromString(String value) {

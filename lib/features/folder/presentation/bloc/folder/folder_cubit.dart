@@ -7,6 +7,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
 import 'package:flutter_client_sse/flutter_client_sse.dart';
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
@@ -65,19 +66,19 @@ class FolderCubit extends Cubit<FolderState> {
 
   Future<void> fetchAllFolders(String token) async {
     if (isClosed) return;
-    emit(FolderLoading());
+    safeEmit(FolderLoading());
     final result = await getAllFolderUseCase(token: token);
     if (isClosed) return;
     result.fold(
       (failure) {
-        if (!isClosed) emit(FolderError(failure));
+        if (!isClosed) safeEmit(FolderError(failure));
       },
       (folders) {
         _folderMap.clear();
         for (final folder in folders) {
           _folderMap[folder.id] = folder;
         }
-        if (!isClosed) emit(FolderLoaded(_folderMap.values.toList()));
+        if (!isClosed) safeEmit(FolderLoaded(_folderMap.values.toList()));
       },
     );
   }
@@ -92,7 +93,7 @@ class FolderCubit extends Cubit<FolderState> {
     required String icon,
     required String color,
   }) async {
-    emit(CreateFolderloading());
+    safeEmit(CreateFolderloading());
     final result = await createFolderUseCase(
       title: title,
       description: description,
@@ -103,30 +104,30 @@ class FolderCubit extends Cubit<FolderState> {
       icon: icon,
       color: color,
     );
-    result.fold((failure) => emit(CreateFolderError(failure)), (_) async {
-      emit(CreateFolderSuccess());
+    result.fold((failure) => safeEmit(CreateFolderError(failure)), (_) async {
+      safeEmit(CreateFolderSuccess());
     });
   }
 
   Future<void> deletefolder({required String id, required String token}) async {
     // Validation check before destructive operation
     if (!_folderMap.containsKey(id)) {
-      emit(
+      safeEmit(
         DeleteFolderError(ValidationFailure('Folder not found for deletion')),
       );
       return;
     }
 
-    emit(DeleteFolderLoading(_folderMap.values.toList())); // Emit loading state
+    safeEmit(DeleteFolderLoading(_folderMap.values.toList())); // Emit loading state
     final result = await deleteFolderUseCase(id: id, token: token);
     result.fold(
       (failure) {
-        emit(DeleteFolderError(failure));
+        safeEmit(DeleteFolderError(failure));
       },
       (_) {
         _folderMap.remove(id);
-        emit(DeleteFolderSuccess());
-        emit(FolderLoaded(_folderMap.values.toList()));
+        safeEmit(DeleteFolderSuccess());
+        safeEmit(FolderLoaded(_folderMap.values.toList()));
       },
     );
   }
@@ -144,12 +145,12 @@ class FolderCubit extends Cubit<FolderState> {
     try {
       // Validate input before operation
       if (title.trim().isEmpty) {
-        emit(UpdateFolderError(ValidationFailure('Title cannot be empty')));
+        safeEmit(UpdateFolderError(ValidationFailure('Title cannot be empty')));
         return;
       }
 
       if (!_folderMap.containsKey(id)) {
-        emit(
+        safeEmit(
           UpdateFolderError(ValidationFailure('Folder not found for update')),
         );
         return;
@@ -159,7 +160,7 @@ class FolderCubit extends Cubit<FolderState> {
       int attemptedCount = _folderMap[id]!.attemptedCount ?? 0;
 
       // Emit loading state with current folders for immediate UI feedback
-      emit(UpdateFolderLoading(_folderMap.values.toList()));
+      safeEmit(UpdateFolderLoading(_folderMap.values.toList()));
 
       final result = await updateFolderUseCase(
         id: id,
@@ -174,9 +175,9 @@ class FolderCubit extends Cubit<FolderState> {
 
       result.fold(
         (failure) {
-          emit(UpdateFolderError(failure));
+          safeEmit(UpdateFolderError(failure));
           // Restore folder list after error to maintain UI consistency
-          emit(FolderLoaded(_folderMap.values.toList()));
+          safeEmit(FolderLoaded(_folderMap.values.toList()));
         },
         (updatedFolderFromServer) {
           _folderMap[updatedFolderFromServer.id] = updatedFolderFromServer
@@ -185,18 +186,18 @@ class FolderCubit extends Cubit<FolderState> {
                 passedCount: passedCount,
                 attemptedCount: attemptedCount,
               );
-          emit(UpdateFolderSuccess());
-          emit(FolderLoaded(_folderMap.values.toList()));
+          safeEmit(UpdateFolderSuccess());
+          safeEmit(FolderLoaded(_folderMap.values.toList()));
         },
       );
     } catch (e) {
       // Handle unexpected errors and restore UI state
-      emit(
+      safeEmit(
         UpdateFolderError(
           ServerFailure('An unexpected error occurred: ${e.toString()}'),
         ),
       );
-      emit(FolderLoaded(_folderMap.values.toList()));
+      safeEmit(FolderLoaded(_folderMap.values.toList()));
     }
   }
 
@@ -204,14 +205,14 @@ class FolderCubit extends Cubit<FolderState> {
     required String query,
     required String token,
   }) async {
-    emit(GetAvailableUsersForShareLoading());
+    safeEmit(GetAvailableUsersForShareLoading());
     final result = await getAvailableUsersForShareUseCase(
       query: query,
       token: token,
     );
     result.fold(
-      (failure) => emit(GetAvailableUsersForShareError(failure)),
-      (users) => emit(GetAvailableUsersForShareSuccess(users)),
+      (failure) => safeEmit(GetAvailableUsersForShareError(failure)),
+      (users) => safeEmit(GetAvailableUsersForShareSuccess(users)),
     );
   }
 
@@ -252,7 +253,7 @@ class FolderCubit extends Cubit<FolderState> {
       }
 
       // 3. أطلق state جديدة بالقائمة المحدثة
-      emit(FolderLoaded(_folderMap.values.toList()));
+      safeEmit(FolderLoaded(_folderMap.values.toList()));
     } catch (e) {
       // يمكنك التعامل مع أخطاء فك التشفير هنا
     }

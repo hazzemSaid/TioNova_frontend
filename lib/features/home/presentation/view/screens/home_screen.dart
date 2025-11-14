@@ -20,10 +20,27 @@ class HomeScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) {
         final cubit = getIt<AnalysisCubit>();
+        final usageTracker = getIt<AppUsageTrackerService>();
         // Load data immediately after creating the cubit
         TokenStorage.getAccessToken().then((token) {
           if (token != null) {
             cubit.loadAnalysisData(token);
+            // Update usage tracker with API data after load completes
+            Future.delayed(const Duration(milliseconds: 500), () {
+              final state = cubit.state;
+              if (state is AnalysisLoaded &&
+                  state.analysisData.profile != null) {
+                final profile = state.analysisData.profile!;
+                usageTracker.updateProfileFromApi(
+                  streak: profile.streak,
+                  lastActiveDate: profile.lastActiveDate,
+                  totalQuizzesTaken: profile.totalQuizzesTaken,
+                  totalMindmapsCreated: profile.totalMindmapsCreated,
+                  totalSummariesCreated: profile.totalSummariesCreated,
+                  averageQuizScore: profile.averageQuizScore,
+                );
+              }
+            });
           }
         });
         return cubit;
@@ -57,6 +74,20 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
     final token = await TokenStorage.getAccessToken();
     if (token != null && mounted) {
       _analysisCubit.loadAnalysisData(token);
+      // Update usage tracker with fresh API data after load completes
+      await Future.delayed(const Duration(milliseconds: 500));
+      final state = _analysisCubit.state;
+      if (state is AnalysisLoaded && state.analysisData.profile != null) {
+        final profile = state.analysisData.profile!;
+        await _usageTracker.updateProfileFromApi(
+          streak: profile.streak,
+          lastActiveDate: profile.lastActiveDate,
+          totalQuizzesTaken: profile.totalQuizzesTaken,
+          totalMindmapsCreated: profile.totalMindmapsCreated,
+          totalSummariesCreated: profile.totalSummariesCreated,
+          averageQuizScore: profile.averageQuizScore,
+        );
+      }
     }
   }
 
@@ -132,24 +163,26 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
           'completed': 0, // TODO: Get from API if available
           'total': analysisData.totalChapters ?? 0,
           'chapters': analysisData.recentChapters?.length ?? 0,
-          'quizzes': 0, // TODO: Get from API if available
+          'quizzes': analysisData.profile?.totalQuizzesTaken ?? 0,
           'studyTime': _usageTracker.getTodayUsageMinutes(),
         };
 
         // Prepare statistics data
         final stats = [
           {
-            'value': '${_usageTracker.getCurrentStreak()}',
+            'value': '${analysisData.profile?.streak ?? 0}',
             'label': 'Day Streak',
             'icon': Icons.local_fire_department,
           },
           {
-            'value': '${analysisData.totalChapters ?? 0}',
-            'label': 'Chapters',
-            'icon': Icons.menu_book,
+            'value': '${analysisData.profile?.totalQuizzesTaken ?? 0}',
+            'label': 'Quizzes',
+            'icon': Icons.quiz,
           },
           {
-            'value': '${analysisData.avgScore ?? 0}%',
+            'value': analysisData.profile?.averageQuizScore != null
+                ? '${analysisData.profile!.averageQuizScore.toStringAsFixed(1)}%'
+                : '0%',
             'label': 'Avg Score',
             'icon': Icons.insights,
           },
@@ -339,8 +372,6 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                           );
                         },
                       ),
-                      SizedBox(height: verticalSpacing * 2),
-
                       SizedBox(height: verticalSpacing * 2),
                     ]),
                   ),
