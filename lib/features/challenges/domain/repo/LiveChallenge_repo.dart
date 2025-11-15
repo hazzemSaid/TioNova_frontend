@@ -7,7 +7,6 @@ abstract class LiveChallengeRepo {
 
 Response: { challengeCode, qr, questions } */
   Future<Either<Failure, ChallengeCode>> createLiveChallenge({
-    required String token,
     required String title,
     required String chapterId,
   });
@@ -17,7 +16,6 @@ Body: { challengeCode }
 
 If reconnected: isReconnection: true*/
   Future<Either<Failure, void>> joinLiveChallenge({
-    required String token,
     required String challengeCode,
     bool isReconnection = false,
   });
@@ -29,7 +27,6 @@ Changes meta.status → in-progress
 
 Sets current.index = 0  tip this part for owner only*/
   Future<Either<Failure, void>> startLiveChallenge({
-    required String token,
     required String challengeCode,
   });
   /*API: POST /api/v1/live/challenges/answer
@@ -40,7 +37,6 @@ Auth: required
 
 Returns: { success, message, isCorrect, currentIndex, rankings }*/
   Future<Either<Failure, void>> submitLiveAnswer({
-    required String token,
     required String challengeCode,
     required String answer,
   });
@@ -48,7 +44,6 @@ Returns: { success, message, isCorrect, currentIndex, rankings }*/
 
 On reconnect → joinLiveChallenge (will resume from current index)*/
   Future<Either<Failure, void>> disconnectFromLiveChallenge({
-    required String token,
     required String challengeCode,
   });
 
@@ -62,7 +57,6 @@ Returns: { needsAdvance, advanced, completed, timeRemaining, currentIndex }
 
 Behavior: Checks if all players answered, advances to next question if needed*/
   Future<Either<Failure, Map<String, dynamic>>> checkAndAdvance({
-    required String token,
     required String challengeCode,
   });
 }

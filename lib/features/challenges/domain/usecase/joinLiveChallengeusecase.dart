@@ -7,13 +7,7 @@ class JoinLiveChallengeUseCase {
 
   JoinLiveChallengeUseCase({required this.repository});
 
-  Future<Either<Failure, void>> call({
-    required String token,
-    required String challengeCode,
-  }) {
-    return repository.joinLiveChallenge(
-      token: token,
-      challengeCode: challengeCode,
-    );
+  Future<Either<Failure, void>> call({required String challengeCode}) {
+    return repository.joinLiveChallenge(challengeCode: challengeCode);
   }
 }

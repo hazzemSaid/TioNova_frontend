@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
@@ -15,6 +13,7 @@ class EditFolderDialog extends StatefulWidget {
   final List<IconData> icons;
 
   const EditFolderDialog({
+    super.key,
     required this.folder,
     required this.defaultcolors,
     required this.icons,
@@ -398,26 +397,21 @@ class _EditFolderDialogState extends State<EditFolderDialog>
     }
 
     // Get auth token
-    final authCubit = context.read<AuthCubit>();
-    final authState = authCubit.state;
 
-    if (authState is AuthSuccess) {
-      context.read<FolderCubit>().updatefolder(
-        id: widget.folder.id,
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        sharedWith: _selectedStatus == Status.share && _sharedUsers.isNotEmpty
-            ? _sharedUsers
-            : [],
-        status: _selectedStatus,
-        icon: _selectedIcon.toString(),
-        color:
-            '#${widget.defaultcolors[_selectedColor].value.toRadixString(16).padLeft(8, '0').substring(2)}',
-        token: authState.token,
-      );
-    }
+    context.read<FolderCubit>().updatefolder(
+      id: widget.folder.id,
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      sharedWith: _selectedStatus == Status.share && _sharedUsers.isNotEmpty
+          ? _sharedUsers
+          : [],
+      status: _selectedStatus,
+      icon: _selectedIcon.toString(),
+      color:
+          '#${widget.defaultcolors[_selectedColor].value.toRadixString(16).padLeft(8, '0').substring(2)}',
+    );
   }
 
   Widget _iconGrid() {

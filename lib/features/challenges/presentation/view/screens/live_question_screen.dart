@@ -455,12 +455,6 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
 
   /// Start polling service to check for question advances
   void _startPolling() {
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! AuthSuccess) {
-      print('LiveQuestionScreen - Cannot start polling: not authenticated');
-      return;
-    }
-
     print('LiveQuestionScreen - Starting polling service');
     _pollingService = ChallengePollingService(
       pollingInterval: const Duration(seconds: 5),
@@ -471,10 +465,7 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
         // Call checkAndAdvance API
         final response = await context
             .read<ChallengeCubit>()
-            .checkAndAdvanceQuestion(
-              token: authState.token,
-              challengeCode: widget.challengeCode,
-            );
+            .checkAndAdvanceQuestion(challengeCode: widget.challengeCode);
 
         // If State became unmounted while awaiting, bail out before setState
         if (!mounted) return;
@@ -802,21 +793,10 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
       'LiveQuestionScreen - Triggering check-advance for question $_currentQuestionIndex',
     );
 
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! AuthSuccess) {
-      print(
-        'LiveQuestionScreen - Cannot trigger check-advance: not authenticated',
-      );
-      return;
-    }
-
     try {
       final response = await context
           .read<ChallengeCubit>()
-          .checkAndAdvanceQuestion(
-            token: authState.token,
-            challengeCode: widget.challengeCode,
-          );
+          .checkAndAdvanceQuestion(challengeCode: widget.challengeCode);
 
       if (!mounted) {
         print('LiveQuestionScreen - Widget unmounted after check-advance call');
@@ -955,12 +935,6 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
       _isWaitingForOthers = true;
     });
 
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! AuthSuccess) {
-      print('LiveQuestionScreen - Auth state is not AuthSuccess');
-      return;
-    }
-
     // Submit answer via API
     // Backend expects answer in lowercase to match Firebase ("a", "b", "c", "d")
     final answerToSubmit = answer.toLowerCase();
@@ -972,7 +946,6 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
     );
 
     await context.read<ChallengeCubit>().submitAnswer(
-      token: authState.token,
       challengeCode: widget.challengeCode,
       answer: answerToSubmit,
     );
@@ -1088,18 +1061,11 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
     }
 
     try {
-      final authState = context.read<AuthCubit>().state;
-      if (authState is! AuthSuccess) {
-        print('LiveQuestionScreen - Cannot disconnect: not authenticated');
-        return;
-      }
-
       print(
         'LiveQuestionScreen - Calling disconnect API for challenge ${widget.challengeCode}',
       );
 
       await context.read<ChallengeCubit>().disconnectFromChallenge(
-        token: authState.token,
         challengeCode: widget.challengeCode,
       );
 

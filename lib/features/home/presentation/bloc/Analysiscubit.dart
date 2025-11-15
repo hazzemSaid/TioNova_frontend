@@ -7,9 +7,9 @@ class AnalysisCubit extends Cubit<AnalysisState> {
   AnalysisCubit({required this.analysisUseCase}) : super(AnalysisInitial());
   final AnalysisUseCase analysisUseCase;
 
-  void loadAnalysisData(String token) async {
+  void loadAnalysisData() async {
     safeEmit(AnalysisLoading());
-    final result = await analysisUseCase.execute(token: token);
+    final result = await analysisUseCase.execute();
     result.fold(
       (failure) => safeEmit(AnalysisError(message: failure.errMessage)),
       (data) => safeEmit(AnalysisLoaded(analysisData: data)),

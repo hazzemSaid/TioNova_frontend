@@ -9,11 +9,7 @@ class GetChaptersUseCase {
 
   Future<Either<Failure, List<ChapterModel>>> call({
     required String folderId,
-    required String token,
   }) async {
-    return await repository.getChaptersByFolderId(
-      folderId: folderId,
-      token: token,
-    );
+    return await repository.getChaptersByFolderId(folderId: folderId);
   }
 }

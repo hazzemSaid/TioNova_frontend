@@ -6,10 +6,7 @@ import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
 class Getnotesbychapteridusecase {
   final IChapterRepository repository;
   Getnotesbychapteridusecase(this.repository);
-  Future<Either<Failure, List<Notemodel>>> call({
-    required String chapterId,
-    required String token,
-  }) {
-    return repository.getNotesByChapterId(chapterId: chapterId, token: token);
+  Future<Either<Failure, List<Notemodel>>> call({required String chapterId}) {
+    return repository.getNotesByChapterId(chapterId: chapterId);
   }
 }

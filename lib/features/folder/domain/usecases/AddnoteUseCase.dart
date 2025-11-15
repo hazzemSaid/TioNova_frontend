@@ -9,13 +9,11 @@ class Addnoteusecase {
   Future<Either<Failure, Notemodel>> call({
     required String title,
     required String chapterId,
-    required String token,
     required Map<String, dynamic> rawData,
   }) {
     return repository.addNote(
       title: title,
       chapterId: chapterId,
-      token: token,
       rawData: rawData,
     );
   }

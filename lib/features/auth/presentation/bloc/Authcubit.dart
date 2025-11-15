@@ -1,7 +1,7 @@
 // features/auth/presentation/bloc/Authcubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/domain/usecases/forgetPasswordusecase.dart';
@@ -57,8 +57,7 @@ class AuthCubit extends Cubit<AuthState> {
         safeEmit(ResetPasswordFailure(failure: failure));
       },
       (user) async {
-        final token = await TokenStorage.getAccessToken() ?? "";
-        safeEmit(AuthSuccess(user: user, token: token));
+        safeEmit(AuthSuccess(user: user));
       },
     );
   }
@@ -93,8 +92,7 @@ class AuthCubit extends Cubit<AuthState> {
         safeEmit(AuthFailure(failure: failure));
       },
       (user) async {
-        final token = await TokenStorage.getAccessToken() ?? "";
-        safeEmit(AuthSuccess(user: user, token: token));
+        safeEmit(AuthSuccess(user: user));
       },
     );
   }
@@ -110,14 +108,7 @@ class AuthCubit extends Cubit<AuthState> {
         safeEmit(AuthInitial());
       },
       (user) async {
-        final token = await TokenStorage.getAccessToken();
-        if (token != null && token.isNotEmpty) {
-          safeEmit(AuthSuccess(user: user, token: token));
-        } else {
-          // Clear corrupted user data and emit AuthInitial
-          await localAuthDataSource.signOut();
-          safeEmit(AuthInitial());
-        }
+        safeEmit(AuthSuccess(user: user));
       },
     );
   }
@@ -188,19 +179,7 @@ class AuthCubit extends Cubit<AuthState> {
         safeEmit(AuthFailure(failure: failure));
       },
       (user) async {
-        final token = await TokenStorage.getAccessToken();
-        if (token != null && token.isNotEmpty) {
-          safeEmit(AuthSuccess(user: user, token: token));
-        } else {
-          safeEmit(
-            AuthFailure(
-              failure: ServerFailure(
-                "Failed to get token after verification",
-                "401",
-              ),
-            ),
-          );
-        }
+        safeEmit(AuthSuccess(user: user));
       },
     );
   }
@@ -214,14 +193,7 @@ class AuthCubit extends Cubit<AuthState> {
         safeEmit(AuthFailure(failure: failure));
       },
       (user) async {
-        final token = await TokenStorage.getAccessToken();
-        if (token != null && token.isNotEmpty) {
-          safeEmit(AuthSuccess(user: user, token: token));
-        } else {
-          safeEmit(
-            AuthFailure(failure: ServerFailure("Failed to get token", "401")),
-          );
-        }
+        safeEmit(AuthSuccess(user: user));
       },
     );
   }

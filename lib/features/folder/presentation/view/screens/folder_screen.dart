@@ -60,10 +60,7 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   void _fetchFolders() {
-    final authState = context.read<AuthCubit>().state;
-    if (authState is AuthSuccess) {
-      context.read<FolderCubit>().fetchAllFolders(authState.token);
-    }
+    context.read<FolderCubit>().fetchAllFolders();
   }
 
   // Helper method to get icon from stored index
@@ -99,14 +96,7 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   void _deleteFolder(String folderId) {
-    final authState = context.read<AuthCubit>().state;
-    if (authState is AuthSuccess) {
-      context.read<FolderCubit>().deletefolder(
-        id: folderId,
-        token: authState.token,
-      );
-      // No need to manually refresh, UI will update from FolderLoaded
-    }
+    context.read<FolderCubit>().deletefolder(id: folderId);
   }
 
   void onCategorySelected(String category) {
@@ -353,15 +343,8 @@ class _FolderScreenState extends State<FolderScreen> {
                                   duration: Duration(seconds: 2),
                                 ),
                               );
-                              final authState = context.read<AuthCubit>().state;
-                              String token = '';
-                              if (authState is AuthSuccess) {
-                                token = authState.token;
-                              }
-                              if (token == '') return;
-                              context.read<FolderCubit>().fetchAllFolders(
-                                token,
-                              );
+
+                              context.read<FolderCubit>().fetchAllFolders();
 
                               // No need to call _fetchFolders(); UI will update from FolderLoaded
                             }

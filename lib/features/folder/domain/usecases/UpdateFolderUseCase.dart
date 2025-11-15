@@ -15,7 +15,6 @@ class UpdateFolderUseCase {
     required Status status,
     String? icon,
     String? color,
-    required String token,
   }) {
     return repository.updatefolder(
       id: id,
@@ -25,7 +24,6 @@ class UpdateFolderUseCase {
       status: status,
       icon: icon,
       color: color,
-      token: token,
     );
   }
 }

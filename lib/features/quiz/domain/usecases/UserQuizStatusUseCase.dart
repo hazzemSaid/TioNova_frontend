@@ -7,13 +7,11 @@ class UserQuizStatusUseCase {
   final QuizRepo repo;
   UserQuizStatusUseCase(this.repo);
   Future<Either<Failure, UserQuizStatusModel>> call({
-    required String token,
     required String quizId,
     required Map<String, dynamic> body,
     required String chapterId,
   }) async {
     return await repo.setuserquizstatus(
-      token: token,
       quizId: quizId,
       body: body,
       chapterId: chapterId,

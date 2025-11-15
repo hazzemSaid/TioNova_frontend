@@ -10,9 +10,7 @@ class AnalysisRepositoryImpl implements AnalysisRepository {
   AnalysisRepositoryImpl({required this.analysisRemoteDataSource});
 
   @override
-  Future<Either<Failure, Analysismodel>> fetchAnalysisData({
-    required String token,
-  }) {
-    return analysisRemoteDataSource.fetchAnalysisData(token: token);
+  Future<Either<Failure, Analysismodel>> fetchAnalysisData() {
+    return analysisRemoteDataSource.fetchAnalysisData();
   }
 }

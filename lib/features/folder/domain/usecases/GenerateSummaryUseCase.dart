@@ -8,10 +8,7 @@ class GenerateSummaryUseCase {
 
   GenerateSummaryUseCase(this.repository);
 
-  Future<Either<Failure, SummaryResponse>> call({
-    required String token,
-    required String chapterId,
-  }) {
-    return repository.GenerateSummary(token: token, chapterId: chapterId);
+  Future<Either<Failure, SummaryResponse>> call({required String chapterId}) {
+    return repository.GenerateSummary(chapterId: chapterId);
   }
 }

@@ -9,10 +9,7 @@ class GetChapterContentPdfUseCase {
 
   GetChapterContentPdfUseCase(this.repository);
 
-  Future<Either<Failure, Uint8List>> call({
-    required String token,
-    required String chapterId,
-  }) {
-    return repository.getchapercontentpdf(token: token, chapterId: chapterId);
+  Future<Either<Failure, Uint8List>> call({required String chapterId}) {
+    return repository.getchapercontentpdf(chapterId: chapterId);
   }
 }

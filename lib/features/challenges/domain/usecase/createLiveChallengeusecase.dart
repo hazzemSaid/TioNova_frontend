@@ -8,14 +8,9 @@ class CreateLiveChallengeUseCase {
 
   CreateLiveChallengeUseCase({required this.repository});
   Future<Either<Failure, ChallengeCode>> call({
-    required String token,
     required String title,
     required String chapterId,
   }) {
-    return repository.createLiveChallenge(
-      token: token,
-      title: title,
-      chapterId: chapterId,
-    );
+    return repository.createLiveChallenge(title: title, chapterId: chapterId);
   }
 }

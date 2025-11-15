@@ -64,10 +64,10 @@ class FolderCubit extends Cubit<FolderState> {
     return super.close();
   }
 
-  Future<void> fetchAllFolders(String token) async {
+  Future<void> fetchAllFolders() async {
     if (isClosed) return;
     safeEmit(FolderLoading());
-    final result = await getAllFolderUseCase(token: token);
+    final result = await getAllFolderUseCase();
     if (isClosed) return;
     result.fold(
       (failure) {
@@ -87,7 +87,6 @@ class FolderCubit extends Cubit<FolderState> {
     required String title,
     String? description,
     String? category,
-    required String token,
     List<String>? sharedWith,
     required Status status,
     required String icon,
@@ -98,7 +97,6 @@ class FolderCubit extends Cubit<FolderState> {
       title: title,
       description: description,
       category: category,
-      token: token,
       sharedWith: sharedWith ?? [],
       status: status,
       icon: icon,
@@ -109,7 +107,7 @@ class FolderCubit extends Cubit<FolderState> {
     });
   }
 
-  Future<void> deletefolder({required String id, required String token}) async {
+  Future<void> deletefolder({required String id}) async {
     // Validation check before destructive operation
     if (!_folderMap.containsKey(id)) {
       safeEmit(
@@ -118,8 +116,10 @@ class FolderCubit extends Cubit<FolderState> {
       return;
     }
 
-    safeEmit(DeleteFolderLoading(_folderMap.values.toList())); // Emit loading state
-    final result = await deleteFolderUseCase(id: id, token: token);
+    safeEmit(
+      DeleteFolderLoading(_folderMap.values.toList()),
+    ); // Emit loading state
+    final result = await deleteFolderUseCase(id: id);
     result.fold(
       (failure) {
         safeEmit(DeleteFolderError(failure));
@@ -140,7 +140,6 @@ class FolderCubit extends Cubit<FolderState> {
     required Status status,
     String? icon,
     String? color,
-    required String token,
   }) async {
     try {
       // Validate input before operation
@@ -170,7 +169,6 @@ class FolderCubit extends Cubit<FolderState> {
         status: status,
         icon: icon,
         color: color,
-        token: token,
       );
 
       result.fold(
@@ -201,15 +199,9 @@ class FolderCubit extends Cubit<FolderState> {
     }
   }
 
-  Future<void> getAvailableUsersForShare({
-    required String query,
-    required String token,
-  }) async {
+  Future<void> getAvailableUsersForShare({required String query}) async {
     safeEmit(GetAvailableUsersForShareLoading());
-    final result = await getAvailableUsersForShareUseCase(
-      query: query,
-      token: token,
-    );
+    final result = await getAvailableUsersForShareUseCase(query: query);
     result.fold(
       (failure) => safeEmit(GetAvailableUsersForShareError(failure)),
       (users) => safeEmit(GetAvailableUsersForShareSuccess(users)),

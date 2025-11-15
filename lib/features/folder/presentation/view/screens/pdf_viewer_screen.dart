@@ -7,7 +7,6 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
@@ -97,21 +96,8 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
       print(
         'Fetching PDF from API for viewing (no caching): ${widget.chapterId}',
       );
-      final token = await TokenStorage.getAccessToken();
-      if (token == null) {
-        if (mounted && context.mounted && _isInitialized) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Authentication required'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
 
       context.read<ChapterCubit>().getChapterContentPdf(
-        token: token,
         chapterId: widget.chapterId,
         forDownload: false, // For viewing only
       );
@@ -133,21 +119,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
         'Fetching PDF from API for download (will cache): ${widget.chapterId}',
       );
 
-      final token = await TokenStorage.getAccessToken();
-      if (token == null) {
-        if (mounted && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Authentication required'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
       context.read<ChapterCubit>().getChapterContentPdf(
-        token: token,
         chapterId: widget.chapterId,
         forDownload: true, // For download (will cache)
       );

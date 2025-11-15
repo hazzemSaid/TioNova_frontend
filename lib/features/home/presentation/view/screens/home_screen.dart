@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysiscubit.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysisstate.dart';
@@ -22,25 +21,20 @@ class HomeScreen extends StatelessWidget {
         final cubit = getIt<AnalysisCubit>();
         final usageTracker = getIt<AppUsageTrackerService>();
         // Load data immediately after creating the cubit
-        TokenStorage.getAccessToken().then((token) {
-          if (token != null) {
-            cubit.loadAnalysisData(token);
-            // Update usage tracker with API data after load completes
-            Future.delayed(const Duration(milliseconds: 500), () {
-              final state = cubit.state;
-              if (state is AnalysisLoaded &&
-                  state.analysisData.profile != null) {
-                final profile = state.analysisData.profile!;
-                usageTracker.updateProfileFromApi(
-                  streak: profile.streak,
-                  lastActiveDate: profile.lastActiveDate,
-                  totalQuizzesTaken: profile.totalQuizzesTaken,
-                  totalMindmapsCreated: profile.totalMindmapsCreated,
-                  totalSummariesCreated: profile.totalSummariesCreated,
-                  averageQuizScore: profile.averageQuizScore,
-                );
-              }
-            });
+        cubit.loadAnalysisData();
+        // Update usage tracker with API data after load completes
+        Future.delayed(const Duration(milliseconds: 500), () {
+          final state = cubit.state;
+          if (state is AnalysisLoaded && state.analysisData.profile != null) {
+            final profile = state.analysisData.profile!;
+            usageTracker.updateProfileFromApi(
+              streak: profile.streak,
+              lastActiveDate: profile.lastActiveDate,
+              totalQuizzesTaken: profile.totalQuizzesTaken,
+              totalMindmapsCreated: profile.totalMindmapsCreated,
+              totalSummariesCreated: profile.totalSummariesCreated,
+              averageQuizScore: profile.averageQuizScore,
+            );
           }
         });
         return cubit;
@@ -71,9 +65,8 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
 
   Future<void> _loadAnalysisData() async {
     if (!mounted) return;
-    final token = await TokenStorage.getAccessToken();
-    if (token != null && mounted) {
-      _analysisCubit.loadAnalysisData(token);
+    if (mounted) {
+      _analysisCubit.loadAnalysisData();
       // Update usage tracker with fresh API data after load completes
       await Future.delayed(const Duration(milliseconds: 500));
       final state = _analysisCubit.state;

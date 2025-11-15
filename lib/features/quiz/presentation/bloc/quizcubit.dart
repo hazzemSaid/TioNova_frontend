@@ -15,12 +15,9 @@ class QuizCubit extends Cubit<QuizState> {
   final GetHistoryUseCase getHistoryUseCase;
   final CreateQuizUseCase createQuizUseCase;
   final UserQuizStatusUseCase userQuizStatusUseCase;
-  void createQuiz({required String token, required String chapterId}) async {
+  void createQuiz({required String chapterId}) async {
     safeEmit(CreateQuizLoading());
-    final result = await createQuizUseCase.call(
-      token: token,
-      chapterId: chapterId,
-    );
+    final result = await createQuizUseCase.call(chapterId: chapterId);
     result.fold(
       (failure) => safeEmit(CreateQuizFailure(failure: failure)),
       (quiz) => safeEmit(CreateQuizSuccess(quiz: quiz)),
@@ -28,14 +25,12 @@ class QuizCubit extends Cubit<QuizState> {
   }
 
   void setuserquizstatus({
-    required String token,
     required String quizId,
     required Map<String, dynamic> body,
     required String chapterId,
   }) async {
     safeEmit(UserQuizStatusLoading());
     final result = await userQuizStatusUseCase.call(
-      token: token,
       quizId: quizId,
       body: body,
       chapterId: chapterId,
@@ -46,15 +41,12 @@ class QuizCubit extends Cubit<QuizState> {
     );
   }
 
-  void gethistory({required String token, required String chapterId}) async {
+  void gethistory({required String chapterId}) async {
     safeEmit(GetHistoryLoading());
-    final result = await getHistoryUseCase.call(
-      token: token,
-      chapterId: chapterId,
-    );
+    final result = await getHistoryUseCase.call(chapterId: chapterId);
     result.fold(
       (failure) => safeEmit(GetHistoryFailure(failure: failure)),
       (history) => safeEmit(GetHistorySuccess(history: history)),
     );
-}
+  }
 }

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class QuizContent extends StatelessWidget {
   final String? chapterId;
   final String? chapterTitle;
-  const QuizContent({Key? key, this.chapterId, this.chapterTitle})
-    : super(key: key);
+  const QuizContent({super.key, this.chapterId, this.chapterTitle});
 
   @override
   Widget build(BuildContext context) {
@@ -59,21 +57,8 @@ class QuizContent extends StatelessWidget {
             const SizedBox(height: 24),
             OutlinedButton(
               onPressed: () async {
-                final token = await TokenStorage.getAccessToken();
                 if (!context.mounted) return;
-                if (token != null) {
-                  context.push(
-                    '/quiz/${chapterId ?? ''}',
-                    extra: {'token': token},
-                  );
-                } else {
-                  if (!context.mounted) return;
-                  CustomDialogs.showErrorDialog(
-                    context,
-                    title: 'Error!',
-                    message: 'Please login to take the quiz',
-                  );
-                }
+                context.push('/quiz/$chapterId');
               },
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
@@ -120,22 +105,11 @@ class QuizContent extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final token = await TokenStorage.getAccessToken();
                       if (!context.mounted) return;
-                      if (token == null) {
-                        CustomDialogs.showErrorDialog(
-                          context,
-                          title: 'Error!',
-                          message: 'Please login to view history',
-                        );
-                        return;
-                      }
+
                       context.push(
-                        '/quiz-history/${chapterId ?? ''}',
-                        extra: {
-                          'token': token,
-                          'quizTitle': chapterTitle ?? '',
-                        },
+                        '/quiz-history/$chapterId',
+                        extra: {'quizTitle': chapterTitle},
                       );
                     },
                     style: OutlinedButton.styleFrom(

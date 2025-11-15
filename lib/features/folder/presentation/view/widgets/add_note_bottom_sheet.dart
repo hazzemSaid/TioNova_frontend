@@ -8,7 +8,6 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 
 class AddNoteBottomSheet extends StatefulWidget {
@@ -239,12 +238,10 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
       };
     }
 
-    final token = await TokenStorage.getAccessToken();
-    if (token != null && mounted) {
+    if (mounted) {
       context.read<ChapterCubit>().addNote(
         title: _titleController.text.trim(),
         chapterId: widget.chapterId,
-        token: token,
         rawData: rawData,
       );
       Navigator.of(context).pop();

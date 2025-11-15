@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
@@ -124,19 +123,8 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   // Handle summary generation
   Future<void> _generateSummary() async {
     try {
-      final token = await TokenStorage.getAccessToken();
-      if (token == null) {
-        CustomDialogs.showErrorDialog(
-          context,
-          title: 'Error!',
-          message: 'Authentication required',
-        );
-        return;
-      }
-
-      final chapterId = widget.chapter.id ?? '';
+      final chapterId = widget.chapter.id;
       context.read<ChapterCubit>().generateSummary(
-        token: token,
         chapterId: chapterId,
         chapterTitle: widget.chapter.title,
       );
@@ -177,25 +165,12 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   // Handle mindmap generation
   Future<void> _generateMindmap() async {
     try {
-      final token = await TokenStorage.getAccessToken();
-      if (token == null) {
-        CustomDialogs.showErrorDialog(
-          context,
-          title: 'Error!',
-          message: 'Authentication required',
-        );
-        return;
-      }
-
-      final chapterId = widget.chapter.id ?? '';
+      final chapterId = widget.chapter.id;
       setState(() {
         _isMindmapLoading = true;
       });
 
-      context.read<ChapterCubit>().createMindmap(
-        token: token,
-        chapterId: chapterId,
-      );
+      context.read<ChapterCubit>().createMindmap(chapterId: chapterId);
     } catch (e) {
       setState(() {
         _isMindmapLoading = false;
@@ -242,17 +217,6 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
 
       // If not cached, fetch from API
       print('Fetching PDF from API for download');
-      final token = await TokenStorage.getAccessToken();
-      if (token == null) {
-        CustomDialogs.showErrorDialog(
-          context,
-          title: 'Error!',
-          message: 'Authentication required',
-        );
-        return;
-      }
-
-      // Show loading dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -265,7 +229,6 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
 
       // Fetch PDF content using the cubit
       context.read<ChapterCubit>().getChapterContentPdf(
-        token: token,
         chapterId: chapterId,
         forDownload: true, // This is a download operation
       );
@@ -1159,23 +1122,10 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                         Expanded(
                                           child: ElevatedButton(
                                             onPressed: () async {
-                                              final token =
-                                                  await TokenStorage.getAccessToken();
                                               if (!mounted) return;
-                                              if (token != null) {
-                                                context.push(
-                                                  '/quiz/${widget.chapter.id ?? ''}',
-                                                  extra: {'token': token},
-                                                );
-                                              } else {
-                                                if (!mounted) return;
-                                                CustomDialogs.showErrorDialog(
-                                                  context,
-                                                  title: 'Error!',
-                                                  message:
-                                                      'Please login to take the quiz',
-                                                );
-                                              }
+                                              context.push(
+                                                '/quiz/${widget.chapter.id}',
+                                              );
                                             },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor:
@@ -1250,24 +1200,13 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
                                         const SizedBox(width: 16),
                                         OutlinedButton(
                                           onPressed: () async {
-                                            final token =
-                                                await TokenStorage.getAccessToken();
                                             if (!mounted) return;
-                                            if (token == null) {
-                                              CustomDialogs.showErrorDialog(
-                                                context,
-                                                title: 'Error!',
-                                                message:
-                                                    'Please login to view history',
-                                              );
-                                              return;
-                                            }
+
                                             context.push(
-                                              '/quiz-history/${widget.chapter.id ?? ''}',
+                                              '/quiz-history/${widget.chapter.id}',
                                               extra: {
-                                                'token': token,
                                                 'quizTitle':
-                                                    widget.chapter.title ?? '',
+                                                    widget.chapter.title,
                                               },
                                             );
                                           },

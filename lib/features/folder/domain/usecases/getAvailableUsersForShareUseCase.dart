@@ -8,10 +8,7 @@ class GetAvailableUsersForShareUseCase {
 
   GetAvailableUsersForShareUseCase(this.repository);
 
-  Future<Either<Failure, List<ShareWithmodel>>> call({
-    required String query,
-    required String token,
-  }) {
-    return repository.getAvailableUsersForShare(query: query, token: token);
+  Future<Either<Failure, List<ShareWithmodel>>> call({required String query}) {
+    return repository.getAvailableUsersForShare(query: query);
   }
 }

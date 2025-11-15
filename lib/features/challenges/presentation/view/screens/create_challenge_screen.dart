@@ -735,20 +735,11 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
                         'CreateChallengeScreen - Challenge code: ${widget.inviteCode}',
                       );
 
-                      final authState = context.read<AuthCubit>().state;
-                      if (authState is! AuthSuccess) {
-                        print(
-                          'CreateChallengeScreen - Auth state is not AuthSuccess',
-                        );
-                        return;
-                      }
-
                       print(
                         'CreateChallengeScreen - Calling startChallenge on cubit...',
                       );
                       // Start the challenge (Step 4)
                       await context.read<ChallengeCubit>().startChallenge(
-                        token: authState.token,
                         challengeCode: widget.inviteCode,
                       );
                       print(

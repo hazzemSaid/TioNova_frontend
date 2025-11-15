@@ -24,31 +24,23 @@ class Remoteauthdatasource implements IAuthDataSource {
     String email,
     String password,
   ) async {
-    ///auth/login
     try {
       final response = await dio.post(
         '/auth/login',
         data: {'email': email, 'password': password},
       );
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data is String
             ? jsonDecode(response.data)
             : response.data as Map<String, dynamic>;
-
-        print('Auth Response: $responseData');
-
         final token = responseData['token']?.toString();
         final refreshToken = responseData['refreshToken']?.toString();
-
         if (token == null || refreshToken == null) {
           return Left(
             ServerFailure('Invalid response from server: missing tokens'),
           );
         }
-
         TokenStorage.saveTokens(token, refreshToken);
-
         if (responseData['user'] is Map<String, dynamic>) {
           return Right(UserModel.fromJson(responseData['user']));
         } else {
@@ -58,7 +50,6 @@ class Remoteauthdatasource implements IAuthDataSource {
         final errorData = response.data is String
             ? jsonDecode(response.data)
             : response.data as Map<String, dynamic>;
-
         return Left(
           ServerFailure(
             (errorData['message'] ?? 'Unknown error occurred').toString(),
@@ -108,25 +99,18 @@ class Remoteauthdatasource implements IAuthDataSource {
         '/auth/verify-email',
         data: {'email': email, 'code': code},
       );
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data is String
             ? jsonDecode(response.data)
             : response.data as Map<String, dynamic>;
-
-        print('Auth Response: $responseData');
-
         final token = responseData['token']?.toString();
         final refreshToken = responseData['refreshToken']?.toString();
-
         if (token == null || refreshToken == null) {
           return Left(
             ServerFailure('Invalid response from server: missing tokens'),
           );
         }
-
         TokenStorage.saveTokens(token, refreshToken);
-
         if (responseData['user'] is Map<String, dynamic>) {
           return Right(UserModel.fromJson(responseData['user']));
         } else {
@@ -136,7 +120,6 @@ class Remoteauthdatasource implements IAuthDataSource {
         final errorData = response.data is String
             ? jsonDecode(response.data)
             : response.data as Map<String, dynamic>;
-
         return Left(
           ServerFailure(
             (errorData['message'] ?? 'Unknown error occurred').toString(),
@@ -163,18 +146,14 @@ class Remoteauthdatasource implements IAuthDataSource {
         final responseData = response.data is String
             ? jsonDecode(response.data)
             : response.data as Map<String, dynamic>;
-
         final token = responseData['token']?.toString();
         final refreshToken = responseData['refreshToken']?.toString();
-
         if (token == null || refreshToken == null) {
           return Left(
             ServerFailure('Invalid response from server: missing tokens'),
           );
         }
-
         TokenStorage.saveTokens(token, refreshToken);
-
         if (responseData['user'] is Map<String, dynamic>) {
           return Right(UserModel.fromJson(responseData['user']));
         } else {
@@ -184,7 +163,6 @@ class Remoteauthdatasource implements IAuthDataSource {
         final errorData = response.data is String
             ? jsonDecode(response.data)
             : response.data as Map<String, dynamic>;
-
         return Left(
           ServerFailure(
             (errorData['message'] ?? 'Unknown error occurred').toString(),
@@ -198,7 +176,6 @@ class Remoteauthdatasource implements IAuthDataSource {
 
   @override
   Future<Either<Failure, void>> forgetPassword({required String email}) async {
-    // /auth/forgot-password
     final response = await dio.post(
       '/auth/forgot-password',
       data: {'email': email},

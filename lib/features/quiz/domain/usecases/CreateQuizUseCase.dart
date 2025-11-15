@@ -8,10 +8,7 @@ class CreateQuizUseCase {
 
   CreateQuizUseCase({required this.quizRepo});
 
-  Future<Either<Failure, QuizModel>> call({
-    required String token,
-    required String chapterId,
-  }) async {
-    return await quizRepo.createQuiz(token: token, chapterId: chapterId);
+  Future<Either<Failure, QuizModel>> call({required String chapterId}) async {
+    return await quizRepo.createQuiz(chapterId: chapterId);
   }
 }

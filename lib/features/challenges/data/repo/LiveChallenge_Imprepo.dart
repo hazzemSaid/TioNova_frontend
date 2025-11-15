@@ -11,12 +11,10 @@ class LiveChallengeImpRepo implements LiveChallengeRepo {
 
   @override
   Future<Either<Failure, ChallengeCode>> createLiveChallenge({
-    required String token,
     required String title,
     required String chapterId,
   }) {
     return remoteDataSource.createLiveChallenge(
-      token: token,
       title: title,
       chapterId: chapterId,
     );
@@ -24,23 +22,19 @@ class LiveChallengeImpRepo implements LiveChallengeRepo {
 
   @override
   Future<Either<Failure, void>> disconnectFromLiveChallenge({
-    required String token,
     required String challengeCode,
   }) {
     return remoteDataSource.disconnectFromLiveChallenge(
-      token: token,
       challengeCode: challengeCode,
     );
   }
 
   @override
   Future<Either<Failure, void>> joinLiveChallenge({
-    required String token,
     required String challengeCode,
     bool isReconnection = false,
   }) {
     return remoteDataSource.joinLiveChallenge(
-      token: token,
       challengeCode: challengeCode,
       isReconnection: isReconnection,
     );
@@ -48,23 +42,17 @@ class LiveChallengeImpRepo implements LiveChallengeRepo {
 
   @override
   Future<Either<Failure, void>> startLiveChallenge({
-    required String token,
     required String challengeCode,
   }) {
-    return remoteDataSource.startLiveChallenge(
-      token: token,
-      challengeCode: challengeCode,
-    );
+    return remoteDataSource.startLiveChallenge(challengeCode: challengeCode);
   }
 
   @override
   Future<Either<Failure, void>> submitLiveAnswer({
-    required String token,
     required String challengeCode,
     required String answer,
   }) {
     return remoteDataSource.submitLiveAnswer(
-      token: token,
       challengeCode: challengeCode,
       answer: answer,
     );
@@ -72,12 +60,8 @@ class LiveChallengeImpRepo implements LiveChallengeRepo {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> checkAndAdvance({
-    required String token,
     required String challengeCode,
   }) {
-    return remoteDataSource.checkAndAdvance(
-      token: token,
-      challengeCode: challengeCode,
-    );
+    return remoteDataSource.checkAndAdvance(challengeCode: challengeCode);
   }
 }

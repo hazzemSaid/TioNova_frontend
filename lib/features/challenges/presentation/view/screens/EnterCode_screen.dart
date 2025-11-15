@@ -423,25 +423,9 @@ class _EntercodeScreenState extends State<EntercodeScreen>
     if (!contextIsValid) return;
 
     // Get auth token
-    final authState = context.read<AuthCubit>().state;
-    print('Auth state: ${authState.runtimeType}');
-    if (authState is! AuthSuccess) {
-      safeContext((ctx) {
-        CustomDialogs.showErrorDialog(
-          ctx,
-          title: 'Authentication Required',
-          message: 'Please login first',
-        );
-      });
-      return;
-    }
-
     print('Calling joinChallenge with token and code: $code');
     // Call join challenge API
-    await context.read<ChallengeCubit>().joinChallenge(
-      token: authState.token,
-      challengeCode: code,
-    );
+    await context.read<ChallengeCubit>().joinChallenge(challengeCode: code);
     print('joinChallenge call completed');
   }
 

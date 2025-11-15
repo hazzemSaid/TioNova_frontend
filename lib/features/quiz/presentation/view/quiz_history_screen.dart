@@ -8,16 +8,10 @@ import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizstate.dart';
 
 class QuizHistoryScreen extends StatefulWidget {
-  final String token;
   final String chapterId;
   final String? quizTitle;
 
-  const QuizHistoryScreen({
-    super.key,
-    required this.token,
-    required this.chapterId,
-    this.quizTitle,
-  });
+  const QuizHistoryScreen({super.key, required this.chapterId, this.quizTitle});
 
   @override
   State<QuizHistoryScreen> createState() => _QuizHistoryScreenState();
@@ -32,7 +26,7 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
   void initState() {
     super.initState();
     _cubit = _getIt<QuizCubit>();
-    _cubit.gethistory(token: widget.token, chapterId: widget.chapterId);
+    _cubit.gethistory(chapterId: widget.chapterId);
   }
 
   @override

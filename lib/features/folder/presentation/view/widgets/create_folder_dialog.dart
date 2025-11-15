@@ -11,7 +11,7 @@ import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 enum FolderPrivacy { private, shared, public }
 
 class CreateFolderDialog extends StatefulWidget {
-  const CreateFolderDialog({Key? key}) : super(key: key);
+  const CreateFolderDialog({super.key});
 
   @override
   State<CreateFolderDialog> createState() => _CreateFolderDialogState();
@@ -48,7 +48,6 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
   FolderPrivacy _privacy = FolderPrivacy.private;
 
   List<String> _sharedUserIds = [];
-  String? _token;
 
   @override
   void dispose() {
@@ -58,7 +57,6 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
   }
 
   Future<void> _openShareWithDialog() async {
-    if (_token == null) return;
     final result = await showDialog<List<String>>(
       context: context,
       builder: (ctx) => BlocProvider.value(
@@ -80,9 +78,6 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final canCreate = _nameCtrl.text.trim().isNotEmpty;
-    _token ??= context.read<AuthCubit>().state is AuthSuccess
-        ? (context.read<AuthCubit>().state as AuthSuccess).token
-        : null;
 
     return BlocListener<FolderCubit, FolderState>(
       listener: (context, state) {
@@ -291,51 +286,30 @@ class _CreateFolderDialogState extends State<CreateFolderDialog> {
                                       enabled: canCreate && !isLoading,
                                       onTap: canCreate && !isLoading
                                           ? () {
-                                              final authState = context
-                                                  .read<AuthCubit>()
-                                                  .state;
-                                              if (authState is AuthSuccess) {
-                                                final status =
-                                                    _privacy ==
-                                                        FolderPrivacy.private
-                                                    ? Status.private
-                                                    : Status.public;
-                                                context
-                                                    .read<FolderCubit>()
-                                                    .createfolder(
-                                                      title: _nameCtrl.text
-                                                          .trim(),
-                                                      description: _descCtrl
-                                                          .text
-                                                          .trim(),
-                                                      category: 'General',
-                                                      token: authState.token,
-                                                      status: status,
-                                                      icon: _selectedIcon
-                                                          .toString(),
-                                                      color:
-                                                          '#${_colors[_selectedColor].value.toRadixString(16).padLeft(8, '0').substring(2)}',
-                                                      sharedWith:
-                                                          _privacy ==
-                                                              FolderPrivacy
-                                                                  .shared
-                                                          ? _sharedUserIds
-                                                          : null,
-                                                    );
-                                              } else {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Authentication required',
-                                                    ),
-                                                    backgroundColor:
-                                                        colorScheme.error,
-                                                  ),
-                                                );
-                                                Navigator.of(context).pop();
-                                              }
+                                              final status =
+                                                  _privacy ==
+                                                      FolderPrivacy.private
+                                                  ? Status.private
+                                                  : Status.public;
+                                              context
+                                                  .read<FolderCubit>()
+                                                  .createfolder(
+                                                    title: _nameCtrl.text
+                                                        .trim(),
+                                                    description: _descCtrl.text
+                                                        .trim(),
+                                                    category: 'General',
+                                                    status: status,
+                                                    icon: _selectedIcon
+                                                        .toString(),
+                                                    color:
+                                                        '#${_colors[_selectedColor].value.toRadixString(16).padLeft(8, '0').substring(2)}',
+                                                    sharedWith:
+                                                        _privacy ==
+                                                            FolderPrivacy.shared
+                                                        ? _sharedUserIds
+                                                        : null,
+                                                  );
                                             }
                                           : null,
                                     );

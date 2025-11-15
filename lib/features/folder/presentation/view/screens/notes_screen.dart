@@ -14,11 +14,11 @@ class NotesScreen extends StatefulWidget {
   final Color? accentColor;
 
   const NotesScreen({
-    Key? key,
+    super.key,
     required this.chapterId,
     required this.chapterTitle,
     this.accentColor,
-  }) : super(key: key);
+  });
 
   @override
   State<NotesScreen> createState() => _NotesScreenState();
@@ -43,11 +43,9 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
   }
 
   Future<void> _loadNotes() async {
-    final token = await TokenStorage.getAccessToken();
-    if (token != null && mounted) {
+    if (mounted) {
       context.read<ChapterCubit>().getNotesByChapterId(
         chapterId: widget.chapterId,
-        token: token,
       );
     }
   }
@@ -95,11 +93,9 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
         note: note,
         accentColor: widget.accentColor ?? const Color(0xFF00D9A0),
         onDelete: () async {
-          final token = await TokenStorage.getAccessToken();
-          if (token != null && mounted) {
+          if (mounted) {
             context.read<ChapterCubit>().deleteNote(
               noteId: note.id,
-              token: token,
               chapterId: widget.chapterId,
             );
           }

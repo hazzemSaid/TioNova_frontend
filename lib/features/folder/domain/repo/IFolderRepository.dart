@@ -9,25 +9,18 @@ abstract class IFolderRepository {
     required String title,
     String? description,
     String? category,
-    required String token,
     List<String>? sharedWith,
     required Status status,
     String? icon,
     String? color,
   });
   Future<Either<Failure, List<Foldermodel>>> searchFolders(String query);
-  Future<Either<Failure, List<Foldermodel>>> getAllFolders({
-    required String token,
-  });
-  Future<Either<Failure, void>> deletefolder({
-    required String id,
-    required String token,
-  });
+  Future<Either<Failure, List<Foldermodel>>> getAllFolders();
+  Future<Either<Failure, void>> deletefolder({required String id});
   Future<Either<Failure, Foldermodel>> updatefolder({
     required String id,
     required String title,
     String? description,
-    required String token,
     List<String>? sharedWith,
     required Status status,
     String? icon,
@@ -35,7 +28,6 @@ abstract class IFolderRepository {
   });
   Future<Either<Failure, List<ShareWithmodel>>> getAvailableUsersForShare({
     required String query,
-    required String token,
   });
 }
 

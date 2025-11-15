@@ -11,7 +11,6 @@ class CreateFolderUseCase {
     required String title,
     String? description,
     String? category,
-    required String token,
     List<String>? sharedWith,
     required Status status,
     String? icon,
@@ -25,7 +24,6 @@ class CreateFolderUseCase {
       icon: icon,
       color: color,
 
-      token: token,
       status: status,
     );
   }

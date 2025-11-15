@@ -5,13 +5,7 @@ import 'package:tionova/features/challenges/domain/repo/LiveChallenge_repo.dart'
 class StartLiveChallengeUseCase {
   final LiveChallengeRepo repository;
   StartLiveChallengeUseCase({required this.repository});
-  Future<Either<Failure, void>> call({
-    required String token,
-    required String challengeCode,
-  }) {
-    return repository.startLiveChallenge(
-      token: token,
-      challengeCode: challengeCode,
-    );
+  Future<Either<Failure, void>> call({required String challengeCode}) {
+    return repository.startLiveChallenge(challengeCode: challengeCode);
   }
 }

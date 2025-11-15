@@ -57,24 +57,10 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   Future<void> _joinChallenge(String challengeCode) async {
     if (!contextIsValid) return;
 
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! AuthSuccess) {
-      safeContext((ctx) {
-        CustomDialogs.showErrorDialog(
-          ctx,
-          title: 'Authentication Required',
-          message: 'Please login first',
-          onPressed: () => ctx.safePop(fallback: '/challenges'),
-        );
-      });
-      return;
-    }
-
     print('QR Scanner - Joining challenge: $challengeCode');
 
     // Call join challenge API using the use case
     await context.read<ChallengeCubit>().joinChallenge(
-      token: authState.token,
       challengeCode: challengeCode,
     );
   }

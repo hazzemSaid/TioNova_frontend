@@ -13,7 +13,6 @@ class FolderRepoImp implements IFolderRepository {
     required String title,
     String? description,
     String? category,
-    required String token,
     List<String>? sharedWith,
     required Status status,
     String? icon,
@@ -23,7 +22,6 @@ class FolderRepoImp implements IFolderRepository {
       title: title,
       description: description,
       category: category,
-      token: token,
       sharedWith: sharedWith,
       status: status,
       icon: icon,
@@ -32,10 +30,8 @@ class FolderRepoImp implements IFolderRepository {
   }
 
   @override
-  Future<Either<Failure, List<Foldermodel>>> getAllFolders({
-    required String token,
-  }) {
-    return remoteDataSource.getAllFolders(token: token);
+  Future<Either<Failure, List<Foldermodel>>> getAllFolders() {
+    return remoteDataSource.getAllFolders();
   }
 
   @override
@@ -44,11 +40,8 @@ class FolderRepoImp implements IFolderRepository {
   }
 
   @override
-  Future<Either<Failure, void>> deletefolder({
-    required String id,
-    required String token,
-  }) {
-    return remoteDataSource.deletefolder(id: id, token: token);
+  Future<Either<Failure, void>> deletefolder({required String id}) {
+    return remoteDataSource.deletefolder(id: id);
   }
 
   @override
@@ -56,7 +49,6 @@ class FolderRepoImp implements IFolderRepository {
     required String id,
     required String title,
     String? description,
-    required String token,
     List<String>? sharedWith,
     required Status status,
     String? icon,
@@ -66,7 +58,6 @@ class FolderRepoImp implements IFolderRepository {
       id: id,
       title: title,
       description: description,
-      token: token,
       sharedWith: sharedWith,
       status: status,
       icon: icon,
@@ -77,11 +68,7 @@ class FolderRepoImp implements IFolderRepository {
   @override
   Future<Either<Failure, List<ShareWithmodel>>> getAvailableUsersForShare({
     required String query,
-    required String token,
   }) {
-    return remoteDataSource.getAvailableUsersForShare(
-      query: query,
-      token: token,
-    );
+    return remoteDataSource.getAvailableUsersForShare(query: query);
   }
 }

@@ -10,7 +10,6 @@ import 'package:tionova/features/quiz/presentation/bloc/quizstate.dart';
 class QuizResultsScreen extends StatefulWidget {
   final QuizModel quiz;
   final List<String?> userAnswers;
-  final String token;
   final String chapterId;
   final int timeTaken;
 
@@ -18,7 +17,6 @@ class QuizResultsScreen extends StatefulWidget {
     super.key,
     required this.quiz,
     required this.userAnswers,
-    required this.token,
     required this.chapterId,
     required this.timeTaken,
   });
@@ -177,7 +175,6 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
     final body = {'answers': answersPayload, 'timeTaken': widget.timeTaken};
 
     context.read<QuizCubit>().setuserquizstatus(
-      token: widget.token,
       quizId: widget.quiz.id,
       body: body,
       chapterId: widget.chapterId,

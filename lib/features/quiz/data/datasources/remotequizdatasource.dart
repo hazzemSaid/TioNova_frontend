@@ -14,7 +14,6 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
 
   @override
   Future<Either<Failure, QuizModel>> createQuiz({
-    required String token,
     required String chapterId,
   }) async {
     try {
@@ -22,14 +21,8 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
       final response = await dio.post(
         '/createquiz',
         data: body,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
-
       return ErrorHandlingUtils.handleApiResponse<QuizModel>(
         response: response,
         onSuccess: (data) => QuizModel.fromJson(data),
@@ -41,7 +34,6 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
 
   @override
   Future<Either<Failure, UserQuizStatusModel>> setuserquizstatus({
-    required String token,
     required String quizId,
     required Map<String, dynamic> body,
     required String chapterId,
@@ -51,14 +43,8 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
       final response = await dio.post(
         '/setuserquizstatus',
         data: fullBody,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
-
       return ErrorHandlingUtils.handleApiResponse<UserQuizStatusModel>(
         response: response,
         onSuccess: (data) {
@@ -67,13 +53,10 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
               data.containsKey('overallStatus')) {
             return UserQuizStatusModel.fromJson(data);
           }
-
           // Handle the case where the response has a different structure
           final result = data['result'] as Map<String, dynamic>? ?? data;
-
           final answers = <Answer>[];
           final graded = (result['gradedAnswers'] as List?) ?? const [];
-
           for (final e in graded) {
             try {
               final m = Map<String, dynamic>.from(e as Map);
@@ -129,7 +112,6 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
 
   @override
   Future<Either<Failure, UserQuizStatusModel>> gethistory({
-    required String token,
     required String chapterId,
   }) async {
     //  /quizhistory
@@ -137,12 +119,7 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
       final response = await dio.post(
         '/quizhistory',
         data: {'chapterId': chapterId},
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.statusCode == 200) {

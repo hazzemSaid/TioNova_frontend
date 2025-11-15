@@ -9,11 +9,11 @@ class ShareWithDialog extends StatefulWidget {
   final List<String> initialUserIds;
   final bool isEdit;
   const ShareWithDialog({
-    Key? key,
+    super.key,
     required this.folderTitle,
     required this.initialUserIds,
     this.isEdit = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ShareWithDialog> createState() => _ShareWithDialogState();
@@ -34,14 +34,8 @@ class _ShareWithDialogState extends State<ShareWithDialog> {
 
   void _fetchUsers() async {
     setState(() => _loading = true);
-    final state = context.read<AuthCubit>().state;
 
-    if (state is AuthSuccess) {
-      await context.read<FolderCubit>().getAvailableUsersForShare(
-        query: _search,
-        token: state.token,
-      );
-    }
+    await context.read<FolderCubit>().getAvailableUsersForShare(query: _search);
     setState(() => _loading = false);
   }
 

@@ -9,10 +9,7 @@ class CreateMindmapUseCase {
 
   CreateMindmapUseCase(this.repository);
 
-  Future<Either<Failure, Mindmapmodel>> call({
-    required String token,
-    required String chapterId,
-  }) {
-    return repository.createMindmap(token: token, chapterId: chapterId);
+  Future<Either<Failure, Mindmapmodel>> call({required String chapterId}) {
+    return repository.createMindmap(chapterId: chapterId);
   }
 }

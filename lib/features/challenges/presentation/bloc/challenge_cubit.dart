@@ -43,7 +43,6 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
   /// Create a new live challenge
   Future<void> createChallenge({
-    required String token,
     required String chapterId,
     required String title,
   }) async {
@@ -51,7 +50,6 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       safeEmit(ChallengeLoading());
 
       final result = await createLiveChallengeUseCase.call(
-        token: token,
         title: title,
         chapterId: chapterId,
       );
@@ -74,16 +72,12 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   }
 
   /// Join an existing live challenge using invite code
-  Future<void> joinChallenge({
-    required String token,
-    required String challengeCode,
-  }) async {
+  Future<void> joinChallenge({required String challengeCode}) async {
     try {
       print('ChallengeCubit - joinChallenge called with code: $challengeCode');
       safeEmit(ChallengeLoading());
 
       final result = await joinLiveChallengeUseCase.call(
-        token: token,
         challengeCode: challengeCode,
       );
 
@@ -128,16 +122,12 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   }
 
   /// Start the live challenge (host only)
-  Future<void> startChallenge({
-    required String token,
-    required String challengeCode,
-  }) async {
+  Future<void> startChallenge({required String challengeCode}) async {
     try {
       print('ChallengeCubit - startChallenge called for code: $challengeCode');
       safeEmit(ChallengeLoading());
 
       final result = await startLiveChallengeUseCase.call(
-        token: token,
         challengeCode: challengeCode,
       );
 
@@ -176,7 +166,6 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
   /// Submit an answer for the current question
   Future<void> submitAnswer({
-    required String token,
     required String challengeCode,
     required String answer,
   }) async {
@@ -186,7 +175,6 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       );
 
       final result = await submitLiveAnswerUseCase.call(
-        token: token,
         challengeCode: challengeCode,
         answer: answer,
       );
@@ -270,15 +258,11 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   }
 
   /// Disconnect from live challenge
-  Future<void> disconnectFromChallenge({
-    required String token,
-    required String challengeCode,
-  }) async {
+  Future<void> disconnectFromChallenge({required String challengeCode}) async {
     try {
       print('ChallengeCubit - Disconnecting from challenge: $challengeCode');
 
       await disconnectfromlivechallengeusecase.call(
-        token: token,
         challengeCode: challengeCode,
       );
 
@@ -299,14 +283,12 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   /// Check if all players answered and advance to next question if needed
   /// Used for polling mechanism
   Future<Map<String, dynamic>?> checkAndAdvanceQuestion({
-    required String token,
     required String challengeCode,
   }) async {
     try {
       print('ChallengeCubit - Checking if should advance question');
 
       final result = await checkAndAdvanceUseCase.call(
-        token: token,
         challengeCode: challengeCode,
       );
 

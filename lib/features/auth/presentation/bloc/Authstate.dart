@@ -11,8 +11,7 @@ class AuthLoading extends AuthState {}
 // --- Success/Failure States ---
 class AuthSuccess extends AuthState {
   final UserModel user;
-  final String token;
-  AuthSuccess({required this.user, required this.token});
+  AuthSuccess({required this.user});
 }
 
 class AuthFailure extends AuthState {

@@ -19,17 +19,11 @@ class ChapterRemoteDataSource extends IChapterRepository {
   @override
   Future<Either<Failure, List<ChapterModel>>> getChaptersByFolderId({
     required String folderId,
-    required String token,
   }) async {
     try {
       final response = await _dio.get(
         '/getchapters/$folderId',
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       return ErrorHandlingUtils.handleApiResponse<List<ChapterModel>>(
@@ -50,7 +44,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
     required String title,
     required String description,
     required String folderId,
-    required String token,
     required FileData file,
   }) async {
     try {
@@ -60,18 +53,13 @@ class ChapterRemoteDataSource extends IChapterRepository {
         'folderId': folderId,
         'file': MultipartFile.fromBytes(
           file.bytes,
-          filename: file.filename,
           contentType: file.mimeType != null
               ? MediaType.parse(file.mimeType!)
               : MediaType.parse('application/pdf'),
         ),
       });
 
-      final response = await _dio.post(
-        '/createchapter',
-        data: formData,
-        options: Options(headers: {'Authorization': "Bearer $token"}),
-      );
+      final response = await _dio.post('/createchapter', data: formData);
 
       return ErrorHandlingUtils.handleApiResponse<void>(
         response: response,
@@ -84,7 +72,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
 
   @override
   Future<Either<Failure, Uint8List>> getchapercontentpdf({
-    required String token,
     required String chapterId,
   }) async {
     try {
@@ -93,7 +80,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
       final response = await _dio.get(
         '/getchaptercontent/$chapterId',
         options: Options(
-          headers: {'Authorization': "Bearer $token"},
           responseType: ResponseType.json, // We expect JSON with Buffer data
         ),
       );
@@ -147,7 +133,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
 
     if (data is String) {
       try {
-        // Remove invalid UTF-8 characters
         final bytes = utf8.encode(data);
         return utf8.decode(bytes, allowMalformed: true);
       } catch (e) {
@@ -172,14 +157,10 @@ class ChapterRemoteDataSource extends IChapterRepository {
   }
 
   Future<Either<Failure, SummaryResponse>> GenerateSummary({
-    required String token,
     required String chapterId,
   }) async {
     print('DEBUG: GenerateSummary API call started');
     print('Chapter ID: $chapterId');
-    print(
-      'Token (first 20 chars): ${token.length > 20 ? token.substring(0, 20) : token}...',
-    );
 
     try {
       print('Making POST request to /summarizecchapter');
@@ -187,12 +168,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
       final response = await _dio.post(
         '/summarizecchapter',
         data: {'chapterId': chapterId},
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       print('Response received - Status: ${response.statusCode}');
@@ -229,24 +205,20 @@ class ChapterRemoteDataSource extends IChapterRepository {
 
   @override
   Future<Either<Failure, Mindmapmodel>> createMindmap({
-    required String token,
     required String chapterId,
   }) async {
     try {
       final response = await _dio.post(
         '/createmindmap',
         data: {'chapterId': chapterId},
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
       return ErrorHandlingUtils.handleApiResponse<Mindmapmodel>(
         response: response,
         onSuccess: (data) {
-          return Mindmapmodel.fromJson(data['data']);
+          return Mindmapmodel.fromJson(
+            data['data']['mindmap'] as Map<String, dynamic>,
+          );
         },
       );
     } catch (e) {
@@ -258,7 +230,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
   Future<Either<Failure, Notemodel>> addNote({
     required String title,
     required String chapterId,
-    required String token,
     required Map<String, dynamic> rawData,
   }) async {
     /**
@@ -283,25 +254,18 @@ class ChapterRemoteDataSource extends IChapterRepository {
           response = await _dio.post(
             '/notes/text',
             data: {'title': title, 'chapterId': chapterId, 'rawData': rawData},
-            options: Options(
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': "Bearer $token",
-              },
-            ),
+            options: Options(headers: {'Content-Type': 'application/json'}),
           );
           break;
 
         case 'image':
           // Image notes: Send as multipart with file upload
           final imageData = rawData['data'] as String?;
-          if (imageData == null || imageData.isEmpty) {
-            return Left(ServerFailure('Image data is required'));
-          }
+          if (imageData == null || imageData.isEmpty) {}
 
           // Decode base64 to bytes
           final bytes = base64Decode(
-            imageData.contains(',') ? imageData.split(',').last : imageData,
+            imageData!.contains(',') ? imageData.split(',').last : imageData,
           );
 
           final formData = FormData.fromMap({
@@ -316,11 +280,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
             if (rawData['meta'] != null) 'meta': jsonEncode(rawData['meta']),
           });
 
-          response = await _dio.post(
-            '/notes/image',
-            data: formData,
-            options: Options(headers: {'Authorization': "Bearer $token"}),
-          );
+          response = await _dio.post('/notes/image', data: formData);
           break;
 
         case 'voice':
@@ -330,7 +290,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
             return Left(ServerFailure('Voice data is required'));
           }
 
-          // Decode base64 to bytes
           final bytes = base64Decode(
             voiceData.contains(',') ? voiceData.split(',').last : voiceData,
           );
@@ -347,11 +306,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
             if (rawData['meta'] != null) 'meta': jsonEncode(rawData['meta']),
           });
 
-          response = await _dio.post(
-            '/notes/voice',
-            data: formData,
-            options: Options(headers: {'Authorization': "Bearer $token"}),
-          );
+          response = await _dio.post('/notes/voice', data: formData);
           break;
 
         default:
@@ -377,21 +332,13 @@ class ChapterRemoteDataSource extends IChapterRepository {
   }
 
   @override
-  Future<Either<Failure, void>> deleteNote({
-    required String noteId,
-    required String token,
-  }) async {
+  Future<Either<Failure, void>> deleteNote({required String noteId}) async {
     // * Delete a note
     //  * @route DELETE /api/notes/:noteId
     try {
       final response = await _dio.delete(
         '/notes/$noteId',
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       return ErrorHandlingUtils.handleApiResponse<void>(
@@ -409,18 +356,12 @@ class ChapterRemoteDataSource extends IChapterRepository {
   @override
   Future<Either<Failure, List<Notemodel>>> getNotesByChapterId({
     required String chapterId,
-    required String token,
   }) async {
     ///notes/chapter/:chapterId
     try {
       final response = await _dio.get(
         '/notes/chapter/$chapterId',
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       return ErrorHandlingUtils.handleApiResponse<List<Notemodel>>(

@@ -58,12 +58,10 @@ void showDeleteConfirmationDialog(
                     textColor: colorScheme.onError,
                     onPressed: () {
                       // Retry logic with current folder cubit
-                      final authState =
-                          context.read<AuthCubit>().state as AuthSuccess;
-                      final token = authState.token;
+
                       BlocProvider.of<FolderCubit>(
                         context,
-                      ).deletefolder(id: folderId, token: token);
+                      ).deletefolder(id: folderId);
                     },
                   ),
                 ),
@@ -155,12 +153,9 @@ void showDeleteConfirmationDialog(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          final stateauth =
-                              context.read<AuthCubit>().state as AuthSuccess;
-                          final token = stateauth.token;
                           BlocProvider.of<FolderCubit>(
                             context,
-                          ).deletefolder(id: folderId, token: token);
+                          ).deletefolder(id: folderId);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colorScheme.error,

@@ -47,29 +47,17 @@ class FolderDetailScreen extends StatelessWidget {
       child: Builder(
         builder: (context) {
           // Get auth state for token
-          final authState = context.read<AuthCubit>().state;
-          final token = authState is AuthSuccess ? authState.token : '';
 
           // Load chapters when widget builds
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (token.isNotEmpty) {
-              context.read<ChapterCubit>().getChapters(
-                folderId: folderId,
-                token: token,
-              );
-            }
+            context.read<ChapterCubit>().getChapters(folderId: folderId);
           });
 
           return Scaffold(
             backgroundColor: colorScheme.surface,
             body: isWeb
-                ? _buildWebLayout(context, token, colorScheme)
-                : _buildMobileLayout(
-                    context,
-                    token,
-                    horizontalPadding,
-                    colorScheme,
-                  ),
+                ? _buildWebLayout(context, colorScheme)
+                : _buildMobileLayout(context, horizontalPadding, colorScheme),
           );
         },
       ),
@@ -78,7 +66,6 @@ class FolderDetailScreen extends StatelessWidget {
 
   Widget _buildMobileLayout(
     BuildContext context,
-    String token,
     double horizontalPadding,
     ColorScheme colorScheme,
   ) {
@@ -213,8 +200,8 @@ class FolderDetailScreen extends StatelessWidget {
                     pathParameters: {'folderId': folderId},
                     extra: {'folderTitle': title, 'chapterCubit': chapterCubit},
                   );
-                  if (result == true && token.isNotEmpty) {
-                    chapterCubit.getChapters(folderId: folderId, token: token);
+                  if (result == true) {
+                    chapterCubit.getChapters(folderId: folderId);
                   }
                 },
                 child: CustomPaint(
@@ -305,11 +292,7 @@ class FolderDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWebLayout(
-    BuildContext context,
-    String token,
-    ColorScheme colorScheme,
-  ) {
+  Widget _buildWebLayout(BuildContext context, ColorScheme colorScheme) {
     final screenWidth = MediaQuery.of(context).size.width;
     final maxWidth = 1400.0;
     final horizontalPadding = (screenWidth - maxWidth) / 2;
@@ -447,11 +430,8 @@ class FolderDetailScreen extends StatelessWidget {
                             'chapterCubit': chapterCubit,
                           },
                         );
-                        if (result == true && token.isNotEmpty) {
-                          chapterCubit.getChapters(
-                            folderId: folderId,
-                            token: token,
-                          );
+                        if (result == true) {
+                          chapterCubit.getChapters(folderId: folderId);
                         }
                       },
                       child: Container(

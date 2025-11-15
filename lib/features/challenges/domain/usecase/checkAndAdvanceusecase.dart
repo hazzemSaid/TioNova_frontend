@@ -11,11 +11,9 @@ class CheckAndAdvanceUseCase {
   /// Check if all participants answered and advance if needed
   /// Returns: { needsAdvance, advanced, completed, timeRemaining, currentIndex }
   Future<Either<Failure, Map<String, dynamic>>> call({
-    required String token,
     required String challengeCode,
   }) async {
     return await liveChallengeRepo.checkAndAdvance(
-      token: token,
       challengeCode: challengeCode,
     );
   }

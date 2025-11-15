@@ -7,8 +7,6 @@ class DeleteFolderUseCase {
 
   DeleteFolderUseCase(this.repository);
 
-  Future<Either<Failure, void>> call({
-    required String id,
-    required String token,
-  }) => repository.deletefolder(id: id, token: token);
+  Future<Either<Failure, void>> call({required String id}) =>
+      repository.deletefolder(id: id);
 }

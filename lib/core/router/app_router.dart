@@ -232,11 +232,9 @@ class AppRouter {
           name: 'quiz',
           builder: (BuildContext context, GoRouterState state) {
             final chapterId = state.pathParameters['chapterId']!;
-            final extra = state.extra as Map<String, dynamic>?;
-            final token = extra?['token'] as String;
             return BlocProvider<QuizCubit>(
               create: (context) => getIt<QuizCubit>(),
-              child: QuizScreen(token: token, chapterId: chapterId),
+              child: QuizScreen(chapterId: chapterId),
             );
           },
         ),
@@ -250,7 +248,6 @@ class AppRouter {
               child: QuizQuestionsScreen(
                 quiz: extra['quiz'],
                 answers: extra['answers'] as List<String?>,
-                token: extra['token'] as String,
                 chapterId: extra['chapterId'] as String,
               ),
             );
@@ -266,7 +263,6 @@ class AppRouter {
               child: QuizResultsScreen(
                 quiz: extra['quiz'],
                 userAnswers: extra['userAnswers'] as List<String?>,
-                token: extra['token'] as String,
                 chapterId: extra['chapterId'] as String,
                 timeTaken: extra['timeTaken'] as int,
               ),
@@ -282,7 +278,6 @@ class AppRouter {
             return BlocProvider<QuizCubit>(
               create: (context) => getIt<QuizCubit>(),
               child: QuizHistoryScreen(
-                token: extra['token'] as String,
                 chapterId: chapterId,
                 quizTitle: extra['quizTitle'] as String,
               ),

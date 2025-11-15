@@ -39,10 +39,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
     // Fetch all folders on open
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!contextIsValid) return;
-      final authState = context.read<AuthCubit>().state;
-      if (authState is AuthSuccess) {
-        context.read<FolderCubit>().fetchAllFolders(authState.token);
-      }
+      context.read<FolderCubit>().fetchAllFolders();
     });
   }
 
@@ -175,13 +172,9 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
                       _showChapters = true;
                     });
                     if (!mounted) return;
-                    final authState = context.read<AuthCubit>().state;
-                    if (authState is AuthSuccess) {
-                      context.read<ChapterCubit>().getChapters(
-                        folderId: folder.id,
-                        token: authState.token,
-                      );
-                    }
+                    context.read<ChapterCubit>().getChapters(
+                      folderId: folder.id,
+                    );
                   },
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -376,24 +369,11 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
                   ? () async {
                       if (_selectedFolder == null || !contextIsValid) return;
 
-                      final authState = context.read<AuthCubit>().state;
-                      if (authState is! AuthSuccess) {
-                        safeContext((ctx) {
-                          CustomDialogs.showErrorDialog(
-                            ctx,
-                            title: 'Authentication Required',
-                            message: 'Please login first',
-                          );
-                        });
-                        return;
-                      }
-
                       // Get the first selected chapter ID as string
                       final firstChapterId = _selectedChapterIds.first;
 
                       // Create challenge via API (Step 1)
                       await context.read<ChallengeCubit>().createChallenge(
-                        token: authState.token,
                         chapterId: firstChapterId,
                         title: _firstChapterTitle ?? 'Challenge',
                       );

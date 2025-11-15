@@ -6,7 +6,7 @@ import 'package:tionova/features/home/domain/repo/IanalysisRepository.dart';
 class AnalysisUseCase {
   final AnalysisRepository repository;
   AnalysisUseCase({required this.repository});
-  Future<Either<Failure, Analysismodel>> execute({required String token}) {
-    return repository.fetchAnalysisData(token: token);
+  Future<Either<Failure, Analysismodel>> execute() {
+    return repository.fetchAnalysisData();
   }
 }

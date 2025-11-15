@@ -6,7 +6,7 @@ import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 class GetAllFolderUseCase {
   final IFolderRepository folderDataSource;
   GetAllFolderUseCase(this.folderDataSource);
-  Future<Either<Failure, List<Foldermodel>>> call({required String token}) {
-    return folderDataSource.getAllFolders(token: token);
+  Future<Either<Failure, List<Foldermodel>>> call() {
+    return folderDataSource.getAllFolders();
   }
 }

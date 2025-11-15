@@ -3,7 +3,5 @@ import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/home/data/models/analysisModel.dart';
 
 abstract class AnalysisRepository {
-  Future<Either<Failure, Analysismodel>> fetchAnalysisData({
-    required String token,
-  });
+  Future<Either<Failure, Analysismodel>> fetchAnalysisData();
 }

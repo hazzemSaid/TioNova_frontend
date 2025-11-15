@@ -12,14 +12,12 @@ class CreateChapterUseCase {
     required String title,
     required String description,
     required String folderId,
-    required String token,
     required FileData file,
   }) {
     return repository.createChapter(
       title: title,
       description: description,
       folderId: folderId,
-      token: token,
       file: file,
     );
   }

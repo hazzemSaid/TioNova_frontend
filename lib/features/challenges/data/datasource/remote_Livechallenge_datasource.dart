@@ -10,13 +10,11 @@ class RemoteLiveChallengeDataSource implements LiveChallengeRepo {
 
   @override
   Future<Either<Failure, ChallengeCode>> createLiveChallenge({
-    required String token,
     required String title,
     required String chapterId,
   }) async {
     final response = await _dio.post(
       "/live/challenges",
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
       data: {'title': title, 'chapterId': chapterId},
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -29,12 +27,10 @@ class RemoteLiveChallengeDataSource implements LiveChallengeRepo {
 
   @override
   Future<Either<Failure, void>> disconnectFromLiveChallenge({
-    required String token,
     required String challengeCode,
   }) async {
     final response = await _dio.post(
       "/live/challenges/disconnect",
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
       data: {'challengeCode': challengeCode},
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -46,13 +42,11 @@ class RemoteLiveChallengeDataSource implements LiveChallengeRepo {
 
   @override
   Future<Either<Failure, void>> joinLiveChallenge({
-    required String token,
     required String challengeCode,
     bool isReconnection = false,
   }) async {
     try {
       print('DataSource - Joining challenge with code: $challengeCode');
-      print('DataSource - Token: ${token.substring(0, 20)}...');
       print('DataSource - Base URL: ${_dio.options.baseUrl}');
       print(
         'DataSource - Full URL: ${_dio.options.baseUrl}/live/challenges/join',
@@ -60,7 +54,6 @@ class RemoteLiveChallengeDataSource implements LiveChallengeRepo {
 
       final response = await _dio.post(
         "/live/challenges/join",
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
         data: {"challengeCode": challengeCode},
       );
 
@@ -99,7 +92,6 @@ class RemoteLiveChallengeDataSource implements LiveChallengeRepo {
 
   @override
   Future<Either<Failure, void>> startLiveChallenge({
-    required String token,
     required String challengeCode,
   }) async {
     /*Start Challenge (Owner-only)
@@ -115,7 +107,6 @@ Returns: { success, message, totalQuestions, currentIndex: 0 }
 Behavior: sets meta.status = in-progress , current.index = 0 , saves startedAt , updates Mongo status. */
     final response = await _dio.post(
       "/live/challenges/start",
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
       data: {'challengeCode': challengeCode},
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -131,7 +122,6 @@ Behavior: sets meta.status = in-progress , current.index = 0 , saves startedAt ,
 
   @override
   Future<Either<Failure, void>> submitLiveAnswer({
-    required String token,
     required String challengeCode,
     required String answer,
   }) async {
@@ -147,7 +137,6 @@ Behavior: writes to answers[currentIndex][userId] , increments score on correctn
     try {
       final response = await _dio.post(
         "/live/challenges/answer",
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
         data: {'challengeCode': challengeCode, 'answer': answer},
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -165,7 +154,6 @@ Behavior: writes to answers[currentIndex][userId] , increments score on correctn
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> checkAndAdvance({
-    required String token,
     required String challengeCode,
   }) async {
     /*API: POST /api/v1/live/challenges/check-advance
@@ -180,7 +168,6 @@ Behavior: Checks if all players answered, advances to next question if needed*/
     try {
       final response = await _dio.post(
         "/live/challenges/check-advance",
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
         data: {'challengeCode': challengeCode},
       );
       if (response.statusCode == 200 || response.statusCode == 201) {

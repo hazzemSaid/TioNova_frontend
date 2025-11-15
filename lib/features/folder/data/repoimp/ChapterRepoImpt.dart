@@ -15,12 +15,8 @@ class ChapterRepoImpl extends IChapterRepository {
   @override
   Future<Either<Failure, List<ChapterModel>>> getChaptersByFolderId({
     required String folderId,
-    required String token,
   }) async {
-    return await remoteDataSource.getChaptersByFolderId(
-      folderId: folderId,
-      token: token,
-    );
+    return await remoteDataSource.getChaptersByFolderId(folderId: folderId);
   }
 
   @override
@@ -28,55 +24,43 @@ class ChapterRepoImpl extends IChapterRepository {
     required String title,
     required String description,
     required String folderId,
-    required String token,
     required FileData file,
   }) {
     return remoteDataSource.createChapter(
       title: title,
       description: description,
       folderId: folderId,
-      token: token,
       file: file,
     );
   }
 
   @override
   Future<Either<Failure, Uint8List>> getchapercontentpdf({
-    required String token,
     required String chapterId,
   }) {
-    return remoteDataSource.getchapercontentpdf(
-      token: token,
-      chapterId: chapterId,
-    );
+    return remoteDataSource.getchapercontentpdf(chapterId: chapterId);
   }
 
   @override
   Future<Either<Failure, SummaryResponse>> GenerateSummary({
-    required String token,
     required String chapterId,
   }) {
-    return remoteDataSource.GenerateSummary(token: token, chapterId: chapterId);
+    return remoteDataSource.GenerateSummary(chapterId: chapterId);
   }
 
   @override
   Future<Either<Failure, Mindmapmodel>> createMindmap({
-    required String token,
     required String chapterId,
   }) {
-    return remoteDataSource.createMindmap(token: token, chapterId: chapterId);
+    return remoteDataSource.createMindmap(chapterId: chapterId);
   }
 
   @override
   //getNotesByChapterId
   Future<Either<Failure, List<Notemodel>>> getNotesByChapterId({
     required String chapterId,
-    required String token,
   }) async {
-    return await remoteDataSource.getNotesByChapterId(
-      chapterId: chapterId,
-      token: token,
-    );
+    return await remoteDataSource.getNotesByChapterId(chapterId: chapterId);
   }
 
   @override
@@ -84,23 +68,18 @@ class ChapterRepoImpl extends IChapterRepository {
   Future<Either<Failure, Notemodel>> addNote({
     required String title,
     required String chapterId,
-    required String token,
     required Map<String, dynamic> rawData,
   }) {
     return remoteDataSource.addNote(
       title: title,
       chapterId: chapterId,
-      token: token,
       rawData: rawData,
     );
   }
 
   @override
   //deleteNote
-  Future<Either<Failure, void>> deleteNote({
-    required String noteId,
-    required String token,
-  }) {
-    return remoteDataSource.deleteNote(noteId: noteId, token: token);
+  Future<Either<Failure, void>> deleteNote({required String noteId}) {
+    return remoteDataSource.deleteNote(noteId: noteId);
   }
 }

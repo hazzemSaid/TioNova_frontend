@@ -11,14 +11,12 @@ class QuizQuestionsScreen extends StatefulWidget {
   final QuizModel quiz;
   final List<String?>
   answers; // This will store the selected option letters (a, b, c, d)
-  final String token;
   final String chapterId;
 
   const QuizQuestionsScreen({
     super.key,
     required this.quiz,
     required this.answers,
-    required this.token,
     required this.chapterId,
   });
 
@@ -259,7 +257,6 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
       extra: {
         'quiz': widget.quiz,
         'userAnswers': finalAnswers,
-        'token': widget.token,
         'chapterId': widget.chapterId,
         'timeTaken': quizDurationInMinutes * 60 - _remainingTimeInSeconds,
       },

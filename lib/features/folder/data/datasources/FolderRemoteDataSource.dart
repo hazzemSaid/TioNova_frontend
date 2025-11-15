@@ -11,20 +11,12 @@ class FolderRemoteDataSource implements IFolderRepository {
 
   FolderRemoteDataSource(this._dio);
   @override
-  Future<Either<Failure, List<Foldermodel>>> getAllFolders({
-    required String token,
-  }) async {
+  Future<Either<Failure, List<Foldermodel>>> getAllFolders() async {
     try {
       final response = await _dio.get(
         '/getfolders',
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      
       return ErrorHandlingUtils.handleApiResponse<List<Foldermodel>>(
         response: response,
         onSuccess: (data) {
@@ -50,7 +42,6 @@ class FolderRemoteDataSource implements IFolderRepository {
     String? category,
     List<String>? sharedWith,
     required Status status,
-    required String token,
     String? color,
     String? icon,
   }) async {
@@ -68,14 +59,9 @@ class FolderRemoteDataSource implements IFolderRepository {
       final response = await _dio.post(
         '/createfolder',
         data: data,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      
+
       return ErrorHandlingUtils.handleApiResponse<void>(
         response: response,
         onSuccess: (_) => null,
@@ -86,21 +72,13 @@ class FolderRemoteDataSource implements IFolderRepository {
   }
 
   @override
-  Future<Either<Failure, void>> deletefolder({
-    required String id,
-    required String token,
-  }) async {
+  Future<Either<Failure, void>> deletefolder({required String id}) async {
     try {
       final response = await _dio.delete(
         '/deletefolder/$id',
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      
+
       return ErrorHandlingUtils.handleApiResponse<void>(
         response: response,
         onSuccess: (_) => null,
@@ -115,7 +93,6 @@ class FolderRemoteDataSource implements IFolderRepository {
     required String id,
     required String title,
     String? description,
-    required String token,
     List<String>? sharedWith,
     required Status status,
     String? icon,
@@ -137,12 +114,7 @@ class FolderRemoteDataSource implements IFolderRepository {
       final response = await _dio.patch(
         '/updatefolder',
         data: data,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
       if (response.statusCode == 200) {
         // Parse the updated folder from the response
@@ -164,18 +136,12 @@ class FolderRemoteDataSource implements IFolderRepository {
   @override
   Future<Either<Failure, List<ShareWithmodel>>> getAvailableUsersForShare({
     required String query,
-    required String token,
   }) async {
     try {
       final response = await _dio.post(
         '/getAvailableUsersForShare',
         data: {'query': query},
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Bearer $token",
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
       if (response.statusCode == 200) {
         List<ShareWithmodel> users = (response.data['results'] as List)

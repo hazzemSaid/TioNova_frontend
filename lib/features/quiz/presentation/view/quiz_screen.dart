@@ -8,10 +8,9 @@ import 'package:tionova/features/quiz/presentation/bloc/quizstate.dart';
 import 'package:tionova/features/quiz/presentation/widgets/quiz_header.dart';
 
 class QuizScreen extends StatefulWidget {
-  final String token;
   final String chapterId;
 
-  const QuizScreen({super.key, required this.token, required this.chapterId});
+  const QuizScreen({super.key, required this.chapterId});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -24,10 +23,7 @@ class _QuizScreenState extends State<QuizScreen> {
     // Use addPostFrameCallback to ensure the widget is mounted and the context is valid
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<QuizCubit>().createQuiz(
-          token: widget.token,
-          chapterId: widget.chapterId,
-        );
+        context.read<QuizCubit>().createQuiz(chapterId: widget.chapterId);
       }
     });
   }
@@ -268,7 +264,6 @@ class _QuizScreenState extends State<QuizScreen> {
                                       quizState.quiz.questions.length,
                                       null,
                                     ),
-                                    'token': widget.token,
                                     'chapterId': widget.chapterId,
                                   },
                                 );
@@ -513,7 +508,6 @@ class _QuizScreenState extends State<QuizScreen> {
                         extra: {
                           'quiz': quiz,
                           'answers': List.filled(quiz.questions.length, null),
-                          'token': widget.token,
                           'chapterId': widget.chapterId,
                         },
                       );
