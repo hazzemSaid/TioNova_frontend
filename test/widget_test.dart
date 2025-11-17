@@ -28,3 +28,6 @@ void main() {
   });
 }
 */
+
+// Add placeholder main for optional widget test file
+void main() {}

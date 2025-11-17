@@ -1,4 +1,4 @@
-{
+/*{
   "version": 2,
   "buildCommand": "echo 'Using pre-built files from build/web'",
   "outputDirectory": "build/web",
@@ -33,3 +33,4 @@
     }
   ]
 }
+*/

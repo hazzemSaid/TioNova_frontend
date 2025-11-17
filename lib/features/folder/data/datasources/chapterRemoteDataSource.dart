@@ -47,12 +47,14 @@ class ChapterRemoteDataSource extends IChapterRepository {
     required FileData file,
   }) async {
     try {
+      print(file.mimeType);
       FormData formData = FormData.fromMap({
         'title': title,
         'description': description,
         'folderId': folderId,
         'file': MultipartFile.fromBytes(
           file.bytes,
+          filename: file.filename,
           contentType: file.mimeType != null
               ? MediaType.parse(file.mimeType!)
               : MediaType.parse('application/pdf'),
@@ -216,9 +218,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
       return ErrorHandlingUtils.handleApiResponse<Mindmapmodel>(
         response: response,
         onSuccess: (data) {
-          return Mindmapmodel.fromJson(
-            data['data']['mindmap'] as Map<String, dynamic>,
-          );
+          return Mindmapmodel.fromJson(data['data'] as Map<String, dynamic>);
         },
       );
     } catch (e) {

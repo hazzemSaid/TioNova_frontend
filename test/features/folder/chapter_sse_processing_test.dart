@@ -102,3 +102,5 @@ void main() {
     );
   });
 } */
+// Add minimal placeholder so flutter test doesn't fail when test is commented out
+void main() {}
