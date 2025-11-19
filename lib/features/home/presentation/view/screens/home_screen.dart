@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
@@ -106,7 +107,11 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
           return Scaffold(
             backgroundColor: theme.scaffoldBackgroundColor,
             body: Center(
-              child: CircularProgressIndicator(color: colorScheme.primary),
+              child: Lottie.asset(
+                'assets/animations/Loader cat.json',
+                width: 200,
+                height: 200,
+              ),
             ),
           );
         }

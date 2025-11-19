@@ -67,8 +67,8 @@ import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 final getIt = GetIt.instance;
 // http://192.168.1.12:3000/api/v1
 //https://tio-nova-backend.vercel.app/api/v1
-final baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
-// final baseUrl = 'http://192.168.1.12:3000/api/v1';
+// final baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
+final baseUrl = 'http://192.168.1.12:3000/api/v1';
 Future<void> setupServiceLocator() async {
   // Initialize Hive
   // Hive.init(appDocumentDir.path); // Removed redundant init, use Hive.initFlutter() from main.dart

@@ -22,7 +22,8 @@ class PageHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
+        Expanded(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -32,6 +33,8 @@ class PageHeader extends StatelessWidget {
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 6),
@@ -43,9 +46,12 @@ class PageHeader extends StatelessWidget {
                       : Color.fromARGB(255, 68, 68, 69).withOpacity(0.8),
                   fontSize: 14,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ],
+          ),
         ),
         if (trailing != null) trailing!,
       ],

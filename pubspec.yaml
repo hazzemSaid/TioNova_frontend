@@ -72,7 +72,8 @@ dependencies:
   package_info_plus: ^8.0.0
   open_file: ^3.5.10
   shorebird_code_push: ^2.0.5
-  
+  lottie: ^3.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -102,6 +103,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/animations/
     - shorebird.yaml
 
   # An image asset can refer to one or more resolution-specific "variants", see

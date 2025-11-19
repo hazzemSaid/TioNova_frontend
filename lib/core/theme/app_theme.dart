@@ -66,12 +66,14 @@ class AppTheme {
       ),
     ),
     cardTheme: CardThemeData(
-      color: gray800,
-      elevation: 2,
+      color: gray850,
+      elevation: 4,
+      shadowColor: Colors.black.withOpacity(0.18),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: gray700, width: 1),
       ),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -113,13 +115,22 @@ class AppTheme {
       hintStyle: const TextStyle(color: gray500, fontFamily: 'Inter'),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
-    dividerTheme: const DividerThemeData(color: gray700, thickness: 1),
-    iconTheme: const IconThemeData(color: gray100, size: 24),
+    dividerTheme: const DividerThemeData(
+      color: gray700,
+      thickness: 1.2,
+      space: 1,
+    ),
+    iconTheme: const IconThemeData(color: gray100, size: 26),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: gray850,
+      backgroundColor: gray900,
       selectedItemColor: gray100,
       unselectedItemColor: gray500,
+      selectedIconTheme: IconThemeData(size: 28),
+      unselectedIconTheme: IconThemeData(size: 24),
       type: BottomNavigationBarType.fixed,
+      showUnselectedLabels: true,
+      showSelectedLabels: true,
+      elevation: 8,
     ),
     textTheme: const TextTheme(
       bodyLarge: TextStyle(color: gray100, fontSize: 16, fontFamily: 'Inter'),

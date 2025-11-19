@@ -1,6 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-class SettingsSection extends StatelessWidget {
+class SettingsSection extends StatefulWidget {
   final bool notificationsEnabled;
   final bool darkModeEnabled;
   final VoidCallback? onNotificationsToggle;
@@ -11,7 +13,7 @@ class SettingsSection extends StatelessWidget {
   final VoidCallback? onSignOut;
 
   const SettingsSection({
-    Key? key,
+    super.key,
     required this.notificationsEnabled,
     required this.darkModeEnabled,
     this.onNotificationsToggle,
@@ -20,7 +22,17 @@ class SettingsSection extends StatelessWidget {
     this.onShareProgress,
     this.onHelpSupport,
     this.onSignOut,
-  }) : super(key: key);
+  });
+
+  @override
+  State<SettingsSection> createState() => _SettingsSectionState();
+}
+
+class _SettingsSectionState extends State<SettingsSection> {
+  bool _studyReminders = true;
+  bool _quizResults = true;
+  bool _streakAlerts = true;
+  bool _weeklyReport = false;
 
   @override
   Widget build(BuildContext context) {
@@ -39,137 +51,269 @@ class SettingsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Study Preferences Section
           Row(
             children: [
-              Icon(
-                Icons.settings_outlined,
-                color: colorScheme.primary,
-                size: 20,
-              ),
+              Icon(Icons.tune, color: colorScheme.onSurface, size: 18),
               const SizedBox(width: 8),
               Text(
-                'Settings',
-                style:
-                    textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ) ??
-                    TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                'Study Preferences',
+                style: textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          _buildNavItem(
+            context,
+            'Manage Study Preferences',
+            'Adjust study goals, timer',
+            Icons.arrow_forward_ios,
+            () {
+              context.go('/preferences');
+            },
+          ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+          Divider(color: colorScheme.outline.withOpacity(0.3), height: 1),
+          const SizedBox(height: 20),
 
-          // Notifications Toggle
+          // Account Section
+          Row(
+            children: [
+              Icon(
+                Icons.person_outline,
+                color: colorScheme.onSurface,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Account',
+                style: textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          _buildAccountRow(context, 'Email', 'john.doe@example.edu'),
+          const SizedBox(height: 8),
+          _buildAccountRow(context, 'Password', '••••••••'),
+
+          const SizedBox(height: 20),
+          Divider(color: colorScheme.outline.withOpacity(0.3), height: 1),
+          const SizedBox(height: 20),
+
+          // Notifications Section
+          Row(
+            children: [
+              Icon(
+                Icons.notifications_outlined,
+                color: colorScheme.onSurface,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Notifications',
+                style: textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
           _buildToggleItem(
             context,
-            'Notifications',
-            Icons.notifications_outlined,
-            notificationsEnabled,
-            onNotificationsToggle,
+            'Study Reminders',
+            'Daily study time notifications',
+            _studyReminders,
+            (value) => setState(() => _studyReminders = value),
           ),
-
-          const SizedBox(height: 12),
-
-          // Dark Mode Toggle
+          const SizedBox(height: 8),
           _buildToggleItem(
             context,
-            'Dark Mode',
-            Icons.dark_mode_outlined,
-            darkModeEnabled,
-            onDarkModeToggle,
+            'Quiz Results',
+            'Notifications on quiz results',
+            _quizResults,
+            (value) => setState(() => _quizResults = value),
           ),
-
-          const SizedBox(height: 12),
-
-          // Export Data Button
-          _buildActionButton(
+          const SizedBox(height: 8),
+          _buildToggleItem(
             context,
-            'Export Study Data',
-            Icons.download_outlined,
-            onExportData,
+            'Streak Alerts',
+            'Reminders to keep up study streak',
+            _streakAlerts,
+            (value) => setState(() => _streakAlerts = value),
           ),
-
-          const SizedBox(height: 12),
-
-          // Share Progress Button
-          _buildActionButton(
+          const SizedBox(height: 8),
+          _buildToggleItem(
             context,
-            'Share Progress',
-            Icons.share_outlined,
-            onShareProgress,
+            'Weekly Report',
+            'Summary of study activity',
+            _weeklyReport,
+            (value) => setState(() => _weeklyReport = value),
           ),
 
+          const SizedBox(height: 20),
+          Divider(color: colorScheme.outline.withOpacity(0.3), height: 1),
+          const SizedBox(height: 20),
+
+          // More Section
+          Row(
+            children: [
+              Icon(Icons.more_horiz, color: colorScheme.onSurface, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'More',
+                style: textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
 
-          // Help & Support Button
-          _buildActionButton(
+          _buildActionRow(context, 'Study Preferences', Icons.tune, () {
+            context.go('/preferences');
+          }),
+          const SizedBox(height: 8),
+          _buildActionRow(
             context,
             'Help & Support',
             Icons.help_outline,
-            onHelpSupport,
-          ),
-
-          const SizedBox(height: 12),
-
-          // Sign Out Button
-          _buildActionButton(
-            context,
-            'Sign Out',
-            Icons.logout_outlined,
-            onSignOut,
-            isDestructive: true,
+            widget.onHelpSupport,
           ),
 
           const SizedBox(height: 16),
+          Divider(color: colorScheme.outline.withOpacity(0.3), height: 1),
+          const SizedBox(height: 16),
 
-          // App Version
-          Center(
-            child: Column(
-              children: [
-                Text(
-                  'TioNova v1.0.0',
-                  style:
-                      textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ) ??
-                      TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'AI-powered study assistant',
-                  style:
-                      textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-                      ) ??
-                      TextStyle(
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-                        fontSize: 10,
-                      ),
-                ),
-              ],
-            ),
+          // Logout
+          _buildActionRow(
+            context,
+            'Logout',
+            Icons.logout_outlined,
+            widget.onSignOut,
+            isDestructive: true,
           ),
         ],
       ),
     );
   }
 
+  Widget _buildNavItem(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData trailingIcon,
+    VoidCallback? onTap,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(Icons.tune, color: colorScheme.onSurfaceVariant, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(trailingIcon, color: colorScheme.onSurfaceVariant, size: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return Row(
+      children: [
+        Icon(
+          label == 'Email' ? Icons.email_outlined : Icons.lock_outline,
+          color: colorScheme.onSurfaceVariant,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                value,
+                style: textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  color: colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+        TextButton(
+          onPressed: () {},
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          ),
+          child: Text(
+            'Change',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildToggleItem(
     BuildContext context,
     String title,
-    IconData icon,
+    String subtitle,
     bool value,
-    VoidCallback? onToggle,
+    ValueChanged<bool> onChanged,
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -177,28 +321,40 @@ class SettingsSection extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(icon, color: colorScheme.onSurfaceVariant, size: 20),
-        const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            title,
-            style:
-                textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface) ??
-                TextStyle(color: colorScheme.onSurface, fontSize: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  color: colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
           ),
         ),
-        Switch(
-          value: value,
-          onChanged: (_) => onToggle?.call(),
-          activeColor: colorScheme.primary,
-          inactiveThumbColor: colorScheme.outline,
-          inactiveTrackColor: colorScheme.surfaceVariant,
+        Transform.scale(
+          scale: 0.88,
+          child: CupertinoSwitch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: colorScheme.primary,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildActionButton(
+  Widget _buildActionRow(
     BuildContext context,
     String title,
     IconData icon,
@@ -208,46 +364,32 @@ class SettingsSection extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final actionColor = isDestructive ? colorScheme.error : colorScheme.primary;
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.25)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: actionColor, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style:
-                    textTheme.bodyLarge?.copyWith(
-                      color: isDestructive
-                          ? colorScheme.error
-                          : colorScheme.onSurface,
-                    ) ??
-                    TextStyle(
-                      color: isDestructive
-                          ? colorScheme.error
-                          : colorScheme.onSurface,
-                      fontSize: 16,
-                    ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: isDestructive
+                ? colorScheme.error
+                : colorScheme.onSurfaceVariant,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: textTheme.bodyMedium?.copyWith(
+                color: isDestructive
+                    ? colorScheme.error
+                    : colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
               ),
             ),
-            if (!isDestructive)
-              Icon(
-                Icons.chevron_right,
-                color: colorScheme.onSurfaceVariant,
-                size: 20,
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

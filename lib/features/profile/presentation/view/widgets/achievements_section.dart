@@ -4,11 +4,13 @@ class Achievement {
   final String title;
   final String description;
   final bool isEarned;
+  final String emoji;
 
   Achievement({
     required this.title,
     required this.description,
     required this.isEarned,
+    required this.emoji,
   });
 }
 
@@ -26,7 +28,7 @@ class AchievementsSection extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
@@ -40,33 +42,34 @@ class AchievementsSection extends StatelessWidget {
             children: [
               Icon(
                 Icons.emoji_events_outlined,
-                color: colorScheme.primary,
-                size: 20,
+                color: colorScheme.onSurface,
+                size: 18,
               ),
               const SizedBox(width: 8),
               Text(
-                'Achievements',
+                'Learning Achievements',
                 style:
                     textTheme.titleMedium?.copyWith(
                       color: colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
+                      fontSize: 16,
                     ) ??
                     TextStyle(
                       color: colorScheme.onSurface,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Achievements List
+          // Achievements List - Vertically stacked
           ...achievements.map((achievement) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildAchievementItem(context, achievement),
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildAchievementCard(context, achievement),
             );
           }).toList(),
         ],
@@ -74,108 +77,83 @@ class AchievementsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildAchievementItem(BuildContext context, Achievement achievement) {
+  Widget _buildAchievementCard(BuildContext context, Achievement achievement) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final earnedBackground = colorScheme.secondaryContainer;
-    final earnedForeground = colorScheme.onSecondaryContainer;
-    final inactiveBackground = colorScheme.surfaceVariant;
-    final inactiveForeground = colorScheme.onSurfaceVariant;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
-        color: achievement.isEarned ? earnedBackground : inactiveBackground,
+        color: achievement.isEarned
+            ? colorScheme.surface
+            : colorScheme.surfaceVariant.withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
         children: [
-          // Trophy Icon
+          // Emoji Icon
           Container(
-            width: 36,
-            height: 36,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: achievement.isEarned
-                  ? earnedForeground.withOpacity(0.2)
-                  : inactiveForeground.withOpacity(0.15),
+                  ? colorScheme.surface.withOpacity(0.5)
+                  : colorScheme.surfaceVariant.withOpacity(0.5),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.emoji_events_outlined,
-              color: achievement.isEarned
-                  ? earnedForeground
-                  : inactiveForeground.withOpacity(0.7),
-              size: 18,
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          // Achievement Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  achievement.title,
-                  style:
-                      textTheme.bodyLarge?.copyWith(
-                        color: achievement.isEarned
-                            ? earnedForeground
-                            : inactiveForeground,
-                        fontWeight: FontWeight.w600,
-                      ) ??
-                      TextStyle(
-                        color: achievement.isEarned
-                            ? earnedForeground
-                            : inactiveForeground,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  achievement.description,
-                  style:
-                      textTheme.bodySmall?.copyWith(
-                        color: achievement.isEarned
-                            ? earnedForeground.withOpacity(0.8)
-                            : inactiveForeground.withOpacity(0.8),
-                      ) ??
-                      TextStyle(
-                        color: achievement.isEarned
-                            ? earnedForeground.withOpacity(0.8)
-                            : inactiveForeground.withOpacity(0.8),
-                        fontSize: 12,
-                      ),
-                ),
-              ],
-            ),
-          ),
-
-          // Earned Badge
-          if (achievement.isEarned)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.16),
-                borderRadius: BorderRadius.circular(12),
-              ),
+            child: Center(
               child: Text(
-                'Earned',
-                style:
-                    textTheme.labelSmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ) ??
-                    TextStyle(
-                      color: colorScheme.primary,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                    ),
+                achievement.emoji,
+                style: const TextStyle(fontSize: 28),
               ),
             ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Achievement Title
+          Text(
+            achievement.title,
+            textAlign: TextAlign.center,
+            style:
+                textTheme.bodyLarge?.copyWith(
+                  color: achievement.isEarned
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurfaceVariant.withOpacity(0.6),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ) ??
+                TextStyle(
+                  color: achievement.isEarned
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurfaceVariant.withOpacity(0.6),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+
+          const SizedBox(height: 4),
+
+          // Achievement Description
+          Text(
+            achievement.description,
+            textAlign: TextAlign.center,
+            style:
+                textTheme.bodySmall?.copyWith(
+                  color: achievement.isEarned
+                      ? colorScheme.onSurface.withOpacity(0.7)
+                      : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  fontSize: 11,
+                ) ??
+                TextStyle(
+                  color: achievement.isEarned
+                      ? colorScheme.onSurface.withOpacity(0.7)
+                      : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  fontSize: 11,
+                ),
+          ),
         ],
       ),
     );

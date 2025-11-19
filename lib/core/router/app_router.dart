@@ -36,6 +36,7 @@ import 'package:tionova/features/folder/presentation/view/screens/folder_detail_
 import 'package:tionova/features/folder/presentation/view/screens/mindmap_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
+import 'package:tionova/features/preferences/presentation/screens/preferences_screen.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
@@ -637,6 +638,13 @@ class AppRouter {
                   const <Map<String, dynamic>>[],
             );
           },
+        ),
+        // Preferences Route
+        GoRoute(
+          path: '/preferences',
+          name: 'preferences',
+          builder: (BuildContext context, GoRouterState state) =>
+              const PreferencesScreen(),
         ),
         // GoRoute(
         //   path: '/notifications',
