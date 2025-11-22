@@ -53,12 +53,12 @@ class CreateFolderCard extends StatelessWidget {
                   width: isTablet ? 64 : 56,
                   height: isTablet ? 64 : 56,
                   decoration: BoxDecoration(
-                    color: colorScheme.onPrimary.withOpacity(0.12),
+                    color: colorScheme.primary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
                     Icons.add,
-                    color: colorScheme.onPrimary,
+                    color: colorScheme.primary,
                     size: iconSize,
                   ),
                 ),

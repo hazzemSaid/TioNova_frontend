@@ -56,9 +56,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
-        } else if (state is AuthSuccess) {
-          // Registration and verification complete, go to home
-          context.go('/');
         }
       },
       child: Scaffold(

@@ -23,32 +23,21 @@ class FolderGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return FolderCard(
+      onTap: onTap,
       onLongPress: onLongPress,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF0E0E10),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF1C1C1E), width: 1),
-        ),
-        child: FolderCard(
-          onTap: onTap,
-          title: folder.title,
-          description: folder.description ?? 'No description',
-          category: folder.category ?? 'Uncategorized',
-          privacy: folder.status == Status.private
-              ? 'Private'
-              : (folder.status == Status.share ? 'Shared' : 'Public'),
-          chapters: folder.chapterCount ?? 0,
-          lastAccessed:
-              '${DateTime.now().difference(folder.createdAt).inDays} days ago',
-          color: color,
-          sharedWith: folder.sharedWith,
-          icon: folder.icon != null
-              ? defaultIcons[int.parse(folder.icon!)]
-              : null,
-        ),
-      ),
+      title: folder.title,
+      description: folder.description ?? 'No description',
+      category: folder.category ?? 'Uncategorized',
+      privacy: folder.status == Status.private
+          ? 'Private'
+          : (folder.status == Status.share ? 'Shared' : 'Public'),
+      chapters: folder.chapterCount ?? 0,
+      lastAccessed:
+          '${DateTime.now().difference(folder.createdAt).inDays} days ago',
+      color: color,
+      sharedWith: folder.sharedWith,
+      icon: folder.icon != null ? defaultIcons[int.parse(folder.icon!)] : null,
     );
   }
 }

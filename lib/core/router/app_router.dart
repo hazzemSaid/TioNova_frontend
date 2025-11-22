@@ -36,6 +36,7 @@ import 'package:tionova/features/folder/presentation/view/screens/folder_detail_
 import 'package:tionova/features/folder/presentation/view/screens/mindmap_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
+import 'package:tionova/features/preferences/presentation/Bloc/PreferencesCubit.dart';
 import 'package:tionova/features/preferences/presentation/screens/preferences_screen.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
@@ -104,17 +105,22 @@ class AppRouter {
       initialLocation: '/splash',
       refreshListenable: _authNotifier,
       debugLogDiagnostics: false,
-      redirect: (BuildContext context, GoRouterState state) {
+      redirect: (BuildContext context, GoRouterState state) async {
         final currentAuthState = authCubit.state;
         final path = state.uri.path;
 
         // ✅ Authenticated user
         if (currentAuthState is AuthSuccess) {
-          // Prevent going back to splash or auth screens after login
+          // Use DI for global preferences check, but skip for preferences route
+
           if (path == '/splash' ||
               path.startsWith('/auth') ||
               path == '/onboarding' ||
               path == '/theme-selection') {
+            final isnew = await getIt<PreferencesCubit>().checkIfNewUser();
+            if (isnew) {
+              return '/preferences';
+            }
             return '/'; // go home
           }
           return null; // stay where they are
@@ -644,7 +650,10 @@ class AppRouter {
           path: '/preferences',
           name: 'preferences',
           builder: (BuildContext context, GoRouterState state) =>
-              const PreferencesScreen(),
+              BlocProvider<PreferencesCubit>(
+                create: (_) => getIt<PreferencesCubit>(),
+                child: const PreferencesScreen(),
+              ),
         ),
         // GoRoute(
         //   path: '/notifications',

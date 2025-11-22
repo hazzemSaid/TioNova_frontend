@@ -56,6 +56,15 @@ import 'package:tionova/features/home/data/datasource/analysis_remote_datasource
 import 'package:tionova/features/home/data/repoImp/analysis_repo_imp.dart';
 import 'package:tionova/features/home/domain/usecases/analysisusecase.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysiscubit.dart';
+import 'package:tionova/features/preferences/data/datasources/preferencesreomtedatasource.dart';
+import 'package:tionova/features/preferences/data/repo/PreferencesRepositoryimp.dart';
+import 'package:tionova/features/preferences/domain/repo/PreferencesRepository.dart';
+import 'package:tionova/features/preferences/domain/usecase/GetPreferencesUseCase.dart';
+import 'package:tionova/features/preferences/domain/usecase/UpdatePreferencesUseCase.dart';
+import 'package:tionova/features/preferences/presentation/Bloc/PreferencesCubit.dart';
+import 'package:tionova/features/profile/data/repositories/profile_repository.dart';
+import 'package:tionova/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:tionova/features/quiz/data/datasources/remotequizdatasource.dart';
 import 'package:tionova/features/quiz/data/repo/Quizrepoimp.dart';
 import 'package:tionova/features/quiz/domain/repo/Quizrepo.dart';
@@ -402,5 +411,40 @@ Future<void> setupServiceLocator() async {
   // Register AnalysisCubit
   getIt.registerFactory(
     () => AnalysisCubit(analysisUseCase: getIt<AnalysisUseCase>()),
+  );
+
+  //preferences
+  //PreferencesRemoteDataSourceImpl
+  getIt.registerLazySingleton<PreferencesRemoteDataSourceImpl>(
+    () => PreferencesRemoteDataSourceImpl(dio: getIt<Dio>()),
+  );
+  //PreferencesRepository
+  getIt.registerLazySingleton<PreferencesRepository>(
+    () => PreferencesRepositoryimp(
+      preferencesRemoteDataSourceImpl: getIt<PreferencesRemoteDataSourceImpl>(),
+    ),
+  );
+  getIt.registerLazySingleton<GetPreferencesUseCase>(
+    () => GetPreferencesUseCase(repository: getIt<PreferencesRepository>()),
+  );
+  getIt.registerLazySingleton<UpdatePreferencesUseCase>(
+    () => UpdatePreferencesUseCase(repository: getIt<PreferencesRepository>()),
+  );
+
+  //cubit prefernces
+  getIt.registerLazySingleton(
+    () => PreferencesCubit(
+      getPreferencesUseCase: getIt<GetPreferencesUseCase>(),
+      updatePreferencesUseCase: getIt<UpdatePreferencesUseCase>(),
+    ),
+  );
+
+  // Profile
+  getIt.registerLazySingleton<ProfileRepository>(
+    () => ProfileRepositoryImpl(dio: getIt<Dio>()),
+  );
+
+  getIt.registerFactory(
+    () => ProfileCubit(repository: getIt<ProfileRepository>()),
   );
 }

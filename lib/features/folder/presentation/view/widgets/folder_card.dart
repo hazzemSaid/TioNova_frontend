@@ -12,6 +12,7 @@ class FolderCard extends StatelessWidget {
   final Color color;
   final IconData? icon;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final List<ShareWithmodel>? sharedWith;
 
   const FolderCard({
@@ -25,32 +26,452 @@ class FolderCard extends StatelessWidget {
     required this.color,
     this.icon,
     this.onTap,
+    this.onLongPress,
     this.sharedWith,
   });
 
+  // Responsive breakpoints
+  bool _isLargeScreen(double width) => width > 900;
+  bool _isTablet(double width) => width > 600;
+  bool _isSmallPhone(double width) => width < 360;
+
+  // Get category color based on category name
+  Color _getCategoryColor(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    switch (category.toLowerCase()) {
+      case 'technology':
+        return colorScheme.primary;
+      case 'science':
+        return Colors.green;
+      case 'business':
+        return Colors.orange;
+      case 'education':
+        return Colors.blue;
+      default:
+        return colorScheme.onSurfaceVariant;
+    }
+  }
+
+  // Get privacy colors and icon
+  Map<String, dynamic> _getPrivacyConfig(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isPrivate = privacy.toLowerCase() == 'private';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return {
+      'bgColor':
+          (isPrivate
+                  ? colorScheme.errorContainer
+                  : colorScheme.secondaryContainer)
+              .withOpacity(isDark ? 0.25 : 0.55),
+      'textColor': isPrivate
+          ? colorScheme.onErrorContainer
+          : colorScheme.onSecondaryContainer,
+      'icon': isPrivate ? Icons.lock_outline : Icons.group_outlined,
+    };
+  }
+
+  // Check if we should show the shared section
+  bool _hasSharedSection() {
+    return privacy.toLowerCase() == 'shared' &&
+        sharedWith != null &&
+        sharedWith!.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final isLarge = _isLargeScreen(screenWidth);
+    final isTablet = _isTablet(screenWidth);
+    final isSmallPhone = _isSmallPhone(screenWidth);
+
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(isTablet ? 16.0 : 12.0),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor.withOpacity(0.06),
+              blurRadius: isTablet ? 16.0 : 12.0,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.all(isLarge ? 12.0 : (isTablet ? 11.0 : 10.0)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(context, isLarge, isTablet),
+            SizedBox(height: isTablet ? 10.0 : 8.0),
+            _buildContent(context, isLarge, isTablet, isSmallPhone),
+            SizedBox(height: isTablet ? 10.0 : 8.0),
+            _buildFooter(context, isLarge, isTablet, isSmallPhone),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Header with icon and tags
+  Widget _buildHeader(BuildContext context, bool isLarge, bool isTablet) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final iconSize = isLarge ? 52.0 : (isTablet ? 48.0 : 44.0);
+    final innerIconSize = isLarge ? 26.0 : (isTablet ? 22.0 : 20.0);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Folder icon with gradient
+        Container(
+          width: iconSize,
+          height: iconSize,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(isTablet ? 12.0 : 10.0),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [color.withOpacity(0.25), color.withOpacity(0.1)],
+            ),
+            border: Border.all(color: color.withOpacity(0.3), width: 1.0),
+          ),
+          child: Icon(
+            icon ?? Icons.folder_rounded,
+            color: color,
+            size: innerIconSize,
+          ),
+        ),
+        SizedBox(width: isTablet ? 12.0 : 10.0),
+        // Tags
+        Expanded(
+          child: Wrap(
+            spacing: 6.0,
+            runSpacing: 6.0,
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _buildTag(
+                context,
+                category,
+                _getCategoryColor(context),
+                colorScheme.onPrimary,
+                null,
+                isTablet,
+              ),
+              if (privacy.isNotEmpty) _buildPrivacyTag(context, isTablet),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Content section with title and description
+  Widget _buildContent(
+    BuildContext context,
+    bool isLarge,
+    bool isTablet,
+    bool isSmallPhone,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final titleSize = isLarge ? 16.0 : (isTablet ? 15.0 : 14.0);
+    final descSize = isLarge ? 12.0 : (isTablet ? 11.0 : 11.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: titleSize,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+            height: 1.2,
+          ),
+        ),
+        // Description (only if no shared section)
+        if (description.isNotEmpty && !_hasSharedSection()) ...[
+          const SizedBox(height: 4.0),
+          Text(
+            description,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant.withOpacity(0.9),
+              fontSize: descSize,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // Footer with metadata
+  Widget _buildFooter(
+    BuildContext context,
+    bool isLarge,
+    bool isTablet,
+    bool isSmallPhone,
+  ) {
+    final hasShared = _hasSharedSection();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Chapters and last accessed
+        _buildMetaRow(context, isLarge, isTablet),
+        // Shared section
+        if (hasShared) ...[
+          SizedBox(height: isTablet ? 8.0 : 6.0),
+          Divider(
+            thickness: 1,
+            height: 1,
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withOpacity(0.3),
+          ),
+          SizedBox(height: isTablet ? 8.0 : 6.0),
+          _buildSharedSection(context, isTablet, isSmallPhone),
+        ],
+      ],
+    );
+  }
+
+  // Meta information row
+  Widget _buildMetaRow(BuildContext context, bool isLarge, bool isTablet) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final metaSize = isLarge ? 12.0 : (isTablet ? 11.0 : 10.5);
+    final iconSize = isLarge ? 16.0 : (isTablet ? 15.0 : 14.0);
+
+    return Row(
+      children: [
+        // Chapters count
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 8.0 : 7.0,
+            vertical: isTablet ? 5.0 : 4.0,
+          ),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceVariant.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(6.0),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.library_books_outlined,
+                color: colorScheme.onSurfaceVariant,
+                size: iconSize,
+              ),
+              const SizedBox(width: 4.0),
+              Text(
+                '$chapters',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: metaSize,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8.0),
+        // Last accessed
+        Expanded(
+          child: Row(
+            children: [
+              Icon(
+                Icons.access_time_outlined,
+                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                size: iconSize,
+              ),
+              const SizedBox(width: 4.0),
+              Expanded(
+                child: Text(
+                  lastAccessed,
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                    fontSize: metaSize,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Shared with section
+  Widget _buildSharedSection(
+    BuildContext context,
+    bool isTablet,
+    bool isSmallPhone,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final avatarSize = isSmallPhone ? 24.0 : (isTablet ? 28.0 : 26.0);
+    final fontSize = isSmallPhone ? 10.0 : (isTablet ? 11.0 : 10.5);
+
+    return Row(
+      children: [
+        Text(
+          'Shared with:',
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Row(
+            children: [
+              // Avatar list
+              ...List.generate(
+                sharedWith!.length > 3 ? 3 : sharedWith!.length,
+                (i) => _buildAvatar(
+                  context,
+                  sharedWith![i].username,
+                  avatarSize,
+                  i,
+                  isSmallPhone,
+                ),
+              ),
+              // More count
+              if (sharedWith!.length > 3)
+                _buildMoreCount(
+                  context,
+                  sharedWith!.length - 3,
+                  avatarSize,
+                  isSmallPhone,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // User avatar
+  Widget _buildAvatar(
+    BuildContext context,
+    String username,
+    double size,
+    int index,
+    bool isSmallPhone,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final gradientColors = [
+      [Colors.purple, Colors.deepPurple],
+      [Colors.blue, Colors.indigo],
+      [Colors.green, Colors.teal],
+    ];
+
+    return Container(
+      margin: EdgeInsets.only(right: index < 2 ? 4.0 : 0),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors[index % 3],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(color: colorScheme.surface, width: 2.0),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        username.isNotEmpty ? username.substring(0, 1).toUpperCase() : '?',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: isSmallPhone ? 10.0 : 12.0,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  // More users count badge
+  Widget _buildMoreCount(
+    BuildContext context,
+    int count,
+    double size,
+    bool isSmallPhone,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(left: 4.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmallPhone ? 6.0 : 8.0,
+        vertical: 4.0,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceVariant,
+        borderRadius: BorderRadius.circular(8.0),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.5),
+          width: 1.0,
+        ),
+      ),
+      child: Text(
+        '+$count',
+        style: TextStyle(
+          color: colorScheme.onSurface,
+          fontSize: isSmallPhone ? 10.0 : 11.0,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  // Generic tag widget
   Widget _buildTag(
+    BuildContext context,
     String text,
     Color bgColor,
     Color textColor,
-    IconData? icon, {
-    bool isTablet = false,
-  }) {
-    final double padding = isTablet ? 6.0 : 5.0;
-    final double iconSize = isTablet ? 10.0 : 9.0;
-    final double fontSize = isTablet ? 9.0 : 7.5;
+    IconData? icon,
+    bool isTablet,
+  ) {
+    final padding = isTablet ? 8.0 : 7.0;
+    final iconSize = isTablet ? 12.0 : 11.0;
+    final fontSize = isTablet ? 10.5 : 9.5;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding / 2),
+      padding: EdgeInsets.symmetric(
+        horizontal: padding,
+        vertical: padding * 0.5,
+      ),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(6.0),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
             Icon(icon, size: iconSize, color: textColor),
-            SizedBox(width: isTablet ? 4.0 : 3.0),
+            const SizedBox(width: 4.0),
           ],
           Text(
             text,
@@ -59,7 +480,8 @@ class FolderCard extends StatelessWidget {
             style: TextStyle(
               color: textColor,
               fontSize: fontSize,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
             ),
           ),
         ],
@@ -67,300 +489,16 @@ class FolderCard extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final screenSize = MediaQuery.of(context).size;
-    final screenWidth = screenSize.width;
-
-    final isLargeScreen = screenWidth > 900;
-    final isTablet = screenWidth > 600;
-    final isSmallTablet = screenWidth > 600 && screenWidth < 750;
-    final isSmallPhone = screenWidth < 360;
-
-    // Adjusted sizing for better fit
-    final double cardPadding = isLargeScreen
-        ? 14.0
-        : (isSmallTablet ? 10.0 : (isTablet ? 12.0 : 8.0));
-    final double iconContainerSize = isLargeScreen
-        ? 50.0
-        : (isSmallTablet ? 38.0 : (isTablet ? 44.0 : 36.0));
-    final double iconSize = isLargeScreen
-        ? 24.0
-        : (isSmallTablet ? 16.0 : (isTablet ? 18.0 : 16.0));
-    final double titleSize = isLargeScreen
-        ? 16.0
-        : (isSmallTablet ? 12.0 : (isTablet ? 14.0 : 14.0));
-    final double descriptionSize = isLargeScreen
-        ? 12.0
-        : (isSmallTablet ? 9.0 : (isTablet ? 10.0 : 13));
-    final double metaSize = isLargeScreen
-        ? 11.0
-        : (isSmallTablet ? 9.0 : (isTablet ? 10.0 : 9.0));
-    final double verticalSpacing = 10;
-
-    Color categoryColor;
-    switch (category) {
-      case 'Technology':
-        categoryColor = colorScheme.primary;
-        break;
-      case 'Science':
-        categoryColor = Colors.green;
-        break;
-      default:
-        categoryColor = colorScheme.onSurfaceVariant;
-    }
-
-    final isPrivate = privacy.toLowerCase() == 'private';
-    final double overlayOpacity = theme.brightness == Brightness.dark
-        ? 0.25
-        : 0.55;
-    final Color privacyBgColor =
-        (isPrivate
-                ? colorScheme.errorContainer
-                : colorScheme.secondaryContainer)
-            .withOpacity(overlayOpacity);
-    final Color privacyTextColor = isPrivate
-        ? colorScheme.onErrorContainer
-        : colorScheme.onSecondaryContainer;
-    final IconData? privacyIcon = isPrivate ? Icons.lock : Icons.group;
-
-    final hasSharedSection =
-        privacy.toLowerCase() == 'shared' &&
-        sharedWith != null &&
-        sharedWith!.isNotEmpty;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(isTablet ? 12.0 : 10.0),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.6),
-            width: 0.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor.withOpacity(0.08),
-              blurRadius: isTablet ? 12.0 : 10.0,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        padding: EdgeInsets.all(cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header row with icon and tags
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: iconContainerSize,
-                  height: iconContainerSize,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(isTablet ? 9.0 : 8.0),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant.withOpacity(0.4),
-                      width: 0.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withOpacity(0.22),
-                        blurRadius: isTablet ? 10.0 : 8.0,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        color.withOpacity(0.28),
-                        color.withOpacity(0.12),
-                      ],
-                    ),
-                  ),
-                  child: Icon(
-                    icon ?? Icons.folder,
-                    color: colorScheme.onSurface,
-                    size: iconSize,
-                  ),
-                ),
-                SizedBox(width: isTablet ? 8.0 : 6.0),
-                Expanded(
-                  child: Wrap(
-                    spacing: 4.0,
-                    runSpacing: 3.0,
-                    alignment: WrapAlignment.end,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      _buildTag(
-                        category,
-                        categoryColor,
-                        colorScheme.onPrimary,
-                        null,
-                        isTablet: isTablet,
-                      ),
-                      if (privacy.isNotEmpty)
-                        _buildTag(
-                          privacy,
-                          privacyBgColor,
-                          privacyTextColor,
-                          privacyIcon,
-                          isTablet: isTablet,
-                        ),
-                      Text(
-                        '$chapters chapters',
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: isTablet ? 9.0 : 7.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: verticalSpacing),
-
-            // Title
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: colorScheme.onSurface,
-                fontSize: titleSize,
-                fontWeight: FontWeight.w600,
-                height: 1.2,
-              ),
-            ),
-
-            // Description (only show if not empty and space allows)
-            if (description.isNotEmpty && !hasSharedSection) ...[
-              SizedBox(height: verticalSpacing * 0.5),
-              Text(
-                description,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: descriptionSize,
-                  height: 1.2,
-                ),
-              ),
-            ],
-
-            const Spacer(),
-
-            // Last accessed info
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time_outlined,
-                  color: colorScheme.onSurfaceVariant,
-                  size: metaSize + 1,
-                ),
-                SizedBox(width: isTablet ? 6.0 : 4.0),
-                Expanded(
-                  child: Text(
-                    'Last accessed $lastAccessed',
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: metaSize,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-
-            // Shared with section
-            if (hasSharedSection) ...[
-              SizedBox(height: verticalSpacing),
-              Divider(
-                thickness: 1,
-                height: 1,
-                color: colorScheme.outlineVariant.withOpacity(0.4),
-              ),
-              SizedBox(height: verticalSpacing),
-              Row(
-                children: [
-                  Text(
-                    'Shared with:',
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: isSmallPhone ? 9.0 : 10.0,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        ...List.generate(
-                          sharedWith!.length > 3 ? 3 : sharedWith!.length,
-                          (i) => Container(
-                            margin: const EdgeInsets.only(right: 3),
-                            width: isSmallPhone ? 18 : 20,
-                            height: isSmallPhone ? 18 : 20,
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceVariant,
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              sharedWith![i].username.isNotEmpty
-                                  ? sharedWith![i].username
-                                        .substring(0, 2)
-                                        .toUpperCase()
-                                  : '?',
-                              style: TextStyle(
-                                color: colorScheme.onSurface,
-                                fontSize: isSmallPhone ? 8.0 : 9.0,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (sharedWith!.length > 3)
-                          Flexible(
-                            child: Container(
-                              margin: const EdgeInsets.only(left: 2),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isSmallPhone ? 4 : 5,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceVariant,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                '+${sharedWith!.length - 3}',
-                                style: TextStyle(
-                                  color: colorScheme.onSurface,
-                                  fontSize: isSmallPhone ? 8.0 : 9.0,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
+  // Privacy tag widget
+  Widget _buildPrivacyTag(BuildContext context, bool isTablet) {
+    final config = _getPrivacyConfig(context);
+    return _buildTag(
+      context,
+      privacy,
+      config['bgColor'],
+      config['textColor'],
+      config['icon'],
+      isTablet,
     );
   }
 }

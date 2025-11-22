@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/features/preferences/presentation/Bloc/PreferencesCubit.dart';
+import 'package:tionova/features/preferences/presentation/Bloc/PreferencesState.dart';
 
-class PreferencesScreen extends StatefulWidget {
+class PreferencesScreen extends StatelessWidget {
   const PreferencesScreen({super.key});
 
   @override
-  State<PreferencesScreen> createState() => _PreferencesScreenState();
+  Widget build(BuildContext context) {
+    return const _PreferencesScreenContent();
+  }
 }
 
-class _PreferencesScreenState extends State<PreferencesScreen>
+class _PreferencesScreenContent extends StatefulWidget {
+  const _PreferencesScreenContent();
+
+  @override
+  State<_PreferencesScreenContent> createState() => _PreferencesScreenState();
+}
+
+class _PreferencesScreenState extends State<_PreferencesScreenContent>
     with SingleTickerProviderStateMixin {
   // Current step (0-5 for 6 steps)
   int _currentStep = 0;
@@ -65,6 +77,10 @@ class _PreferencesScreenState extends State<PreferencesScreen>
       curve: Curves.easeInOut,
     );
     _animationController.forward();
+
+    // Load preferences
+    final cubit = context.read<PreferencesCubit>();
+    cubit.getPreferences();
   }
 
   @override
@@ -124,8 +140,24 @@ class _PreferencesScreenState extends State<PreferencesScreen>
       'contentDifficulty': _contentDifficulty,
     };
 
-    print('Preferences to submit: $preferencesData');
-    context.go('/');
+    context.read<PreferencesCubit>().updatePreferences(preferencesData);
+  }
+
+  void _populateFromLoadedPreferences(PreferencesState state) {
+    if (state is PreferencesLoaded) {
+      setState(() {
+        _studyPerDay = state.preferences.studyPerDay.toDouble();
+        _preferredStudyTime = state.preferences.preferredStudyTimes;
+        _dailyTimeCommitmentMinutes = state
+            .preferences
+            .dailyTimeCommitmentMinutes
+            .toDouble();
+        _daysPerWeek = state.preferences.daysPerWeek.toDouble();
+        _selectedGoals.clear();
+        _selectedGoals.addAll(state.preferences.goals);
+        _contentDifficulty = state.preferences.contentDifficulty;
+      });
+    }
   }
 
   double get _progress => (_currentStep + 1) / 6;
@@ -135,39 +167,105 @@ class _PreferencesScreenState extends State<PreferencesScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Progress Bar Section (Fixed at top)
-            _buildProgressBar(theme, isDark),
+    return BlocListener<PreferencesCubit, PreferencesState>(
+      listener: (context, state) {
+        if (state is PreferencesLoaded) {
+          // Auto-populate fields when preferences are loaded
+          _populateFromLoadedPreferences(state);
+        } else if (state is PreferencesUpdated) {
+          // Navigate to home after successful update
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Preferences saved successfully! 🎉'),
+              backgroundColor: theme.colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.go('/');
+        } else if (state is PreferencesError) {
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: theme.colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<PreferencesCubit, PreferencesState>(
+        builder: (context, state) {
+          return Stack(
+            children: [
+              Scaffold(
+                backgroundColor: theme.scaffoldBackgroundColor,
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      // Progress Bar Section (Fixed at top)
+                      _buildProgressBar(theme, isDark),
 
-            // Scrollable Content using CustomScrollView
-            Expanded(
-              child: CustomScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  // Animated content for current step
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
+                      // Scrollable Content using CustomScrollView
+                      Expanded(
+                        child: CustomScrollView(
+                          controller: _scrollController,
+                          physics: const BouncingScrollPhysics(),
+                          slivers: [
+                            // Animated content for current step
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                  ),
+                                  child: _buildCurrentStep(theme, isDark),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Bottom Navigation (Fixed at bottom)
+                      _buildBottomNavigation(theme, isDark),
+                    ],
+                  ),
+                ),
+              ),
+              // Loading overlay
+              if (state is PreferencesLoading)
+                Container(
+                  color: Colors.black.withOpacity(0.5),
+                  child: Center(
+                    child: Card(
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: _buildCurrentStep(theme, isDark),
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Saving your preferences...',
+                              style: theme.textTheme.bodyLarge,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            // Bottom Navigation (Fixed at bottom)
-            _buildBottomNavigation(theme, isDark),
-          ],
-        ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -306,7 +404,7 @@ class _PreferencesScreenState extends State<PreferencesScreen>
         'icon': Icons.coffee,
         'label': 'Early Morning',
         'time': '5-8 AM',
-        'value': 'early morning',
+        'value': 'early_morning',
       },
       {
         'icon': Icons.wb_sunny,

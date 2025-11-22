@@ -69,7 +69,6 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
     if (mounted) {
       _analysisCubit.loadAnalysisData();
       // Update usage tracker with fresh API data after load completes
-      await Future.delayed(const Duration(milliseconds: 500));
       final state = _analysisCubit.state;
       if (state is AnalysisLoaded && state.analysisData.profile != null) {
         final profile = state.analysisData.profile!;
@@ -1045,23 +1044,64 @@ class _EnhancedChapterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progressPercent = (progress * 100).toInt();
+    final isCompleted = progress >= 1.0;
+    final progressColor = isCompleted ? Colors.green : colorScheme.primary;
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header with icon and progress badge
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Chapter Icon
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        progressColor.withOpacity(0.2),
+                        progressColor.withOpacity(0.08),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: progressColor.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    isCompleted
+                        ? Icons.check_circle_outline
+                        : Icons.article_outlined,
+                    color: progressColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Title and subject
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1069,72 +1109,117 @@ class _EnhancedChapterCard extends StatelessWidget {
                       Text(
                         title,
                         style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: colorScheme.onSurface,
+                          height: 1.3,
+                          letterSpacing: -0.2,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.folder_outlined,
+                            size: 13,
+                            color: colorScheme.onSurfaceVariant.withOpacity(
+                              0.7,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              subject,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant.withOpacity(
+                                  0.9,
+                                ),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Progress Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: progressColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: progressColor.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isCompleted)
+                        Icon(Icons.check, size: 12, color: progressColor),
+                      if (isCompleted) const SizedBox(width: 4),
                       Text(
-                        subject,
+                        '$progressPercent%',
                         style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w800,
+                          color: progressColor,
+                          fontSize: 11,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: progress >= 1.0
-                        ? colorScheme.primary.withOpacity(0.15)
-                        : colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '$progressPercent%',
-                    style: textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: progress >= 1.0
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             // Progress Bar
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
                 value: progress,
-                minHeight: 6,
-                backgroundColor: colorScheme.surfaceVariant,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  progress >= 1.0 ? colorScheme.primary : colorScheme.tertiary,
-                ),
+                minHeight: 8,
+                backgroundColor: colorScheme.surfaceVariant.withOpacity(0.7),
+                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
               ),
             ),
             const SizedBox(height: 12),
+            // Footer with metadata
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Icon(
+                  Icons.menu_book_outlined,
+                  size: 14,
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                ),
+                const SizedBox(width: 4),
                 Text(
                   pages,
                   style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+                const Spacer(),
+                Icon(
+                  Icons.access_time_outlined,
+                  size: 14,
+                  color: colorScheme.outline.withOpacity(0.8),
+                ),
+                const SizedBox(width: 4),
                 Text(
                   timeAgo,
                   style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.outline,
+                    color: colorScheme.outline.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -1168,14 +1253,30 @@ class _EnhancedFolderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final isLarge = screenWidth > 900;
+
+    // Responsive sizing - optimized to prevent overflow
+    final cardPadding = isLarge ? 15.0 : (isTablet ? 14.0 : 13.0);
+    final iconSize = isLarge ? 56.0 : (isTablet ? 54.0 : 52.0);
+    final iconInnerSize = isLarge ? 32.0 : (isTablet ? 31.0 : 30.0);
+    final iconRadius = isLarge ? 13.0 : (isTablet ? 12.5 : 12.0);
+    final spacing1 = isLarge ? 11.0 : (isTablet ? 10.0 : 9.0);
+    final spacing2 = isLarge ? 3.5 : (isTablet ? 3.0 : 2.5);
+    final spacing3 = isLarge ? 1.5 : (isTablet ? 1.0 : 0.5);
+    final titleFontSize = isLarge ? 15.0 : (isTablet ? 14.5 : 14.0);
+    final chapterFontSize = isLarge ? 12.0 : (isTablet ? 11.5 : 11.0);
+    final timeFontSize = isLarge ? 10.5 : 10.0;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(cardPadding),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
           border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
         ),
         child: Column(
@@ -1183,36 +1284,43 @@ class _EnhancedFolderCard extends StatelessWidget {
           children: [
             // Folder Icon
             Container(
-              width: 56,
-              height: 56,
+              width: iconSize,
+              height: iconSize,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(iconRadius),
               ),
-              child: Icon(Icons.folder_outlined, color: color, size: 32),
+              child: Icon(
+                Icons.folder_outlined,
+                color: color,
+                size: iconInnerSize,
+              ),
             ),
-            const Spacer(),
+            SizedBox(height: spacing1),
             Text(
               title,
               style: textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: colorScheme.onSurface,
+                fontSize: titleFontSize,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: spacing2),
             Text(
               '$chapters chapters',
               style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
+                fontSize: chapterFontSize,
               ),
             ),
+            SizedBox(height: spacing3),
             Text(
               timeAgo,
               style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.outline,
-                fontSize: 10,
+                fontSize: timeFontSize,
               ),
             ),
           ],

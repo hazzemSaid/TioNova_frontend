@@ -6,6 +6,7 @@ import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.da
 import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_screen.dart';
 import 'package:tionova/features/home/presentation/view/screens/home_screen.dart';
+import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:tionova/features/profile/presentation/view/screens/profile_screen.dart';
 import 'package:tionova/utils/widgets/BottomNavItem.dart';
 
@@ -56,7 +57,10 @@ class _MainLayoutState extends State<MainLayout> {
           );
           break;
         case 3:
-          _screens[index] = const ProfileScreen();
+          _screens[index] = BlocProvider<ProfileCubit>(
+            create: (context) => getIt<ProfileCubit>()..fetchProfile(),
+            child: const ProfileScreen(),
+          );
           break;
       }
     }

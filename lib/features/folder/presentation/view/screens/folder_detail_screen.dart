@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/screens/EditChapterDialog.dart';
@@ -595,8 +594,10 @@ class FolderDetailScreen extends StatelessWidget {
   Widget _buildChapterCard(BuildContext context, ChapterModel chapter) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
+    final isLarge = screenWidth > 900;
     final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
     final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
@@ -619,70 +620,140 @@ class FolderDetailScreen extends StatelessWidget {
           horizontalPadding,
           0,
           horizontalPadding,
-          12,
+          isTablet ? 14 : 12,
         ),
-        padding: EdgeInsets.all(isTablet ? 20 : 16),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outline),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title and status
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    chapter.title ?? 'Untitled Chapter',
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                _buildStatusChip(
-                  chapter.quizStatus ?? 'Not Taken',
-                  colorScheme,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Description
-            Text(
-              chapter.description ?? 'No description available',
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Info and action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Chapter • Created ${_formatDate(chapter.createdAt)}',
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-                chapter.summaryId != null
-                    ? _buildActionButton('Summary', Icons.summarize)
-                    : const SizedBox.shrink(),
-                const SizedBox(width: 8),
-                _buildActionButton('Quiz', Icons.quiz),
-                const SizedBox(width: 8),
-                _buildActionButton('Chat', Icons.chat_bubble_outline),
-              ],
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).shadowColor.withOpacity(0.06),
+              blurRadius: isTablet ? 12 : 10,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(isLarge ? 18 : (isTablet ? 16 : 14)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with icon, title and status
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Chapter icon
+                  Container(
+                    width: isTablet ? 44 : 40,
+                    height: isTablet ? 44 : 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          color.withOpacity(0.2),
+                          color.withOpacity(0.08),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: color.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.article_outlined,
+                      color: color,
+                      size: isTablet ? 22 : 20,
+                    ),
+                  ),
+                  SizedBox(width: isTablet ? 12 : 10),
+                  // Title and metadata
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          chapter.title ?? 'Untitled Chapter',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontSize: isLarge ? 17 : (isTablet ? 16 : 15.5),
+                            fontWeight: FontWeight.w700,
+                            height: 1.3,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_outlined,
+                              size: isTablet ? 13 : 12,
+                              color: colorScheme.onSurfaceVariant.withOpacity(
+                                0.7,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatDate(chapter.createdAt),
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant.withOpacity(
+                                  0.8,
+                                ),
+                                fontSize: isTablet ? 12 : 11.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Status chip
+                  _buildStatusChip(
+                    chapter.quizStatus ?? 'Not Taken',
+                    colorScheme,
+                  ),
+                ],
+              ),
+
+              // Description
+              if (chapter.description != null &&
+                  chapter.description!.isNotEmpty) ...[
+                SizedBox(height: isTablet ? 12 : 10),
+                Text(
+                  chapter.description!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.9),
+                    fontSize: isTablet ? 13.5 : 13,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+
+              // Action buttons
+              SizedBox(height: isTablet ? 14 : 12),
+              Wrap(
+                spacing: isTablet ? 10 : 8,
+                runSpacing: 8,
+                children: [
+                  if (chapter.summaryId != null)
+                    _buildActionButton('Summary', Icons.summarize_outlined),
+                  _buildActionButton('Quiz', Icons.quiz_outlined),
+                  _buildActionButton('Chat', Icons.chat_bubble_outline),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -690,31 +761,48 @@ class FolderDetailScreen extends StatelessWidget {
 
   Widget _buildStatusChip(String status, ColorScheme colorScheme) {
     Color chipColor;
-    switch (status) {
-      case 'Passed':
-        chipColor = colorScheme.tertiary;
+    IconData chipIcon;
+
+    switch (status.toLowerCase()) {
+      case 'passed':
+        chipColor = Colors.green;
+        chipIcon = Icons.check_circle_outline;
         break;
-      case 'Failed':
+      case 'failed':
         chipColor = colorScheme.error;
+        chipIcon = Icons.cancel_outlined;
+        break;
+      case 'in progress':
+        chipColor = Colors.orange;
+        chipIcon = Icons.pending_outlined;
         break;
       default:
         chipColor = colorScheme.onSurfaceVariant;
+        chipIcon = Icons.circle_outlined;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.2),
+        color: chipColor.withOpacity(0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: chipColor),
+        border: Border.all(color: chipColor.withOpacity(0.4), width: 1),
       ),
-      child: Text(
-        status,
-        style: TextStyle(
-          color: chipColor,
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(chipIcon, size: 12, color: chipColor),
+          const SizedBox(width: 4),
+          Text(
+            status,
+            style: TextStyle(
+              color: chipColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -722,24 +810,39 @@ class FolderDetailScreen extends StatelessWidget {
   Widget _buildActionButton(String label, IconData icon) {
     return Builder(
       builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isTablet = screenWidth > 600;
         final colorScheme = Theme.of(context).colorScheme;
+
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 12 : 10,
+            vertical: isTablet ? 8 : 7,
+          ),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(6),
+            color: colorScheme.surfaceVariant.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withOpacity(0.4),
+              width: 1,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: colorScheme.onSurface, size: 12),
-              const SizedBox(width: 4),
+              Icon(
+                icon,
+                color: colorScheme.onSurface.withOpacity(0.8),
+                size: isTablet ? 15 : 14,
+              ),
+              SizedBox(width: isTablet ? 6 : 5),
               Text(
                 label,
                 style: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface.withOpacity(0.9),
+                  fontSize: isTablet ? 12 : 11.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.1,
                 ),
               ),
             ],
