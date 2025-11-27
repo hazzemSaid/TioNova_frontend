@@ -1,4 +1,5 @@
 // features/folder/presentation/view/screens/create_chapter_screen.dart
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -6,7 +7,6 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
@@ -40,6 +40,9 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
   bool _didInitCubit = false;
   bool _didShowSuccessDialog = false;
   bool _isDialogVisible = false;
+  bool _isCreatingChapter =
+      false; // Local flag to prevent duplicate submissions
+  Timer? _timeoutTimer; // Timer for request timeout
   late AnimationController _waveController;
   @override
   void initState() {
@@ -55,6 +58,9 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
     _titleController.dispose();
     _descriptionController.dispose();
     _waveController.dispose();
+    _timeoutTimer?.cancel(); // Cancel timeout timer
+    _didShowSuccessDialog = false; // Reset success dialog flag
+    _isCreatingChapter = false; // Reset creation flag
     if (_didInitCubit) {
       _chapterCubit.unsubscribeFromChapterCreationProgress();
     }
@@ -189,63 +195,116 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
   Future<void> _createChapter() async {
     print('🚀 _createChapter() called');
 
+    // CRITICAL: Prevent duplicate submissions (Bug #1 & #2 fix)
+    if (_isCreatingChapter) {
+      print('⚠️ Already creating chapter, ignoring duplicate tap');
+      return;
+    }
+
+    // Validation checks
     if (_titleController.text.trim().isEmpty) {
       print('❌ Title is empty');
-      CustomDialogs.showErrorDialog(
-        context,
-        title: 'Error!',
-        message: 'Please enter a title',
-      );
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Error!',
+          message: 'Please enter a title',
+        );
+      });
       return;
     }
     print('✅ Title validation passed: ${_titleController.text.trim()}');
 
     if (_descriptionController.text.trim().length < 10) {
-      CustomDialogs.showErrorDialog(
-        context,
-        title: 'Error!',
-        message: 'Description must be at least 10 characters',
-      );
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Error!',
+          message: 'Description must be at least 10 characters',
+        );
+      });
       return;
     }
 
     if (_selectedFile == null) {
-      CustomDialogs.showErrorDialog(
-        context,
-        title: 'Error!',
-        message: 'Please select a PDF file',
-      );
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Error!',
+          message: 'Please select a PDF file',
+        );
+      });
       return;
     }
 
     final authState = context.read<AuthCubit>().state;
-    if (authState is AuthSuccess) {
-      try {
-        _chapterCubit.subscribeToChapterCreationProgress(
-          userId: authState.user.id,
+    if (authState is! AuthSuccess) {
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Error!',
+          message: 'Authentication required',
         );
-        _chapterCubit.createChapter(
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim(),
-          folderId: widget.folderId,
-          file: _selectedFile!,
-        );
-      } catch (e) {
-        if (mounted) {
-          CustomDialogs.showErrorDialog(
-            context,
-            title: 'Error!',
-            message: 'Failed to create chapter: ${e.toString()}',
-          );
-        }
-      }
-    } else {
-      CustomDialogs.showErrorDialog(
-        context,
-        title: 'Error!',
-        message: 'Authentication required',
-      );
+      });
+      return;
     }
+
+    // Set creating flag and update UI
+    setState(() => _isCreatingChapter = true);
+
+    try {
+      // Start SSE subscription for progress updates
+      _chapterCubit.subscribeToChapterCreationProgress(
+        userId: authState.user.id,
+      );
+
+      // Start chapter creation
+      _chapterCubit.createChapter(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        folderId: widget.folderId,
+        file: _selectedFile!,
+      );
+
+      // Add timeout handler - give backend enough time for PDF processing
+      _timeoutTimer?.cancel();
+      _timeoutTimer = Timer(const Duration(seconds: 120), () {
+        if (_isCreatingChapter && mounted) {
+          _handleTimeout();
+        }
+      });
+    } catch (e) {
+      // Bug #7 fix: Use safeContext for error handling
+      print('❌ Error in _createChapter: $e');
+      if (mounted) {
+        setState(() => _isCreatingChapter = false);
+      }
+      _chapterCubit.unsubscribeFromChapterCreationProgress();
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Error!',
+          message: 'Failed to create chapter: ${e.toString()}',
+        );
+      });
+    }
+  }
+
+  void _handleTimeout() {
+    print('⏱️ Request timeout - chapter creation took too long');
+    _timeoutTimer?.cancel();
+    if (mounted) {
+      setState(() => _isCreatingChapter = false);
+    }
+    _chapterCubit.unsubscribeFromChapterCreationProgress();
+    safeContext((ctx) {
+      CustomDialogs.showErrorDialog(
+        ctx,
+        title: 'Timeout',
+        message:
+            'Chapter creation is taking too long. Please check your connection and try again.',
+      );
+    });
   }
 
   @override
@@ -270,20 +329,32 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
             final colorScheme = Theme.of(context).colorScheme;
             final isProcessing =
                 state is CreateChapterLoading || state is CreateChapterProgress;
+
             return WillPopScope(
-              onWillPop: () async => !(isProcessing || _isDialogVisible),
+              onWillPop: () async {
+                // Simply block navigation if creating, no SnackBar to avoid interference
+                return !isProcessing && !_isCreatingChapter;
+              },
               child: Scaffold(
                 backgroundColor: colorScheme.surface,
                 appBar: AppBar(
                   backgroundColor: colorScheme.surface,
                   elevation: 0,
                   leading: IconButton(
-                    icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: (isProcessing || _isCreatingChapter)
+                          ? colorScheme.onSurface.withOpacity(0.3)
+                          : colorScheme.onSurface,
+                    ),
                     onPressed: () {
-                      if (!(isProcessing || _isDialogVisible)) {
-                        // Properly close the IconButton and continue the widget tree
+                      // Only allow navigation if not creating
+                      if (!(isProcessing ||
+                          _isCreatingChapter ||
+                          _isDialogVisible)) {
                         Navigator.pop(context);
                       }
+                      // If blocked, do nothing - progress overlay shows status
                     },
                   ),
                   title: Text(
@@ -914,37 +985,71 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
   }
 
   void _handleChapterState(BuildContext context, ChapterState state) {
-    if (state is CreateChapterError) {
-      _chapterCubit.unsubscribeFromChapterCreationProgress();
-      _isDialogVisible = true;
-      CustomDialogs.showErrorDialog(
-        context,
-        title: 'Error!',
-        message: 'Failed to create chapter: ${state.message.errMessage}',
-        onPressed: () {
-          _isDialogVisible = false;
-        },
-      );
-      return;
+    print('📍 _handleChapterState: ${state.runtimeType}');
+
+    if (state is CreateChapterProgress) {
+      print('📊 Progress: ${state.progress}% - ${state.message}');
+      // Check if progress reached 100%
+      if (state.progress >= 100) {
+        print('✅ Progress reached 100%, unlocking navigation soon...');
+        // Keep _isCreatingChapter true until CreateChapterSuccess
+      }
     }
 
-    if (state is CreateChapterSuccess && !_didShowSuccessDialog) {
+    if (state is CreateChapterError) {
+      print('❌ CreateChapterError detected in state handler');
+
+      // CRITICAL: Reset flags BEFORE showing dialog (Bug #3 fix)
+      _timeoutTimer?.cancel();
+      if (mounted) {
+        setState(() => _isCreatingChapter = false);
+      }
+
+      // Unsubscribe from SSE
       _chapterCubit.unsubscribeFromChapterCreationProgress();
-      _didShowSuccessDialog = true;
-      _isDialogVisible = true;
-      CustomDialogs.showSuccessDialog(
-        context,
-        title: 'Success!',
-        message: 'Chapter created successfully!',
-        onPressed: () {
-          // Refresh chapters after dialog closes
-          _chapterCubit.getChapters(folderId: widget.folderId);
-          _isDialogVisible = false;
-          safeContext((ctx) {
-            if (ctx.canPop()) Navigator.of(ctx).pop();
-          });
-        },
-      );
+
+      // Use safeContext for dialog (Bug #5 fix)
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Error!',
+          message: 'Failed to create chapter',
+        );
+      });
+    } else if (state is CreateChapterSuccess) {
+      print('✅ CreateChapterSuccess detected in state handler');
+
+      // CRITICAL: Reset flags BEFORE showing dialog
+      _timeoutTimer?.cancel();
+      if (mounted) {
+        setState(() => _isCreatingChapter = false);
+      }
+
+      // Reset success dialog flag for next creation (Bug #5 fix)
+      _didShowSuccessDialog = false;
+
+      // Unsubscribe from SSE
+      _chapterCubit.unsubscribeFromChapterCreationProgress();
+
+      safeContext((ctx) {
+        if (!_didShowSuccessDialog && mounted) {
+          _didShowSuccessDialog = true;
+          CustomDialogs.showSuccessDialog(
+            ctx,
+            title: 'Success!',
+            message: 'Chapter created successfully',
+            onPressed: () {
+              Navigator.pop(ctx); // Close dialog
+              if (mounted) {
+                Navigator.pop(
+                  context,
+                  true,
+                ); // Go back to folder screen with success result
+              }
+            },
+          );
+        }
+      });
     }
   }
 
@@ -955,7 +1060,8 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
     final bool isLoading = state is CreateChapterLoading;
     final bool isProgress = state is CreateChapterProgress;
 
-    if (!isLoading && !isProgress) {
+    // Show overlay if state indicates processing OR if the local flag is still set
+    if (!isLoading && !isProgress && !_isCreatingChapter) {
       return const SizedBox.shrink();
     }
 

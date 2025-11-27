@@ -237,8 +237,27 @@ class FolderDetailScreen extends StatelessWidget {
           // Dynamic chapter list from cubit
           BlocBuilder<ChapterCubit, ChapterState>(
             builder: (context, state) {
+              // Extract chapters from any state that has them
+              List<ChapterModel>? chapters;
+              bool isLoading = false;
+
               if (state is ChapterLoading) {
-                // Show skeleton loading cards with skeletonizer
+                isLoading = true;
+              } else if (state is ChapterLoaded) {
+                chapters = state.chapters;
+              } else if (state is CreateChapterLoading) {
+                chapters = state.chapters;
+              } else if (state is CreateChapterProgress) {
+                chapters = state.chapters;
+              } else if (state is CreateChapterSuccess) {
+                chapters = state.chapters;
+              } else if (state is CreateChapterError) {
+                chapters = state.chapters;
+              }
+
+              // Show chapters if available, regardless of creation state
+              if (isLoading && chapters == null) {
+                // Show skeleton loading cards only if no chapters yet
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (ctx, idx) => Skeletonizer(
@@ -258,12 +277,13 @@ class FolderDetailScreen extends StatelessWidget {
                     childCount: 3, // Show 3 skeleton cards
                   ),
                 );
-              } else if (state is ChapterLoaded) {
+              } else if (chapters != null && chapters.isNotEmpty) {
+                // Show chapters even during creation states
                 return SliverList(
                   delegate: SliverChildBuilderDelegate((ctx, idx) {
-                    final chapter = state.chapters[idx];
-                    return _buildChapterCard(context, chapter);
-                  }, childCount: state.chapters.length),
+                    final chapter = chapters?[idx];
+                    return _buildChapterCard(context, chapter!);
+                  }, childCount: chapters.length),
                 );
               } else if (state is ChapterError) {
                 return SliverFillRemaining(
@@ -477,8 +497,27 @@ class FolderDetailScreen extends StatelessWidget {
           // Dynamic chapter list in grid for web
           BlocBuilder<ChapterCubit, ChapterState>(
             builder: (context, state) {
+              // Extract chapters from any state that has them
+              List<ChapterModel>? chapters;
+              bool isLoading = false;
+
               if (state is ChapterLoading) {
-                // Show skeleton loading cards in grid for web
+                isLoading = true;
+              } else if (state is ChapterLoaded) {
+                chapters = state.chapters;
+              } else if (state is CreateChapterLoading) {
+                chapters = state.chapters;
+              } else if (state is CreateChapterProgress) {
+                chapters = state.chapters;
+              } else if (state is CreateChapterSuccess) {
+                chapters = state.chapters;
+              } else if (state is CreateChapterError) {
+                chapters = state.chapters;
+              }
+
+              // Show chapters if available, regardless of creation state
+              if (isLoading && chapters == null) {
+                // Show skeleton loading cards in grid for web only if no chapters yet
                 return SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: effectivePadding),
                   sliver: SliverGrid(
@@ -508,7 +547,8 @@ class FolderDetailScreen extends StatelessWidget {
                     ),
                   ),
                 );
-              } else if (state is ChapterLoaded) {
+              } else if (chapters != null && chapters.isNotEmpty) {
+                // Show chapters even during creation states
                 return SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: effectivePadding),
                   sliver: SliverGrid(
@@ -520,9 +560,9 @@ class FolderDetailScreen extends StatelessWidget {
                           childAspectRatio: 2.5,
                         ),
                     delegate: SliverChildBuilderDelegate((ctx, idx) {
-                      final chapter = state.chapters[idx];
-                      return _buildWebChapterCard(context, chapter);
-                    }, childCount: state.chapters.length),
+                      final chapter = chapters?[idx];
+                      return _buildWebChapterCard(context, chapter!);
+                    }, childCount: chapters.length),
                   ),
                 );
               } else if (state is ChapterError) {

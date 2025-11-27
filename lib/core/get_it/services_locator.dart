@@ -1,9 +1,11 @@
 // core/get_it/services_locator.dart
 import 'package:dio/dio.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
+import 'package:tionova/core/services/firebase_realtime_service.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/localauthdatasource.dart';
@@ -76,8 +78,8 @@ import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 final getIt = GetIt.instance;
 // http://192.168.1.12:3000/api/v1
 //https://tio-nova-backend.vercel.app/api/v1
-// final baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
-final baseUrl = 'http://192.168.1.12:3000/api/v1';
+final baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
+// final baseUrl = 'http://192.168.1.12:3000/api/v1';
 Future<void> setupServiceLocator() async {
   // Initialize Hive
   // Hive.init(appDocumentDir.path); // Removed redundant init, use Hive.initFlutter() from main.dart
@@ -175,6 +177,12 @@ Future<void> setupServiceLocator() async {
   // Register App Usage Tracker Service
   getIt.registerLazySingleton<AppUsageTrackerService>(
     () => AppUsageTrackerService(),
+  );
+
+  // Register Firebase Realtime Database
+  getIt.registerLazySingleton(() => FirebaseDatabase.instance);
+  getIt.registerLazySingleton(
+    () => FirebaseRealtimeService(getIt<FirebaseDatabase>()),
   );
 
   // Data Sources
@@ -297,7 +305,8 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<Getnotesbychapteridusecase>(
     () => Getnotesbychapteridusecase(getIt<IChapterRepository>()),
   );
-  // Register ChapterCubit
+
+  // Register ChapterCubit with Firebase
   getIt.registerFactory(
     () => ChapterCubit(
       getNotesByChapterIdUseCase: getIt<Getnotesbychapteridusecase>(),
@@ -308,13 +317,15 @@ Future<void> setupServiceLocator() async {
       getChaptersUseCase: getIt<GetChaptersUseCase>(),
       createChapterUseCase: getIt<CreateChapterUseCase>(),
       getChapterContentPdfUseCase: getIt<GetChapterContentPdfUseCase>(),
+      firebaseService: getIt<FirebaseRealtimeService>(),
     ),
   );
+
   getIt.registerLazySingleton<GetAvailableUsersForShareUseCase>(
     () => GetAvailableUsersForShareUseCase(getIt<FolderRepoImp>()),
   );
 
-  // You can register FolderCubit similarly if needed
+  // Register FolderCubit
   getIt.registerFactory(
     () => FolderCubit(
       getAvailableUsersForShareUseCase:

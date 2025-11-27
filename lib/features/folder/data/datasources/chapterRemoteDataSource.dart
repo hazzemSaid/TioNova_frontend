@@ -47,7 +47,11 @@ class ChapterRemoteDataSource extends IChapterRepository {
     required FileData file,
   }) async {
     try {
-      print(file.mimeType);
+      print('🟢 [DataSource] createChapter() started');
+      print(
+        '📄 File details: ${file.filename}, size: ${file.bytes.length} bytes, mimeType: ${file.mimeType}',
+      );
+
       FormData formData = FormData.fromMap({
         'title': title,
         'description': description,
@@ -61,13 +65,21 @@ class ChapterRemoteDataSource extends IChapterRepository {
         ),
       });
 
+      print(
+        '📦 [DataSource] FormData created, making POST request to /createchapter...',
+      );
       final response = await _dio.post('/createchapter', data: formData);
+      print('✅ [DataSource] POST response received: ${response.statusCode}');
 
       return ErrorHandlingUtils.handleApiResponse<void>(
         response: response,
-        onSuccess: (_) => null,
+        onSuccess: (_) {
+          print('✅ [DataSource] createChapter success');
+          return null;
+        },
       );
     } catch (e) {
+      print('❌ [DataSource] Exception in createChapter: $e');
       return ErrorHandlingUtils.handleDioError(e);
     }
   }

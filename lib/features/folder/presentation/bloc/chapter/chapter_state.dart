@@ -25,38 +25,48 @@ class ChapterError extends ChapterState {
   List<Object?> get props => [message];
 }
 
-class CreateChapterLoading extends ChapterState {}
+class CreateChapterLoading extends ChapterState {
+  final List<ChapterModel>? chapters;
+  const CreateChapterLoading({this.chapters});
+
+  @override
+  List<Object?> get props => []; // Empty - just preserves chapters, no identity
+}
 
 class CreateChapterProgress extends ChapterState {
   final int progress;
   final String message;
   final String? chapterId;
   final ChapterModel? chapter;
+  final List<ChapterModel>? chapters;
 
   const CreateChapterProgress({
     required this.progress,
     required this.message,
     this.chapterId,
     this.chapter,
+    this.chapters,
   });
 
   @override
-  List<Object?> get props => [progress, message, chapterId, chapter];
+  List<Object?> get props => [progress, message, chapterId, chapter]; // Exclude chapters from comparison
 }
 
 class CreateChapterSuccess extends ChapterState {
   final ChapterModel? chapter;
-  const CreateChapterSuccess({this.chapter});
+  final List<ChapterModel>? chapters;
+  const CreateChapterSuccess({this.chapter, this.chapters});
 
   @override
-  List<Object?> get props => [chapter];
+  List<Object?> get props => [chapter]; // Exclude chapters from comparison
 }
 
 class CreateChapterError extends ChapterState {
   final Failure message;
-  const CreateChapterError(this.message);
+  final List<ChapterModel>? chapters;
+  const CreateChapterError(this.message, {this.chapters});
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message]; // Exclude chapters from comparison
 }
 
 class GetChapterContentPdfLoading extends ChapterState {}

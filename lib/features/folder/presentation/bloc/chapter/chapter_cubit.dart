@@ -1,15 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
+import 'package:either_dart/either.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
-import 'package:flutter_client_sse/flutter_client_sse.dart';
 import 'package:tionova/core/errors/failure.dart';
-import 'package:tionova/core/utils/safe_emit.dart';
-import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:tionova/core/services/firebase_realtime_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/data/models/NoteModel.dart';
@@ -37,6 +35,7 @@ class ChapterCubit extends Cubit<ChapterState> {
     required this.getNotesByChapterIdUseCase,
     required this.addNoteUseCase,
     required this.deleteNoteUseCase,
+    required this.firebaseService,
   }) : super(ChapterInitial());
   final Getnotesbychapteridusecase getNotesByChapterIdUseCase;
   final Addnoteusecase addNoteUseCase;
@@ -46,7 +45,8 @@ class ChapterCubit extends Cubit<ChapterState> {
   final CreateChapterUseCase createChapterUseCase;
   final GetChapterContentPdfUseCase getChapterContentPdfUseCase;
   final GenerateSummaryUseCase generateSummaryUseCase;
-  StreamSubscription<SSEModel>? _chapterCreationSubscription;
+  final FirebaseRealtimeService firebaseService;
+  StreamSubscription<Map<String, dynamic>>? _firebaseSubscription;
   void getChapters({required String folderId}) async {
     safeEmit(ChapterLoading());
     final result = await getChaptersUseCase(folderId: folderId);
@@ -56,48 +56,111 @@ class ChapterCubit extends Cubit<ChapterState> {
     );
   }
 
+  // Helper to get current chapters from state
+  List<ChapterModel>? get currentChapters {
+    final currentState = state;
+    if (currentState is ChapterLoaded) {
+      return currentState.chapters;
+    } else if (currentState is CreateChapterLoading) {
+      return currentState.chapters;
+    } else if (currentState is CreateChapterProgress) {
+      return currentState.chapters;
+    } else if (currentState is CreateChapterSuccess) {
+      return currentState.chapters;
+    } else if (currentState is CreateChapterError) {
+      return currentState.chapters;
+    }
+    return null;
+  }
+
   void createChapter({
     required String title,
     required String description,
     required String folderId,
     required FileData file,
   }) async {
-    safeEmit(CreateChapterLoading());
-    final result = await createChapterUseCase(
-      title: title,
-      description: description,
-      folderId: folderId,
-      file: file,
-    );
-    result.fold(
-      (failure) {
-        safeEmit(CreateChapterError(failure));
-        unsubscribeFromChapterCreationProgress();
-      },
-      (_) {
-        if (_chapterCreationSubscription == null) {
-          safeEmit(const CreateChapterSuccess());
-        }
-      },
-    );
+    print('🔵 [ChapterCubit] createChapter() called');
+    print('📝 Title: $title, FolderId: $folderId, File: ${file.filename}');
+
+    final chapters = currentChapters; // Capture before emitting
+    print('📚 Current chapters count: ${chapters?.length ?? 0}');
+
+    safeEmit(CreateChapterLoading(chapters: chapters));
+    print('✅ [ChapterCubit] Emitted CreateChapterLoading');
+
+    try {
+      print('🚀 [ChapterCubit] Calling createChapterUseCase...');
+      final result =
+          await createChapterUseCase(
+            title: title,
+            description: description,
+            folderId: folderId,
+            file: file,
+          ).timeout(
+            const Duration(seconds: 120), // Increased for large PDF processing
+            onTimeout: () {
+              print('⏱️ [ChapterCubit] Timeout in createChapterUseCase');
+              unsubscribeFromChapterCreationProgress();
+              return Left(
+                ServerFailure('Request timed out. Please try again.'),
+              );
+            },
+          );
+
+      print('📦 [ChapterCubit] UseCase returned result');
+      result.fold(
+        (failure) {
+          print('❌ [ChapterCubit] CreateChapter failed: ${failure.toString()}');
+          safeEmit(CreateChapterError(failure, chapters: chapters));
+          unsubscribeFromChapterCreationProgress();
+        },
+        (_) {
+          print('✅ [ChapterCubit] CreateChapter API success');
+          // Success - let SSE handle completion or emit immediately if no SSE
+          if (_firebaseSubscription == null) {
+            print(
+              '⚠️ [ChapterCubit] No SSE subscription, emitting success immediately',
+            );
+            safeEmit(CreateChapterSuccess(chapters: chapters));
+          } else {
+            print(
+              '✅ [ChapterCubit] SSE subscription active, waiting for events',
+            );
+          }
+        },
+      );
+    } catch (e) {
+      // Catch any unexpected errors
+      print('💥 [ChapterCubit] Exception in createChapter: $e');
+      print('Stack trace: ${StackTrace.current}');
+      unsubscribeFromChapterCreationProgress();
+      safeEmit(
+        CreateChapterError(
+          ServerFailure('Unexpected error: $e'),
+          chapters: chapters,
+        ),
+      );
+    }
   }
 
+  /// Subscribe to Firebase Realtime Database for chapter creation progress
+  /// Backend writes to: /chapter-creation/{userId}
   void subscribeToChapterCreationProgress({required String userId}) {
-    final sseUrl = '$baseUrl/sse/subscribe?userId=$userId';
-    _chapterCreationSubscription?.cancel();
-    _chapterCreationSubscription =
-        SSEClient.subscribeToSSE(
-          url: sseUrl,
-          method: SSERequestType.GET,
-          header: const {},
-        ).listen(
-          _handleChapterCreationEvent,
+    print('🔥 [ChapterCubit] Subscribing to Firebase for user: $userId');
+
+    _firebaseSubscription?.cancel();
+    _firebaseSubscription = firebaseService
+        .listenToChapterCreation(userId)
+        .listen(
+          _handleFirebaseUpdate,
           onError: (error) {
+            print('❌ [ChapterCubit] Firebase error: $error');
             unsubscribeFromChapterCreationProgress();
             if (!isClosed) {
               safeEmit(
-                const CreateChapterError(
-                  ServerFailure('Lost connection to creation progress stream'),
+                CreateChapterError(
+                  ServerFailure('Lost connection to creation progress'),
+                  chapters: currentChapters,
                 ),
               );
             }
@@ -105,51 +168,59 @@ class ChapterCubit extends Cubit<ChapterState> {
         );
   }
 
+  /// Unsubscribe from Firebase chapter creation progress
   void unsubscribeFromChapterCreationProgress() {
-    _chapterCreationSubscription?.cancel();
-    _chapterCreationSubscription = null;
+    print('🔥 [ChapterCubit] Unsubscribing from Firebase');
+    _firebaseSubscription?.cancel();
+    _firebaseSubscription = null;
   }
 
-  void _handleChapterCreationEvent(SSEModel event) {
-    if (isClosed || event.data == null || event.data!.isEmpty) return;
+  /// Handle Firebase Realtime Database updates for chapter creation
+  void _handleFirebaseUpdate(Map<String, dynamic> data) {
+    if (isClosed || data.isEmpty) return;
 
     try {
-      final decodedPayload = json.decode(event.data!);
-      if (decodedPayload is! Map<String, dynamic>) return;
+      final progress = (data['progress'] as num?)?.toInt() ?? 0;
+      final message = data['message'] as String? ?? '';
+      final chapterId = data['chapterId'] as String?;
 
-      if (!decodedPayload.containsKey('progress') ||
-          !decodedPayload.containsKey('message')) {
-        return;
-      }
-
-      final num? rawProgress = decodedPayload['progress'] as num?;
-      final int? progressValue = rawProgress != null
-          ? rawProgress.clamp(0, 100).toInt()
-          : null;
-      if (progressValue == null) return;
-      final message = decodedPayload['message'] as String? ?? '';
-      final chapterId = decodedPayload['chapterId'] as String?;
+      print('🔥 [ChapterCubit] Firebase update: $progress% - $message');
 
       ChapterModel? chapter;
-      if (decodedPayload['chapter'] != null) {
-        chapter = ChapterModel.fromJson(decodedPayload['chapter']);
+      if (data['chapter'] != null) {
+        chapter = ChapterModel.fromJson(
+          Map<String, dynamic>.from(data['chapter'] as Map),
+        );
       }
+
+      final chapters = currentChapters; // Preserve current chapters
 
       safeEmit(
         CreateChapterProgress(
-          progress: progressValue,
+          progress: progress,
           message: message,
           chapterId: chapterId,
           chapter: chapter,
+          chapters: chapters,
         ),
       );
 
-      if (progressValue >= 100 && chapter != null) {
-        safeEmit(CreateChapterSuccess(chapter: chapter));
+      // When complete, emit success and cleanup
+      if (progress >= 100) {
+        print('✅ [ChapterCubit] Chapter creation complete!');
+        // Emit success even if chapter is null to unblock UI
+        safeEmit(CreateChapterSuccess(chapter: chapter, chapters: chapters));
         unsubscribeFromChapterCreationProgress();
+
+        // Clear Firebase data
+        // final authState = getIt<AuthCubit>().state;
+        // if (authState is AuthSuccess) {
+        //   firebaseService.clearChapterCreation(authState.user.id);
+        // }
       }
-    } catch (_) {
-      // Ignore malformed SSE payloads silently
+    } catch (e) {
+      print('❌ [ChapterCubit] Error parsing Firebase data: $e');
+      // Don't emit error for parse failures, just log
     }
   }
 
