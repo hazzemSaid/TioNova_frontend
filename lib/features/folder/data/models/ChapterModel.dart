@@ -11,6 +11,8 @@ class ChapterModel extends Equatable {
   final int? quizScore;
   final bool? quizCompleted;
   final String? summaryId;
+  final String? folderId;
+  final String? mindmapId;
 
   const ChapterModel({
     required this.id,
@@ -23,6 +25,8 @@ class ChapterModel extends Equatable {
     this.quizStatus,
     this.quizScore,
     this.quizCompleted,
+    this.folderId,
+    this.mindmapId,
   });
 
   factory ChapterModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +41,8 @@ class ChapterModel extends Equatable {
       quizStatus: json['quizStatus'],
       quizScore: json['quizScore'],
       quizCompleted: json['quizCompleted'],
+      folderId: json['folderId'],
+      mindmapId: json['mindmapId'],
     );
   }
   Map<String, dynamic> toJson() {
@@ -51,6 +57,8 @@ class ChapterModel extends Equatable {
       'quizStatus': quizStatus,
       'quizScore': quizScore,
       'quizCompleted': quizCompleted,
+      'folderId': folderId,
+      'mindmapId': mindmapId,
     };
   }
 
@@ -66,6 +74,8 @@ class ChapterModel extends Equatable {
     quizScore,
     summaryId,
     quizCompleted,
+    folderId,
+    mindmapId,
   ];
 
   @override

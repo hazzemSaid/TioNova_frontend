@@ -12,85 +12,75 @@ String _sanitizeUtf8(String input) {
   }
 }
 
-// Main Response Model
+// Main Response Model for Summary API
 class SummaryResponse extends Equatable {
   final bool success;
   final String message;
-  final SummaryModel summary;
-  final SummaryModelData summaryModel;
+  final List<SummaryModel> summaries; // Changed to list to match API
   final bool cached;
 
   const SummaryResponse({
     required this.success,
     required this.message,
-    required this.summary,
-    required this.summaryModel,
+    required this.summaries,
     this.cached = false,
   });
 
-  factory SummaryResponse.fromJson(Map<String, dynamic> json) {
-    return SummaryResponse(
-      success: json['success'] as bool? ?? false,
-      message: json['message'] as String? ?? '',
-      summary: _parseSummary(json['summary']),
-      summaryModel: _parseSummaryModelData(json['summaryModel']),
-      cached: json['cached'] as bool? ?? false,
-    );
-  }
-
-  static SummaryModel _parseSummary(dynamic summaryData) {
-    if (summaryData == null || summaryData is! Map<String, dynamic>) {
-      return const SummaryModel(
-        chapterTitle: '',
-        chapterOverview: ChapterOverview(title: '', summary: ''),
-        keyTakeaways: [],
-        keyPoints: [],
-        definitions: [],
-        flashcards: [],
-      );
-    }
-    return SummaryModel.fromJson(summaryData);
-  }
-
-  static SummaryModelData _parseSummaryModelData(dynamic modelData) {
-    if (modelData == null || modelData is! Map<String, dynamic>) {
-      return SummaryModelData(
-        chapterId: '',
-        summary: const SummaryModel(
+  // Convenience getter for the first summary (most common use case)
+  SummaryModel get summary => summaries.isNotEmpty
+      ? summaries.first
+      : const SummaryModel(
           chapterTitle: '',
           chapterOverview: ChapterOverview(title: '', summary: ''),
           keyTakeaways: [],
           keyPoints: [],
           definitions: [],
           flashcards: [],
-        ),
-        id: '',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        version: 0,
-      );
+        );
+
+  factory SummaryResponse.fromJson(Map<String, dynamic> json) {
+    List<SummaryModel> parsedSummaries = [];
+
+    if (json['summary'] != null) {
+      if (json['summary'] is List) {
+        // Handle array of summaries (actual API response)
+        parsedSummaries = (json['summary'] as List)
+            .where((item) => item != null && item is Map<String, dynamic>)
+            .map((item) => SummaryModel.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else if (json['summary'] is Map<String, dynamic>) {
+        // Handle single summary object (backward compatibility)
+        parsedSummaries = [
+          SummaryModel.fromJson(json['summary'] as Map<String, dynamic>),
+        ];
+      }
     }
-    return SummaryModelData.fromJson(modelData);
+
+    return SummaryResponse(
+      success: json['success'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
+      summaries: parsedSummaries,
+      cached: json['cached'] as bool? ?? false,
+    );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'success': success,
       'message': message,
-      'summary': summary.toJson(),
-      'summaryModel': summaryModel.toJson(),
+      'summary': summaries.map((s) => s.toJson()).toList(),
       'cached': cached,
     };
   }
 
   @override
-  List<Object> get props => [success, message, summary, summaryModel, cached];
+  List<Object> get props => [success, message, summaries, cached];
 }
 
 // Summary Model Data (Database model)
 class SummaryModelData extends Equatable {
   final String chapterId;
-  final SummaryModel summary;
+  final List<SummaryModel> summaries; // Changed from single summary to list
   final String id;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -98,26 +88,46 @@ class SummaryModelData extends Equatable {
 
   const SummaryModelData({
     required this.chapterId,
-    required this.summary,
+    required this.summaries,
     required this.id,
     required this.createdAt,
     required this.updatedAt,
     required this.version,
   });
 
+  // Convenience getter for the first summary (most common use case)
+  SummaryModel get summary => summaries.isNotEmpty
+      ? summaries.first
+      : const SummaryModel(
+          chapterTitle: '',
+          chapterOverview: ChapterOverview(title: '', summary: ''),
+          keyTakeaways: [],
+          keyPoints: [],
+          definitions: [],
+          flashcards: [],
+        );
+
   factory SummaryModelData.fromJson(Map<String, dynamic> json) {
+    List<SummaryModel> parsedSummaries = [];
+
+    if (json['summary'] != null) {
+      if (json['summary'] is List) {
+        // Handle array of summaries
+        parsedSummaries = (json['summary'] as List)
+            .where((item) => item != null && item is Map<String, dynamic>)
+            .map((item) => SummaryModel.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else if (json['summary'] is Map<String, dynamic>) {
+        // Handle single summary object (backward compatibility)
+        parsedSummaries = [
+          SummaryModel.fromJson(json['summary'] as Map<String, dynamic>),
+        ];
+      }
+    }
+
     return SummaryModelData(
       chapterId: json['chapterId'] as String? ?? '',
-      summary: json['summary'] != null
-          ? SummaryModel.fromJson(json['summary'] as Map<String, dynamic>)
-          : const SummaryModel(
-              chapterTitle: '',
-              chapterOverview: ChapterOverview(title: '', summary: ''),
-              keyTakeaways: [],
-              keyPoints: [],
-              definitions: [],
-              flashcards: [],
-            ),
+      summaries: parsedSummaries,
       id: json['_id'] as String? ?? '',
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
@@ -136,7 +146,7 @@ class SummaryModelData extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'chapterId': chapterId,
-      'summary': summary.toJson(),
+      'summary': summaries.map((s) => s.toJson()).toList(),
       '_id': id,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -147,7 +157,7 @@ class SummaryModelData extends Equatable {
   @override
   List<Object> get props => [
     chapterId,
-    summary,
+    summaries,
     id,
     createdAt,
     updatedAt,

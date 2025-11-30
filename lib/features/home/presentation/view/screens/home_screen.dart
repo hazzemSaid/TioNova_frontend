@@ -5,11 +5,46 @@ import 'package:lottie/lottie.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
+import 'package:tionova/features/home/data/models/analysisModel.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysiscubit.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysisstate.dart';
+import 'package:tionova/features/home/presentation/provider/index_mainLayout.dart';
 import 'package:tionova/features/home/presentation/view/widgets/CustomHeaderDelegate.dart';
 import 'package:tionova/features/home/presentation/view/widgets/SectionHeader.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
+
+// Utility: Format DateTime to 'time ago' string
+String formatTimeAgo(dynamic date) {
+  if (date == null) return 'Recently';
+  DateTime? dateTime;
+  if (date is DateTime) {
+    dateTime = date;
+  } else if (date is String) {
+    try {
+      dateTime = DateTime.tryParse(date);
+    } catch (_) {
+      return 'Recently';
+    }
+  }
+  if (dateTime == null) return 'Recently';
+  final now = DateTime.now();
+  final diff = now.difference(dateTime);
+  if (diff.inSeconds < 60) {
+    return '${diff.inSeconds}s ago';
+  } else if (diff.inMinutes < 60) {
+    return '${diff.inMinutes}m ago';
+  } else if (diff.inHours < 24) {
+    return '${diff.inHours}h ago';
+  } else if (diff.inDays < 7) {
+    return '${diff.inDays}d ago';
+  } else if (diff.inDays < 30) {
+    return '${(diff.inDays / 7).floor()}w ago';
+  } else if (diff.inDays < 365) {
+    return '${(diff.inDays / 30).floor()}mo ago';
+  } else {
+    return '${(diff.inDays / 365).floor()}y ago';
+  }
+}
 
 // Home Screen with Enhanced UI/UX - Provider Wrapper
 class HomeScreen extends StatelessWidget {
@@ -20,24 +55,8 @@ class HomeScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) {
         final cubit = getIt<AnalysisCubit>();
-        final usageTracker = getIt<AppUsageTrackerService>();
         // Load data immediately after creating the cubit
         cubit.loadAnalysisData();
-        // Update usage tracker with API data after load completes
-        Future.delayed(const Duration(milliseconds: 500), () {
-          final state = cubit.state;
-          if (state is AnalysisLoaded && state.analysisData.profile != null) {
-            final profile = state.analysisData.profile!;
-            usageTracker.updateProfileFromApi(
-              streak: profile.streak,
-              lastActiveDate: profile.lastActiveDate,
-              totalQuizzesTaken: profile.totalQuizzesTaken,
-              totalMindmapsCreated: profile.totalMindmapsCreated,
-              totalSummariesCreated: profile.totalSummariesCreated,
-              averageQuizScore: profile.averageQuizScore,
-            );
-          }
-        });
         return cubit;
       },
       child: const _HomeScreenContent(),
@@ -66,22 +85,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
 
   Future<void> _loadAnalysisData() async {
     if (!mounted) return;
-    if (mounted) {
-      _analysisCubit.loadAnalysisData();
-      // Update usage tracker with fresh API data after load completes
-      final state = _analysisCubit.state;
-      if (state is AnalysisLoaded && state.analysisData.profile != null) {
-        final profile = state.analysisData.profile!;
-        await _usageTracker.updateProfileFromApi(
-          streak: profile.streak,
-          lastActiveDate: profile.lastActiveDate,
-          totalQuizzesTaken: profile.totalQuizzesTaken,
-          totalMindmapsCreated: profile.totalMindmapsCreated,
-          totalSummariesCreated: profile.totalSummariesCreated,
-          averageQuizScore: profile.averageQuizScore,
-        );
-      }
-    }
+    _analysisCubit.loadAnalysisData();
   }
 
   @override
@@ -99,502 +103,570 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    return BlocBuilder<AnalysisCubit, AnalysisState>(
-      builder: (context, state) {
-        // Handle loading state
-        if (state is AnalysisLoading) {
-          return Scaffold(
-            backgroundColor: theme.scaffoldBackgroundColor,
-            body: Center(
-              child: Lottie.asset(
-                'assets/animations/Loader cat.json',
-                width: 200,
-                height: 200,
-              ),
-            ),
+    return BlocListener<AnalysisCubit, AnalysisState>(
+      listener: (context, state) {
+        if (state is AnalysisLoaded && state.analysisData.profile != null) {
+          final profile = state.analysisData.profile!;
+          _usageTracker.updateProfileFromApi(
+            streak: profile.streak,
+            lastActiveDate: profile.lastActiveDate,
+            totalQuizzesTaken: profile.totalQuizzesTaken,
+            totalMindmapsCreated: profile.totalMindmapsCreated,
+            totalSummariesCreated: profile.totalSummariesCreated,
+            averageQuizScore: profile.averageQuizScore,
           );
         }
-
-        // Handle error state
-        if (state is AnalysisError) {
-          return Scaffold(
-            backgroundColor: theme.scaffoldBackgroundColor,
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: colorScheme.error),
-                  const SizedBox(height: 16),
-                  Text('Failed to load data', style: textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(
-                    state.message,
-                    style: textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: _loadAnalysisData,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        // Extract data from loaded state
-        final analysisData = state is AnalysisLoaded
-            ? state.analysisData
-            : null;
-        if (analysisData == null) {
-          return Scaffold(
-            backgroundColor: theme.scaffoldBackgroundColor,
-            body: const Center(child: Text('No data available')),
-          );
-        }
-
-        // Prepare data for today's progress
-        final todayProgress = {
-          'completed': 0, // TODO: Get from API if available
-          'total': analysisData.totalChapters ?? 0,
-          'chapters': analysisData.recentChapters?.length ?? 0,
-          'quizzes': analysisData.profile?.totalQuizzesTaken ?? 0,
-          'studyTime': _usageTracker.getTodayUsageMinutes(),
-        };
-
-        // Prepare statistics data
-        final stats = [
-          {
-            'value': '${analysisData.profile?.streak ?? 0}',
-            'label': 'Day Streak',
-            'icon': Icons.local_fire_department,
-          },
-          {
-            'value': '${analysisData.profile?.totalQuizzesTaken ?? 0}',
-            'label': 'Quizzes',
-            'icon': Icons.quiz,
-          },
-          {
-            'value': analysisData.profile?.averageQuizScore != null
-                ? '${analysisData.profile!.averageQuizScore.toStringAsFixed(1)}%'
-                : '0%',
-            'label': 'Avg Score',
-            'icon': Icons.insights,
-          },
-          {
-            'value': analysisData.lastRank != null
-                ? '#${analysisData.lastRank}'
-                : '-',
-            'label': 'Rank',
-            'icon': Icons.emoji_events,
-          },
-        ];
-
-        // Prepare chapters data from API
-        final chapters = (analysisData.recentChapters ?? [])
-            .map(
-              (chapter) => {
-                'id': chapter.id,
-                'title': chapter.title,
-                'subject': chapter.category ?? 'General',
-                'progress': 0.0, // TODO: Calculate based on actual progress
-                'pages': '${chapter.description?.length ?? 0} content',
-                'timeAgo': chapter.createdAt ?? 'Recently',
-                'chapterModel': chapter,
-              },
-            )
-            .toList();
-
-        // Prepare folders data from API
-        final folders = (analysisData.recentFolders ?? []).asMap().entries.map((
-          entry,
-        ) {
-          final index = entry.key;
-          final folder = entry.value;
-          // Rotate through theme colors
-          final colors = [
-            colorScheme.primary,
-            colorScheme.tertiary,
-            colorScheme.secondary,
-            colorScheme.primaryContainer,
-          ];
-          return {
-            'id': folder.id,
-            'title': folder.title,
-            'chapters': folder.chapterCount ?? 0,
-            'timeAgo': 'Recently', // TODO: Calculate time ago if available
-            'color': colors[index % colors.length],
-            'folderModel': folder,
-          };
-        }).toList();
-
-        // Prepare last summary data
-        final lastSummary = (analysisData.lastSummary != null)
-            ? {
-                'title': analysisData.lastSummary!.chapterTitle,
-                'chapterId':
-                    'unknown', // SummaryModel doesn't have chapterId directly
-                'timeAgo': 'Recently',
-                'keyPoints': analysisData.lastSummary!.keyPoints.length,
-                'readTime': 8, // TODO: Calculate read time
-                'badge': 'AI Generated',
-              }
-            : null;
-
-        // Prepare mind maps data
-        final mindMaps = (analysisData.lastMindmaps ?? [])
-            .map(
-              (mindmap) => {
-                'title': mindmap.title ?? 'Mind Map',
-                'subject': 'Chapter', // TODO: Get chapter name
-                'chapterId': mindmap.chapterId,
-                'nodes': 20, // TODO: Calculate nodes if available
-                'timeAgo': 'Recently',
-              },
-            )
-            .toList();
-
-        // Check if all content sections are empty
-        final hasChapters = chapters.isNotEmpty;
-        final hasFolders = folders.isNotEmpty;
-        final hasSummary = lastSummary != null;
-        final hasMindMaps = mindMaps.isNotEmpty;
-        final hasAnyContent =
-            hasChapters || hasFolders || hasSummary || hasMindMaps;
-
-        // Show empty state if no content
-        if (!hasAnyContent) {
-          return Scaffold(
-            backgroundColor: theme.scaffoldBackgroundColor,
-            body: CustomScrollView(
-              physics: const ClampingScrollPhysics(),
-              slivers: [
-                // Custom Header
-                if (!isWeb)
-                  SliverPersistentHeader(
-                    delegate: CustomHeaderDelegate(
-                      minHeight: topPadding + (isTablet ? 60 : 80),
-                      maxHeight: topPadding + (isTablet ? 70 : 100),
-                      screenWidth: screenWidth,
-                    ),
-                  ),
-
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _EmptyStateWidget(
-                    colorScheme: colorScheme,
-                    textTheme: textTheme,
-                    horizontalPadding: horizontalPadding,
-                  ),
+      },
+      child: BlocBuilder<AnalysisCubit, AnalysisState>(
+        buildWhen: (previous, current) => previous != current,
+        builder: (context, state) {
+          // Handle loading state
+          if (state is AnalysisLoading) {
+            return Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              body: Center(
+                child: Lottie.asset(
+                  'assets/animations/Loader cat.json',
+                  width: 200,
+                  height: 200,
                 ),
-              ],
-            ),
-          );
-        }
+              ),
+            );
+          }
 
-        return Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          body: ScrollConfiguration(
-            behavior: const NoGlowScrollBehavior(),
-            child: CustomScrollView(
-              physics: const ClampingScrollPhysics(),
-              slivers: [
-                // Custom Header
-                if (!isWeb)
-                  SliverPersistentHeader(
-                    delegate: CustomHeaderDelegate(
-                      minHeight: topPadding + (isTablet ? 60 : 80),
-                      maxHeight: topPadding + (isTablet ? 70 : 100),
-                      screenWidth: screenWidth,
+          // Handle error state
+          if (state is AnalysisError) {
+            return Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: colorScheme.error,
                     ),
-                  ),
-
-                // SliverPadding(
-                //   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                //   sliver: SliverList(
-                //     delegate: SliverChildListDelegate([
-                //       // Search Bar
-                //       const AppSearchBar(
-                //         hintText: 'Search folders, chapters...',
-                //       ),
-                //       SizedBox(height: verticalSpacing * 1.5),
-                //     ]),
-                //   ),
-                // ),
-
-                // Statistics Cards
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 1.0,
+                    const SizedBox(height: 16),
+                    Text('Failed to load data', style: textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    Text(
+                      state.message,
+                      style: textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
                     ),
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      return _StatCard(
-                        value: stats[index]['value'] as String,
-                        label: stats[index]['label'] as String,
-                        icon: stats[index]['icon'] as IconData,
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: _loadAnalysisData,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // Extract data from loaded state
+          final analysisData = state is AnalysisLoaded
+              ? state.analysisData
+              : null;
+          if (analysisData == null) {
+            return Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              body: const Center(child: Text('No data available')),
+            );
+          }
+
+          // Prepare data for today's progress from API
+          final todayProgressData = analysisData.todayProgress;
+          final todayProgress = {
+            'completed': todayProgressData?.current ?? 0,
+            'total': todayProgressData?.target ?? 0,
+            'chapters': todayProgressData?.actual.chapters ?? 0,
+            'quizzes': todayProgressData?.actual.quizzes ?? 0,
+            'studyTime': _usageTracker.getTodayUsageMinutes(),
+            'percentage': todayProgressData?.percentage ?? 0,
+          };
+
+          // Prepare statistics data
+          final stats = _buildStatsList(analysisData);
+
+          // Prepare chapters data from API
+          final chapters = _buildChaptersList(analysisData);
+
+          // Prepare folders data from API
+          final folders = _buildFoldersList(analysisData, colorScheme);
+
+          // Prepare last summary data
+          final lastSummary = _buildLastSummaryData(analysisData);
+
+          // Prepare mind maps data
+          final mindMaps = _buildMindMapsList(analysisData);
+
+          // Check if all content sections are empty
+          final hasChapters = chapters.isNotEmpty;
+          final hasFolders = folders.isNotEmpty;
+          final hasSummary = lastSummary != null;
+          final hasMindMaps = mindMaps.isNotEmpty;
+          final hasAnyContent =
+              hasChapters || hasFolders || hasSummary || hasMindMaps;
+
+          // Show empty state if no content
+          if (!hasAnyContent) {
+            return Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              body: RefreshIndicator(
+                onRefresh: _loadAnalysisData,
+                color: colorScheme.primary,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // Custom Header
+                    if (!isWeb)
+                      SliverPersistentHeader(
+                        delegate: CustomHeaderDelegate(
+                          minHeight: topPadding + (isTablet ? 60 : 80),
+                          maxHeight: topPadding + (isTablet ? 70 : 100),
+                          screenWidth: screenWidth,
+                        ),
+                      ),
+
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _EmptyStateWidget(
                         colorScheme: colorScheme,
                         textTheme: textTheme,
-                      );
-                    }, childCount: stats.length),
-                  ),
+                        horizontalPadding: horizontalPadding,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            );
+          }
 
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      SizedBox(height: verticalSpacing * 2),
+          return Scaffold(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            body: RefreshIndicator(
+              onRefresh: _loadAnalysisData,
+              color: colorScheme.primary,
+              child: ScrollConfiguration(
+                behavior: const NoGlowScrollBehavior(),
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // Custom Header
+                    if (!isWeb)
+                      SliverPersistentHeader(
+                        delegate: CustomHeaderDelegate(
+                          minHeight: topPadding + (isTablet ? 60 : 80),
+                          maxHeight: topPadding + (isTablet ? 70 : 100),
+                          screenWidth: screenWidth,
+                        ),
+                      ),
 
-                      // Today's Progress Section with real-time updates
-                      StreamBuilder<int>(
-                        stream: _usageTracker.getTodayUsageStream(),
-                        initialData: _usageTracker.getTodayUsageMinutes(),
-                        builder: (context, snapshot) {
-                          final realTimeUsage = snapshot.data ?? 0;
-                          final updatedProgress = {
-                            ...todayProgress,
-                            'studyTime': realTimeUsage,
-                          };
-                          return _TodayProgressCard(
-                            progress: updatedProgress,
+                    // Statistics Cards
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      sliver: SliverGrid(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 1.0,
+                        ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          return _StatCard(
+                            value: stats[index]['value'] as String,
+                            label: stats[index]['label'] as String,
+                            icon: stats[index]['icon'] as IconData,
                             colorScheme: colorScheme,
                             textTheme: textTheme,
                           );
-                        },
+                        }, childCount: stats.length),
                       ),
-                      SizedBox(height: verticalSpacing * 2),
-                    ]),
-                  ),
-                ),
+                    ),
 
-                // Recent Chapters Section - Only show if has chapters
-                if (hasChapters)
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        // Recent Chapters Section Header
-                        SectionHeader(
-                          title: "Recent Chapters",
-                          actionText: "View All",
-                          actionIcon: Icons.arrow_forward_ios,
-                        ),
-                        SizedBox(height: verticalSpacing),
-                      ]),
-                    ),
-                  ),
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          SizedBox(height: verticalSpacing * 2),
 
-                // Recent Chapters List
-                if (hasChapters)
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final chapter = chapters[index];
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            bottom: screenHeight * 0.015,
-                          ),
-                          child: _EnhancedChapterCard(
-                            title: chapter['title'] as String,
-                            subject: chapter['subject'] as String,
-                            progress: chapter['progress'] as double,
-                            pages: chapter['pages'] as String,
-                            timeAgo: chapter['timeAgo'] as String,
-                            colorScheme: colorScheme,
-                            textTheme: textTheme,
-                            onTap: () {
-                              // Navigate to chapter detail
-                              final chapterModel =
-                                  chapter['chapterModel'] as ChapterModel;
-                              context.push(
-                                '/chapter/${chapterModel.id}',
-                                extra: {
-                                  'chapter': chapterModel,
-                                  'folderColor': colorScheme.primary,
-                                },
+                          // Today's Progress Section with real-time updates
+                          StreamBuilder<int>(
+                            stream: _usageTracker.getTodayUsageStream(),
+                            initialData: _usageTracker.getTodayUsageMinutes(),
+                            builder: (context, snapshot) {
+                              final realTimeUsage = snapshot.data ?? 0;
+                              final updatedProgress = {
+                                ...todayProgress,
+                                'studyTime': realTimeUsage,
+                              };
+                              return _TodayProgressCard(
+                                progress: updatedProgress,
+                                colorScheme: colorScheme,
+                                textTheme: textTheme,
                               );
                             },
                           ),
-                        );
-                      }, childCount: chapters.length),
-                    ),
-                  ),
-
-                // Recent Folders Section - Only show if has folders
-                if (hasFolders)
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        SizedBox(height: verticalSpacing * 2),
-                        SectionHeader(
-                          title: "Recent Folders",
-                          actionText: "View All",
-                          actionIcon: Icons.arrow_forward_ios,
-                        ),
-                        SizedBox(height: verticalSpacing),
-                      ]),
-                    ),
-                  ),
-
-                // Folders Grid
-                if (hasFolders)
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverGrid(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: isTablet ? 3 : 2,
-                        crossAxisSpacing:
-                            screenWidth * (isTablet ? 0.03 : 0.04),
-                        mainAxisSpacing: screenHeight * 0.02,
-                        childAspectRatio: isTablet ? 1.2 : 1.0,
-                        mainAxisExtent: isTablet ? 180 : 160,
+                          SizedBox(height: verticalSpacing * 2),
+                        ]),
                       ),
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final folder = folders[index];
-                        return _EnhancedFolderCard(
-                          title: folder['title'] as String,
-                          chapters: folder['chapters'] as int,
-                          timeAgo: folder['timeAgo'] as String,
-                          color: folder['color'] as Color,
-                          colorScheme: colorScheme,
-                          textTheme: textTheme,
-                          onTap: () {
-                            // Navigate to folder detail
-                            final folderId = folder['id'] as String;
-                            context.push(
-                              '/folder/$folderId',
-                              extra: {
-                                'title': folder['title'],
-                                'subtitle': folder['subject'] ?? '',
-                                'chapters': folder['chapters'],
-                                'passed': 0,
-                                'attempted': 0,
-                                'color': folder['color'],
-                              },
-                            );
-                          },
-                        );
-                      }, childCount: folders.length),
                     ),
-                  ),
 
-                // Last Summary Section
-                if (lastSummary != null)
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        SizedBox(height: verticalSpacing * 2),
-                        SectionHeader(
-                          title: "Last Summary",
-                          actionText: "",
-                          actionIcon: Icons.description,
+                    // Recent Chapters Section - Only show if has chapters
+                    if (hasChapters)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
                         ),
-                        SizedBox(height: verticalSpacing),
-                        _SummaryCard(
-                          summary: lastSummary,
-                          colorScheme: colorScheme,
-                          textTheme: textTheme,
-                          onTap: () {
-                            // Navigate to chapter detail to view summary
-                            // For now, show a snackbar since we need actual summary data
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Opening summary for: ${lastSummary['title']}',
-                                ),
-                                duration: const Duration(seconds: 2),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            // Recent Chapters Section Header
+                            SectionHeader(
+                              title: "Recent Chapters",
+                              actionText: "View All",
+                              actionIcon: Icons.arrow_forward_ios,
+                            ),
+                            SizedBox(height: verticalSpacing),
+                          ]),
+                        ),
+                      ),
+
+                    // Recent Chapters List
+                    if (hasChapters)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final chapter = chapters[index];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: screenHeight * 0.015,
+                              ),
+                              child: _EnhancedChapterCard(
+                                title: chapter['title'] as String,
+                                subject: chapter['subject'] as String,
+                                progress: chapter['progress'] as double,
+                                pages: chapter['pages'] as String,
+                                timeAgo: chapter['timeAgo'] as String,
+                                colorScheme: colorScheme,
+                                textTheme: textTheme,
+                                onTap: () {
+                                  // Navigate to chapter detail
+                                  final chapterModel =
+                                      chapter['chapterModel'] as ChapterModel;
+                                  context.push(
+                                    '/chapter/${chapterModel.id}',
+                                    extra: {
+                                      'chapter': chapterModel,
+                                      'folderColor': colorScheme.primary,
+                                    },
+                                  );
+                                },
                               ),
                             );
-                          },
+                          }, childCount: chapters.length),
                         ),
-                        SizedBox(height: verticalSpacing * 2),
-                      ]),
-                    ),
-                  ),
+                      ),
 
-                // Recent Mind Maps Section - Only show if has mind maps
-                if (hasMindMaps)
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        // Recent Mind Maps Section Header
-                        SectionHeader(
-                          title: "Recent Mind Maps",
-                          actionText: "View All",
-                          actionIcon: Icons.arrow_forward_ios,
+                    // Recent Folders Section - Only show if has folders
+                    if (hasFolders)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
                         ),
-                        SizedBox(height: verticalSpacing),
-                      ]),
-                    ),
-                  ),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            SizedBox(height: verticalSpacing * 2),
+                            SectionHeader(
+                              title: "Recent Folders",
+                              actionText: "View All",
+                              actionIcon: Icons.arrow_forward_ios,
+                            ),
+                            SizedBox(height: verticalSpacing),
+                          ]),
+                        ),
+                      ),
 
-                // Mind Maps List
-                if (hasMindMaps)
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final mindMap = mindMaps[index];
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            bottom: screenHeight * 0.015,
-                          ),
-                          child: _MindMapCard(
-                            mindMap: mindMap,
-                            colorScheme: colorScheme,
-                            textTheme: textTheme,
-                            onTap: () {
-                              // Show snackbar for mind map navigation
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Opening mind map: ${mindMap['title']}',
-                                  ),
-                                  duration: const Duration(seconds: 2),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }, childCount: mindMaps.length),
-                    ),
-                  ),
+                    // Folders Grid
+                    if (hasFolders)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                        ),
+                        sliver: SliverGrid(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: isTablet ? 3 : 2,
+                                crossAxisSpacing:
+                                    screenWidth * (isTablet ? 0.03 : 0.04),
+                                mainAxisSpacing: screenHeight * 0.02,
+                                childAspectRatio: isTablet ? 1.2 : 1.0,
+                                mainAxisExtent: isTablet ? 180 : 160,
+                              ),
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final folder = folders[index];
+                            return _EnhancedFolderCard(
+                              title: folder['title'] as String,
+                              chapters: folder['chapters'] as int,
+                              timeAgo: folder['timeAgo'] as String,
+                              color: folder['color'] as Color,
+                              colorScheme: colorScheme,
+                              textTheme: textTheme,
+                              onTap: () {
+                                // Navigate to folder detail
+                                final folderId = folder['id'] as String;
+                                context.push(
+                                  '/folder/$folderId',
+                                  extra: {
+                                    'title': folder['title'],
+                                    'subtitle': folder['subject'] ?? '',
+                                    'chapters': folder['chapters'],
+                                    'passed': 0,
+                                    'attempted': 0,
+                                    'color': folder['color'],
+                                  },
+                                );
+                              },
+                            );
+                          }, childCount: folders.length),
+                        ),
+                      ),
 
-                // Bottom spacing
-                SliverToBoxAdapter(
-                  child: SizedBox(height: verticalSpacing * 2),
+                    // Last Summary Section
+                    if (lastSummary != null)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            SizedBox(height: verticalSpacing * 2),
+                            SectionHeader(
+                              title: "Last Summary",
+                              actionText: "",
+                              actionIcon: Icons.description,
+                            ),
+                            SizedBox(height: verticalSpacing),
+                            _SummaryCard(
+                              summary: lastSummary,
+                              colorScheme: colorScheme,
+                              textTheme: textTheme,
+                              onTap: () {
+                                // Navigate to summary viewer
+                                // analysisData.lastSummary is guaranteed to be non-null here
+                                // because lastSummary map is only created when it's not null
+                                context.push(
+                                  '/summary-viewer',
+                                  extra: {
+                                    'summaryData':
+                                        analysisData.lastSummary!.summary,
+                                    'chapterTitle': analysisData
+                                        .lastSummary!
+                                        .summary
+                                        .chapterTitle,
+                                    'accentColor': colorScheme.primary,
+                                  },
+                                );
+                              },
+                            ),
+                            SizedBox(height: verticalSpacing * 2),
+                          ]),
+                        ),
+                      ),
+
+                    // Recent Mind Maps Section - Only show if has mind maps
+                    if (hasMindMaps)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            // Recent Mind Maps Section Header
+                            SectionHeader(
+                              title: "Recent Mind Maps",
+                              actionText: "View All",
+                              actionIcon: Icons.arrow_forward_ios,
+                            ),
+                            SizedBox(height: verticalSpacing),
+                          ]),
+                        ),
+                      ),
+
+                    // Mind Maps List
+                    if (hasMindMaps)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final mindMap = mindMaps[index];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: screenHeight * 0.015,
+                              ),
+                              child: _MindMapCard(
+                                mindMap: mindMap,
+                                colorScheme: colorScheme,
+                                textTheme: textTheme,
+                                onTap: () {
+                                  // Navigate to mindmap viewer screen
+                                  final mindmapModel = mindMap['mindmapModel'];
+                                  if (mindmapModel != null) {
+                                    context.push(
+                                      '/mindmap-viewer',
+                                      extra: {'mindmap': mindmapModel},
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Mind map data not found.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          }, childCount: mindMaps.length),
+                        ),
+                      ),
+
+                    // Bottom spacing
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: verticalSpacing * 2),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
+  }
+
+  List<Map<String, dynamic>> _buildStatsList(Analysismodel analysisData) {
+    return [
+      {
+        'value': '${analysisData.profile?.streak ?? 0}',
+        'label': 'Day Streak',
+        'icon': Icons.local_fire_department,
+      },
+      {
+        'value': '${analysisData.profile?.totalQuizzesTaken ?? 0}',
+        'label': 'Quizzes',
+        'icon': Icons.quiz,
+      },
+      {
+        'value': analysisData.profile?.averageQuizScore != null
+            ? '${analysisData.profile!.averageQuizScore.toStringAsFixed(1)}%'
+            : '0%',
+        'label': 'Avg Score',
+        'icon': Icons.insights,
+      },
+      {
+        'value': analysisData.lastRank != null
+            ? '#${analysisData.lastRank}'
+            : '-',
+        'label': 'Rank',
+        'icon': Icons.emoji_events,
+      },
+    ];
+  }
+
+  List<Map<String, dynamic>> _buildChaptersList(Analysismodel analysisData) {
+    return (analysisData.recentChapters ?? [])
+        .map(
+          (chapter) => {
+            'id': chapter.id,
+            'title': chapter.title,
+            'subject': chapter.category ?? 'General',
+            'progress': 0.0, // TODO: Calculate based on actual progress
+            'pages': '${chapter.description?.length ?? 0} content',
+            'timeAgo': formatTimeAgo(chapter.createdAt),
+            'chapterModel': chapter,
+          },
+        )
+        .toList();
+  }
+
+  List<Map<String, dynamic>> _buildFoldersList(
+    Analysismodel analysisData,
+    ColorScheme colorScheme,
+  ) {
+    return (analysisData.recentFolders ?? []).asMap().entries.map((entry) {
+      final index = entry.key;
+      final folder = entry.value;
+      // Rotate through theme colors
+      final colors = [
+        colorScheme.primary,
+        colorScheme.tertiary,
+        colorScheme.secondary,
+        colorScheme.primaryContainer,
+      ];
+      return {
+        'id': folder.id,
+        'title': folder.title,
+        'chapters': folder.chapterCount ?? 0,
+        'timeAgo': formatTimeAgo(folder.createdAt),
+        'color': colors[index % colors.length],
+        'folderModel': folder,
+      };
+    }).toList();
+  }
+
+  Map<String, dynamic>? _buildLastSummaryData(Analysismodel analysisData) {
+    if (analysisData.lastSummary == null) return null;
+
+    final summaryData = analysisData.lastSummary!;
+    // The summary field contains an array of summaries, get the first one
+    final firstSummary = summaryData.summary;
+
+    return {
+      'title': firstSummary.chapterTitle,
+      'chapterId': summaryData.chapterId,
+      'timeAgo': formatTimeAgo(summaryData.createdAt),
+      'keyPoints': firstSummary.keyPoints.length,
+      'readTime': 8, // TODO: Calculate read time
+      'badge': 'AI Generated',
+    };
+  }
+
+  List<Map<String, dynamic>> _buildMindMapsList(Analysismodel analysisData) {
+    return (analysisData.lastMindmaps ?? [])
+        .map(
+          (mindmap) => {
+            'title': mindmap.title ?? 'Mind Map',
+            'subject': 'Chapter', // TODO: Get chapter name
+            'chapterId': mindmap.chapterId,
+            'nodes': mindmap.nodes?.length ?? 0,
+            'timeAgo': formatTimeAgo(mindmap.createdAt),
+            'mindmapModel': mindmap, // Pass the full model for navigation
+          },
+        )
+        .toList();
   }
 }
 
@@ -736,33 +808,16 @@ class _EmptyStateWidget extends StatelessWidget {
               children: [
                 ElevatedButton.icon(
                   onPressed: () {
-                    context.push('/folder');
+                    context.read<IndexMainLayout>().index = 1;
                   },
                   icon: const Icon(Icons.create_new_folder),
-                  label: const Text('Create Folder'),
+                  label: const Text('Go to Folders'),
                   style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(
                       horizontal: isTablet ? 32 : 24,
                       vertical: isTablet ? 16 : 14,
                     ),
                     elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    context.push('/folder');
-                  },
-                  icon: const Icon(Icons.explore),
-                  label: const Text('Explore'),
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 32 : 24,
-                      vertical: isTablet ? 16 : 14,
-                    ),
-                    side: BorderSide(color: colorScheme.outline),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -891,8 +946,10 @@ class _TodayProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = progress['total'] as int;
     final completed = progress['completed'] as int;
-    // Prevent division by zero - if total is 0, progress is 0
-    final progressPercent = total > 0 ? completed / total : 0.0;
+    // Use percentage from API if available, otherwise calculate
+    final progressPercent = progress['percentage'] != null
+        ? (progress['percentage'] as int) / 100.0
+        : (total > 0 ? completed / total : 0.0);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1043,7 +1100,6 @@ class _EnhancedChapterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progressPercent = (progress * 100).toInt();
     final isCompleted = progress >= 1.0;
     final progressColor = isCompleted ? Colors.green : colorScheme.primary;
 
@@ -1146,80 +1202,36 @@ class _EnhancedChapterCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                // Progress Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: progressColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: progressColor.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isCompleted)
-                        Icon(Icons.check, size: 12, color: progressColor),
-                      if (isCompleted) const SizedBox(width: 4),
-                      Text(
-                        '$progressPercent%',
-                        style: textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: progressColor,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
-            const SizedBox(height: 14),
-            // Progress Bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor: colorScheme.surfaceVariant.withOpacity(0.7),
-                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-              ),
-            ),
             const SizedBox(height: 12),
-            // Footer with metadata
+            // Time ago display
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Icon(
-                  Icons.menu_book_outlined,
-                  size: 14,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  Icons.access_time_rounded,
+                  size: 15,
+                  color: colorScheme.primary.withOpacity(0.7),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  pages,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.9),
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
                   ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.access_time_outlined,
-                  size: 14,
-                  color: colorScheme.outline.withOpacity(0.8),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  timeAgo,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.outline.withOpacity(0.9),
-                    fontWeight: FontWeight.w500,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    timeAgo,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      letterSpacing: 0.2,
+                    ),
                   ),
                 ),
               ],
@@ -1316,11 +1328,20 @@ class _EnhancedFolderCard extends StatelessWidget {
               ),
             ),
             SizedBox(height: spacing3),
-            Text(
-              timeAgo,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.outline,
-                fontSize: timeFontSize,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                timeAgo,
+                style: textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: timeFontSize,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
           ],
@@ -1433,11 +1454,23 @@ class _SummaryCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    summary['timeAgo'] as String,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.outline,
-                      fontSize: 10,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      summary['timeAgo'] as String,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                        letterSpacing: 0.2,
+                      ),
                     ),
                   ),
                 ],
@@ -1527,10 +1560,23 @@ class _MindMapCard extends StatelessWidget {
                           color: colorScheme.outline,
                         ),
                       ),
-                      Text(
-                        mindMap['timeAgo'] as String,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.outline,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.tertiary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          mindMap['timeAgo'] as String,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: colorScheme.tertiary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                            letterSpacing: 0.2,
+                          ),
                         ),
                       ),
                     ],

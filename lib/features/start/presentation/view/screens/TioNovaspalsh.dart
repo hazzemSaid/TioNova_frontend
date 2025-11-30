@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/core/router/app_router.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -41,11 +44,14 @@ class _SplashScreenState extends State<SplashScreen>
               if (mounted) {
                 // Check if it's the first time opening the app
                 final isFirst = await AppRouter.isFirstTime();
+                final authState = context.read<AuthCubit>().state;
 
                 // Navigate using GoRouter
                 if (context.mounted) {
-                  if (isFirst) {
-                    GoRouter.of(context).go('/theme-selection');
+                  if (authState is AuthSuccess) {
+                    GoRouter.of(context).go('/');
+                  } else if (isFirst) {
+                    GoRouter.of(context).go('/onboarding');
                   } else {
                     GoRouter.of(context).go('/auth');
                   }

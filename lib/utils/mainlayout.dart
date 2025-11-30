@@ -5,6 +5,7 @@ import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_screen.dart';
+import 'package:tionova/features/home/presentation/provider/index_mainLayout.dart';
 import 'package:tionova/features/home/presentation/view/screens/home_screen.dart';
 import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:tionova/features/profile/presentation/view/screens/profile_screen.dart';
@@ -12,13 +13,11 @@ import 'package:tionova/utils/widgets/BottomNavItem.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
-
   @override
   State<MainLayout> createState() => _MainLayoutState();
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  int _currentIndex = 0;
   bool _isDisposed = false;
 
   // Lazy loaded screens
@@ -76,14 +75,16 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildMobileLayout(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final indexProvider = context.watch<IndexMainLayout>();
+    final currentIndex = indexProvider.index;
     return Scaffold(
       backgroundColor: colorScheme.onPrimary,
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         sizing: StackFit.expand,
         children: List.generate(
           _screens.length,
-          (index) => _currentIndex == index || _screens[index] != null
+          (index) => currentIndex == index || _screens[index] != null
               ? _getScreen(index)
               : Container(),
         ),
@@ -98,6 +99,8 @@ class _MainLayoutState extends State<MainLayout> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final indexProvider = context.watch<IndexMainLayout>();
+    final currentIndex = indexProvider.index;
     return Container(
       height: isIOS ? 70 : 65,
       decoration: BoxDecoration(
@@ -132,8 +135,10 @@ class _MainLayoutState extends State<MainLayout> {
                     icon: Icons.home,
                     label: "Home",
                     index: 0,
-                    currentIndex: _currentIndex,
-                    onTap: () => _safeSetState(() => _currentIndex = 0),
+                    currentIndex: currentIndex,
+                    onTap: () => _safeSetState(
+                      () => context.read<IndexMainLayout>().index = 0,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -141,8 +146,10 @@ class _MainLayoutState extends State<MainLayout> {
                     icon: Icons.folder_outlined,
                     label: "Folders",
                     index: 1,
-                    currentIndex: _currentIndex,
-                    onTap: () => _safeSetState(() => _currentIndex = 1),
+                    currentIndex: currentIndex,
+                    onTap: () => _safeSetState(
+                      () => context.read<IndexMainLayout>().index = 1,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -150,8 +157,10 @@ class _MainLayoutState extends State<MainLayout> {
                     icon: Icons.emoji_events_outlined,
                     label: "Challenges",
                     index: 2,
-                    currentIndex: _currentIndex,
-                    onTap: () => _safeSetState(() => _currentIndex = 2),
+                    currentIndex: currentIndex,
+                    onTap: () => _safeSetState(
+                      () => context.read<IndexMainLayout>().index = 2,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -159,8 +168,10 @@ class _MainLayoutState extends State<MainLayout> {
                     icon: Icons.person_outline,
                     label: "Profile",
                     index: 3,
-                    currentIndex: _currentIndex,
-                    onTap: () => _safeSetState(() => _currentIndex = 3),
+                    currentIndex: currentIndex,
+                    onTap: () => _safeSetState(
+                      () => context.read<IndexMainLayout>().index = 3,
+                    ),
                   ),
                 ),
               ],
