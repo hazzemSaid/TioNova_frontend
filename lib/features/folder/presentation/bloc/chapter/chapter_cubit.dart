@@ -18,7 +18,9 @@ import 'package:tionova/features/folder/domain/usecases/CreateChapterUseCase.dar
 import 'package:tionova/features/folder/domain/usecases/DeleteNoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaperContentPdfUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetChapterSummaryUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetNotesByChapterIdUseCase.dart';
 
 import '../../../domain/usecases/createMindmapUseCase.dart';
@@ -36,6 +38,8 @@ class ChapterCubit extends Cubit<ChapterState> {
     required this.addNoteUseCase,
     required this.deleteNoteUseCase,
     required this.firebaseService,
+    required this.getMindmapUseCase,
+    required this.getChapterSummaryUseCase,
   }) : super(ChapterInitial());
   final Getnotesbychapteridusecase getNotesByChapterIdUseCase;
   final Addnoteusecase addNoteUseCase;
@@ -45,6 +49,8 @@ class ChapterCubit extends Cubit<ChapterState> {
   final CreateChapterUseCase createChapterUseCase;
   final GetChapterContentPdfUseCase getChapterContentPdfUseCase;
   final GenerateSummaryUseCase generateSummaryUseCase;
+  final GetMindmapUseCase getMindmapUseCase;
+  final GetChapterSummaryUseCase getChapterSummaryUseCase;
   final FirebaseRealtimeService firebaseService;
   StreamSubscription<Map<String, dynamic>>? _firebaseSubscription;
   void getChapters({required String folderId}) async {
@@ -360,6 +366,34 @@ class ChapterCubit extends Cubit<ChapterState> {
       (failure) => safeEmit(CreateMindmapError(failure)),
       (mindmap) => safeEmit(CreateMindmapSuccess(mindmap)),
     );
+  }
+
+  void getMindmap({required String chapterId}) async {
+    safeEmit(CreateMindmapLoading()); // Reuse loading state
+    final result = await getMindmapUseCase(chapterId: chapterId);
+    result.fold(
+      (failure) => safeEmit(CreateMindmapError(failure)),
+      (mindmap) =>
+          safeEmit(CreateMindmapSuccess(mindmap)), // Reuse success state
+    );
+  }
+
+  void getChapterSummary({required String chapterId}) async {
+    safeEmit(GenerateSummaryLoading()); // Reuse loading state
+    final result = await getChapterSummaryUseCase(chapterId: chapterId);
+    result.fold((failure) => safeEmit(GenerateSummaryError(failure)), (
+      summaryResponse,
+    ) {
+      if (summaryResponse.success) {
+        safeEmit(GenerateSummaryStructuredSuccess(summaryResponse.summary));
+      } else {
+        safeEmit(
+          GenerateSummaryError(
+            ServerFailure(summaryResponse.message ?? 'Failed to get summary'),
+          ),
+        );
+      }
+    });
   }
 
   void getNotesByChapterId({required String chapterId}) async {

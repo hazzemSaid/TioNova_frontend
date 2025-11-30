@@ -78,8 +78,21 @@ class ChapterRepoImpl extends IChapterRepository {
   }
 
   @override
-  //deleteNote
   Future<Either<Failure, void>> deleteNote({required String noteId}) {
     return remoteDataSource.deleteNote(noteId: noteId);
+  }
+
+  @override
+  Future<Either<Failure, Mindmapmodel>> getMindmap({
+    required String chapterId,
+  }) async {
+    return await remoteDataSource.getMindmap(chapterId: chapterId);
+  }
+
+  @override
+  Future<Either<Failure, SummaryResponse>> getChapterSummary({
+    required String chapterId,
+  }) async {
+    return await remoteDataSource.getChapterSummary(chapterId: chapterId);
   }
 }

@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class MindMapSection extends StatefulWidget {
   final VoidCallback onOpen;
   final bool isLoading;
+  final bool isAvailable;
 
   const MindMapSection({
     super.key,
     required this.onOpen,
     this.isLoading = false,
+    this.isAvailable = false,
   });
 
   @override
@@ -134,12 +136,18 @@ class _MindMapSectionState extends State<MindMapSection> {
                           ),
                         )
                       : Icon(
-                          Icons.hub_outlined,
+                          widget.isAvailable
+                              ? Icons.visibility_outlined
+                              : Icons.hub_outlined,
                           color: colorScheme.onSurface,
                           size: 22,
                         ),
                   label: Text(
-                    widget.isLoading ? 'Generating...' : 'Generate Mind Map',
+                    widget.isLoading
+                        ? 'Generating...'
+                        : (widget.isAvailable
+                              ? 'View Mind Map'
+                              : 'Generate Mind Map'),
                     style: TextStyle(
                       color: widget.isLoading
                           ? colorScheme.onSurface.withOpacity(0.5)

@@ -155,9 +155,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
             } catch (e) {
               print('Error converting content data to Uint8List: $e');
               return Left(
-                ServerFailure(
-                  'Failed to convert PDF data: ${e.toString()}',
-                ),
+                ServerFailure('Failed to convert PDF data: ${e.toString()}'),
               );
             }
           } else {
@@ -433,6 +431,48 @@ class ChapterRemoteDataSource extends IChapterRepository {
               .toList();
         },
       );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<Either<Failure, SummaryResponse>> getChapterSummary({
+    required String chapterId,
+  }) async {
+    try {
+      final response = await _dio.get('/getChapterSummary/$chapterId');
+
+      if (response.statusCode == 200) {
+        // Sanitize the JSON data before parsing
+        final sanitizedData = _sanitizeJsonData(response.data);
+        return Right(SummaryResponse.fromJson(sanitizedData));
+      } else {
+        return Left(
+          ServerFailure(
+            response.data['message'] ?? 'Failed to fetch chapter summary',
+          ),
+        );
+      }
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<Either<Failure, Mindmapmodel>> getMindmap({
+    required String chapterId,
+  }) async {
+    try {
+      final response = await _dio.get('/getMindmap/$chapterId');
+
+      if (response.statusCode == 200) {
+        return Right(Mindmapmodel.fromJson(response.data['data']));
+      } else {
+        return Left(
+          ServerFailure(response.data['message'] ?? 'Failed to fetch mindmap'),
+        );
+      }
     } catch (e) {
       return ErrorHandlingUtils.handleDioError(e);
     }

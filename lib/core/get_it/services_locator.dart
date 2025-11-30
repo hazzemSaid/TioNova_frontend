@@ -47,7 +47,9 @@ import 'package:tionova/features/folder/domain/usecases/DeleteNoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaperContentPdfUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetChapterSummaryUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetNotesByChapterIdUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/createMindmapUseCase.dart';
@@ -78,8 +80,8 @@ import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 final getIt = GetIt.instance;
 // http://192.168.1.12:3000/api/v1
 //https://tio-nova-backend.vercel.app/api/v1
-final baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
-// final baseUrl = 'http://192.168.1.12:3000/api/v1';
+// final baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
+final baseUrl = 'http://192.168.1.12:3000/api/v1';
 Future<void> setupServiceLocator() async {
   // Initialize Hive
   // Hive.init(appDocumentDir.path); // Removed redundant init, use Hive.initFlutter() from main.dart
@@ -306,6 +308,14 @@ Future<void> setupServiceLocator() async {
     () => Getnotesbychapteridusecase(getIt<IChapterRepository>()),
   );
 
+  getIt.registerLazySingleton<GetMindmapUseCase>(
+    () => GetMindmapUseCase(getIt<IChapterRepository>()),
+  );
+
+  getIt.registerLazySingleton<GetChapterSummaryUseCase>(
+    () => GetChapterSummaryUseCase(getIt<IChapterRepository>()),
+  );
+
   // Register ChapterCubit with Firebase
   getIt.registerFactory(
     () => ChapterCubit(
@@ -318,6 +328,8 @@ Future<void> setupServiceLocator() async {
       createChapterUseCase: getIt<CreateChapterUseCase>(),
       getChapterContentPdfUseCase: getIt<GetChapterContentPdfUseCase>(),
       firebaseService: getIt<FirebaseRealtimeService>(),
+      getMindmapUseCase: getIt<GetMindmapUseCase>(),
+      getChapterSummaryUseCase: getIt<GetChapterSummaryUseCase>(),
     ),
   );
 

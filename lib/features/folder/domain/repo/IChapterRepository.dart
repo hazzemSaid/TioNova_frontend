@@ -36,4 +36,9 @@ abstract class IChapterRepository {
     required Map<String, dynamic> rawData,
   });
   Future<Either<Failure, void>> deleteNote({required String noteId});
+
+  Future<Either<Failure, Mindmapmodel>> getMindmap({required String chapterId});
+  Future<Either<Failure, SummaryResponse>> getChapterSummary({
+    required String chapterId,
+  });
 }
