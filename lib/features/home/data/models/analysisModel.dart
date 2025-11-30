@@ -39,7 +39,7 @@ import 'package:equatable/equatable.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/models/foldermodel.dart';
-import 'package:tionova/features/folder/data/models/mindmapModel.dart';
+import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 
 class ProfileModel extends Equatable {
   final int streak;
@@ -93,16 +93,167 @@ class ProfileModel extends Equatable {
   ];
 }
 
+class TodayProgressPreferences extends Equatable {
+  final int studyPerDay;
+  final String preferredStudyTimes;
+  final int dailyTimeCommitmentMinutes;
+  final int daysPerWeek;
+  final List<String> goals;
+  final bool reminderEnabled;
+  final List<String> reminderTimes;
+  final String contentDifficulty;
+
+  const TodayProgressPreferences({
+    required this.studyPerDay,
+    required this.preferredStudyTimes,
+    required this.dailyTimeCommitmentMinutes,
+    required this.daysPerWeek,
+    required this.goals,
+    required this.reminderEnabled,
+    required this.reminderTimes,
+    required this.contentDifficulty,
+  });
+
+  factory TodayProgressPreferences.fromJson(Map<String, dynamic> json) {
+    return TodayProgressPreferences(
+      studyPerDay: json['studyPerDay'] ?? 0,
+      preferredStudyTimes: json['preferredStudyTimes'] ?? '',
+      dailyTimeCommitmentMinutes: json['dailyTimeCommitmentMinutes'] ?? 0,
+      daysPerWeek: json['daysPerWeek'] ?? 0,
+      goals: json['goals'] != null
+          ? List<String>.from(json['goals'])
+          : const [],
+      reminderEnabled: json['reminderEnabled'] ?? false,
+      reminderTimes: json['reminderTimes'] != null
+          ? List<String>.from(json['reminderTimes'])
+          : const [],
+      contentDifficulty: json['contentDifficulty'] ?? 'medium',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'studyPerDay': studyPerDay,
+      'preferredStudyTimes': preferredStudyTimes,
+      'dailyTimeCommitmentMinutes': dailyTimeCommitmentMinutes,
+      'daysPerWeek': daysPerWeek,
+      'goals': goals,
+      'reminderEnabled': reminderEnabled,
+      'reminderTimes': reminderTimes,
+      'contentDifficulty': contentDifficulty,
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+    studyPerDay,
+    preferredStudyTimes,
+    dailyTimeCommitmentMinutes,
+    daysPerWeek,
+    goals,
+    reminderEnabled,
+    reminderTimes,
+    contentDifficulty,
+  ];
+}
+
+class TodayProgressActual extends Equatable {
+  final int chapters;
+  final int quizzes;
+
+  const TodayProgressActual({
+    required this.chapters,
+    required this.quizzes,
+  });
+
+  factory TodayProgressActual.fromJson(Map<String, dynamic> json) {
+    return TodayProgressActual(
+      chapters: json['chapters'] ?? 0,
+      quizzes: json['quizzes'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'chapters': chapters,
+      'quizzes': quizzes,
+    };
+  }
+
+  @override
+  List<Object?> get props => [chapters, quizzes];
+}
+
+class TodayProgressModel extends Equatable {
+  final int current;
+  final int target;
+  final int percentage;
+  final TodayProgressPreferences preferences;
+  final TodayProgressActual actual;
+
+  const TodayProgressModel({
+    required this.current,
+    required this.target,
+    required this.percentage,
+    required this.preferences,
+    required this.actual,
+  });
+
+  factory TodayProgressModel.fromJson(Map<String, dynamic> json) {
+    return TodayProgressModel(
+      current: json['current'] ?? 0,
+      target: json['target'] ?? 0,
+      percentage: json['percentage'] ?? 0,
+      preferences: json['preferences'] != null
+          ? TodayProgressPreferences.fromJson(json['preferences'])
+          : const TodayProgressPreferences(
+              studyPerDay: 0,
+              preferredStudyTimes: '',
+              dailyTimeCommitmentMinutes: 0,
+              daysPerWeek: 0,
+              goals: [],
+              reminderEnabled: false,
+              reminderTimes: [],
+              contentDifficulty: 'medium',
+            ),
+      actual: json['actual'] != null
+          ? TodayProgressActual.fromJson(json['actual'])
+          : const TodayProgressActual(chapters: 0, quizzes: 0),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'current': current,
+      'target': target,
+      'percentage': percentage,
+      'preferences': preferences.toJson(),
+      'actual': actual.toJson(),
+    };
+  }
+
+  @override
+  List<Object?> get props => [
+    current,
+    target,
+    percentage,
+    preferences,
+    actual,
+  ];
+}
+
 class Analysismodel extends Equatable {
   final String userId;
   final List<ChapterModel>? recentChapters;
   final List<Foldermodel>? recentFolders;
   final List<Mindmapmodel>? lastMindmaps;
   final int? totalChapters;
-  final SummaryModel? lastSummary;
+  final SummaryModelData?
+  lastSummary; // Changed from SummaryModel to SummaryModelData
   final double? avgScore;
   final int? lastRank;
   final ProfileModel? profile;
+  final TodayProgressModel? todayProgress;
   const Analysismodel({
     required this.userId,
     this.recentChapters,
@@ -113,6 +264,7 @@ class Analysismodel extends Equatable {
     this.avgScore,
     this.lastRank,
     this.profile,
+    this.todayProgress,
   });
   //from json
   factory Analysismodel.fromJson(Map<String, dynamic> json) {
@@ -135,7 +287,7 @@ class Analysismodel extends Equatable {
           : null,
       totalChapters: json['totalChapters'] ?? 0,
       lastSummary: json['lastSummary'] != null
-          ? SummaryModel.fromJson(json['lastSummary']['summary'])
+          ? SummaryModelData.fromJson(json['lastSummary'])
           : null,
       avgScore: json['avgScore'] != null
           ? (json['avgScore'] as num).toDouble()
@@ -143,6 +295,9 @@ class Analysismodel extends Equatable {
       lastRank: json['lastRank'] ?? 0,
       profile: json['profile'] != null
           ? ProfileModel.fromJson(json['profile'])
+          : null,
+      todayProgress: json['todayProgress'] != null
+          ? TodayProgressModel.fromJson(json['todayProgress'])
           : null,
     );
   }
@@ -158,5 +313,6 @@ class Analysismodel extends Equatable {
     avgScore,
     lastRank,
     profile,
+    todayProgress,
   ];
 }

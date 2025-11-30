@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
@@ -36,6 +37,7 @@ import 'package:tionova/features/folder/presentation/view/screens/folder_detail_
 import 'package:tionova/features/folder/presentation/view/screens/mindmap_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
+import 'package:tionova/features/home/presentation/provider/index_mainLayout.dart';
 import 'package:tionova/features/preferences/presentation/Bloc/PreferencesCubit.dart';
 import 'package:tionova/features/preferences/presentation/screens/preferences_screen.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
@@ -113,8 +115,9 @@ class AppRouter {
         if (currentAuthState is AuthSuccess) {
           // Use DI for global preferences check, but skip for preferences route
 
-          if (path == '/splash' ||
-              path.startsWith('/auth') ||
+          if (path == '/splash') return null;
+
+          if (path.startsWith('/auth') ||
               path == '/onboarding' ||
               path == '/theme-selection') {
             final isnew = await getIt<PreferencesCubit>().checkIfNewUser();
@@ -159,18 +162,23 @@ class AppRouter {
         GoRoute(
           path: '/',
           name: 'home',
-          builder: (BuildContext context, GoRouterState state) =>
-              MultiBlocProvider(
-                providers: [
-                  BlocProvider<FolderCubit>(
-                    create: (context) => getIt<FolderCubit>(),
-                  ),
-                  BlocProvider<ChapterCubit>(
-                    create: (context) => getIt<ChapterCubit>(),
-                  ),
-                ],
-                child: const MainLayout(),
+
+          builder: (BuildContext context, GoRouterState state) {
+            return MultiBlocProvider(
+              providers: [
+                BlocProvider<FolderCubit>(
+                  create: (context) => getIt<FolderCubit>(),
+                ),
+                BlocProvider<ChapterCubit>(
+                  create: (context) => getIt<ChapterCubit>(),
+                ),
+              ],
+              child: ChangeNotifierProvider(
+                create: (context) => IndexMainLayout(),
+                child: MainLayout(),
               ),
+            );
+          },
         ),
         GoRoute(
           path: '/theme-selection',

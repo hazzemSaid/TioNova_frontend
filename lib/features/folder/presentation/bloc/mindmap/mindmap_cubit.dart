@@ -1,9 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/data/models/nodeModel.dart';
-import 'package:tionova/core/utils/safe_emit.dart';
 
 part 'mindmap_state.dart';
 
