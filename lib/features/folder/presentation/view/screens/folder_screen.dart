@@ -38,6 +38,8 @@ class _FolderScreenState extends State<FolderScreen> {
   String selectedTab = 'My Folders';
   static const defaultColors = Static.defaultColors;
   static const defaultIcons = Static.defaultIcons;
+  List<Foldermodel>? _cachedFolders;
+  List<String> _cachedCategories = const ['All'];
   @override
   void initState() {
     super.initState();
@@ -122,9 +124,11 @@ class _FolderScreenState extends State<FolderScreen> {
           categorySet.add(folder.category!);
         }
       }
+      categories.addAll(categorySet);
+      _cachedCategories = categories;
+      return categories;
     }
-    categories.addAll(categorySet);
-    return categories;
+    return _cachedCategories;
   }
 
   List<Foldermodel> _getFoldersFromState(FolderState state) {
@@ -282,192 +286,214 @@ class _FolderScreenState extends State<FolderScreen> {
               }
             },
             builder: (context, state) {
-              return CustomScrollView(
-                physics: const ClampingScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        SizedBox(height: verticalSpacing * 1.5),
-                        const PageHeader(
-                          title: 'Folders',
-                          subtitle: 'Organize and manage your study folders',
-                        ),
-                        SizedBox(height: verticalSpacing * 1.5),
-                        const AppSearchBar(hintText: 'Search folders'),
-                        SizedBox(height: verticalSpacing * 1.5),
-                        CategoryFilter(
-                          categories: (state is FolderLoaded)
-                              ? _getCategories(state)
-                              : const ['All', 'Technology', 'Science'],
-                          selectedCategory: selectedCategory,
-                          onCategorySelected: onCategorySelected,
-                        ),
-                        SizedBox(height: verticalSpacing),
-                        FolderTabs(
-                          tabs: const ['My Folders', 'Public Folders'],
-                          selectedTab: selectedTab,
-                          onTabSelected: onTabSelected,
-                        ),
-                        SizedBox(height: verticalSpacing),
-                        CreateFolderCard(
-                          onTap: () async {
-                            final result = await showDialog<dynamic>(
-                              context: context,
-                              barrierDismissible: true,
-                              barrierColor: Colors.black.withOpacity(0.5),
-                              builder: (dialogContext) => BlocProvider(
-                                create: (dialogContext) => FolderCubit(
-                                  getAllFolderUseCase:
-                                      getIt<GetAllFolderUseCase>(),
-                                  createFolderUseCase:
-                                      getIt<CreateFolderUseCase>(),
-                                  updateFolderUseCase:
-                                      getIt<UpdateFolderUseCase>(),
-                                  deleteFolderUseCase:
-                                      getIt<DeleteFolderUseCase>(),
-                                  getAvailableUsersForShareUseCase:
-                                      getIt<GetAvailableUsersForShareUseCase>(),
-                                ),
-                                child: const CreateFolderDialog(),
-                              ),
-                            );
-                            if (result != null && mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Folder created'),
-                                  behavior: SnackBarBehavior.floating,
-                                  duration: Duration(seconds: 2),
+              return RefreshIndicator(
+                onRefresh: () async {
+                  _fetchFolders();
+                },
+                color: colorScheme.primary,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          SizedBox(height: verticalSpacing * 1.5),
+                          const PageHeader(
+                            title: 'Folders',
+                            subtitle: 'Organize and manage your study folders',
+                          ),
+                          SizedBox(height: verticalSpacing * 1.5),
+                          const AppSearchBar(hintText: 'Search folders'),
+                          SizedBox(height: verticalSpacing * 1.5),
+                          CategoryFilter(
+                            categories: _getCategories(state),
+                            selectedCategory: selectedCategory,
+                            onCategorySelected: onCategorySelected,
+                          ),
+                          SizedBox(height: verticalSpacing),
+                          FolderTabs(
+                            tabs: const ['My Folders', 'Public Folders'],
+                            selectedTab: selectedTab,
+                            onTabSelected: onTabSelected,
+                          ),
+                          SizedBox(height: verticalSpacing),
+                          CreateFolderCard(
+                            onTap: () async {
+                              final result = await showDialog<dynamic>(
+                                context: context,
+                                barrierDismissible: true,
+                                barrierColor: Colors.black.withOpacity(0.5),
+                                builder: (dialogContext) => BlocProvider(
+                                  create: (dialogContext) => FolderCubit(
+                                    getAllFolderUseCase:
+                                        getIt<GetAllFolderUseCase>(),
+                                    createFolderUseCase:
+                                        getIt<CreateFolderUseCase>(),
+                                    updateFolderUseCase:
+                                        getIt<UpdateFolderUseCase>(),
+                                    deleteFolderUseCase:
+                                        getIt<DeleteFolderUseCase>(),
+                                    getAvailableUsersForShareUseCase:
+                                        getIt<
+                                          GetAvailableUsersForShareUseCase
+                                        >(),
+                                  ),
+                                  child: const CreateFolderDialog(),
                                 ),
                               );
+                              if (result != null && mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Folder created'),
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
 
-                              context.read<FolderCubit>().fetchAllFolders();
+                                context.read<FolderCubit>().fetchAllFolders();
 
-                              // No need to call _fetchFolders(); UI will update from FolderLoaded
-                            }
-                          },
-                        ),
-                        SizedBox(height: verticalSpacing * 1.5),
-                        const LongPressHint(),
-                        SizedBox(height: verticalSpacing * 1.5),
-                      ]),
-                    ),
-                  ),
-                  if (state is FolderLoading)
-                    const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (state is FolderError)
-                    SliverFillRemaining(
-                      child: SingleChildScrollView(
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                color: colorScheme.error,
-                                size: 48,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Failed to load folders',
-                                style: TextStyle(color: colorScheme.onSurface),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  // Only retry fetch if needed
-                                  _fetchFolders();
-                                },
-                                child: const Text('Retry'),
-                              ),
-                            ],
+                                // No need to call _fetchFolders(); UI will update from FolderLoaded
+                              }
+                            },
                           ),
-                        ),
+                          SizedBox(height: verticalSpacing * 1.5),
+                          const LongPressHint(),
+                          SizedBox(height: verticalSpacing * 1.5),
+                        ]),
                       ),
-                    )
-                  else if (state is FolderLoaded)
-                    FolderList(
-                      state: state,
-                      selectedCategory: selectedCategory,
-                      getIconFromIndex: _getIconFromIndex,
-                      getColorFromHex: _getColorFromHex,
-                      onFolderLongPress: (context, folder, color) {
-                        showModalBottomSheet(
-                          context: context,
-                          backgroundColor: colorScheme.surfaceContainerHighest,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(24),
+                    ),
+                    if (state is FolderError && _cachedFolders == null)
+                      SliverFillRemaining(
+                        child: SingleChildScrollView(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: colorScheme.error,
+                                  size: 48,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Failed to load folders',
+                                  style: TextStyle(
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    // Only retry fetch if needed
+                                    _fetchFolders();
+                                  },
+                                  child: const Text('Retry'),
+                                ),
+                              ],
                             ),
                           ),
-                          isScrollControlled: true,
-                          builder: (bottomSheetContext) =>
-                              FolderOptionsBottomSheet(
-                                folder: folder,
-                                color: color,
-                                onEdit: () => showEditFolderDialog(
-                                  context,
-                                  folder,
-                                  defaultColors,
-                                  defaultIcons,
-                                  context.read<FolderCubit>(),
+                        ),
+                      )
+                    else if (state is FolderLoaded ||
+                        (state is FolderLoading && _cachedFolders != null) ||
+                        (state is FolderError && _cachedFolders != null))
+                      Builder(
+                        builder: (context) {
+                          // Cache folders when loaded
+                          if (state is FolderLoaded) {
+                            _cachedFolders = state.folders;
+                          }
+                          // Use cached folders if available, otherwise use current state
+                          final foldersToShow = state is FolderLoaded
+                              ? state.folders
+                              : _cachedFolders ?? [];
+
+                          return FolderList(
+                            state: FolderLoaded(foldersToShow),
+                            selectedCategory: selectedCategory,
+                            getIconFromIndex: _getIconFromIndex,
+                            getColorFromHex: _getColorFromHex,
+                            onFolderLongPress: (context, folder, color) {
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor:
+                                    colorScheme.surfaceContainerHighest,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(24),
+                                  ),
                                 ),
-                                onDelete: () => showDeleteConfirmationDialog(
-                                  context,
-                                  folder.id!,
-                                  folder.title!,
-                                  context.read<FolderCubit>(),
-                                ),
-                                onShare: () {},
-                                onDuplicate: () {},
-                                onExportPDF: () {},
-                                onArchive: () {},
-                              ),
-                        );
-                      },
-                    )
-                  else
-                    SliverFillRemaining(
-                      child: Center(
-                        child: Text(
-                          'No folders available',
-                          style: TextStyle(color: colorScheme.onSurfaceVariant),
+                                isScrollControlled: true,
+                                builder: (bottomSheetContext) =>
+                                    FolderOptionsBottomSheet(
+                                      folder: folder,
+                                      color: color,
+                                      onEdit: () => showEditFolderDialog(
+                                        context,
+                                        folder,
+                                        defaultColors,
+                                        defaultIcons,
+                                        context.read<FolderCubit>(),
+                                      ),
+                                      onDelete: () =>
+                                          showDeleteConfirmationDialog(
+                                            context,
+                                            folder.id!,
+                                            folder.title!,
+                                            context.read<FolderCubit>(),
+                                          ),
+                                      onShare: () {},
+                                      onDuplicate: () {},
+                                      onExportPDF: () {},
+                                      onArchive: () {},
+                                    ),
+                              );
+                            },
+                          );
+                        },
+                      )
+                    else
+                      SliverFillRemaining(
+                        child: Center(
+                          child: Text(
+                            'No folders available',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        SizedBox(height: verticalSpacing * 1.5),
-                        if (state is FolderLoaded ||
-                            state is UpdateFolderSuccess ||
-                            state is UpdateFolderError)
-                          StudyStats(
-                            myFoldersCount: _getFoldersFromState(state).length,
-                            totalChaptersCount: _getFoldersFromState(state)
-                                .fold(
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          SizedBox(height: verticalSpacing * 1.5),
+                          Builder(
+                            builder: (context) {
+                              final foldersForStats = state is FolderLoaded
+                                  ? state.folders
+                                  : (_cachedFolders ?? []);
+
+                              return StudyStats(
+                                myFoldersCount: foldersForStats.length,
+                                totalChaptersCount: foldersForStats.fold(
                                   0,
                                   (sum, folder) =>
                                       sum + (folder.chapterCount ?? 0),
                                 ),
-                          )
-                        else
-                          const StudyStats(
-                            myFoldersCount: 0,
-                            totalChaptersCount: 0,
+                              );
+                            },
                           ),
-                        SizedBox(height: isTablet ? 24 : 16),
-                      ]),
+                          SizedBox(height: isTablet ? 24 : 16),
+                        ]),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           ),

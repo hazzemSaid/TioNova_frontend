@@ -77,7 +77,10 @@ class WebChapterCard extends StatelessWidget {
         );
       },
       onLongPress: () {
-        ShowChapterOptionsBottomSheet(chapter: chapter).show(context);
+        ShowChapterOptionsBottomSheet(
+          chapter: chapter,
+          folderId: chapter.folderId ?? '',
+        ).show(context);
       },
       child: Container(
         padding: const EdgeInsets.all(20),

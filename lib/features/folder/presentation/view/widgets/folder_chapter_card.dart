@@ -52,7 +52,10 @@ class FolderChapterCard extends StatelessWidget {
         );
       },
       onLongPress: () {
-        ShowChapterOptionsBottomSheet(chapter: chapter).show(context);
+        ShowChapterOptionsBottomSheet(
+          chapter: chapter,
+          folderId: chapter.folderId ?? '',
+        ).show(context);
       },
       child: Container(
         margin: EdgeInsets.fromLTRB(

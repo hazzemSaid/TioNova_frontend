@@ -1,17 +1,18 @@
 // features/folder/presentation/view/screens/folder_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/screens/EditChapterDialog.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/DashedBorderPainter.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/delete_chapter_confirmation_dialog.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
-import 'package:tionova/utils/static.dart';
 
 class FolderDetailScreen extends StatelessWidget {
   final String folderId;
@@ -41,8 +42,11 @@ class FolderDetailScreen extends StatelessWidget {
     final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return BlocProvider(
-      create: (_) => getIt<ChapterCubit>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => getIt<ChapterCubit>()),
+        BlocProvider(create: (_) => getIt<FolderCubit>()),
+      ],
       child: Builder(
         builder: (context) {
           // Get auth state for token
@@ -52,11 +56,32 @@ class FolderDetailScreen extends StatelessWidget {
             context.read<ChapterCubit>().getChapters(folderId: folderId);
           });
 
-          return Scaffold(
-            backgroundColor: colorScheme.surface,
-            body: isWeb
-                ? _buildWebLayout(context, colorScheme)
-                : _buildMobileLayout(context, horizontalPadding, colorScheme),
+          return BlocListener<ChapterCubit, ChapterState>(
+            listener: (context, state) {
+              if (state is DeleteChapterSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Chapter deleted successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else if (state is DeleteChapterError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Failed to delete chapter: ${state.message.errMessage}',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: Scaffold(
+              backgroundColor: colorScheme.surface,
+              body: isWeb
+                  ? _buildWebLayout(context, colorScheme)
+                  : _buildMobileLayout(context, horizontalPadding, colorScheme),
+            ),
           );
         },
       ),
@@ -653,7 +678,11 @@ class FolderDetailScreen extends StatelessWidget {
         );
       },
       onLongPress: () {
-        ShowChapterOptionsBottomSheet(chapter: chapter).show(context);
+        HapticFeedback.mediumImpact();
+        ShowChapterOptionsBottomSheet(
+          chapter: chapter,
+          folderId: folderId,
+        ).show(context);
       },
       child: Container(
         margin: EdgeInsets.fromLTRB(
@@ -919,7 +948,11 @@ class FolderDetailScreen extends StatelessWidget {
         );
       },
       onLongPress: () {
-        ShowChapterOptionsBottomSheet(chapter: chapter).show(context);
+        HapticFeedback.mediumImpact();
+        ShowChapterOptionsBottomSheet(
+          chapter: chapter,
+          folderId: folderId,
+        ).show(context);
       },
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -1030,68 +1063,232 @@ class FolderDetailScreen extends StatelessWidget {
 
 class ShowChapterOptionsBottomSheet {
   final ChapterModel chapter;
+  final String folderId;
 
-  ShowChapterOptionsBottomSheet({required this.chapter});
+  ShowChapterOptionsBottomSheet({
+    required this.chapter,
+    required this.folderId,
+  });
 
   void show(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: colorScheme.surfaceContainerHighest,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (bottomSheetContext) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(isTablet ? 28 : 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Drag handle
             Container(
               width: 40,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
+              margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant,
+                color: colorScheme.onSurfaceVariant.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            Text(
-              chapter.title ?? 'Untitled Chapter',
-              style: TextStyle(
-                color: colorScheme.onSurface,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
+
+            // Header with icon, title, and status
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                buildActionButton(
-                  chapter: chapter,
-                  context: context,
-                  color: colorScheme.primary,
-                  icon: Icons.edit,
-                  label: 'Edit',
-                  onTap: () {
-                    Navigator.pop(bottomSheetContext);
-                    _showEditChapterDialog(chapter, context);
-                  },
+                // Document icon
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant,
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.article_outlined,
+                    size: isTablet ? 28 : 24,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
-                buildActionButton(
-                  chapter: chapter,
-                  context: context,
-                  color: colorScheme.error,
-                  icon: Icons.delete,
-                  label: 'Delete',
-                  onTap: () {
-                    Navigator.pop(bottomSheetContext);
-                    _showDeleteChapterDialog(chapter, context);
-                  },
+                const SizedBox(width: 16),
+
+                // Title and status
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        chapter.title ?? 'Untitled Chapter',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: isTablet ? 18 : 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      // Status badge
+                      _buildStatusBadge(
+                        chapter.quizStatus ?? 'Not Taken',
+                        colorScheme,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+
+            SizedBox(height: isTablet ? 32 : 28),
+
+            // Action buttons
+            _buildActionListItem(
+              context: context,
+              icon: Icons.edit_outlined,
+              label: 'Edit Chapter',
+              colorScheme: colorScheme,
+              isTablet: isTablet,
+              onTap: () {
+                Navigator.pop(bottomSheetContext);
+                _showEditChapterDialog(chapter, context);
+              },
+            ),
+
+            SizedBox(height: isTablet ? 14 : 12),
+
+            _buildActionListItem(
+              context: context,
+              icon: Icons.delete_outline,
+              label: 'Delete Chapter',
+              colorScheme: colorScheme,
+              isTablet: isTablet,
+              isDestructive: true,
+              onTap: () {
+                Navigator.pop(bottomSheetContext);
+                _showDeleteChapterDialog(chapter, context);
+              },
+            ),
+
+            SizedBox(height: isTablet ? 24 : 20),
+
+            // Cancel button
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(bottomSheetContext),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: isTablet ? 16 : 14),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: isTablet ? 16 : 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status, ColorScheme colorScheme) {
+    Color badgeColor;
+
+    switch (status.toLowerCase()) {
+      case 'passed':
+        badgeColor = Colors.green;
+        break;
+      case 'failed':
+        badgeColor = colorScheme.error;
+        break;
+      case 'in progress':
+        badgeColor = Colors.orange;
+        break;
+      default:
+        badgeColor = colorScheme.onSurfaceVariant;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: badgeColor.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle, size: 12, color: badgeColor),
+          const SizedBox(width: 4),
+          Text(
+            status,
+            style: TextStyle(
+              color: badgeColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionListItem({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required ColorScheme colorScheme,
+    required bool isTablet,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive ? colorScheme.error : colorScheme.onSurface;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 20 : 16,
+          vertical: isTablet ? 16 : 14,
+        ),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: isTablet ? 24 : 22, color: color),
+            SizedBox(width: isTablet ? 16 : 14),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: isTablet ? 16 : 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -1107,53 +1304,18 @@ class ShowChapterOptionsBottomSheet {
       builder: (dialogContext) => MultiBlocProvider(
         providers: [
           BlocProvider.value(value: context.read<ChapterCubit>()),
-          BlocProvider.value(value: context.read<AuthCubit>()),
+          BlocProvider.value(value: context.read<FolderCubit>()),
         ],
-        child: EditChapterDialog(
-          titleController: TextEditingController(text: chapter.title),
-          descriptionController: TextEditingController(
-            text: chapter.description,
-          ),
-          chapter: chapter,
-          defaultcolors: Static.defaultColors,
-          icons: Static.defaultIcons,
-        ),
+        child: EditChapterDialog(chapter: chapter, currentFolderId: folderId),
       ),
     );
   }
 
   void _showDeleteChapterDialog(ChapterModel chapter, BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => Container(child: Text('Delete Chapter')),
-    );
-  }
-
-  Widget buildActionButton({
-    required ChapterModel chapter,
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 12)),
-          ],
-        ),
-      ),
+    showDeleteChapterConfirmationDialog(
+      context,
+      chapter,
+      context.read<ChapterCubit>(),
     );
   }
 }

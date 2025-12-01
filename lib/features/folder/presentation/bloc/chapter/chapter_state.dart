@@ -185,3 +185,25 @@ class DeleteNoteError extends ChapterState {
   @override
   List<Object?> get props => [message];
 }
+
+class UpdateChapterLoading extends ChapterState {}
+
+class UpdateChapterSuccess extends ChapterState {}
+
+class UpdateChapterError extends ChapterState {
+  final Failure message;
+  const UpdateChapterError(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+class DeleteChapterLoading extends ChapterState {}
+
+class DeleteChapterSuccess extends ChapterState {}
+
+class DeleteChapterError extends ChapterState {
+  final Failure message;
+  const DeleteChapterError(this.message);
+  @override
+  List<Object?> get props => [message];
+}

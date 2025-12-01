@@ -41,4 +41,11 @@ abstract class IChapterRepository {
   Future<Either<Failure, SummaryResponse>> getChapterSummary({
     required String chapterId,
   });
+  Future<Either<Failure, void>> updateChapter({
+    required String chapterId,
+    required String title,
+    required String description,
+    required String folderId,
+  });
+  Future<Either<Failure, void>> deleteChapter({required String chapterId});
 }

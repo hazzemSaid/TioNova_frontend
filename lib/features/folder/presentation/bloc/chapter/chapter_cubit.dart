@@ -15,6 +15,7 @@ import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/domain/usecases/AddnoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateChapterUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/DeleteChapterUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteNoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaperContentPdfUseCase.dart';
@@ -22,6 +23,7 @@ import 'package:tionova/features/folder/domain/usecases/GetChapterSummaryUseCase
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetNotesByChapterIdUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/UpdateChapterUseCase.dart';
 
 import '../../../domain/usecases/createMindmapUseCase.dart';
 
@@ -40,6 +42,8 @@ class ChapterCubit extends Cubit<ChapterState> {
     required this.firebaseService,
     required this.getMindmapUseCase,
     required this.getChapterSummaryUseCase,
+    required this.updateChapterUseCase,
+    required this.deleteChapterUseCase,
   }) : super(ChapterInitial());
   final Getnotesbychapteridusecase getNotesByChapterIdUseCase;
   final Addnoteusecase addNoteUseCase;
@@ -51,6 +55,8 @@ class ChapterCubit extends Cubit<ChapterState> {
   final GenerateSummaryUseCase generateSummaryUseCase;
   final GetMindmapUseCase getMindmapUseCase;
   final GetChapterSummaryUseCase getChapterSummaryUseCase;
+  final UpdateChapterUseCase updateChapterUseCase;
+  final DeleteChapterUseCase deleteChapterUseCase;
   final FirebaseRealtimeService firebaseService;
   StreamSubscription<Map<String, dynamic>>? _firebaseSubscription;
   void getChapters({required String folderId}) async {
@@ -429,6 +435,61 @@ class ChapterCubit extends Cubit<ChapterState> {
       safeEmit(DeleteNoteSuccess());
       getNotesByChapterId(chapterId: chapterId);
     });
+  }
+
+  void updateChapter({
+    required String chapterId,
+    required String title,
+    required String description,
+    required String folderId,
+  }) async {
+    print('🔄 [ChapterCubit] updateChapter() called');
+    print('📝 Chapter ID: $chapterId, Title: $title, FolderId: $folderId');
+
+    safeEmit(UpdateChapterLoading());
+
+    final result = await updateChapterUseCase(
+      chapterId: chapterId,
+      title: title,
+      description: description,
+      folderId: folderId,
+    );
+
+    result.fold(
+      (failure) {
+        print('❌ [ChapterCubit] updateChapter failed: ${failure.errMessage}');
+        safeEmit(UpdateChapterError(failure));
+      },
+      (_) {
+        print('✅ [ChapterCubit] updateChapter success - refreshing chapters');
+        safeEmit(UpdateChapterSuccess());
+        // Refresh the chapters list to get updated data
+        getChapters(folderId: folderId);
+      },
+    );
+  }
+
+  void deleteChapter({
+    required String chapterId,
+    required String folderId,
+  }) async {
+    print('🗑️ [ChapterCubit] deleteChapter() called for chapter: $chapterId');
+    safeEmit(DeleteChapterLoading());
+
+    final result = await deleteChapterUseCase(chapterId: chapterId);
+
+    result.fold(
+      (failure) {
+        print('❌ [ChapterCubit] deleteChapter failed: ${failure.errMessage}');
+        safeEmit(DeleteChapterError(failure));
+      },
+      (_) {
+        print('✅ [ChapterCubit] deleteChapter success - refreshing chapters');
+        safeEmit(DeleteChapterSuccess());
+        // Refresh the chapters list to get updated data
+        getChapters(folderId: folderId);
+      },
+    );
   }
 
   @override

@@ -477,4 +477,63 @@ class ChapterRemoteDataSource extends IChapterRepository {
       return ErrorHandlingUtils.handleDioError(e);
     }
   }
+
+  @override
+  Future<Either<Failure, void>> updateChapter({
+    required String chapterId,
+    String? title,
+    String? description,
+    String? folderId,
+  }) async {
+    try {
+      print('🔄 [DataSource] updateChapter() started for chapter: $chapterId');
+
+      final response = await _dio.patch(
+        '/updatechapter/$chapterId',
+        data: {
+          'title': title,
+          'description': description,
+          'folderId': folderId,
+        },
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      print('✅ [DataSource] PATCH response received: ${response.statusCode}');
+
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (data) {
+          print('✅ [DataSource] updateChapter success: ${data['message']}');
+          return null;
+        },
+      );
+    } catch (e) {
+      print('❌ [DataSource] Exception in updateChapter: $e');
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteChapter({
+    required String chapterId,
+  }) async {
+    try {
+      print('🗑️ [DataSource] deleteChapter() started for chapter: $chapterId');
+      final response = await _dio.delete(
+        '/deletechapter/$chapterId',
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (data) {
+          print('✅ [DataSource] deleteChapter success');
+          return null;
+        },
+      );
+    } catch (e) {
+      print('❌ [DataSource] Exception in deleteChapter: $e');
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
 }

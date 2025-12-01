@@ -42,6 +42,7 @@ import 'package:tionova/features/folder/domain/usecases/AddnoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateChapterUseCase.dart';
 // import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart'; // Not directly used
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/DeleteChapterUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteNoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart';
@@ -51,6 +52,7 @@ import 'package:tionova/features/folder/domain/usecases/GetChapterSummaryUseCase
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetNotesByChapterIdUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/UpdateChapterUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/createMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
@@ -316,6 +318,14 @@ Future<void> setupServiceLocator() async {
     () => GetChapterSummaryUseCase(getIt<IChapterRepository>()),
   );
 
+  getIt.registerLazySingleton<UpdateChapterUseCase>(
+    () => UpdateChapterUseCase(repository: getIt<IChapterRepository>()),
+  );
+
+  getIt.registerLazySingleton<DeleteChapterUseCase>(
+    () => DeleteChapterUseCase(getIt<IChapterRepository>()),
+  );
+
   // Register ChapterCubit with Firebase
   getIt.registerFactory(
     () => ChapterCubit(
@@ -330,6 +340,8 @@ Future<void> setupServiceLocator() async {
       firebaseService: getIt<FirebaseRealtimeService>(),
       getMindmapUseCase: getIt<GetMindmapUseCase>(),
       getChapterSummaryUseCase: getIt<GetChapterSummaryUseCase>(),
+      updateChapterUseCase: getIt<UpdateChapterUseCase>(),
+      deleteChapterUseCase: getIt<DeleteChapterUseCase>(),
     ),
   );
 

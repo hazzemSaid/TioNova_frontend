@@ -3,8 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
+import 'package:tionova/features/folder/presentation/view/screens/DeleteChapterDialog.dart';
 import 'package:tionova/features/folder/presentation/view/screens/EditChapterDialog.dart';
-import 'package:tionova/utils/static.dart';
 
 /// Bottom sheet for chapter options (Edit, Delete, etc.)
 class ChapterOptionsBottomSheet {
@@ -90,15 +91,11 @@ class ChapterOptionsBottomSheet {
         providers: [
           BlocProvider.value(value: context.read<ChapterCubit>()),
           BlocProvider.value(value: context.read<AuthCubit>()),
+          BlocProvider.value(value: context.read<FolderCubit>()),
         ],
         child: EditChapterDialog(
-          titleController: TextEditingController(text: chapter.title),
-          descriptionController: TextEditingController(
-            text: chapter.description,
-          ),
           chapter: chapter,
-          defaultcolors: Static.defaultColors,
-          icons: Static.defaultIcons,
+          currentFolderId: chapter.folderId,
         ),
       ),
     );
@@ -109,34 +106,9 @@ class ChapterOptionsBottomSheet {
     final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: colorScheme.surface,
-        title: Text(
-          'Delete Chapter',
-          style: TextStyle(color: colorScheme.onSurface),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${chapter.title ?? 'this chapter'}"? This action cannot be undone.',
-          style: TextStyle(color: colorScheme.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancel', style: TextStyle(color: colorScheme.primary)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              // Delete the chapter
-              if (chapter.id != null) {
-                // context.read<ChapterCubit>().deleteChapter(
-                //   chapterId: chapter.id!,
-                // );
-              }
-            },
-            child: Text('Delete', style: TextStyle(color: colorScheme.error)),
-          ),
-        ],
+      builder: (dialogContext) => BlocProvider.value(
+        value: context.read<ChapterCubit>(),
+        child: DeleteChapterDialog(chapter: chapter),
       ),
     );
   }

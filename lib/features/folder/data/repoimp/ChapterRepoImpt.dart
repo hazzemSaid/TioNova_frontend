@@ -95,4 +95,24 @@ class ChapterRepoImpl extends IChapterRepository {
   }) async {
     return await remoteDataSource.getChapterSummary(chapterId: chapterId);
   }
+
+  @override
+  Future<Either<Failure, void>> updateChapter({
+    required String chapterId,
+    required String title,
+    required String description,
+    required String folderId,
+  }) async {
+    return await remoteDataSource.updateChapter(
+      chapterId: chapterId,
+      title: title,
+      description: description,
+      folderId: folderId,
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteChapter({required String chapterId}) {
+    return remoteDataSource.deleteChapter(chapterId: chapterId);
+  }
 }
