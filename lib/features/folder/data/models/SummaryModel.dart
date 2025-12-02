@@ -42,17 +42,39 @@ class SummaryResponse extends Equatable {
     List<SummaryModel> parsedSummaries = [];
 
     if (json['summary'] != null) {
-      if (json['summary'] is List) {
-        // Handle array of summaries (actual API response)
-        parsedSummaries = (json['summary'] as List)
+      final summaryField = json['summary'];
+
+      // Check if this is a database document wrapper (has _id, chapterId, etc.)
+      // and the actual summary is nested inside
+      if (summaryField is Map<String, dynamic> &&
+          summaryField.containsKey('summary')) {
+        // This is the database document wrapper - extract the nested summary
+        final nestedSummary = summaryField['summary'];
+
+        if (nestedSummary is List) {
+          // Nested summary is an array
+          parsedSummaries = nestedSummary
+              .where((item) => item != null && item is Map<String, dynamic>)
+              .map(
+                (item) => SummaryModel.fromJson(item as Map<String, dynamic>),
+              )
+              .toList();
+        } else if (nestedSummary is Map<String, dynamic>) {
+          // Nested summary is a single object
+          parsedSummaries = [SummaryModel.fromJson(nestedSummary)];
+        }
+      } else if (summaryField is List) {
+        // Direct array of summaries (no wrapper)
+        parsedSummaries = summaryField
             .where((item) => item != null && item is Map<String, dynamic>)
             .map((item) => SummaryModel.fromJson(item as Map<String, dynamic>))
             .toList();
-      } else if (json['summary'] is Map<String, dynamic>) {
-        // Handle single summary object (backward compatibility)
-        parsedSummaries = [
-          SummaryModel.fromJson(json['summary'] as Map<String, dynamic>),
-        ];
+      } else if (summaryField is Map<String, dynamic>) {
+        // Direct single summary object (check if it has summary structure)
+        // If it has 'chapter_title' key, it's the actual summary content
+        if (summaryField.containsKey('chapter_title')) {
+          parsedSummaries = [SummaryModel.fromJson(summaryField)];
+        }
       }
     }
 
@@ -111,17 +133,28 @@ class SummaryModelData extends Equatable {
     List<SummaryModel> parsedSummaries = [];
 
     if (json['summary'] != null) {
-      if (json['summary'] is List) {
+      final summaryField = json['summary'];
+
+      // Check if this is a nested structure (summary inside summary)
+      // This happens when the backend returns the full database document
+      if (summaryField is Map<String, dynamic>) {
+        // Check if it has 'chapter_title' - meaning it's the actual summary content
+        if (summaryField.containsKey('chapter_title')) {
+          // Direct summary content
+          parsedSummaries = [SummaryModel.fromJson(summaryField)];
+        } else {
+          // This might be a wrapper, content could be in a nested 'summary' field
+          // But for SummaryModelData from DB, the structure is typically flat
+          print(
+            '⚠️ [DEBUG] SummaryModelData: Map without chapter_title - unusual structure',
+          );
+        }
+      } else if (summaryField is List) {
         // Handle array of summaries
-        parsedSummaries = (json['summary'] as List)
+        parsedSummaries = summaryField
             .where((item) => item != null && item is Map<String, dynamic>)
             .map((item) => SummaryModel.fromJson(item as Map<String, dynamic>))
             .toList();
-      } else if (json['summary'] is Map<String, dynamic>) {
-        // Handle single summary object (backward compatibility)
-        parsedSummaries = [
-          SummaryModel.fromJson(json['summary'] as Map<String, dynamic>),
-        ];
       }
     }
 

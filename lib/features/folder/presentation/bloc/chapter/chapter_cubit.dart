@@ -393,11 +393,7 @@ class ChapterCubit extends Cubit<ChapterState> {
       if (summaryResponse.success) {
         safeEmit(GenerateSummaryStructuredSuccess(summaryResponse.summary));
       } else {
-        safeEmit(
-          GenerateSummaryError(
-            ServerFailure(summaryResponse.message ?? 'Failed to get summary'),
-          ),
-        );
+        safeEmit(GenerateSummaryError(ServerFailure(summaryResponse.message)));
       }
     });
   }
