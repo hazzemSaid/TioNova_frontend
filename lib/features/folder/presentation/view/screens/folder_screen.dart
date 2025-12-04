@@ -14,6 +14,7 @@ import 'package:tionova/features/folder/presentation/view/widgets/delete_confirm
 import 'package:tionova/features/folder/presentation/view/widgets/edit_folder_dialog.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_list.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_options_bottom_sheet.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/folder_shimmer_list.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/static.dart';
 import 'package:tionova/utils/widgets/app_search_bar.dart';
@@ -365,7 +366,9 @@ class _FolderScreenState extends State<FolderScreen> {
                         ]),
                       ),
                     ),
-                    if (state is FolderError && _cachedFolders == null)
+                    if (state is FolderLoading && _cachedFolders == null)
+                      const FolderShimmerList()
+                    else if (state is FolderError && _cachedFolders == null)
                       SliverFillRemaining(
                         child: SingleChildScrollView(
                           child: Center(
@@ -440,8 +443,8 @@ class _FolderScreenState extends State<FolderScreen> {
                                       onDelete: () =>
                                           showDeleteConfirmationDialog(
                                             context,
-                                            folder.id!,
-                                            folder.title!,
+                                            folder.id,
+                                            folder.title,
                                             context.read<FolderCubit>(),
                                           ),
                                       onShare: () {},

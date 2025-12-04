@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/presentation/bloc/mindmap/mindmap_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/mindmap/mindmap_viewer.dart';
@@ -13,7 +14,7 @@ class MindmapScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => MindmapCubit(),
+      create: (context) => getIt<MindmapCubit>(),
       child: MindmapViewer(mindmap: mindmap),
     );
   }

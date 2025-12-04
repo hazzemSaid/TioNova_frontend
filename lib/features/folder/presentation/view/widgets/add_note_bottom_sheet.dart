@@ -14,12 +14,14 @@ class AddNoteBottomSheet extends StatefulWidget {
   final String chapterId;
   final Color accentColor;
   final VoidCallback onNoteAdded;
+  final String? initialNoteType; // 'text', 'image', or 'voice'
 
   const AddNoteBottomSheet({
     super.key,
     required this.chapterId,
     required this.accentColor,
     required this.onNoteAdded,
+    this.initialNoteType,
   });
 
   @override
@@ -42,6 +44,7 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
   @override
   void initState() {
     super.initState();
+    _selectedType = widget.initialNoteType ?? 'text';
     _initAudioRecorder();
   }
 

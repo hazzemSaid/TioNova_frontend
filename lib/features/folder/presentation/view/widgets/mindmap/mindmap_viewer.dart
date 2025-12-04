@@ -15,21 +15,27 @@ import 'package:tionova/features/folder/presentation/view/widgets/mindmap/node_c
 class MindmapViewer extends StatefulWidget {
   final Mindmapmodel mindmap;
 
-  const MindmapViewer({Key? key, required this.mindmap}) : super(key: key);
+  const MindmapViewer({super.key, required this.mindmap});
 
   @override
   State<MindmapViewer> createState() => _MindmapViewerState();
 }
 
-class _MindmapViewerState extends State<MindmapViewer> {
+class _MindmapViewerState extends State<MindmapViewer>
+    with SingleTickerProviderStateMixin {
   final TransformationController _transformationController =
       TransformationController();
-  double _currentZoom = 1.0;
+  final ValueNotifier<double> _zoomNotifier = ValueNotifier<double>(1.0);
+  late AnimationController _zoomAnimationController;
   Size _canvasSize = const Size(1000, 1000);
 
   @override
   void initState() {
     super.initState();
+    _zoomAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
     // Initialize mindmap in cubit
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MindmapCubit>().loadMindmap(widget.mindmap);
@@ -132,7 +138,7 @@ class _MindmapViewerState extends State<MindmapViewer> {
     return math.sqrt(dx * dx + dy * dy);
   }
 
-  // Center the view on the root node
+  // Center the view on the root node with smooth animation
   void _centerViewOnRoot() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = context.read<MindmapCubit>().state;
@@ -162,11 +168,10 @@ class _MindmapViewerState extends State<MindmapViewer> {
           final translationX = screenCenterX - rootPosition.dx;
           final translationY = screenCenterY - rootPosition.dy;
 
-          // Apply transformation
-          final matrix = Matrix4.identity()
-            ..translate(translationX, translationY);
-
-          _transformationController.value = matrix;
+          // Apply transformation with smooth animation
+          _animateToMatrix(
+            Matrix4.identity()..translate(translationX, translationY),
+          );
         }
       } catch (e) {
         debugPrint('Error centering view on root: $e');
@@ -174,10 +179,50 @@ class _MindmapViewerState extends State<MindmapViewer> {
     });
   }
 
+  // Animate to a target transformation matrix
+  void _animateToMatrix(Matrix4 targetMatrix) {
+    final currentMatrix = _transformationController.value;
+    final animation = Matrix4Tween(begin: currentMatrix, end: targetMatrix)
+        .animate(
+          CurvedAnimation(
+            parent: _zoomAnimationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
+    animation.addListener(() {
+      _transformationController.value = animation.value;
+      _zoomNotifier.value = _transformationController.value.getMaxScaleOnAxis();
+    });
+
+    _zoomAnimationController.forward(from: 0);
+  }
+
+  // Animate zoom with smooth transition
+  void _animateZoom(double targetZoom) {
+    final currentMatrix = _transformationController.value;
+    final currentTranslation = currentMatrix.getTranslation();
+
+    final targetMatrix = Matrix4.identity()
+      ..translate(currentTranslation.x, currentTranslation.y)
+      ..scale(targetZoom);
+
+    _animateToMatrix(targetMatrix);
+  }
+
   void _calculateNodePositions() {
     // Calculate positions for all nodes in a tree layout
-    final nodes = widget.mindmap.nodes ?? [];
+    final cubitState = context.read<MindmapCubit>().state;
+    if (cubitState is! MindmapLoaded) return;
+
+    final nodes = cubitState.mindmap.nodes ?? [];
     if (nodes.isEmpty) return;
+
+    // Debug: Total nodes
+    // print('🔢 Total nodes: ${nodes.length}');
+    print(
+      '🆔 [_calculateNodePositions] All node IDs: ${nodes.map((n) => n.id).toList()}',
+    );
 
     final Map<String, Offset> positions = {};
 
@@ -219,7 +264,39 @@ class _MindmapViewerState extends State<MindmapViewer> {
         _canvasSize = canvasSize;
       });
 
-      // Update positions in cubit with adjusted positions
+      // Debug: Position calculation complete
+      // print('✅ Positioned ${adjustedPositions.length} nodes');
+
+      // CRITICAL: Check for nodes without positions (orphaned nodes)
+      // This must happen BEFORE updating positions in cubit
+      final nodesWithoutPositions = nodes
+          .where((n) => !adjustedPositions.containsKey(n.id))
+          .toList();
+
+      if (nodesWithoutPositions.isNotEmpty) {
+        // Position orphaned nodes in a grid layout on the left side
+        const orphanStartX = 400.0; // Left of root
+        const orphanStartY = 400.0;
+        const orphanSpacingY = 200.0;
+        const orphanSpacingX = 250.0;
+        const nodesPerColumn =
+            5; // Max nodes in one column before starting new column
+
+        for (int i = 0; i < nodesWithoutPositions.length; i++) {
+          final node = nodesWithoutPositions[i];
+          final column = i ~/ nodesPerColumn;
+          final row = i % nodesPerColumn;
+
+          final orphanPosition = Offset(
+            orphanStartX + (column * orphanSpacingX),
+            orphanStartY + (row * orphanSpacingY),
+          );
+
+          adjustedPositions[node.id!] = orphanPosition;
+        }
+      }
+
+      // Update all positions in cubit (including orphaned nodes)
       for (var entry in adjustedPositions.entries) {
         context.read<MindmapCubit>().updateNodePosition(entry.key, entry.value);
       }
@@ -284,8 +361,31 @@ class _MindmapViewerState extends State<MindmapViewer> {
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 600;
 
-    return BlocBuilder<MindmapCubit, MindmapState>(
+    return BlocConsumer<MindmapCubit, MindmapState>(
+      listener: (context, state) {
+        // Recalculate positions when new nodes are added
+        if (state is MindmapLoaded && state.saveSuccess) {
+          print(
+            '🔄 [MindmapViewer] Detected new nodes, recalculating positions',
+          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _calculateNodePositions();
+          });
+        }
+      },
+      buildWhen: (previous, current) {
+        print(
+          '🔄 [MindmapViewer] buildWhen - Previous: ${previous.runtimeType}, Current: ${current.runtimeType}',
+        );
+        if (current is MindmapLoaded && previous is MindmapLoaded) {
+          print(
+            '📊 Previous nodes: ${previous.mindmap.nodes?.length}, Current nodes: ${current.mindmap.nodes?.length}',
+          );
+        }
+        return true; // Always rebuild
+      },
       builder: (context, state) {
+        print('🏗️ [MindmapViewer] Building with state: ${state.runtimeType}');
         if (state is! MindmapLoaded) {
           return Scaffold(
             backgroundColor: const Color(0xFF0A0E27),
@@ -296,6 +396,7 @@ class _MindmapViewerState extends State<MindmapViewer> {
         }
 
         final nodes = state.mindmap.nodes ?? [];
+        print('🎨 [MindmapViewer] Rendering ${nodes.length} nodes');
         final nodePositions = state.nodePositions;
 
         return Scaffold(
@@ -431,152 +532,160 @@ class _MindmapViewerState extends State<MindmapViewer> {
                 maxScale: 3.0,
                 constrained: false,
                 onInteractionUpdate: (details) {
-                  setState(() {
-                    _currentZoom = _transformationController.value
-                        .getMaxScaleOnAxis();
-                  });
+                  // Update zoom without setState to avoid rebuilding entire widget tree
+                  _zoomNotifier.value = _transformationController.value
+                      .getMaxScaleOnAxis();
                 },
                 child: SizedBox(
                   width: _canvasSize.width,
                   height: _canvasSize.height,
-                  child: Stack(
-                    children: [
-                      // Draw connections
-                      CustomPaint(
-                        size: _canvasSize,
-                        painter: MindmapConnectionsPainter(
-                          nodes: nodes,
-                          nodePositions: nodePositions,
+                  child: RepaintBoundary(
+                    child: Stack(
+                      children: [
+                        // Draw connections
+                        CustomPaint(
+                          size: _canvasSize,
+                          painter: MindmapConnectionsPainter(
+                            nodes: nodes,
+                            nodePositions: nodePositions,
+                          ),
                         ),
-                      ),
-                      // Draw nodes
-                      ...nodes.map((node) {
-                        final position = nodePositions[node.id];
-                        if (position == null) return const SizedBox.shrink();
+                        // Draw nodes
+                        ...nodes.map((node) {
+                          final position = nodePositions[node.id];
+                          if (position == null) return const SizedBox.shrink();
 
-                        return Positioned(
-                          left: position.dx - 85,
-                          top: position.dy - 65,
-                          child: Draggable(
-                            data: node,
-                            feedback: Transform.scale(
-                              scale: _currentZoom,
-                              child: Opacity(
-                                opacity: 0.8,
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: SizedBox(
-                                    width: 170,
-                                    height: 130,
-                                    child: MindmapNodeWidget(
-                                      node: node,
-                                      isSelected: true,
-                                      onTap: () {},
-                                      onEdit: () {},
-                                      onAddChild: () {},
-                                      onDelete: () {},
+                          return Positioned(
+                            left: position.dx - 85,
+                            top: position.dy - 65,
+                            child: Draggable(
+                              data: node,
+                              feedback: Transform.scale(
+                                scale: _zoomNotifier.value,
+                                child: Opacity(
+                                  opacity: 0.8,
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: SizedBox(
+                                      width: 170,
+                                      height: 130,
+                                      child: MindmapNodeWidget(
+                                        node: node,
+                                        isSelected: true,
+                                        onTap: () {},
+                                        onEdit: () {},
+                                        onAddChild: () {},
+                                        onDelete: () {},
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                            childWhenDragging: Opacity(
-                              opacity: 0.3,
+                              childWhenDragging: Opacity(
+                                opacity: 0.3,
+                                child: MindmapNodeWidget(
+                                  node: node,
+                                  isSelected: state.selectedNode?.id == node.id,
+                                  onTap: () {},
+                                  onEdit: () {},
+                                  onAddChild: () {},
+                                  onDelete: () {},
+                                ),
+                              ),
+                              onDragEnd: (details) {
+                                // Get the transformation matrix
+                                final Matrix4 transform =
+                                    _transformationController.value;
+
+                                // Calculate the inverse scale
+                                final scale = transform.getMaxScaleOnAxis();
+
+                                // Get the translation from the matrix
+                                final translation = transform.getTranslation();
+
+                                // Get AppBar height to adjust for screen coordinates
+                                final appBarHeight =
+                                    AppBar().preferredSize.height;
+                                final statusBarHeight = MediaQuery.of(
+                                  context,
+                                ).padding.top;
+                                final topOffset =
+                                    appBarHeight + statusBarHeight;
+
+                                // Calculate position in canvas space
+                                // The formula accounts for: screen position, app bar offset, pan offset, and zoom
+                                // Then converts to canvas coordinates
+                                final canvasX =
+                                    (details.offset.dx - translation.x) / scale;
+                                final canvasY =
+                                    ((details.offset.dy - topOffset) -
+                                        translation.y) /
+                                    scale;
+
+                                // Store the center position of the node
+                                var newPosition = Offset(
+                                  canvasX + 85,
+                                  canvasY + 65,
+                                );
+
+                                // Constrain node position within canvas boundaries
+                                // Node dimensions: 170x130 (width x height)
+                                const nodeWidth = 170.0;
+                                const nodeHeight = 130.0;
+                                const minPadding =
+                                    10.0; // Minimum distance from edge
+
+                                // Clamp X position (left to right boundaries)
+                                final minX = minPadding + nodeWidth / 2;
+                                final maxX =
+                                    _canvasSize.width -
+                                    minPadding -
+                                    nodeWidth / 2;
+                                final clampedX = newPosition.dx.clamp(
+                                  minX,
+                                  maxX,
+                                );
+
+                                // Clamp Y position (top to bottom boundaries)
+                                final minY = minPadding + nodeHeight / 2;
+                                final maxY =
+                                    _canvasSize.height -
+                                    minPadding -
+                                    nodeHeight / 2;
+                                final clampedY = newPosition.dy.clamp(
+                                  minY,
+                                  maxY,
+                                );
+
+                                // Update with clamped position
+                                newPosition = Offset(clampedX, clampedY);
+
+                                context.read<MindmapCubit>().updateNodePosition(
+                                  node.id!,
+                                  newPosition,
+                                );
+                              },
                               child: MindmapNodeWidget(
                                 node: node,
                                 isSelected: state.selectedNode?.id == node.id,
-                                onTap: () {},
-                                onEdit: () {},
-                                onAddChild: () {},
-                                onDelete: () {},
+                                onTap: () {
+                                  _showNodeContentDialog(context, node);
+                                },
+                                onEdit: () {
+                                  _showEditNodeDialog(context, node);
+                                },
+                                onAddChild: () {
+                                  _showAddNodeDialog(context, node.id);
+                                },
+                                onDelete: () {
+                                  // TODO: Implement delete
+                                },
                               ),
                             ),
-                            onDragEnd: (details) {
-                              // Get the transformation matrix
-                              final Matrix4 transform =
-                                  _transformationController.value;
-
-                              // Calculate the inverse scale
-                              final scale = transform.getMaxScaleOnAxis();
-
-                              // Get the translation from the matrix
-                              final translation = transform.getTranslation();
-
-                              // Get AppBar height to adjust for screen coordinates
-                              final appBarHeight =
-                                  AppBar().preferredSize.height;
-                              final statusBarHeight = MediaQuery.of(
-                                context,
-                              ).padding.top;
-                              final topOffset = appBarHeight + statusBarHeight;
-
-                              // Calculate position in canvas space
-                              // The formula accounts for: screen position, app bar offset, pan offset, and zoom
-                              // Then converts to canvas coordinates
-                              final canvasX =
-                                  (details.offset.dx - translation.x) / scale;
-                              final canvasY =
-                                  ((details.offset.dy - topOffset) -
-                                      translation.y) /
-                                  scale;
-
-                              // Store the center position of the node
-                              var newPosition = Offset(
-                                canvasX + 85,
-                                canvasY + 65,
-                              );
-
-                              // Constrain node position within canvas boundaries
-                              // Node dimensions: 170x130 (width x height)
-                              const nodeWidth = 170.0;
-                              const nodeHeight = 130.0;
-                              const minPadding =
-                                  10.0; // Minimum distance from edge
-
-                              // Clamp X position (left to right boundaries)
-                              final minX = minPadding + nodeWidth / 2;
-                              final maxX =
-                                  _canvasSize.width -
-                                  minPadding -
-                                  nodeWidth / 2;
-                              final clampedX = newPosition.dx.clamp(minX, maxX);
-
-                              // Clamp Y position (top to bottom boundaries)
-                              final minY = minPadding + nodeHeight / 2;
-                              final maxY =
-                                  _canvasSize.height -
-                                  minPadding -
-                                  nodeHeight / 2;
-                              final clampedY = newPosition.dy.clamp(minY, maxY);
-
-                              // Update with clamped position
-                              newPosition = Offset(clampedX, clampedY);
-
-                              context.read<MindmapCubit>().updateNodePosition(
-                                node.id!,
-                                newPosition,
-                              );
-                            },
-                            child: MindmapNodeWidget(
-                              node: node,
-                              isSelected: state.selectedNode?.id == node.id,
-                              onTap: () {
-                                _showNodeContentDialog(context, node);
-                              },
-                              onEdit: () {
-                                _showEditNodeDialog(context, node);
-                              },
-                              onAddChild: () {
-                                _showAddNodeDialog(context, node.id);
-                              },
-                              onDelete: () {
-                                // TODO: Implement delete
-                              },
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ],
+                          );
+                        }).toList(),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -585,32 +694,30 @@ class _MindmapViewerState extends State<MindmapViewer> {
               Positioned(
                 left: 16,
                 top: 16,
-                child: MindmapControls(
-                  zoomLevel: _currentZoom,
-                  onZoomIn: () {
-                    setState(() {
-                      final newZoom = (_currentZoom * 1.2).clamp(0.5, 2.0);
-                      _transformationController.value = Matrix4.identity()
-                        ..scale(newZoom);
-                      _currentZoom = newZoom;
-                    });
-                  },
-                  onZoomOut: () {
-                    setState(() {
-                      final newZoom = (_currentZoom / 1.2).clamp(0.5, 2.0);
-                      _transformationController.value = Matrix4.identity()
-                        ..scale(newZoom);
-                      _currentZoom = newZoom;
-                    });
-                  },
-                  onFitToScreen: () {
-                    // Reset zoom to 1.0 and center on root node
-                    setState(() {
-                      _currentZoom = 1.0;
-                      _transformationController.value = Matrix4.identity();
-                    });
-                    // Center view on root node
-                    _centerViewOnRoot();
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _zoomNotifier,
+                  builder: (context, zoom, child) {
+                    return MindmapControls(
+                      zoomLevel: zoom,
+                      onZoomIn: () {
+                        final currentZoom = _zoomNotifier.value;
+                        final newZoom = (currentZoom * 1.2).clamp(0.3, 3.0);
+                        _animateZoom(newZoom);
+                      },
+                      onZoomOut: () {
+                        final currentZoom = _zoomNotifier.value;
+                        final newZoom = (currentZoom / 1.2).clamp(0.3, 3.0);
+                        _animateZoom(newZoom);
+                      },
+                      onFitToScreen: () {
+                        // Reset zoom to 1.0 and center on root node
+                        _animateZoom(1.0);
+                        // Center view on root node after a short delay
+                        Future.delayed(const Duration(milliseconds: 350), () {
+                          _centerViewOnRoot();
+                        });
+                      },
+                    );
                   },
                 ),
               ),
@@ -808,19 +915,42 @@ class _MindmapViewerState extends State<MindmapViewer> {
   }
 
   void _showAddNodeDialog(BuildContext context, String? parentNodeId) {
+    final cubit = context.read<MindmapCubit>();
+    final chapterId = cubit.currentChapterId;
+
+    print('🔍 [_showAddNodeDialog] parentNodeId: $parentNodeId');
+
+    if (parentNodeId == null || parentNodeId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a parent node first by tapping on it'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
-      builder: (dialogContext) => AddNodeDialog(
-        parentNodeId: parentNodeId,
-        onAdd: (title, content, color, icon) {
-          context.read<MindmapCubit>().addNode(
-            title: title,
-            content: content,
-            color: color,
-            icon: icon,
-            parentNodeId: parentNodeId,
-          );
-        },
+      builder: (dialogContext) => BlocProvider.value(
+        value: cubit,
+        child: AddNodeDialog(
+          parentNodeId: parentNodeId,
+          chapterId: chapterId,
+          onAdd: (title, content, color, icon) {
+            print(
+              '📝 [AddNodeDialog.onAdd] Creating node under parent: $parentNodeId',
+            );
+            cubit.addNode(
+              title: title,
+              content: content,
+              color: color,
+              icon: icon,
+              parentNodeId: parentNodeId,
+            );
+          },
+        ),
       ),
     );
   }
@@ -870,6 +1000,8 @@ class _MindmapViewerState extends State<MindmapViewer> {
   @override
   void dispose() {
     _transformationController.dispose();
+    _zoomAnimationController.dispose();
+    _zoomNotifier.dispose();
     super.dispose();
   }
 }

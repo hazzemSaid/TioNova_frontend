@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/folder/data/models/NoteModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/add_note_bottom_sheet.dart';
@@ -26,7 +27,8 @@ class NotesScreen extends StatefulWidget {
 
 class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
   String _selectedFilter = 'all';
-  final TextEditingController _searchController = TextEditingController();
+  String _sortOption = 'time'; // 'time' or 'alpha'
+  bool _showFilterSort = false; // Toggle for filter/sort visibility
   List<Notemodel> _filteredNotes = [];
   List<Notemodel> _allNotes = [];
 
@@ -38,7 +40,6 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -53,53 +54,62 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
   void _filterNotes(List<Notemodel> notes) {
     setState(() {
       _allNotes = notes;
-      _filteredNotes = notes.where((note) {
-        // Filter by type
-        bool matchesFilter =
-            _selectedFilter == 'all' ||
+      // Filter by type
+      var filtered = notes.where((note) {
+        return _selectedFilter == 'all' ||
             (note.rawData['type'] as String?) == _selectedFilter;
-
-        // Filter by search
-        bool matchesSearch =
-            _searchController.text.isEmpty ||
-            note.title.toLowerCase().contains(
-              _searchController.text.toLowerCase(),
-            );
-
-        return matchesFilter && matchesSearch;
       }).toList();
+
+      // Sort notes
+      if (_sortOption == 'time') {
+        filtered.sort(
+          (a, b) => b.createdAt.compareTo(a.createdAt),
+        ); // Newest first
+      } else {
+        filtered.sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        ); // A-Z
+      }
+
+      _filteredNotes = filtered;
     });
   }
 
   void _showAddNoteBottomSheet() {
+    final chapterCubit = context.read<ChapterCubit>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddNoteBottomSheet(
-        chapterId: widget.chapterId,
-        accentColor: widget.accentColor ?? const Color(0xFF00D9A0),
-        onNoteAdded: () {
-          _loadNotes();
-        },
+      builder: (bottomSheetContext) => BlocProvider.value(
+        value: chapterCubit,
+        child: AddNoteBottomSheet(
+          chapterId: widget.chapterId,
+          accentColor: widget.accentColor ?? const Color(0xFF00D9A0),
+          onNoteAdded: () {
+            _loadNotes();
+          },
+        ),
       ),
     );
   }
 
   void _showNoteDetail(Notemodel note) {
+    final chapterCubit = context.read<ChapterCubit>();
     showDialog(
       context: context,
-      builder: (context) => NoteDetailDialog(
-        note: note,
-        accentColor: widget.accentColor ?? const Color(0xFF00D9A0),
-        onDelete: () async {
-          if (mounted) {
-            context.read<ChapterCubit>().deleteNote(
+      builder: (dialogContext) => BlocProvider.value(
+        value: chapterCubit,
+        child: NoteDetailDialog(
+          note: note,
+          accentColor: widget.accentColor ?? const Color(0xFF00D9A0),
+          onDelete: () async {
+            chapterCubit.deleteNote(
               noteId: note.id,
               chapterId: widget.chapterId,
             );
-          }
-        },
+          },
+        ),
       ),
     );
   }
@@ -162,9 +172,7 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
                 },
                 builder: (context, state) {
                   if (state is GetNotesByChapterIdLoading) {
-                    return Center(
-                      child: CircularProgressIndicator(color: _accentColor),
-                    );
+                    return _buildShimmerLoading();
                   }
 
                   if (_filteredNotes.isEmpty) {
@@ -178,13 +186,31 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddNoteBottomSheet,
-        backgroundColor: _accentColor,
-        icon: const Icon(Icons.add, color: Colors.black),
-        label: const Text(
-          'Add Note',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [_accentColor, _accentColor.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: _accentColor.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: _showAddNoteBottomSheet,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+
+          label: const Icon(Icons.add_rounded, color: Colors.black, size: 24),
         ),
       ),
     );
@@ -230,6 +256,24 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _showFilterSort = !_showFilterSort;
+              });
+            },
+            icon: Icon(
+              _showFilterSort ? Icons.close : Icons.filter_list,
+              color: _showFilterSort ? _accentColor : Colors.white,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: _showFilterSort
+                  ? _accentColor.withOpacity(0.15)
+                  : Colors.transparent,
+            ),
+          ),
+          const SizedBox(width: 8),
           Container(
             width: 40,
             height: 40,
@@ -254,51 +298,85 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
   }
 
   Widget _buildSearchAndFilter() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Search Bar
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _accentColor.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) => _filterNotes(_allNotes),
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search notes...',
-                hintStyle: TextStyle(color: Colors.grey[500]),
-                prefixIcon: Icon(Icons.search, color: _accentColor),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      height: _showFilterSort ? null : 0,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 300),
+        opacity: _showFilterSort ? 1.0 : 0.0,
+        child: _showFilterSort
+            ? Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0E0E10),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: _accentColor.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip('all', 'All', Icons.grid_view),
-                _buildFilterChip('text', 'Text', Icons.text_fields),
-                _buildFilterChip('image', 'Images', Icons.image),
-                _buildFilterChip('voice', 'Voice', Icons.mic),
-              ],
-            ),
-          ),
-        ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Filter Section
+                    Row(
+                      children: [
+                        Text(
+                          'Filter:',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildFilterChip('all', 'All', Icons.grid_view),
+                                _buildFilterChip(
+                                  'text',
+                                  'Text',
+                                  Icons.text_fields,
+                                ),
+                                _buildFilterChip(
+                                  'image',
+                                  'Images',
+                                  Icons.image,
+                                ),
+                                _buildFilterChip('voice', 'Voice', Icons.mic),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Sort Section
+                    Row(
+                      children: [
+                        Text(
+                          'Sort:',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        _buildSortChip('time', 'Newest', Icons.access_time),
+                        const SizedBox(width: 8),
+                        _buildSortChip('alpha', 'A-Z', Icons.sort_by_alpha),
+                      ],
+                    ),
+                  ],
+                ),
+              )
+            : const SizedBox.shrink(),
       ),
     );
   }
@@ -332,6 +410,7 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
         labelStyle: TextStyle(
           color: isSelected ? Colors.black : Colors.white,
           fontWeight: FontWeight.w600,
+          fontSize: 13,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -340,8 +419,44 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
             width: 1.5,
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
+    );
+  }
+
+  Widget _buildSortChip(String sort, String label, IconData icon) {
+    final isSelected = _sortOption == sort;
+    return FilterChip(
+      selected: isSelected,
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: isSelected ? Colors.black : Colors.white),
+          const SizedBox(width: 6),
+          Text(label),
+        ],
+      ),
+      onSelected: (selected) {
+        setState(() {
+          _sortOption = sort;
+          _filterNotes(_allNotes);
+        });
+      },
+      backgroundColor: const Color(0xFF1C1C1E),
+      selectedColor: _accentColor,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.black : Colors.white,
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isSelected ? _accentColor : Colors.grey[700]!,
+          width: 1.5,
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     );
   }
 
@@ -365,53 +480,104 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: _accentColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.note_add_outlined, size: 60, color: _accentColor),
+          Lottie.asset(
+            'assets/animations/Empty box by partho.json',
+            width: 250,
+            height: 250,
+            fit: BoxFit.contain,
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'No Notes Yet',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           Text(
-            _selectedFilter == 'all'
-                ? 'Start by adding your first note'
-                : 'No ${_selectedFilter} notes found',
-            style: TextStyle(color: Colors.grey[400], fontSize: 16),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: _showAddNoteBottomSheet,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _accentColor,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.add, color: Colors.black),
-            label: const Text(
-              'Add Note',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+            'No notes yet',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: const Color(0xFF1C1C1E),
+          highlightColor: const Color(0xFF2C2C2E),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 16,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            height: 12,
+                            width: 150,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  height: 14,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  height: 14,
+                  width: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

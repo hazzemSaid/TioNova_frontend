@@ -113,50 +113,77 @@ class _NotesSectionState extends State<NotesSection> {
                 ],
               ),
               const SizedBox(height: 20),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    final chapterCubit = context.read<ChapterCubit>();
-                    final chapterId = widget.chapterId.isNotEmpty
-                        ? widget.chapterId
-                        : 'temp';
-                    context.pushNamed(
-                      'chapter-notes',
-                      pathParameters: {'chapterId': chapterId},
-                      extra: {
-                        'chapterTitle': widget.chapterTitle,
-                        'accentColor':
-                            widget.accentColor ?? colorScheme.primary,
-                        'chapterCubit': chapterCubit,
-                      },
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52),
-                    backgroundColor: colorScheme.surfaceVariant,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
-                      side: BorderSide(color: colorScheme.outline, width: 1),
+              BlocBuilder<ChapterCubit, ChapterState>(
+                builder: (context, state) {
+                  // Show loading indicator when adding a note
+                  final isLoading = state is AddNoteLoading;
+
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              final chapterCubit = context.read<ChapterCubit>();
+                              final chapterId = widget.chapterId.isNotEmpty
+                                  ? widget.chapterId
+                                  : 'temp';
+                              context.pushNamed(
+                                'chapter-notes',
+                                pathParameters: {'chapterId': chapterId},
+                                extra: {
+                                  'chapterTitle': widget.chapterTitle,
+                                  'accentColor':
+                                      widget.accentColor ?? colorScheme.primary,
+                                  'chapterCubit': chapterCubit,
+                                },
+                              );
+                            },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 52),
+                        backgroundColor: colorScheme.surfaceVariant,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(26),
+                          side: BorderSide(
+                            color: colorScheme.outline,
+                            width: 1,
+                          ),
+                        ),
+                        disabledBackgroundColor: colorScheme.surfaceVariant
+                            .withOpacity(0.5),
+                      ),
+                      icon: isLoading
+                          ? SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  colorScheme.onSurface.withOpacity(0.5),
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              Icons.description_outlined,
+                              color: colorScheme.onSurface,
+                              size: 22,
+                            ),
+                      label: Text(
+                        isLoading ? 'Processing...' : 'Open',
+                        style: TextStyle(
+                          color: isLoading
+                              ? colorScheme.onSurface.withOpacity(0.5)
+                              : colorScheme.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
                     ),
-                  ),
-                  icon: Icon(
-                    Icons.description_outlined,
-                    color: colorScheme.onSurface,
-                    size: 22,
-                  ),
-                  label: Text(
-                    'Open',
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ],
           ),

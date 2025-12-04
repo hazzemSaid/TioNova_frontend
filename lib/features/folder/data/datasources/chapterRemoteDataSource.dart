@@ -11,6 +11,9 @@ import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/data/models/NoteModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
+import 'package:tionova/features/folder/data/models/new_node_model.dart';
+import 'package:tionova/features/folder/data/models/nodeModel.dart';
+import 'package:tionova/features/folder/data/models/smart_node_response.dart';
 import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
 
 class ChapterRemoteDataSource extends IChapterRepository {
@@ -289,7 +292,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
     /**
      * Add a new note
      * Routes based on type:
-     * - POST /notes/text (for text notes)
+     * - POST /notes/text (for text notes with textContent field)
      * - POST /notes/image (for image notes with file upload)
      * - POST /notes/voice (for voice notes with file upload)
      */
@@ -304,10 +307,26 @@ class ChapterRemoteDataSource extends IChapterRepository {
 
       switch (noteType) {
         case 'text':
-          // Text notes: Send as JSON
+          // Text notes: Send as JSON with textContent field
+          final textContent = rawData['data'] as String?;
+          if (textContent == null || textContent.isEmpty) {
+            return Left(ServerFailure('Text content is required'));
+          }
+
+          final requestBody = {
+            'title': title,
+            'chapterId': chapterId,
+            'textContent': textContent,
+          };
+
+          // Add meta if present
+          if (rawData['meta'] != null) {
+            requestBody['meta'] = rawData['meta'];
+          }
+
           response = await _dio.post(
             '/notes/text',
-            data: {'title': title, 'chapterId': chapterId, 'rawData': rawData},
+            data: requestBody,
             options: Options(headers: {'Content-Type': 'application/json'}),
           );
           break;
@@ -315,14 +334,16 @@ class ChapterRemoteDataSource extends IChapterRepository {
         case 'image':
           // Image notes: Send as multipart with file upload
           final imageData = rawData['data'] as String?;
-          if (imageData == null || imageData.isEmpty) {}
+          if (imageData == null || imageData.isEmpty) {
+            return Left(ServerFailure('Image data is required'));
+          }
 
           // Decode base64 to bytes
           final bytes = base64Decode(
-            imageData!.contains(',') ? imageData.split(',').last : imageData,
+            imageData.contains(',') ? imageData.split(',').last : imageData,
           );
 
-          final formData = FormData.fromMap({
+          final formDataMap = <String, dynamic>{
             'title': title,
             'chapterId': chapterId,
             'file': MultipartFile.fromBytes(
@@ -330,11 +351,17 @@ class ChapterRemoteDataSource extends IChapterRepository {
               filename: rawData['meta']?['fileName'] ?? 'image.jpg',
               contentType: MediaType.parse('image/jpeg'),
             ),
-            // Send meta as JSON string if present
-            if (rawData['meta'] != null) 'meta': jsonEncode(rawData['meta']),
-          });
+          };
 
-          response = await _dio.post('/notes/image', data: formData);
+          // Send meta as JSON string if present (required by backend)
+          if (rawData['meta'] != null) {
+            formDataMap['meta'] = jsonEncode(rawData['meta']);
+          }
+
+          response = await _dio.post(
+            '/notes/image',
+            data: FormData.fromMap(formDataMap),
+          );
           break;
 
         case 'voice':
@@ -348,7 +375,7 @@ class ChapterRemoteDataSource extends IChapterRepository {
             voiceData.contains(',') ? voiceData.split(',').last : voiceData,
           );
 
-          final formData = FormData.fromMap({
+          final formDataMap = <String, dynamic>{
             'title': title,
             'chapterId': chapterId,
             'file': MultipartFile.fromBytes(
@@ -356,11 +383,17 @@ class ChapterRemoteDataSource extends IChapterRepository {
               filename: rawData['meta']?['fileName'] ?? 'voice.aac',
               contentType: MediaType.parse('audio/aac'),
             ),
-            // Send meta as JSON string if present
-            if (rawData['meta'] != null) 'meta': jsonEncode(rawData['meta']),
-          });
+          };
 
-          response = await _dio.post('/notes/voice', data: formData);
+          // Send meta as JSON string if present (required by backend)
+          if (rawData['meta'] != null) {
+            formDataMap['meta'] = jsonEncode(rawData['meta']);
+          }
+
+          response = await _dio.post(
+            '/notes/voice',
+            data: FormData.fromMap(formDataMap),
+          );
           break;
 
         default:
@@ -374,10 +407,9 @@ class ChapterRemoteDataSource extends IChapterRepository {
       return ErrorHandlingUtils.handleApiResponse<Notemodel>(
         response: response,
         onSuccess: (data) {
-          // Response structure: { status: "success", data: { note: {...} } }
-          return Notemodel.fromJson(
-            data['data']['note'] as Map<String, dynamic>,
-          );
+          // Response structure: { success: true, data: { note: {...} } }
+          final noteData = data['data']['note'] as Map<String, dynamic>;
+          return Notemodel.fromJson(noteData);
         },
       );
     } catch (e) {
@@ -400,6 +432,55 @@ class ChapterRemoteDataSource extends IChapterRepository {
         onSuccess: (data) {
           print('✅ Note deleted successfully');
           return null;
+        },
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<Either<Failure, Notemodel>> updateNote({
+    required String noteId,
+    String? title,
+    Map<String, dynamic>? rawData,
+  }) async {
+    /**
+     * Update an existing note
+     * @route PATCH /api/notes/:noteId
+     * Can update title, rawData, or both
+     */
+    try {
+      if (title == null && rawData == null) {
+        return Left(
+          ServerFailure(
+            'At least one field (title or rawData) must be provided for update',
+          ),
+        );
+      }
+
+      final Map<String, dynamic> requestData = {};
+
+      if (title != null) {
+        requestData['title'] = title;
+      }
+
+      if (rawData != null) {
+        requestData['rawData'] = rawData;
+      }
+
+      final response = await _dio.patch(
+        '/notes/$noteId',
+        data: requestData,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      return ErrorHandlingUtils.handleApiResponse<Notemodel>(
+        response: response,
+        onSuccess: (data) {
+          // Response structure: { success: true, data: { note: {...} } }
+          final noteData = data['data']['note'] as Map<String, dynamic>;
+          return Notemodel.fromJson(noteData);
         },
       );
     } catch (e) {
@@ -533,6 +614,114 @@ class ChapterRemoteDataSource extends IChapterRepository {
       );
     } catch (e) {
       print('❌ [DataSource] Exception in deleteChapter: $e');
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<Either<Failure, SmartNodeResponse>> generateSmartNode({
+    required String text,
+    required String chapterId,
+  }) async {
+    try {
+      print('🤖 [DataSource] generateSmartNode() started');
+      print('📝 Text: $text, ChapterId: $chapterId');
+
+      // Validate text length (minimum 10 characters as per API requirement)
+      if (text.length < 10) {
+        return Left(ServerFailure('Text must be at least 10 characters long'));
+      }
+
+      final response = await _dio.post(
+        '/generateText',
+        data: {'text': text, 'chapterId': chapterId},
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      print(
+        '✅ [DataSource] generateSmartNode response: ${response.statusCode}',
+      );
+
+      return ErrorHandlingUtils.handleApiResponse<SmartNodeResponse>(
+        response: response,
+        onSuccess: (data) {
+          print('✅ [DataSource] generateSmartNode success');
+          return SmartNodeResponse.fromJson(
+            data['data'] as Map<String, dynamic>,
+          );
+        },
+      );
+    } catch (e) {
+      print('❌ [DataSource] Exception in generateSmartNode: $e');
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<Either<Failure, Mindmapmodel>> saveMindmap({
+    required String mindmapId,
+    required String chapterId,
+    String? title,
+    List<NodeModel>? nodes,
+    List<NewNodeModel>? newNodes,
+  }) async {
+    try {
+      print('💾 [DataSource] saveMindmap() started');
+      print('📍 MindmapId: $mindmapId, ChapterId: $chapterId');
+
+      // Build the request body matching the API specification
+      final Map<String, dynamic> requestData = {
+        '_id': mindmapId,
+        'chapterId': chapterId,
+      };
+
+      // Add optional title if provided
+      if (title != null && title.isNotEmpty) {
+        requestData['title'] = title;
+        print('📝 Updating title: "$title"');
+      }
+
+      // Add existing nodes array if provided
+      // toJson() now handles all field formatting including defaults
+      if (nodes != null && nodes.isNotEmpty) {
+        requestData['nodes'] = nodes.map((node) => node.toJson()).toList();
+        print('📦 Sending ${nodes.length} existing nodes');
+      }
+
+      // Add new nodes array if provided
+      // toJson() now handles all field formatting including defaults
+      if (newNodes != null && newNodes.isNotEmpty) {
+        requestData['newNodes'] = newNodes
+            .map((node) => node.toJson())
+            .toList();
+        print('🆕 Sending ${newNodes.length} new nodes');
+      }
+
+      print('📤 Request payload: ${requestData.keys.toList()}');
+
+      final response = await _dio.patch(
+        '/saveMindmap',
+        data: requestData,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      print('✅ [DataSource] saveMindmap response: ${response.statusCode}');
+
+      return ErrorHandlingUtils.handleApiResponse<Mindmapmodel>(
+        response: response,
+        onSuccess: (data) {
+          print('✅ [DataSource] saveMindmap success');
+          final mindmap = Mindmapmodel.fromJson(
+            data['data'] as Map<String, dynamic>,
+          );
+          print(
+            '📥 Received updated mindmap with ${mindmap.nodes?.length ?? 0} nodes',
+          );
+          return mindmap;
+        },
+      );
+    } catch (e) {
+      print('❌ [DataSource] Exception in saveMindmap: $e');
       return ErrorHandlingUtils.handleDioError(e);
     }
   }

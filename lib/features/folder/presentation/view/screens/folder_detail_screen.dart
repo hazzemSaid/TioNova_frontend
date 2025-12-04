@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:skeletonizer/skeletonizer.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
@@ -44,18 +44,13 @@ class FolderDetailScreen extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => getIt<ChapterCubit>()),
+        BlocProvider(
+          create: (_) => getIt<ChapterCubit>()..getChapters(folderId: folderId),
+        ),
         BlocProvider(create: (_) => getIt<FolderCubit>()),
       ],
       child: Builder(
         builder: (context) {
-          // Get auth state for token
-
-          // Load chapters when widget builds
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.read<ChapterCubit>().getChapters(folderId: folderId);
-          });
-
           return BlocListener<ChapterCubit, ChapterState>(
             listener: (context, state) {
               if (state is DeleteChapterSuccess) {
@@ -263,51 +258,24 @@ class FolderDetailScreen extends StatelessWidget {
           BlocBuilder<ChapterCubit, ChapterState>(
             builder: (context, state) {
               // Extract chapters from any state that has them
-              List<ChapterModel>? chapters;
-              bool isLoading = false;
-
-              if (state is ChapterLoading) {
-                isLoading = true;
-              } else if (state is ChapterLoaded) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterLoading) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterProgress) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterSuccess) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterError) {
-                chapters = state.chapters;
-              }
+              final chapters = state.chapters;
+              final isLoading = state is ChapterLoading;
 
               // Show chapters if available, regardless of creation state
               if (isLoading && chapters == null) {
-                // Show skeleton loading cards only if no chapters yet
+                // Show shimmer loading cards only if no chapters yet
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (ctx, idx) => Skeletonizer(
-                      enabled: true,
-                      child: _buildChapterCard(
-                        context,
-                        ChapterModel(
-                          id: 'loading',
-                          title: 'Loading Chapter Title',
-                          description:
-                              'Loading chapter description text that will be replaced with actual content',
-                          createdAt: DateTime.now().toIso8601String(),
-                          quizStatus: 'Not Taken',
-                        ),
-                      ),
-                    ),
-                    childCount: 3, // Show 3 skeleton cards
+                    (ctx, idx) => _buildShimmerChapterCard(context),
+                    childCount: 3, // Show 3 shimmer cards
                   ),
                 );
               } else if (chapters != null && chapters.isNotEmpty) {
                 // Show chapters even during creation states
                 return SliverList(
                   delegate: SliverChildBuilderDelegate((ctx, idx) {
-                    final chapter = chapters?[idx];
-                    return _buildChapterCard(context, chapter!);
+                                          final chapter = chapters[idx];
+                    return _buildChapterCard(context, chapter);
                   }, childCount: chapters.length),
                 );
               } else if (state is ChapterError) {
@@ -523,26 +491,12 @@ class FolderDetailScreen extends StatelessWidget {
           BlocBuilder<ChapterCubit, ChapterState>(
             builder: (context, state) {
               // Extract chapters from any state that has them
-              List<ChapterModel>? chapters;
-              bool isLoading = false;
-
-              if (state is ChapterLoading) {
-                isLoading = true;
-              } else if (state is ChapterLoaded) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterLoading) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterProgress) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterSuccess) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterError) {
-                chapters = state.chapters;
-              }
+              final chapters = state.chapters;
+              final isLoading = state is ChapterLoading;
 
               // Show chapters if available, regardless of creation state
               if (isLoading && chapters == null) {
-                // Show skeleton loading cards in grid for web only if no chapters yet
+                // Show shimmer loading cards in grid for web only if no chapters yet
                 return SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: effectivePadding),
                   sliver: SliverGrid(
@@ -554,21 +508,8 @@ class FolderDetailScreen extends StatelessWidget {
                           childAspectRatio: 2.5,
                         ),
                     delegate: SliverChildBuilderDelegate(
-                      (ctx, idx) => Skeletonizer(
-                        enabled: true,
-                        child: _buildWebChapterCard(
-                          context,
-                          ChapterModel(
-                            id: 'loading',
-                            title: 'Loading Chapter Title',
-                            description:
-                                'Loading chapter description text that will be replaced with actual content',
-                            createdAt: DateTime.now().toIso8601String(),
-                            quizStatus: 'Not Taken',
-                          ),
-                        ),
-                      ),
-                      childCount: 4, // Show 4 skeleton cards for web
+                      (ctx, idx) => _buildWebShimmerChapterCard(context),
+                      childCount: 4, // Show 4 shimmer cards for web
                     ),
                   ),
                 );
@@ -585,8 +526,8 @@ class FolderDetailScreen extends StatelessWidget {
                           childAspectRatio: 2.5,
                         ),
                     delegate: SliverChildBuilderDelegate((ctx, idx) {
-                      final chapter = chapters?[idx];
-                      return _buildWebChapterCard(context, chapter!);
+                      final chapter = chapters[idx];
+                      return _buildWebChapterCard(context, chapter);
                     }, childCount: chapters.length),
                   ),
                 );
@@ -614,6 +555,135 @@ class FolderDetailScreen extends StatelessWidget {
 
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerChapterCard(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Shimmer.fromColors(
+      baseColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      highlightColor: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+      child: Container(
+        margin: EdgeInsets.fromLTRB(
+          horizontalPadding,
+          0,
+          horizontalPadding,
+          isTablet ? 14 : 12,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+          border: Border.all(color: Colors.white, width: 1),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(isTablet ? 16 : 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: isTablet ? 44 : 40,
+                    height: isTablet ? 44 : 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                    ),
+                  ),
+                  SizedBox(width: isTablet ? 12 : 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 8),
+                        Container(width: 100, height: 12, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: isTablet ? 12 : 10),
+              Container(
+                width: double.infinity,
+                height: 14,
+                color: Colors.white,
+              ),
+              SizedBox(height: isTablet ? 14 : 12),
+              Row(
+                children: [
+                  Container(width: 60, height: 24, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Container(width: 60, height: 24, color: Colors.white),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWebShimmerChapterCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Shimmer.fromColors(
+      baseColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      highlightColor: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Container(height: 20, color: Colors.white)),
+                const SizedBox(width: 12),
+                Container(width: 60, height: 20, color: Colors.white),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 14,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(width: 200, height: 14, color: Colors.white),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: Container(height: 12, color: Colors.white)),
+                const SizedBox(width: 8),
+                Container(width: 60, height: 24, color: Colors.white),
+                const SizedBox(width: 8),
+                Container(width: 60, height: 24, color: Colors.white),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -666,7 +736,7 @@ class FolderDetailScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
-        final chapterId = chapter.id?.isNotEmpty == true ? chapter.id! : 'temp';
+        final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
         context.pushNamed(
           'chapter-detail',
           pathParameters: {'chapterId': chapterId},
@@ -936,7 +1006,7 @@ class FolderDetailScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
-        final chapterId = chapter.id?.isNotEmpty == true ? chapter.id! : 'temp';
+        final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
         context.pushNamed(
           'chapter-detail',
           pathParameters: {'chapterId': chapterId},
