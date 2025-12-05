@@ -79,6 +79,7 @@ import 'package:tionova/features/quiz/data/repo/Quizrepoimp.dart';
 import 'package:tionova/features/quiz/domain/repo/Quizrepo.dart';
 import 'package:tionova/features/quiz/domain/usecases/CreateQuizUseCase.dart';
 import 'package:tionova/features/quiz/domain/usecases/GetHistoryUseCase.dart';
+import 'package:tionova/features/quiz/domain/usecases/GetPracticeModeQuestionsUseCase.dart';
 import 'package:tionova/features/quiz/domain/usecases/UserQuizStatusUseCase.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 
@@ -437,11 +438,15 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<GetHistoryUseCase>(
     () => GetHistoryUseCase(quizrepo: getIt<QuizRepo>()),
   );
+  getIt.registerLazySingleton<GetPracticeModeQuestionsUseCase>(
+    () => GetPracticeModeQuestionsUseCase(quizRepo: getIt<QuizRepo>()),
+  );
   getIt.registerFactory(
     () => QuizCubit(
       createQuizUseCase: getIt<CreateQuizUseCase>(),
       userQuizStatusUseCase: getIt<UserQuizStatusUseCase>(),
       getHistoryUseCase: getIt<GetHistoryUseCase>(),
+      getPracticeModeQuestionsUseCase: getIt<GetPracticeModeQuestionsUseCase>(),
     ),
   );
 

@@ -28,71 +28,85 @@ class FolderTabs extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Container(
-      height: 44,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.6)),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withOpacity(0.06),
-            blurRadius: 6,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.6),
+          width: 1,
+        ),
       ),
       child: Row(
         children: tabs.asMap().entries.map((entry) {
-          final index = entry.key;
           final tab = entry.value;
-          final isSelected = tab == selectedTab;
-          final isFirst = index == 0;
-          final isLast = index == tabs.length - 1;
+          final isActive = tab == selectedTab;
 
           return Expanded(
-            child: InkWell(
+            child: GestureDetector(
               onTap: () => onTabSelected(tab),
-              borderRadius: BorderRadius.horizontal(
-                left: isFirst ? const Radius.circular(12) : Radius.zero,
-                right: isLast ? const Radius.circular(12) : Radius.zero,
-              ),
-              splashColor: colorScheme.primary.withOpacity(0.1),
-              highlightColor: colorScheme.primary.withOpacity(0.05),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? colorScheme.surface : Colors.transparent,
-                  borderRadius: BorderRadius.horizontal(
-                    left: isFirst ? const Radius.circular(12) : Radius.zero,
-                    right: isLast ? const Radius.circular(12) : Radius.zero,
+                  gradient: isActive
+                      ? LinearGradient(
+                          colors: [
+                            colorScheme.primary,
+                            colorScheme.primaryContainer.withOpacity(0.85),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: isActive ? null : colorScheme.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isActive
+                        ? Colors.transparent
+                        : colorScheme.outlineVariant.withOpacity(0.6),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isActive
+                          ? colorScheme.primary.withOpacity(0.25)
+                          : theme.shadowColor.withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedScale(
+                      duration: const Duration(milliseconds: 200),
+                      scale: isActive ? 1.1 : 1.0,
+                      child: Icon(
                         _getTabIcon(tab),
-                        color: !isSelected
-                            ? colorScheme.primary
-                            : colorScheme.onSurfaceVariant,
-                        size: 14,
+                        color: isActive
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                        size: 20,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        tab,
-                        style: TextStyle(
-                          color: isSelected
-                              ? colorScheme.onSurface
-                              : colorScheme.onSurfaceVariant,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          fontSize: 13,
-                        ),
+                    ),
+                    const SizedBox(width: 8),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: TextStyle(
+                        color: isActive
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                        fontSize: 15,
+                        fontWeight: isActive
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        letterSpacing: 0.2,
                       ),
-                    ],
-                  ),
+                      child: Text(tab),
+                    ),
+                  ],
                 ),
               ),
             ),

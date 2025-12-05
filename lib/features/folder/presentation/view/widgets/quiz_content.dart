@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
 class QuizContent extends StatelessWidget {
   final String? chapterId;
@@ -31,9 +30,9 @@ class QuizContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                Icons.description_outlined,
+                Icons.quiz,
                 size: 32,
-                color: colorScheme.onSurface,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),
@@ -83,7 +82,13 @@ class QuizContent extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      if (!context.mounted) return;
+                      context.push(
+                        '/practice/$chapterId',
+                        extra: {'chapterTitle': chapterTitle},
+                      );
+                    },
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 46),
                       side: BorderSide(color: colorScheme.outline),

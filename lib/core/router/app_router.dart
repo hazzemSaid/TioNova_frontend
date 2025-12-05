@@ -42,6 +42,7 @@ import 'package:tionova/features/preferences/presentation/Bloc/PreferencesCubit.
 import 'package:tionova/features/preferences/presentation/screens/preferences_screen.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
+import 'package:tionova/features/quiz/presentation/view/practice_mode_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_questions_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_results_screen.dart';
@@ -250,6 +251,18 @@ class AppRouter {
             return BlocProvider<QuizCubit>(
               create: (context) => getIt<QuizCubit>(),
               child: QuizScreen(chapterId: chapterId),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/practice/:chapterId',
+          name: 'practice-mode',
+          builder: (BuildContext context, GoRouterState state) {
+            final chapterId = state.pathParameters['chapterId']!;
+            final extra = state.extra as Map<String, dynamic>?;
+            return PracticeModeScreen(
+              chapterId: chapterId,
+              chapterTitle: extra?['chapterTitle'] as String?,
             );
           },
         ),

@@ -220,7 +220,9 @@ class FolderDetailScreen extends StatelessWidget {
               final isOwner = currentUserId != null && currentUserId == ownerId;
 
               if (!isOwner) {
-                return SliverToBoxAdapter(child: SizedBox.shrink());
+                return SliverToBoxAdapter(
+                  child: SizedBox(height: horizontalPadding),
+                );
               }
 
               return SliverToBoxAdapter(
