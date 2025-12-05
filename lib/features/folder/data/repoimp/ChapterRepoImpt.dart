@@ -7,6 +7,9 @@ import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/data/models/NoteModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
+import 'package:tionova/features/folder/data/models/new_node_model.dart';
+import 'package:tionova/features/folder/data/models/nodeModel.dart';
+import 'package:tionova/features/folder/data/models/smart_node_response.dart';
 import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
 
 class ChapterRepoImpl extends IChapterRepository {
@@ -114,5 +117,43 @@ class ChapterRepoImpl extends IChapterRepository {
   @override
   Future<Either<Failure, void>> deleteChapter({required String chapterId}) {
     return remoteDataSource.deleteChapter(chapterId: chapterId);
+  }
+
+  @override
+  Future<Either<Failure, SmartNodeResponse>> generateSmartNode({
+    required String text,
+    required String chapterId,
+  }) {
+    return remoteDataSource.generateSmartNode(text: text, chapterId: chapterId);
+  }
+
+  @override
+  Future<Either<Failure, Mindmapmodel>> saveMindmap({
+    required String mindmapId,
+    required String chapterId,
+    String? title,
+    List<NodeModel>? nodes,
+    List<NewNodeModel>? newNodes,
+  }) {
+    return remoteDataSource.saveMindmap(
+      mindmapId: mindmapId,
+      chapterId: chapterId,
+      title: title,
+      nodes: nodes,
+      newNodes: newNodes,
+    );
+  }
+
+  @override
+  Future<Either<Failure, Notemodel>> updateNote({
+    required String noteId,
+    String? title,
+    Map<String, dynamic>? rawData,
+  }) {
+    return remoteDataSource.updateNote(
+      noteId: noteId,
+      title: title,
+      rawData: rawData,
+    );
   }
 }

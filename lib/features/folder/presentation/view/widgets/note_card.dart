@@ -2,23 +2,68 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/NoteModel.dart';
 
 class NoteCard extends StatelessWidget {
   final Notemodel note;
   final Color accentColor;
   final VoidCallback onTap;
+  final String? folderOwnerId;
 
   const NoteCard({
     super.key,
     required this.note,
     required this.accentColor,
     required this.onTap,
+    this.folderOwnerId,
   });
 
   String _formatDate(DateTime date) {
-    return DateFormat('M/d/yyyy, h:mm a').format(date);
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return DateFormat('h:mm a').format(date);
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return DateFormat('MMM d, yyyy').format(date);
+    }
+  }
+
+  bool _shouldShowCreator(BuildContext context) {
+    // Don't show if no folder owner ID (shouldn't happen, but be safe)
+    if (folderOwnerId == null) return false;
+
+    // Don't show if no creator info
+    if (note.creatorEmail == null && note.creatorName == null) return false;
+
+    // Get current user ID from AuthCubit
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthSuccess) return false;
+
+    final currentUserId = authState.user.id;
+
+    // Show creator if current user is NOT the folder owner
+    return currentUserId != folderOwnerId;
+  }
+
+  String _getCreatorDisplay() {
+    // Prefer creator name, fall back to email username
+    if (note.creatorName != null && note.creatorName!.isNotEmpty) {
+      return note.creatorName!;
+    }
+    if (note.creatorEmail != null && note.creatorEmail!.isNotEmpty) {
+      // Extract username from email (part before @)
+      return note.creatorEmail!.split('@').first;
+    }
+    return 'Unknown';
   }
 
   IconData _getIconForType(String type) {
@@ -125,25 +170,58 @@ class NoteCard extends StatelessWidget {
 
   Widget _buildVoicePreview() {
     final meta = note.rawData['meta'] as Map<String, dynamic>?;
-    final duration = meta?['duration'] ?? 'Unknown';
+    final duration = meta?['duration'] ?? '0:00';
     return Container(
-      height: 80,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.play_circle_outline, color: Colors.orange, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              'Voice note • $duration',
-              style: TextStyle(color: Colors.grey[400], fontSize: 12),
-            ),
+        gradient: LinearGradient(
+          colors: [
+            Colors.orange.withOpacity(0.1),
+            Colors.orange.withOpacity(0.05),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.play_arrow, color: Colors.orange, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Voice Recording',
+                  style: TextStyle(
+                    color: Colors.grey[300],
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  duration,
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -173,48 +251,36 @@ class NoteCard extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildTags() {
+  Widget _buildTypeBadge() {
     final type = note.rawData['type'] as String? ?? 'text';
-    final meta = note.rawData['meta'] as Map<String, dynamic>?;
-    final tags = <String>[];
+    final typeLabel = type[0].toUpperCase() + type.substring(1);
 
-    // Add type
-    tags.add(type);
-
-    // Add additional meta tags
-    if (meta != null) {
-      if (meta['size'] != null) {
-        final sizeInKB = (meta['size'] as num) / 1024;
-        tags.add('${sizeInKB.toStringAsFixed(1)} KB');
-      }
-      if (meta['duration'] != null) {
-        tags.add(meta['duration'].toString());
-      }
-    }
-
-    return tags
-        .map(
-          (tag) => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getColorForType(type).withOpacity(0.15),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: _getColorForType(type).withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Text(
-              tag,
-              style: TextStyle(
-                color: _getColorForType(type),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: _getColorForType(type).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _getColorForType(type).withOpacity(0.4),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_getIconForType(type), color: _getColorForType(type), size: 14),
+          const SizedBox(width: 6),
+          Text(
+            typeLabel,
+            style: TextStyle(
+              color: _getColorForType(type),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        )
-        .toList();
+        ],
+      ),
+    );
   }
 
   @override
@@ -224,37 +290,41 @@ class NoteCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF0E0E10),
+          color: const Color(0xFF1A1A1A),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _getColorForType(type).withOpacity(0.3),
-            width: 1.5,
-          ),
+          border: Border.all(color: Colors.grey[850]!, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // Header with icon, title, and date
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: _getColorForType(type).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
+                      gradient: LinearGradient(
+                        colors: [
+                          _getColorForType(type),
+                          _getColorForType(type).withOpacity(0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       _getIconForType(type),
-                      color: _getColorForType(type),
-                      size: 20,
+                      color: Colors.white,
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,41 +335,85 @@ class NoteCard extends StatelessWidget {
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            letterSpacing: -0.3,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          _formatDate(note.createdAt),
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 12,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              color: Colors.grey[600],
+                              size: 13,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatDate(note.createdAt),
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 12,
+                              ),
+                            ),
+                            // Show creator info if this is not the owner's folder and creator info exists
+                            if (_shouldShowCreator(context)) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: accentColor.withOpacity(0.3),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.person_outline,
+                                      size: 10,
+                                      color: accentColor,
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      _getCreatorDisplay(),
+                                      style: TextStyle(
+                                        color: accentColor,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.grey[600],
-                    size: 16,
-                  ),
+                  _buildTypeBadge(),
                 ],
               ),
             ),
 
-            // Preview Content
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildPreview(),
-            ),
-
-            // Tags
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Wrap(spacing: 8, runSpacing: 8, children: _buildTags()),
-            ),
+            // Preview Content (only for text and image, voice has its own design)
+            if (type != 'voice')
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: _buildPreview(),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: _buildVoicePreview(),
+              ),
           ],
         ),
       ),

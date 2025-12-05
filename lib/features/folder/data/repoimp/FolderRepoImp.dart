@@ -71,4 +71,9 @@ class FolderRepoImp implements IFolderRepository {
   }) {
     return remoteDataSource.getAvailableUsersForShare(query: query);
   }
+
+  @override
+  Future<Either<Failure, List<Foldermodel>>> getPublicFolders() {
+    return remoteDataSource.getPublicFolders();
+  }
 }

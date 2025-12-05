@@ -49,17 +49,24 @@ class NodeModel extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    // Only include fields expected by the backend API for save operations
+    // Exclude createdAt and updatedAt as they are managed by the backend
+    final Map<String, dynamic> json = {
       '_id': id,
-      'title': title,
-      'icon': icon,
-      'color': color,
-      'content': content,
-      'children': children,
-      'isRoot': isRoot,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
+      'title': title ?? '',
+      'icon': icon ?? '📘',
+      'color': color ?? '#3B82F6',
+      'content': content ?? '',
+      'children': children ?? [],
+      'isRoot': isRoot ?? false,
     };
+
+    // Remove null _id if not set (for new nodes, but new nodes should use NewNodeModel)
+    if (json['_id'] == null) {
+      json.remove('_id');
+    }
+
+    return json;
   }
 
   @override

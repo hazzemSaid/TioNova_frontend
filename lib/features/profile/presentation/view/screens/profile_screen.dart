@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/profile/data/models/profile_model.dart';
 import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:tionova/features/profile/presentation/cubit/profile_state.dart';
@@ -209,7 +210,9 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
             onExportData: () {},
             onShareProgress: () {},
             onHelpSupport: () {},
-            onSignOut: () {},
+            onSignOut: () {
+              context.read<AuthCubit>().signOut();
+            },
           ),
         );
       default:

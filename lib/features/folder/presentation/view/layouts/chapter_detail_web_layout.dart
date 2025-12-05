@@ -22,6 +22,7 @@ class ChapterDetailWebLayout extends StatelessWidget {
   final VoidCallback onViewSummary;
   final VoidCallback onGenerateMindmap;
   final Function(String) onTabChanged;
+  final String? folderOwnerId;
 
   const ChapterDetailWebLayout({
     super.key,
@@ -37,6 +38,7 @@ class ChapterDetailWebLayout extends StatelessWidget {
     required this.onViewSummary,
     required this.onGenerateMindmap,
     required this.onTabChanged,
+    this.folderOwnerId,
   });
 
   @override
@@ -704,6 +706,7 @@ class ChapterDetailWebLayout extends StatelessWidget {
                           'chapterTitle': chapter.title ?? 'Chapter',
                           'accentColor': folderColor,
                           'chapterCubit': chapterCubit,
+                          'folderOwnerId': folderOwnerId,
                         },
                       );
                     },

@@ -12,11 +12,13 @@ import 'package:tionova/features/folder/presentation/view/widgets/chapter_status
 class FolderChapterCard extends StatelessWidget {
   final ChapterModel chapter;
   final Color folderColor;
+  final String? folderOwnerId;
 
   const FolderChapterCard({
     super.key,
     required this.chapter,
     required this.folderColor,
+    this.folderOwnerId,
   });
 
   String _formatDate(String? dateString) {
@@ -40,7 +42,7 @@ class FolderChapterCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
-        final chapterId = chapter.id?.isNotEmpty == true ? chapter.id! : 'temp';
+        final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
         context.pushNamed(
           'chapter-detail',
           pathParameters: {'chapterId': chapterId},
@@ -48,6 +50,7 @@ class FolderChapterCard extends StatelessWidget {
             'chapter': chapter,
             'folderColor': folderColor,
             'chapterCubit': chapterCubit,
+            'folderOwnerId': folderOwnerId,
           },
         );
       },
@@ -55,6 +58,7 @@ class FolderChapterCard extends StatelessWidget {
         ShowChapterOptionsBottomSheet(
           chapter: chapter,
           folderId: chapter.folderId ?? '',
+          folderOwnerId: folderOwnerId ?? '',
         ).show(context);
       },
       child: Container(

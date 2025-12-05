@@ -5,7 +5,6 @@ import 'package:tionova/features/folder/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/ai_summary_section.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_detail_app_bar.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_preview_section.dart';
-import 'package:tionova/features/folder/presentation/view/widgets/chatbot_content.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/mind_map_section.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/notes_section.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/quiz_chatbot_tabs.dart';
@@ -25,6 +24,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
   final VoidCallback onViewSummary;
   final VoidCallback onGenerateMindmap;
   final Function(String) onTabChanged;
+  final String? folderOwnerId;
 
   const ChapterDetailMobileLayout({
     super.key,
@@ -41,6 +41,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
     required this.onViewSummary,
     required this.onGenerateMindmap,
     required this.onTabChanged,
+    this.folderOwnerId,
   });
 
   @override
@@ -85,6 +86,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
             chapterId: chapter.id,
             chapterTitle: chapter.title ?? 'Chapter',
             accentColor: folderColor,
+            folderOwnerId: folderOwnerId,
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 8)),
@@ -133,7 +135,46 @@ class ChapterDetailMobileLayout extends StatelessWidget {
                   ),
                 );
               },
-              child: const ChatbotContent(key: ValueKey('chatbot')),
+              child: Container(
+                key: const ValueKey('chatbot'),
+                margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.construction,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Not Available Yet',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Chatbot feature is coming soon',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),

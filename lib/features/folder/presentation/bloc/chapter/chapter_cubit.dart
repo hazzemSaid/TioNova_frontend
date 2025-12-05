@@ -24,6 +24,7 @@ import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart
 import 'package:tionova/features/folder/domain/usecases/GetMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetNotesByChapterIdUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateChapterUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/UpdateNoteUseCase.dart';
 
 import '../../../domain/usecases/createMindmapUseCase.dart';
 
@@ -39,6 +40,7 @@ class ChapterCubit extends Cubit<ChapterState> {
     required this.getNotesByChapterIdUseCase,
     required this.addNoteUseCase,
     required this.deleteNoteUseCase,
+    required this.updateNoteUseCase,
     required this.firebaseService,
     required this.getMindmapUseCase,
     required this.getChapterSummaryUseCase,
@@ -48,6 +50,7 @@ class ChapterCubit extends Cubit<ChapterState> {
   final Getnotesbychapteridusecase getNotesByChapterIdUseCase;
   final Addnoteusecase addNoteUseCase;
   final Deletenoteusecase deleteNoteUseCase;
+  final UpdateNoteUseCase updateNoteUseCase;
   final CreateMindmapUseCase createMindmapUseCase;
   final GetChaptersUseCase getChaptersUseCase;
   final CreateChapterUseCase createChapterUseCase;
@@ -69,21 +72,7 @@ class ChapterCubit extends Cubit<ChapterState> {
   }
 
   // Helper to get current chapters from state
-  List<ChapterModel>? get currentChapters {
-    final currentState = state;
-    if (currentState is ChapterLoaded) {
-      return currentState.chapters;
-    } else if (currentState is CreateChapterLoading) {
-      return currentState.chapters;
-    } else if (currentState is CreateChapterProgress) {
-      return currentState.chapters;
-    } else if (currentState is CreateChapterSuccess) {
-      return currentState.chapters;
-    } else if (currentState is CreateChapterError) {
-      return currentState.chapters;
-    }
-    return null;
-  }
+  List<ChapterModel>? get currentChapters => state.chapters;
 
   void createChapter({
     required String title,
@@ -240,14 +229,15 @@ class ChapterCubit extends Cubit<ChapterState> {
     required String chapterId,
     bool forDownload = false, // Add flag to indicate if this is for download
   }) async {
-    safeEmit(GetChapterContentPdfLoading());
+    final chapters = currentChapters;
+    safeEmit(GetChapterContentPdfLoading(chapters: chapters));
     final result = await getChapterContentPdfUseCase(chapterId: chapterId);
     result.fold(
       (failure) => safeEmit(
-        GetChapterContentPdfError(failure, forDownload: forDownload),
+        GetChapterContentPdfError(failure, forDownload: forDownload, chapters: chapters),
       ),
       (pdfData) => safeEmit(
-        GetChapterContentPdfSuccess(pdfData, forDownload: forDownload),
+        GetChapterContentPdfSuccess(pdfData, forDownload: forDownload, chapters: chapters),
       ),
     );
   }
@@ -262,6 +252,8 @@ class ChapterCubit extends Cubit<ChapterState> {
     print('📝 Chapter Title: $chapterTitle');
     print('🔄 Force Regenerate: $forceRegenerate');
 
+    final chapters = currentChapters;
+
     // Check if we have cached summary and it's not expired
     if (!forceRegenerate && SummaryCacheService.isSummaryCached(chapterId)) {
       print('💾 Found cached summary for chapter');
@@ -270,7 +262,7 @@ class ChapterCubit extends Cubit<ChapterState> {
       );
       if (cachedData != null) {
         print('✅ Emitting cached summary');
-        emit(SummaryCachedFound(cachedData.summaryData, cachedData.cacheAge));
+        emit(SummaryCachedFound(cachedData.summaryData, cachedData.cacheAge, chapters: chapters));
         return;
       }
     }
@@ -278,10 +270,10 @@ class ChapterCubit extends Cubit<ChapterState> {
     // Generate new summary or regenerate
     if (forceRegenerate) {
       print('🔄 Emitting SummaryRegenerateLoading');
-      emit(SummaryRegenerateLoading());
+      emit(SummaryRegenerateLoading(chapters: chapters));
     } else {
       print('🔄 Emitting GenerateSummaryLoading');
-      emit(GenerateSummaryLoading());
+      emit(GenerateSummaryLoading(chapters: chapters));
     }
 
     print('📡 Calling generateSummaryUseCase...');
@@ -291,7 +283,7 @@ class ChapterCubit extends Cubit<ChapterState> {
     result.fold(
       (failure) {
         print('❌ UseCase failed: ${failure.errMessage}');
-        safeEmit(GenerateSummaryError(failure));
+        safeEmit(GenerateSummaryError(failure, chapters: chapters));
       },
       (summaryResponse) async {
         print('✅ UseCase success - SummaryResponse received');
@@ -323,10 +315,10 @@ class ChapterCubit extends Cubit<ChapterState> {
 
           if (forceRegenerate) {
             print('🔄 Emitting SummaryRegenerateSuccess');
-            safeEmit(SummaryRegenerateSuccess(summaryData));
+            safeEmit(SummaryRegenerateSuccess(summaryData, chapters: chapters));
           } else {
             print('✅ Emitting GenerateSummaryStructuredSuccess');
-            safeEmit(GenerateSummaryStructuredSuccess(summaryData));
+            safeEmit(GenerateSummaryStructuredSuccess(summaryData, chapters: chapters));
           }
         } catch (e) {
           // If there's any issue with the parsed data, log it
@@ -334,6 +326,7 @@ class ChapterCubit extends Cubit<ChapterState> {
           safeEmit(
             GenerateSummaryError(
               ServerFailure('Failed to process summary data: $e'),
+              chapters: chapters,
             ),
           );
         }
@@ -348,7 +341,7 @@ class ChapterCubit extends Cubit<ChapterState> {
       );
       if (cachedData != null) {
         safeEmit(
-          SummaryCachedFound(cachedData.summaryData, cachedData.cacheAge),
+          SummaryCachedFound(cachedData.summaryData, cachedData.cacheAge, chapters: currentChapters),
         );
       }
     }
@@ -366,44 +359,48 @@ class ChapterCubit extends Cubit<ChapterState> {
   }
 
   void createMindmap({required String chapterId}) async {
-    safeEmit(CreateMindmapLoading());
+    final chapters = currentChapters;
+    safeEmit(CreateMindmapLoading(chapters: chapters));
     final result = await createMindmapUseCase(chapterId: chapterId);
     result.fold(
-      (failure) => safeEmit(CreateMindmapError(failure)),
-      (mindmap) => safeEmit(CreateMindmapSuccess(mindmap)),
+      (failure) => safeEmit(CreateMindmapError(failure, chapters: chapters)),
+      (mindmap) => safeEmit(CreateMindmapSuccess(mindmap, chapters: chapters)),
     );
   }
 
   void getMindmap({required String chapterId}) async {
-    safeEmit(CreateMindmapLoading()); // Reuse loading state
+    final chapters = currentChapters;
+    safeEmit(CreateMindmapLoading(chapters: chapters)); // Reuse loading state
     final result = await getMindmapUseCase(chapterId: chapterId);
     result.fold(
-      (failure) => safeEmit(CreateMindmapError(failure)),
+      (failure) => safeEmit(CreateMindmapError(failure, chapters: chapters)),
       (mindmap) =>
-          safeEmit(CreateMindmapSuccess(mindmap)), // Reuse success state
+          safeEmit(CreateMindmapSuccess(mindmap, chapters: chapters)), // Reuse success state
     );
   }
 
   void getChapterSummary({required String chapterId}) async {
-    safeEmit(GenerateSummaryLoading()); // Reuse loading state
+    final chapters = currentChapters;
+    safeEmit(GenerateSummaryLoading(chapters: chapters)); // Reuse loading state
     final result = await getChapterSummaryUseCase(chapterId: chapterId);
-    result.fold((failure) => safeEmit(GenerateSummaryError(failure)), (
+    result.fold((failure) => safeEmit(GenerateSummaryError(failure, chapters: chapters)), (
       summaryResponse,
     ) {
       if (summaryResponse.success) {
-        safeEmit(GenerateSummaryStructuredSuccess(summaryResponse.summary));
+        safeEmit(GenerateSummaryStructuredSuccess(summaryResponse.summary, chapters: chapters));
       } else {
-        safeEmit(GenerateSummaryError(ServerFailure(summaryResponse.message)));
+        safeEmit(GenerateSummaryError(ServerFailure(summaryResponse.message), chapters: chapters));
       }
     });
   }
 
   void getNotesByChapterId({required String chapterId}) async {
-    safeEmit(GetNotesByChapterIdLoading());
+    final chapters = currentChapters;
+    safeEmit(GetNotesByChapterIdLoading(chapters: chapters));
     final result = await getNotesByChapterIdUseCase(chapterId: chapterId);
     result.fold(
-      (failure) => safeEmit(GetNotesByChapterIdError(failure)),
-      (notes) => safeEmit(GetNotesByChapterIdSuccess(notes)),
+      (failure) => safeEmit(GetNotesByChapterIdError(failure, chapters: chapters)),
+      (notes) => safeEmit(GetNotesByChapterIdSuccess(notes, chapters: chapters)),
     );
   }
 
@@ -412,25 +409,50 @@ class ChapterCubit extends Cubit<ChapterState> {
     required String chapterId,
     required Map<String, dynamic> rawData,
   }) async {
-    safeEmit(AddNoteLoading());
+    final chapters = currentChapters;
+    safeEmit(AddNoteLoading(chapters: chapters));
     final result = await addNoteUseCase(
       title: title,
       chapterId: chapterId,
       rawData: rawData,
     );
     result.fold(
-      (failure) => safeEmit(AddNoteError(failure)),
-      (note) => safeEmit(AddNoteSuccess(note)),
+      (failure) => safeEmit(AddNoteError(failure, chapters: chapters)),
+      (note) => safeEmit(AddNoteSuccess(note, chapters: chapters)),
     );
   }
 
   void deleteNote({required String noteId, required String chapterId}) async {
-    safeEmit(DeleteNoteLoading());
+    final chapters = currentChapters;
+    safeEmit(DeleteNoteLoading(chapters: chapters));
     final result = await deleteNoteUseCase(noteId: noteId);
-    result.fold((failure) => safeEmit(DeleteNoteError(failure)), (_) {
-      safeEmit(DeleteNoteSuccess());
+    result.fold((failure) => safeEmit(DeleteNoteError(failure, chapters: chapters)), (_) {
+      safeEmit(DeleteNoteSuccess(chapters: chapters));
       getNotesByChapterId(chapterId: chapterId);
     });
+  }
+
+  void updateNote({
+    required String noteId,
+    required String chapterId,
+    String? title,
+    Map<String, dynamic>? rawData,
+  }) async {
+    final chapters = currentChapters;
+    safeEmit(UpdateNoteLoading(chapters: chapters));
+    final result = await updateNoteUseCase(
+      noteId: noteId,
+      title: title,
+      rawData: rawData,
+    );
+    result.fold(
+      (failure) => safeEmit(UpdateNoteError(failure, chapters: chapters)),
+      (note) {
+        safeEmit(UpdateNoteSuccess(note, chapters: chapters));
+        // Refresh the notes list after successful update
+        getNotesByChapterId(chapterId: chapterId);
+      },
+    );
   }
 
   void updateChapter({
@@ -442,7 +464,8 @@ class ChapterCubit extends Cubit<ChapterState> {
     print('🔄 [ChapterCubit] updateChapter() called');
     print('📝 Chapter ID: $chapterId, Title: $title, FolderId: $folderId');
 
-    safeEmit(UpdateChapterLoading());
+    final chapters = currentChapters;
+    safeEmit(UpdateChapterLoading(chapters: chapters));
 
     final result = await updateChapterUseCase(
       chapterId: chapterId,
@@ -454,11 +477,11 @@ class ChapterCubit extends Cubit<ChapterState> {
     result.fold(
       (failure) {
         print('❌ [ChapterCubit] updateChapter failed: ${failure.errMessage}');
-        safeEmit(UpdateChapterError(failure));
+        safeEmit(UpdateChapterError(failure, chapters: chapters));
       },
       (_) {
         print('✅ [ChapterCubit] updateChapter success - refreshing chapters');
-        safeEmit(UpdateChapterSuccess());
+        safeEmit(UpdateChapterSuccess(chapters: chapters));
         // Refresh the chapters list to get updated data
         getChapters(folderId: folderId);
       },
@@ -470,18 +493,19 @@ class ChapterCubit extends Cubit<ChapterState> {
     required String folderId,
   }) async {
     print('🗑️ [ChapterCubit] deleteChapter() called for chapter: $chapterId');
-    safeEmit(DeleteChapterLoading());
+    final chapters = currentChapters;
+    safeEmit(DeleteChapterLoading(chapters: chapters));
 
     final result = await deleteChapterUseCase(chapterId: chapterId);
 
     result.fold(
       (failure) {
         print('❌ [ChapterCubit] deleteChapter failed: ${failure.errMessage}');
-        safeEmit(DeleteChapterError(failure));
+        safeEmit(DeleteChapterError(failure, chapters: chapters));
       },
       (_) {
         print('✅ [ChapterCubit] deleteChapter success - refreshing chapters');
-        safeEmit(DeleteChapterSuccess());
+        safeEmit(DeleteChapterSuccess(chapters: chapters));
         // Refresh the chapters list to get updated data
         getChapters(folderId: folderId);
       },

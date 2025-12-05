@@ -16,11 +16,13 @@ import 'package:tionova/utils/widgets/custom_dialogs.dart';
 class ChapterDetailScreen extends StatefulWidget {
   final ChapterModel chapter;
   final Color folderColor;
+  final String? folderOwnerId;
 
   const ChapterDetailScreen({
     super.key,
     required this.chapter,
     required this.folderColor,
+    this.folderOwnerId,
   });
 
   @override
@@ -411,6 +413,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           _activeTab = tab;
         });
       },
+      folderOwnerId: widget.folderOwnerId,
     );
   }
 
@@ -433,6 +436,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           _activeTab = tab;
         });
       },
+      folderOwnerId: widget.folderOwnerId,
     );
   }
 }

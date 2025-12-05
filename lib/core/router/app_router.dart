@@ -42,6 +42,7 @@ import 'package:tionova/features/preferences/presentation/Bloc/PreferencesCubit.
 import 'package:tionova/features/preferences/presentation/screens/preferences_screen.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
+import 'package:tionova/features/quiz/presentation/view/practice_mode_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_questions_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_results_screen.dart';
@@ -254,6 +255,18 @@ class AppRouter {
           },
         ),
         GoRoute(
+          path: '/practice/:chapterId',
+          name: 'practice-mode',
+          builder: (BuildContext context, GoRouterState state) {
+            final chapterId = state.pathParameters['chapterId']!;
+            final extra = state.extra as Map<String, dynamic>?;
+            return PracticeModeScreen(
+              chapterId: chapterId,
+              chapterTitle: extra?['chapterTitle'] as String?,
+            );
+          },
+        ),
+        GoRoute(
           path: '/quiz-questions',
           name: 'quiz-questions',
           builder: (BuildContext context, GoRouterState state) {
@@ -327,6 +340,7 @@ class AppRouter {
                 passed: extra?['passed'] as int? ?? 0,
                 attempted: extra?['attempted'] as int? ?? 0,
                 color: extra?['color'] as Color? ?? Colors.blue,
+                ownerId: extra?['ownerId'] as String? ?? '',
               ),
             );
           },
@@ -341,6 +355,7 @@ class AppRouter {
             final child = ChapterDetailScreen(
               chapter: extra['chapter'] as ChapterModel,
               folderColor: extra['folderColor'] as Color? ?? Colors.blue,
+              folderOwnerId: extra['folderOwnerId'] as String?,
             );
             if (existingCubit != null) {
               return BlocProvider.value(value: existingCubit, child: child);
@@ -404,6 +419,7 @@ class AppRouter {
               chapterId: chapterId,
               chapterTitle: extra?['chapterTitle'] as String? ?? 'Notes',
               accentColor: extra?['accentColor'] as Color?,
+              folderOwnerId: extra?['folderOwnerId'] as String?,
             );
             if (chapterCubit != null) {
               return BlocProvider.value(value: chapterCubit, child: child);

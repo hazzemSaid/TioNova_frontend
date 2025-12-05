@@ -56,16 +56,23 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
     Map<String, dynamic> preferences,
   ) async {
     try {
+      print('🌐 Remote: Sending PATCH request');
       final response = await dio.patch(
         "/profile/preferences",
         data: preferences,
       );
+      print('🌐 Remote: Response status: ${response.statusCode}');
+      print('🌐 Remote: Response data: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
         if (data is Map<String, dynamic> && data['success'] == true) {
-          return Right(PreferencesModel.fromJson(data['data']));
+          print('🌐 Remote: Parsing successful response');
+          final model = PreferencesModel.fromJson(data['data']);
+          print('🌐 Remote: Model parsed successfully: ${model.toJson()}');
+          return Right(model);
         } else {
+          print('❌ Remote: Response format error');
           return Left(
             ServerFailure(
               data['message']?.toString() ?? 'Failed to update preferences',
@@ -73,17 +80,20 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
           );
         }
       } else {
+        print('❌ Remote: Bad status code: ${response.statusCode}');
         return Left(
           ServerFailure('Failed to update preferences: ${response.statusCode}'),
         );
       }
     } on DioException catch (e) {
+      print('❌ Remote: DioException: ${e.message}');
       final errorMessage =
           e.response?.data?['message']?.toString() ??
           e.message?.toString() ??
           'Failed to update preferences';
       return Left(ServerFailure(errorMessage));
     } catch (e) {
+      print('❌ Remote: Unexpected error: $e');
       return Left(ServerFailure('Unexpected error: ${e.toString()}'));
     }
   }

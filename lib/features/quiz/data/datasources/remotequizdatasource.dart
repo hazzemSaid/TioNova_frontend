@@ -4,6 +4,7 @@ import 'package:either_dart/either.dart' show Either, Left, Right;
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/quiz/data/datasources/IRemoteQuizDataSource.dart';
+import 'package:tionova/features/quiz/data/models/PracticeModeQuizModel.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 
@@ -149,6 +150,26 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
       }
     } catch (e) {
       return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, PracticeModeQuizModel>> getPracticeModeQuestions({
+    required String chapterId,
+  }) async {
+    try {
+      final body = {'chapterId': chapterId};
+      final response = await dio.post(
+        '/practicemode',
+        data: body,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      return ErrorHandlingUtils.handleApiResponse<PracticeModeQuizModel>(
+        response: response,
+        onSuccess: (data) => PracticeModeQuizModel.fromJson(data),
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 }

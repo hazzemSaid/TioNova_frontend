@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
+import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 
 import 'folder_option_item.dart';
 
@@ -28,6 +32,14 @@ class FolderOptionsBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    // Get current user ID
+    final authState = context.read<AuthCubit>().state;
+    final currentUserId = authState is AuthSuccess ? authState.user.id : null;
+
+    // Check if current user is the owner
+    final isOwner = currentUserId != null && currentUserId == folder.ownerId;
+
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -95,14 +107,26 @@ class FolderOptionsBottomSheet extends StatelessWidget {
 
             const SizedBox(height: 6),
 
-            // Private label
+            // Status label (Private/Public/Shared + Ownership)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.lock, color: colorScheme.onSurfaceVariant, size: 14),
+                Icon(
+                  folder.status == Status.public
+                      ? Icons.public
+                      : folder.status == Status.share
+                      ? Icons.people
+                      : Icons.lock,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 14,
+                ),
                 SizedBox(width: 4),
                 Text(
-                  'Private',
+                  folder.status == Status.public
+                      ? 'Public'
+                      : folder.status == Status.share
+                      ? 'Shared'
+                      : 'Private',
                   style: TextStyle(
                     color: colorScheme.onSurfaceVariant,
                     fontSize: 14,
@@ -110,6 +134,24 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                     letterSpacing: 0.1,
                   ),
                 ),
+                if (!isOwner) ...[
+                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'View Only',
+                      style: TextStyle(
+                        color: colorScheme.onPrimaryContainer,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
 
@@ -124,38 +166,45 @@ class FolderOptionsBottomSheet extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  FolderOptionItem(
-                    icon: Icons.edit_outlined,
-                    label: 'Edit Folder',
-                    iconColor: colorScheme.onSurface,
-                    textColor: colorScheme.onSurface,
-                    onTap: () {
-                      Navigator.pop(context);
-                      onEdit();
-                    },
-                  ),
-                  Divider(
-                    color: colorScheme.outline,
-                    height: 1,
-                    thickness: 0.5,
-                    indent: 52,
-                  ),
-                  FolderOptionItem(
-                    icon: Icons.share_outlined,
-                    label: 'Share Folder',
-                    iconColor: colorScheme.primary,
-                    textColor: colorScheme.onSurface,
-                    onTap: () {
-                      Navigator.pop(context);
-                      onShare();
-                    },
-                  ),
-                  Divider(
-                    color: colorScheme.outline,
-                    height: 1,
-                    thickness: 0.5,
-                    indent: 52,
-                  ),
+                  // Edit option - Only for owners
+                  if (isOwner) ...[
+                    FolderOptionItem(
+                      icon: Icons.edit_outlined,
+                      label: 'Edit Folder',
+                      iconColor: colorScheme.onSurface,
+                      textColor: colorScheme.onSurface,
+                      onTap: () {
+                        Navigator.pop(context);
+                        onEdit();
+                      },
+                    ),
+                    Divider(
+                      color: colorScheme.outline,
+                      height: 1,
+                      thickness: 0.5,
+                      indent: 52,
+                    ),
+                  ],
+                  // Share option - Only for owners
+                  if (isOwner) ...[
+                    FolderOptionItem(
+                      icon: Icons.share_outlined,
+                      label: 'Share Folder',
+                      iconColor: colorScheme.primary,
+                      textColor: colorScheme.onSurface,
+                      onTap: () {
+                        Navigator.pop(context);
+                        onShare();
+                      },
+                    ),
+                    Divider(
+                      color: colorScheme.outline,
+                      height: 1,
+                      thickness: 0.5,
+                      indent: 52,
+                    ),
+                  ],
+                  // Duplicate option - Available for everyone
                   FolderOptionItem(
                     icon: Icons.content_copy_outlined,
                     label: 'Duplicate Folder',
@@ -172,6 +221,7 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                     thickness: 0.5,
                     indent: 52,
                   ),
+                  // Export PDF - Available for everyone
                   FolderOptionItem(
                     icon: Icons.picture_as_pdf_outlined,
                     label: 'Export as PDF',
@@ -182,46 +232,50 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                       onExportPDF();
                     },
                   ),
-                  Divider(
-                    color: colorScheme.outline,
-                    height: 1,
-                    thickness: 0.5,
-                    indent: 52,
-                  ),
-                  FolderOptionItem(
-                    icon: Icons.archive_outlined,
-                    label: 'Archive Folder',
-                    iconColor: Colors.orange,
-                    textColor: colorScheme.onSurface,
-                    onTap: () {
-                      Navigator.pop(context);
-                      onArchive();
-                    },
-                  ),
+                  // Archive option - Only for owners
+                  if (isOwner) ...[
+                    Divider(
+                      color: colorScheme.outline,
+                      height: 1,
+                      thickness: 0.5,
+                      indent: 52,
+                    ),
+                    FolderOptionItem(
+                      icon: Icons.archive_outlined,
+                      label: 'Archive Folder',
+                      iconColor: Colors.orange,
+                      textColor: colorScheme.onSurface,
+                      onTap: () {
+                        Navigator.pop(context);
+                        onArchive();
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
 
             const SizedBox(height: 12),
 
-            // Delete option (separate)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+            // Delete option (separate) - Only for owners
+            if (isOwner)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: FolderOptionItem(
+                  icon: Icons.delete_outline,
+                  label: 'Delete Folder',
+                  iconColor: colorScheme.error,
+                  textColor: colorScheme.error,
+                  onTap: () {
+                    Navigator.pop(context);
+                    onDelete();
+                  },
+                ),
               ),
-              child: FolderOptionItem(
-                icon: Icons.delete_outline,
-                label: 'Delete Folder',
-                iconColor: colorScheme.error,
-                textColor: colorScheme.error,
-                onTap: () {
-                  Navigator.pop(context);
-                  onDelete();
-                },
-              ),
-            ),
 
             const SizedBox(height: 16),
 

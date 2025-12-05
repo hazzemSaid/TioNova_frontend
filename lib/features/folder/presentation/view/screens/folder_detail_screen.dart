@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:skeletonizer/skeletonizer.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
+import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
@@ -22,6 +24,7 @@ class FolderDetailScreen extends StatelessWidget {
   final int passed;
   final int attempted;
   final Color color;
+  final String ownerId;
 
   const FolderDetailScreen({
     super.key,
@@ -32,6 +35,7 @@ class FolderDetailScreen extends StatelessWidget {
     required this.passed,
     required this.attempted,
     required this.color,
+    required this.ownerId,
   });
 
   @override
@@ -44,18 +48,13 @@ class FolderDetailScreen extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => getIt<ChapterCubit>()),
+        BlocProvider(
+          create: (_) => getIt<ChapterCubit>()..getChapters(folderId: folderId),
+        ),
         BlocProvider(create: (_) => getIt<FolderCubit>()),
       ],
       child: Builder(
         builder: (context) {
-          // Get auth state for token
-
-          // Load chapters when widget builds
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.read<ChapterCubit>().getChapters(folderId: folderId);
-          });
-
           return BlocListener<ChapterCubit, ChapterState>(
             listener: (context, state) {
               if (state is DeleteChapterSuccess) {
@@ -212,102 +211,93 @@ class FolderDetailScreen extends StatelessWidget {
             ),
           ),
 
-          // Add Chapter button
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(horizontalPadding),
-              child: GestureDetector(
-                onTap: () async {
-                  final chapterCubit = context.read<ChapterCubit>();
-                  final result = await context.pushNamed(
-                    'create-chapter',
-                    pathParameters: {'folderId': folderId},
-                    extra: {'folderTitle': title, 'chapterCubit': chapterCubit},
-                  );
-                  if (result == true) {
-                    chapterCubit.getChapters(folderId: folderId);
-                  }
-                },
-                child: CustomPaint(
-                  size: Size(double.infinity, 44),
-                  isComplex: true,
-                  willChange: true,
-                  painter: DashedBorderPainter(
-                    color: color.withValues(alpha: 0.22),
-                  ),
-                  child: Container(
-                    height: 44,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: colorScheme.outline),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Add Chapter',
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+          // Add Chapter button - Only for owners
+          BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, authState) {
+              final currentUserId = authState is AuthSuccess
+                  ? authState.user.id
+                  : null;
+              final isOwner = currentUserId != null && currentUserId == ownerId;
+
+              if (!isOwner) {
+                return SliverToBoxAdapter(
+                  child: SizedBox(height: horizontalPadding),
+                );
+              }
+
+              return SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(horizontalPadding),
+                  child: GestureDetector(
+                    onTap: () async {
+                      final chapterCubit = context.read<ChapterCubit>();
+                      final result = await context.pushNamed(
+                        'create-chapter',
+                        pathParameters: {'folderId': folderId},
+                        extra: {
+                          'folderTitle': title,
+                          'chapterCubit': chapterCubit,
+                        },
+                      );
+                      if (result == true) {
+                        chapterCubit.getChapters(folderId: folderId);
+                      }
+                    },
+                    child: CustomPaint(
+                      size: Size(double.infinity, 44),
+                      isComplex: true,
+                      willChange: true,
+                      painter: DashedBorderPainter(
+                        color: color.withValues(alpha: 0.22),
+                      ),
+                      child: Container(
+                        height: 44,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: colorScheme.outline),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Add Chapter',
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
 
           // Dynamic chapter list from cubit
           BlocBuilder<ChapterCubit, ChapterState>(
             builder: (context, state) {
               // Extract chapters from any state that has them
-              List<ChapterModel>? chapters;
-              bool isLoading = false;
-
-              if (state is ChapterLoading) {
-                isLoading = true;
-              } else if (state is ChapterLoaded) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterLoading) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterProgress) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterSuccess) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterError) {
-                chapters = state.chapters;
-              }
+              final chapters = state.chapters;
+              final isLoading = state is ChapterLoading;
 
               // Show chapters if available, regardless of creation state
               if (isLoading && chapters == null) {
-                // Show skeleton loading cards only if no chapters yet
+                // Show shimmer loading cards only if no chapters yet
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (ctx, idx) => Skeletonizer(
-                      enabled: true,
-                      child: _buildChapterCard(
-                        context,
-                        ChapterModel(
-                          id: 'loading',
-                          title: 'Loading Chapter Title',
-                          description:
-                              'Loading chapter description text that will be replaced with actual content',
-                          createdAt: DateTime.now().toIso8601String(),
-                          quizStatus: 'Not Taken',
-                        ),
-                      ),
-                    ),
-                    childCount: 3, // Show 3 skeleton cards
+                    (ctx, idx) => _buildShimmerChapterCard(context),
+                    childCount: 3, // Show 3 shimmer cards
                   ),
                 );
               } else if (chapters != null && chapters.isNotEmpty) {
                 // Show chapters even during creation states
                 return SliverList(
                   delegate: SliverChildBuilderDelegate((ctx, idx) {
-                    final chapter = chapters?[idx];
-                    return _buildChapterCard(context, chapter!);
+                    final chapter = chapters[idx];
+                    return _buildChapterCard(context, chapter);
                   }, childCount: chapters.length),
                 );
               } else if (state is ChapterError) {
@@ -460,57 +450,71 @@ class FolderDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 24),
-                  // Add Chapter button
-                  Expanded(
-                    flex: 1,
-                    child: GestureDetector(
-                      onTap: () async {
-                        final chapterCubit = context.read<ChapterCubit>();
-                        final result = await context.pushNamed(
-                          'create-chapter',
-                          pathParameters: {'folderId': folderId},
-                          extra: {
-                            'folderTitle': title,
-                            'chapterCubit': chapterCubit,
+                  // Add Chapter button - Only for owners
+                  BlocBuilder<AuthCubit, AuthState>(
+                    builder: (context, authState) {
+                      final currentUserId = authState is AuthSuccess
+                          ? authState.user.id
+                          : null;
+                      final isOwner =
+                          currentUserId != null && currentUserId == ownerId;
+
+                      if (!isOwner) {
+                        return SizedBox.shrink();
+                      }
+
+                      return Expanded(
+                        flex: 1,
+                        child: GestureDetector(
+                          onTap: () async {
+                            final chapterCubit = context.read<ChapterCubit>();
+                            final result = await context.pushNamed(
+                              'create-chapter',
+                              pathParameters: {'folderId': folderId},
+                              extra: {
+                                'folderTitle': title,
+                                'chapterCubit': chapterCubit,
+                              },
+                            );
+                            if (result == true) {
+                              chapterCubit.getChapters(folderId: folderId);
+                            }
                           },
-                        );
-                        if (result == true) {
-                          chapterCubit.getChapters(folderId: folderId);
-                        }
-                      },
-                      child: Container(
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: color.withOpacity(0.3),
-                            width: 2,
+                          child: Container(
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: color.withOpacity(0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_circle_outline,
+                                    color: color,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Add Chapter',
+                                    style: TextStyle(
+                                      color: color,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.add_circle_outline,
-                                color: color,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Add Chapter',
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -523,26 +527,12 @@ class FolderDetailScreen extends StatelessWidget {
           BlocBuilder<ChapterCubit, ChapterState>(
             builder: (context, state) {
               // Extract chapters from any state that has them
-              List<ChapterModel>? chapters;
-              bool isLoading = false;
-
-              if (state is ChapterLoading) {
-                isLoading = true;
-              } else if (state is ChapterLoaded) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterLoading) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterProgress) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterSuccess) {
-                chapters = state.chapters;
-              } else if (state is CreateChapterError) {
-                chapters = state.chapters;
-              }
+              final chapters = state.chapters;
+              final isLoading = state is ChapterLoading;
 
               // Show chapters if available, regardless of creation state
               if (isLoading && chapters == null) {
-                // Show skeleton loading cards in grid for web only if no chapters yet
+                // Show shimmer loading cards in grid for web only if no chapters yet
                 return SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: effectivePadding),
                   sliver: SliverGrid(
@@ -554,21 +544,8 @@ class FolderDetailScreen extends StatelessWidget {
                           childAspectRatio: 2.5,
                         ),
                     delegate: SliverChildBuilderDelegate(
-                      (ctx, idx) => Skeletonizer(
-                        enabled: true,
-                        child: _buildWebChapterCard(
-                          context,
-                          ChapterModel(
-                            id: 'loading',
-                            title: 'Loading Chapter Title',
-                            description:
-                                'Loading chapter description text that will be replaced with actual content',
-                            createdAt: DateTime.now().toIso8601String(),
-                            quizStatus: 'Not Taken',
-                          ),
-                        ),
-                      ),
-                      childCount: 4, // Show 4 skeleton cards for web
+                      (ctx, idx) => _buildWebShimmerChapterCard(context),
+                      childCount: 4, // Show 4 shimmer cards for web
                     ),
                   ),
                 );
@@ -585,8 +562,8 @@ class FolderDetailScreen extends StatelessWidget {
                           childAspectRatio: 2.5,
                         ),
                     delegate: SliverChildBuilderDelegate((ctx, idx) {
-                      final chapter = chapters?[idx];
-                      return _buildWebChapterCard(context, chapter!);
+                      final chapter = chapters[idx];
+                      return _buildWebChapterCard(context, chapter);
                     }, childCount: chapters.length),
                   ),
                 );
@@ -614,6 +591,135 @@ class FolderDetailScreen extends StatelessWidget {
 
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerChapterCard(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Shimmer.fromColors(
+      baseColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      highlightColor: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+      child: Container(
+        margin: EdgeInsets.fromLTRB(
+          horizontalPadding,
+          0,
+          horizontalPadding,
+          isTablet ? 14 : 12,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(isTablet ? 16 : 14),
+          border: Border.all(color: Colors.white, width: 1),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(isTablet ? 16 : 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: isTablet ? 44 : 40,
+                    height: isTablet ? 44 : 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                    ),
+                  ),
+                  SizedBox(width: isTablet ? 12 : 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 8),
+                        Container(width: 100, height: 12, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: isTablet ? 12 : 10),
+              Container(
+                width: double.infinity,
+                height: 14,
+                color: Colors.white,
+              ),
+              SizedBox(height: isTablet ? 14 : 12),
+              Row(
+                children: [
+                  Container(width: 60, height: 24, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Container(width: 60, height: 24, color: Colors.white),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWebShimmerChapterCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Shimmer.fromColors(
+      baseColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      highlightColor: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Container(height: 20, color: Colors.white)),
+                const SizedBox(width: 12),
+                Container(width: 60, height: 20, color: Colors.white),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 14,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(width: 200, height: 14, color: Colors.white),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: Container(height: 12, color: Colors.white)),
+                const SizedBox(width: 8),
+                Container(width: 60, height: 24, color: Colors.white),
+                const SizedBox(width: 8),
+                Container(width: 60, height: 24, color: Colors.white),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -666,7 +772,7 @@ class FolderDetailScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
-        final chapterId = chapter.id?.isNotEmpty == true ? chapter.id! : 'temp';
+        final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
         context.pushNamed(
           'chapter-detail',
           pathParameters: {'chapterId': chapterId},
@@ -674,6 +780,7 @@ class FolderDetailScreen extends StatelessWidget {
             'chapter': chapter,
             'folderColor': color,
             'chapterCubit': chapterCubit,
+            'folderOwnerId': ownerId,
           },
         );
       },
@@ -682,6 +789,7 @@ class FolderDetailScreen extends StatelessWidget {
         ShowChapterOptionsBottomSheet(
           chapter: chapter,
           folderId: folderId,
+          folderOwnerId: ownerId,
         ).show(context);
       },
       child: Container(
@@ -936,7 +1044,7 @@ class FolderDetailScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
-        final chapterId = chapter.id?.isNotEmpty == true ? chapter.id! : 'temp';
+        final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
         context.pushNamed(
           'chapter-detail',
           pathParameters: {'chapterId': chapterId},
@@ -944,6 +1052,7 @@ class FolderDetailScreen extends StatelessWidget {
             'chapter': chapter,
             'folderColor': color,
             'chapterCubit': chapterCubit,
+            'folderOwnerId': ownerId,
           },
         );
       },
@@ -952,6 +1061,7 @@ class FolderDetailScreen extends StatelessWidget {
         ShowChapterOptionsBottomSheet(
           chapter: chapter,
           folderId: folderId,
+          folderOwnerId: ownerId,
         ).show(context);
       },
       child: Container(
@@ -1064,16 +1174,23 @@ class FolderDetailScreen extends StatelessWidget {
 class ShowChapterOptionsBottomSheet {
   final ChapterModel chapter;
   final String folderId;
+  final String folderOwnerId;
 
   ShowChapterOptionsBottomSheet({
     required this.chapter,
     required this.folderId,
+    required this.folderOwnerId,
   });
 
   void show(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
+
+    // Get current user ID and check ownership
+    final authState = context.read<AuthCubit>().state;
+    final currentUserId = authState is AuthSuccess ? authState.user.id : null;
+    final isOwner = currentUserId != null && currentUserId == folderOwnerId;
 
     showModalBottomSheet(
       context: context,
@@ -1148,35 +1265,68 @@ class ShowChapterOptionsBottomSheet {
 
             SizedBox(height: isTablet ? 32 : 28),
 
-            // Action buttons
-            _buildActionListItem(
-              context: context,
-              icon: Icons.edit_outlined,
-              label: 'Edit Chapter',
-              colorScheme: colorScheme,
-              isTablet: isTablet,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                _showEditChapterDialog(chapter, context);
-              },
-            ),
+            // Action buttons - Only show for owners
+            if (isOwner) ...[
+              _buildActionListItem(
+                context: context,
+                icon: Icons.edit_outlined,
+                label: 'Edit Chapter',
+                colorScheme: colorScheme,
+                isTablet: isTablet,
+                onTap: () {
+                  Navigator.pop(bottomSheetContext);
+                  _showEditChapterDialog(chapter, context);
+                },
+              ),
 
-            SizedBox(height: isTablet ? 14 : 12),
+              SizedBox(height: isTablet ? 14 : 12),
 
-            _buildActionListItem(
-              context: context,
-              icon: Icons.delete_outline,
-              label: 'Delete Chapter',
-              colorScheme: colorScheme,
-              isTablet: isTablet,
-              isDestructive: true,
-              onTap: () {
-                Navigator.pop(bottomSheetContext);
-                _showDeleteChapterDialog(chapter, context);
-              },
-            ),
+              _buildActionListItem(
+                context: context,
+                icon: Icons.delete_outline,
+                label: 'Delete Chapter',
+                colorScheme: colorScheme,
+                isTablet: isTablet,
+                isDestructive: true,
+                onTap: () {
+                  Navigator.pop(bottomSheetContext);
+                  _showDeleteChapterDialog(chapter, context);
+                },
+              ),
 
-            SizedBox(height: isTablet ? 24 : 20),
+              SizedBox(height: isTablet ? 24 : 20),
+            ],
+
+            // Show message for non-owners
+            if (!isOwner) ...[
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: colorScheme.onPrimaryContainer,
+                      size: 20,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'You can only view this chapter. Only the folder owner can edit or delete.',
+                        style: TextStyle(
+                          color: colorScheme.onPrimaryContainer,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: isTablet ? 24 : 20),
+            ],
 
             // Cancel button
             SizedBox(

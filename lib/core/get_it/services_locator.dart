@@ -1,4 +1,3 @@
-// core/get_it/services_locator.dart
 import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:get_it/get_it.dart';
@@ -40,11 +39,11 @@ import 'package:tionova/features/folder/data/repoimp/FolderRepoImp.dart';
 import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
 import 'package:tionova/features/folder/domain/usecases/AddnoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateChapterUseCase.dart';
-// import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart'; // Not directly used
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteChapterUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteNoteUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GenerateSmartNodeUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GenerateSummaryUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetChaperContentPdfUseCase.dart';
@@ -52,12 +51,16 @@ import 'package:tionova/features/folder/domain/usecases/GetChapterSummaryUseCase
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetNotesByChapterIdUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetPublicFoldersUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/SaveMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateChapterUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/UpdateNoteUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/createMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
+import 'package:tionova/features/folder/presentation/bloc/mindmap/mindmap_cubit.dart';
 import 'package:tionova/features/home/data/datasource/analysis_remote_datasource.dart';
 import 'package:tionova/features/home/data/repoImp/analysis_repo_imp.dart';
 import 'package:tionova/features/home/domain/usecases/analysisusecase.dart';
@@ -76,6 +79,7 @@ import 'package:tionova/features/quiz/data/repo/Quizrepoimp.dart';
 import 'package:tionova/features/quiz/domain/repo/Quizrepo.dart';
 import 'package:tionova/features/quiz/domain/usecases/CreateQuizUseCase.dart';
 import 'package:tionova/features/quiz/domain/usecases/GetHistoryUseCase.dart';
+import 'package:tionova/features/quiz/domain/usecases/GetPracticeModeQuestionsUseCase.dart';
 import 'package:tionova/features/quiz/domain/usecases/UserQuizStatusUseCase.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 
@@ -96,15 +100,53 @@ Future<void> setupServiceLocator() async {
   // Open Hive box
   final box = await Hive.openBox('auth_box');
   final Dio dio = Dio(BaseOptions(baseUrl: baseUrl));
+  final logger = PrettyDioLogger(
+    requestHeader: true,
+    requestBody: true,
+    responseBody: true,
+    responseHeader: false,
+    error: true,
+    compact: true,
+    maxWidth: 120,
+  );
+
   dio.interceptors.add(
-    PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
-      responseHeader: false,
-      error: true,
-      compact: true,
-      maxWidth: 120,
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        logger.onRequest(options, handler);
+      },
+      onResponse: (response, handler) {
+        final contentType = response.headers.value('content-type');
+        final isBinary =
+            contentType != null &&
+            (contentType.contains('application/pdf') ||
+                contentType.contains('image/') ||
+                contentType.contains('application/octet-stream') ||
+                contentType.contains('audio/') ||
+                contentType.contains('video/'));
+
+        final isBytes =
+            response.requestOptions.responseType == ResponseType.bytes;
+        final isStream =
+            response.requestOptions.responseType == ResponseType.stream;
+
+        if (isBinary || isBytes || isStream) {
+          print(
+            '📦 [Binary Response] ${response.statusCode} ${response.requestOptions.path}',
+          );
+          handler.next(response);
+        } else if (response.requestOptions.path.contains('getchaptercontent')) {
+          print(
+            '📦 [Chapter Content Response] ${response.statusCode} ${response.requestOptions.path} (Body hidden)',
+          );
+          handler.next(response);
+        } else {
+          logger.onResponse(response, handler);
+        }
+      },
+      onError: (error, handler) {
+        logger.onError(error, handler);
+      },
     ),
   );
   dio.interceptors.add(
@@ -159,17 +201,6 @@ Future<void> setupServiceLocator() async {
         }
         handler.next(options);
       },
-    ),
-  );
-  dio.interceptors.add(
-    PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
-      responseHeader: false,
-      error: true,
-      compact: true,
-      maxWidth: 120,
     ),
   );
   // Services
@@ -272,6 +303,10 @@ Future<void> setupServiceLocator() async {
     () => DeleteFolderUseCase(getIt<FolderRepoImp>()),
   );
 
+  getIt.registerLazySingleton<GetPublicFoldersUseCase>(
+    () => GetPublicFoldersUseCase(getIt<FolderRepoImp>()),
+  );
+
   // Chapter related registrations
   getIt.registerLazySingleton<ChapterRemoteDataSource>(
     () => ChapterRemoteDataSource(getIt<Dio>()),
@@ -306,12 +341,33 @@ Future<void> setupServiceLocator() async {
     () => Deletenoteusecase(getIt<IChapterRepository>()),
   );
 
+  getIt.registerLazySingleton<UpdateNoteUseCase>(
+    () => UpdateNoteUseCase(getIt<IChapterRepository>()),
+  );
+
   getIt.registerLazySingleton<Getnotesbychapteridusecase>(
     () => Getnotesbychapteridusecase(getIt<IChapterRepository>()),
   );
 
   getIt.registerLazySingleton<GetMindmapUseCase>(
     () => GetMindmapUseCase(getIt<IChapterRepository>()),
+  );
+
+  // AI-powered mindmap node generation use cases
+  getIt.registerLazySingleton<GenerateSmartNodeUseCase>(
+    () => GenerateSmartNodeUseCase(getIt<IChapterRepository>()),
+  );
+
+  getIt.registerLazySingleton<SaveMindmapUseCase>(
+    () => SaveMindmapUseCase(getIt<IChapterRepository>()),
+  );
+
+  // Register MindmapCubit with AI and save capabilities
+  getIt.registerFactory(
+    () => MindmapCubit(
+      generateSmartNodeUseCase: getIt<GenerateSmartNodeUseCase>(),
+      saveMindmapUseCase: getIt<SaveMindmapUseCase>(),
+    ),
   );
 
   getIt.registerLazySingleton<GetChapterSummaryUseCase>(
@@ -332,6 +388,7 @@ Future<void> setupServiceLocator() async {
       getNotesByChapterIdUseCase: getIt<Getnotesbychapteridusecase>(),
       addNoteUseCase: getIt<Addnoteusecase>(),
       deleteNoteUseCase: getIt<Deletenoteusecase>(),
+      updateNoteUseCase: getIt<UpdateNoteUseCase>(),
       createMindmapUseCase: getIt<CreateMindmapUseCase>(),
       generateSummaryUseCase: getIt<GenerateSummaryUseCase>(),
       getChaptersUseCase: getIt<GetChaptersUseCase>(),
@@ -358,6 +415,7 @@ Future<void> setupServiceLocator() async {
       createFolderUseCase: getIt<CreateFolderUseCase>(),
       updateFolderUseCase: getIt<UpdateFolderUseCase>(),
       deleteFolderUseCase: getIt<DeleteFolderUseCase>(),
+      getPublicFoldersUseCase: getIt<GetPublicFoldersUseCase>(),
     ),
   );
 
@@ -380,11 +438,15 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<GetHistoryUseCase>(
     () => GetHistoryUseCase(quizrepo: getIt<QuizRepo>()),
   );
+  getIt.registerLazySingleton<GetPracticeModeQuestionsUseCase>(
+    () => GetPracticeModeQuestionsUseCase(quizRepo: getIt<QuizRepo>()),
+  );
   getIt.registerFactory(
     () => QuizCubit(
       createQuizUseCase: getIt<CreateQuizUseCase>(),
       userQuizStatusUseCase: getIt<UserQuizStatusUseCase>(),
       getHistoryUseCase: getIt<GetHistoryUseCase>(),
+      getPracticeModeQuestionsUseCase: getIt<GetPracticeModeQuestionsUseCase>(),
     ),
   );
 

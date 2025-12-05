@@ -56,11 +56,21 @@ class PreferencesCubit extends Cubit<PreferencesState> {
   }
 
   void updatePreferences(Map<String, dynamic> data) async {
+    print('🔵 PreferencesCubit: updatePreferences called');
     safeEmit(PreferencesLoading());
     final result = await updatePreferencesUseCase.call(data: data);
+    print('🔵 PreferencesCubit: Got result from useCase');
     result.fold(
-      (failure) => safeEmit(PreferencesError(message: failure.errMessage)),
-      (preferences) => safeEmit(PreferencesUpdated(preferences: preferences)),
+      (failure) {
+        print('❌ PreferencesCubit: Error - ${failure.errMessage}');
+        safeEmit(PreferencesError(message: failure.errMessage));
+      },
+      (preferences) {
+        print('✅ PreferencesCubit: Success - Emitting PreferencesUpdated');
+        print('✅ Preferences data: ${preferences.toJson()}');
+        safeEmit(PreferencesUpdated(preferences: preferences));
+        print('✅ PreferencesCubit: State after emit: $state');
+      },
     );
   }
 }
