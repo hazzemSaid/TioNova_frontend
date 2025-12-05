@@ -116,6 +116,7 @@ class FolderList extends StatelessWidget {
                 'passed': folder.passedCount ?? 0,
                 'attempted': folder.attemptedCount ?? 0,
                 'color': color,
+                'ownerId': folder.ownerId,
               },
             ),
           );

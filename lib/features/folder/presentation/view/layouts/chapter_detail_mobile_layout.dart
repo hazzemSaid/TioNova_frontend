@@ -25,6 +25,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
   final VoidCallback onViewSummary;
   final VoidCallback onGenerateMindmap;
   final Function(String) onTabChanged;
+  final String? folderOwnerId;
 
   const ChapterDetailMobileLayout({
     super.key,
@@ -41,6 +42,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
     required this.onViewSummary,
     required this.onGenerateMindmap,
     required this.onTabChanged,
+    this.folderOwnerId,
   });
 
   @override
@@ -85,6 +87,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
             chapterId: chapter.id,
             chapterTitle: chapter.title ?? 'Chapter',
             accentColor: folderColor,
+            folderOwnerId: folderOwnerId,
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 8)),

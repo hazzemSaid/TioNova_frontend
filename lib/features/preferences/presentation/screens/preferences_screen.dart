@@ -173,24 +173,34 @@ class _PreferencesScreenState extends State<_PreferencesScreenContent>
           // Auto-populate fields when preferences are loaded
           _populateFromLoadedPreferences(state);
         } else if (state is PreferencesUpdated) {
-          // Navigate to home after successful update
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Preferences saved successfully! 🎉'),
-              backgroundColor: theme.colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          context.go('/');
+          // Show success message and navigate after a brief delay
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Preferences saved successfully! 🎉'),
+                backgroundColor: theme.colorScheme.primary,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 1),
+              ),
+            );
+            // Delay navigation to allow SnackBar to display
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) {
+                context.go('/');
+              }
+            });
+          }
         } else if (state is PreferencesError) {
           // Show error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: theme.colorScheme.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: theme.colorScheme.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         }
       },
       child: BlocBuilder<PreferencesCubit, PreferencesState>(

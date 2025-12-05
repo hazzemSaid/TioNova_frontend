@@ -13,12 +13,14 @@ class NotesScreen extends StatefulWidget {
   final String chapterId;
   final String chapterTitle;
   final Color? accentColor;
+  final String? folderOwnerId;
 
   const NotesScreen({
     super.key,
     required this.chapterId,
     required this.chapterTitle,
     this.accentColor,
+    this.folderOwnerId,
   });
 
   @override
@@ -136,38 +138,44 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
                   if (state is GetNotesByChapterIdSuccess) {
                     _filterNotes(state.notes);
                   } else if (state is AddNoteSuccess) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Note added successfully'),
-                        backgroundColor: _accentColor,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Note added successfully'),
+                          backgroundColor: _accentColor,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
                     _loadNotes();
                   } else if (state is DeleteNoteSuccess) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Note deleted successfully'),
-                        backgroundColor: Colors.red,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Note deleted successfully'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                      ),
-                    );
-                    Navigator.of(context).pop(); // Close dialog
+                      );
+                      Navigator.of(context).pop(); // Close dialog
+                    }
                     _loadNotes();
                   } else if (state is GetNotesByChapterIdError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message.errMessage),
-                        backgroundColor: Colors.red,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(state.message.errMessage),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
                   }
                 },
                 builder: (context, state) {
@@ -470,6 +478,7 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
           note: note,
           accentColor: _accentColor,
           onTap: () => _showNoteDetail(note),
+          folderOwnerId: widget.folderOwnerId,
         );
       },
     );

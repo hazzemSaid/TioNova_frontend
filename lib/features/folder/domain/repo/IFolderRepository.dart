@@ -29,6 +29,7 @@ abstract class IFolderRepository {
   Future<Either<Failure, List<ShareWithmodel>>> getAvailableUsersForShare({
     required String query,
   });
+  Future<Either<Failure, List<Foldermodel>>> getPublicFolders();
 }
 
 enum Status { public, private, share }

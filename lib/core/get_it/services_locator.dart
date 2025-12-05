@@ -51,6 +51,7 @@ import 'package:tionova/features/folder/domain/usecases/GetChapterSummaryUseCase
 import 'package:tionova/features/folder/domain/usecases/GetChaptersUserCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetNotesByChapterIdUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetPublicFoldersUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/SaveMindmapUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateChapterUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
@@ -301,6 +302,10 @@ Future<void> setupServiceLocator() async {
     () => DeleteFolderUseCase(getIt<FolderRepoImp>()),
   );
 
+  getIt.registerLazySingleton<GetPublicFoldersUseCase>(
+    () => GetPublicFoldersUseCase(getIt<FolderRepoImp>()),
+  );
+
   // Chapter related registrations
   getIt.registerLazySingleton<ChapterRemoteDataSource>(
     () => ChapterRemoteDataSource(getIt<Dio>()),
@@ -409,6 +414,7 @@ Future<void> setupServiceLocator() async {
       createFolderUseCase: getIt<CreateFolderUseCase>(),
       updateFolderUseCase: getIt<UpdateFolderUseCase>(),
       deleteFolderUseCase: getIt<DeleteFolderUseCase>(),
+      getPublicFoldersUseCase: getIt<GetPublicFoldersUseCase>(),
     ),
   );
 

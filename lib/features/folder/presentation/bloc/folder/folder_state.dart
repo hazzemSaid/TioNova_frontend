@@ -101,3 +101,21 @@ class GetAvailableUsersForShareError extends FolderState {
   @override
   List<Object> get props => [message];
 }
+
+class PublicFoldersLoading extends FolderState {}
+
+class PublicFoldersLoaded extends FolderState {
+  final List<Foldermodel> publicFolders;
+  const PublicFoldersLoaded(this.publicFolders);
+
+  @override
+  List<Object> get props => [publicFolders];
+}
+
+class PublicFoldersError extends FolderState {
+  final Failure message;
+  const PublicFoldersError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}

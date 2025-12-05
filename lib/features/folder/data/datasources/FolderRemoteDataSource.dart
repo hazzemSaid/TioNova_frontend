@@ -155,4 +155,24 @@ class FolderRemoteDataSource implements IFolderRepository {
       return Left(ServerFailure(error.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, List<Foldermodel>>> getPublicFolders() async {
+    try {
+      final response = await _dio.get(
+        '/getpublicfolders',
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      return ErrorHandlingUtils.handleApiResponse<List<Foldermodel>>(
+        response: response,
+        onSuccess: (data) {
+          return (data['folders'] as List)
+              .map((folderJson) => Foldermodel.fromJson(folderJson))
+              .toList();
+        },
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
+    }
+  }
 }

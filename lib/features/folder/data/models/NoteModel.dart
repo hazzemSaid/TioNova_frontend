@@ -5,6 +5,8 @@ class Notemodel extends Equatable {
   final String title;
   final String chapterId;
   final String createdBy;
+  final String? creatorName;
+  final String? creatorEmail;
   final Map<String, dynamic> rawData;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -14,6 +16,8 @@ class Notemodel extends Equatable {
     required this.title,
     required this.chapterId,
     required this.createdBy,
+    this.creatorName,
+    this.creatorEmail,
     required this.rawData,
     required this.createdAt,
     required this.updatedAt,
@@ -22,10 +26,25 @@ class Notemodel extends Equatable {
   factory Notemodel.fromJson(Map<String, dynamic> json) {
     // Handle createdBy - it can be either a string ID or an object with user details
     String createdById;
+    String? creatorName;
+    String? creatorEmail;
+
     if (json['createdBy'] is String) {
       createdById = json['createdBy'];
     } else if (json['createdBy'] is Map<String, dynamic>) {
-      createdById = json['createdBy']['_id'] ?? json['createdBy']['id'] ?? '';
+      final creatorData = json['createdBy'] as Map<String, dynamic>;
+      createdById = creatorData['_id'] ?? creatorData['id'] ?? '';
+      creatorEmail = creatorData['email'];
+      // Try to get name from profile or use email username
+      if (creatorData['profile'] != null && creatorData['profile'] is Map) {
+        creatorName =
+            creatorData['profile']['name'] ??
+            creatorData['profile']['username'];
+      }
+      // If no name found, use email username (part before @)
+      if (creatorName == null && creatorEmail != null) {
+        creatorName = creatorEmail.split('@').first;
+      }
     } else {
       createdById = '';
     }
@@ -35,6 +54,8 @@ class Notemodel extends Equatable {
       title: json['title'] ?? '',
       chapterId: json['chapterId'] ?? '',
       createdBy: createdById,
+      creatorName: creatorName,
+      creatorEmail: creatorEmail,
       rawData: json['rawData'] ?? {},
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
@@ -51,6 +72,8 @@ class Notemodel extends Equatable {
       'title': title,
       'chapterId': chapterId,
       'createdBy': createdBy,
+      'creatorName': creatorName,
+      'creatorEmail': creatorEmail,
       'rawData': rawData,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -64,6 +87,8 @@ class Notemodel extends Equatable {
     title,
     chapterId,
     createdBy,
+    creatorName,
+    creatorEmail,
     rawData,
     createdAt,
     updatedAt,

@@ -327,6 +327,7 @@ class AppRouter {
                 passed: extra?['passed'] as int? ?? 0,
                 attempted: extra?['attempted'] as int? ?? 0,
                 color: extra?['color'] as Color? ?? Colors.blue,
+                ownerId: extra?['ownerId'] as String? ?? '',
               ),
             );
           },
@@ -341,6 +342,7 @@ class AppRouter {
             final child = ChapterDetailScreen(
               chapter: extra['chapter'] as ChapterModel,
               folderColor: extra['folderColor'] as Color? ?? Colors.blue,
+              folderOwnerId: extra['folderOwnerId'] as String?,
             );
             if (existingCubit != null) {
               return BlocProvider.value(value: existingCubit, child: child);
@@ -404,6 +406,7 @@ class AppRouter {
               chapterId: chapterId,
               chapterTitle: extra?['chapterTitle'] as String? ?? 'Notes',
               accentColor: extra?['accentColor'] as Color?,
+              folderOwnerId: extra?['folderOwnerId'] as String?,
             );
             if (chapterCubit != null) {
               return BlocProvider.value(value: chapterCubit, child: child);

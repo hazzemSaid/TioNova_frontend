@@ -7,6 +7,7 @@ import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetPublicFoldersUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
@@ -40,7 +41,9 @@ class _FolderScreenState extends State<FolderScreen> {
   static const defaultColors = Static.defaultColors;
   static const defaultIcons = Static.defaultIcons;
   List<Foldermodel>? _cachedFolders;
+  List<Foldermodel>? _cachedPublicFolders;
   List<String> _cachedCategories = const ['All'];
+
   @override
   void initState() {
     super.initState();
@@ -63,7 +66,11 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   void _fetchFolders() {
-    context.read<FolderCubit>().fetchAllFolders();
+    if (selectedTab == 'My Folders') {
+      context.read<FolderCubit>().fetchAllFolders();
+    } else {
+      context.read<FolderCubit>().fetchPublicFolders();
+    }
   }
 
   // Helper method to get icon from stored index
@@ -112,6 +119,13 @@ class _FolderScreenState extends State<FolderScreen> {
     setState(() {
       selectedTab = tab;
     });
+    // Fetch folders only if not already cached
+    if (selectedTab == 'My Folders' && _cachedFolders == null) {
+      context.read<FolderCubit>().fetchAllFolders();
+    } else if (selectedTab == 'Public Folders' &&
+        _cachedPublicFolders == null) {
+      context.read<FolderCubit>().fetchPublicFolders();
+    }
   }
 
   // Helper method to get categories from folders
@@ -119,8 +133,18 @@ class _FolderScreenState extends State<FolderScreen> {
     final categories = ['All'];
     final categorySet = <String>{};
 
-    if (state is FolderLoaded) {
+    if (selectedTab == 'My Folders' && state is FolderLoaded) {
       for (final folder in state.folders) {
+        if (folder.category != null && folder.category!.isNotEmpty) {
+          categorySet.add(folder.category!);
+        }
+      }
+      categories.addAll(categorySet);
+      _cachedCategories = categories;
+      return categories;
+    } else if (selectedTab == 'Public Folders' &&
+        state is PublicFoldersLoaded) {
+      for (final folder in state.publicFolders) {
         if (folder.category != null && folder.category!.isNotEmpty) {
           categorySet.add(folder.category!);
         }
@@ -321,54 +345,67 @@ class _FolderScreenState extends State<FolderScreen> {
                             onTabSelected: onTabSelected,
                           ),
                           SizedBox(height: verticalSpacing),
-                          CreateFolderCard(
-                            onTap: () async {
-                              final result = await showDialog<dynamic>(
-                                context: context,
-                                barrierDismissible: true,
-                                barrierColor: Colors.black.withOpacity(0.5),
-                                builder: (dialogContext) => BlocProvider(
-                                  create: (dialogContext) => FolderCubit(
-                                    getAllFolderUseCase:
-                                        getIt<GetAllFolderUseCase>(),
-                                    createFolderUseCase:
-                                        getIt<CreateFolderUseCase>(),
-                                    updateFolderUseCase:
-                                        getIt<UpdateFolderUseCase>(),
-                                    deleteFolderUseCase:
-                                        getIt<DeleteFolderUseCase>(),
-                                    getAvailableUsersForShareUseCase:
-                                        getIt<
-                                          GetAvailableUsersForShareUseCase
-                                        >(),
-                                  ),
-                                  child: const CreateFolderDialog(),
-                                ),
-                              );
-                              if (result != null && mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Folder created'),
-                                    behavior: SnackBarBehavior.floating,
-                                    duration: Duration(seconds: 1),
+                          if (selectedTab == 'My Folders')
+                            CreateFolderCard(
+                              onTap: () async {
+                                final result = await showDialog<dynamic>(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  barrierColor: Colors.black.withOpacity(0.5),
+                                  builder: (dialogContext) => BlocProvider(
+                                    create: (dialogContext) => FolderCubit(
+                                      getAllFolderUseCase:
+                                          getIt<GetAllFolderUseCase>(),
+                                      createFolderUseCase:
+                                          getIt<CreateFolderUseCase>(),
+                                      updateFolderUseCase:
+                                          getIt<UpdateFolderUseCase>(),
+                                      deleteFolderUseCase:
+                                          getIt<DeleteFolderUseCase>(),
+                                      getAvailableUsersForShareUseCase:
+                                          getIt<
+                                            GetAvailableUsersForShareUseCase
+                                          >(),
+                                      getPublicFoldersUseCase:
+                                          getIt<GetPublicFoldersUseCase>(),
+                                    ),
+                                    child: const CreateFolderDialog(),
                                   ),
                                 );
+                                if (result != null && mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Folder created'),
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
 
-                                context.read<FolderCubit>().fetchAllFolders();
-
-                                // No need to call _fetchFolders(); UI will update from FolderLoaded
-                              }
-                            },
-                          ),
-                          SizedBox(height: verticalSpacing * 1.5),
-                          const LongPressHint(),
+                                  // No need to manually fetch - cubit handles it automatically
+                                }
+                              },
+                            ),
+                          if (selectedTab == 'My Folders')
+                            SizedBox(height: verticalSpacing * 1.5),
+                          if (selectedTab == 'My Folders')
+                            const LongPressHint(),
                           SizedBox(height: verticalSpacing * 1.5),
                         ]),
                       ),
                     ),
-                    if (state is FolderLoading && _cachedFolders == null)
+                    if ((selectedTab == 'My Folders' &&
+                            state is FolderLoading &&
+                            _cachedFolders == null) ||
+                        (selectedTab == 'Public Folders' &&
+                            state is PublicFoldersLoading &&
+                            _cachedPublicFolders == null))
                       const FolderShimmerList()
-                    else if (state is FolderError && _cachedFolders == null)
+                    else if ((selectedTab == 'My Folders' &&
+                            state is FolderError &&
+                            _cachedFolders == null) ||
+                        (selectedTab == 'Public Folders' &&
+                            state is PublicFoldersError &&
+                            _cachedPublicFolders == null))
                       SliverFillRemaining(
                         child: SingleChildScrollView(
                           child: Center(
@@ -399,19 +436,36 @@ class _FolderScreenState extends State<FolderScreen> {
                           ),
                         ),
                       )
-                    else if (state is FolderLoaded ||
-                        (state is FolderLoading && _cachedFolders != null) ||
-                        (state is FolderError && _cachedFolders != null))
+                    else if ((selectedTab == 'My Folders' &&
+                            _cachedFolders != null) ||
+                        (selectedTab == 'Public Folders' &&
+                            _cachedPublicFolders != null) ||
+                        (selectedTab == 'My Folders' &&
+                            (state is FolderLoaded ||
+                                state is FolderLoading ||
+                                state is FolderError)) ||
+                        (selectedTab == 'Public Folders' &&
+                            (state is PublicFoldersLoaded ||
+                                state is PublicFoldersLoading ||
+                                state is PublicFoldersError)))
                       Builder(
                         builder: (context) {
-                          // Cache folders when loaded
+                          // Cache folders when loaded - independent of selected tab
                           if (state is FolderLoaded) {
                             _cachedFolders = state.folders;
                           }
-                          // Use cached folders if available, otherwise use current state
-                          final foldersToShow = state is FolderLoaded
-                              ? state.folders
-                              : _cachedFolders ?? [];
+                          if (state is PublicFoldersLoaded) {
+                            _cachedPublicFolders = state.publicFolders;
+                          }
+
+                          // Use cached folders based on selected tab
+                          final foldersToShow = selectedTab == 'My Folders'
+                              ? (state is FolderLoaded
+                                    ? state.folders
+                                    : _cachedFolders ?? [])
+                              : (state is PublicFoldersLoaded
+                                    ? state.publicFolders
+                                    : _cachedPublicFolders ?? []);
 
                           return FolderList(
                             state: FolderLoaded(foldersToShow),
@@ -477,9 +531,14 @@ class _FolderScreenState extends State<FolderScreen> {
                           SizedBox(height: verticalSpacing * 1.5),
                           Builder(
                             builder: (context) {
-                              final foldersForStats = state is FolderLoaded
-                                  ? state.folders
-                                  : (_cachedFolders ?? []);
+                              final foldersForStats =
+                                  selectedTab == 'My Folders'
+                                  ? (state is FolderLoaded
+                                        ? state.folders
+                                        : (_cachedFolders ?? []))
+                                  : (state is PublicFoldersLoaded
+                                        ? state.publicFolders
+                                        : (_cachedPublicFolders ?? []));
 
                               return StudyStats(
                                 myFoldersCount: foldersForStats.length,

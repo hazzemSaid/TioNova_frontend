@@ -14,6 +14,7 @@ import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetPublicFoldersUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
 
@@ -27,6 +28,7 @@ class FolderCubit extends Cubit<FolderState> {
     required this.updateFolderUseCase,
     required this.deleteFolderUseCase,
     required this.getAvailableUsersForShareUseCase,
+    required this.getPublicFoldersUseCase,
   }) : super(FolderInitial());
 
   final GetAllFolderUseCase getAllFolderUseCase;
@@ -34,6 +36,7 @@ class FolderCubit extends Cubit<FolderState> {
   final UpdateFolderUseCase updateFolderUseCase;
   final DeleteFolderUseCase deleteFolderUseCase;
   final GetAvailableUsersForShareUseCase getAvailableUsersForShareUseCase;
+  final GetPublicFoldersUseCase getPublicFoldersUseCase;
 
   // SSE subscription reference
   StreamSubscription<SSEModel>? _sseSubscription;
@@ -104,6 +107,8 @@ class FolderCubit extends Cubit<FolderState> {
     );
     result.fold((failure) => safeEmit(CreateFolderError(failure)), (_) async {
       safeEmit(CreateFolderSuccess());
+      // Automatically refetch folders after creation to update the list
+      await fetchAllFolders();
     });
   }
 
@@ -205,6 +210,21 @@ class FolderCubit extends Cubit<FolderState> {
     result.fold(
       (failure) => safeEmit(GetAvailableUsersForShareError(failure)),
       (users) => safeEmit(GetAvailableUsersForShareSuccess(users)),
+    );
+  }
+
+  Future<void> fetchPublicFolders() async {
+    if (isClosed) return;
+    safeEmit(PublicFoldersLoading());
+    final result = await getPublicFoldersUseCase();
+    if (isClosed) return;
+    result.fold(
+      (failure) {
+        if (!isClosed) safeEmit(PublicFoldersError(failure));
+      },
+      (publicFolders) {
+        if (!isClosed) safeEmit(PublicFoldersLoaded(publicFolders));
+      },
     );
   }
 

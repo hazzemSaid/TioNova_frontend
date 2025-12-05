@@ -7,12 +7,14 @@ class NotesSection extends StatefulWidget {
   final String chapterId;
   final String chapterTitle;
   final Color? accentColor;
+  final String? folderOwnerId;
 
   const NotesSection({
     super.key,
     required this.chapterId,
     required this.chapterTitle,
     this.accentColor,
+    this.folderOwnerId,
   });
 
   @override
@@ -137,6 +139,7 @@ class _NotesSectionState extends State<NotesSection> {
                                   'accentColor':
                                       widget.accentColor ?? colorScheme.primary,
                                   'chapterCubit': chapterCubit,
+                                  'folderOwnerId': widget.folderOwnerId,
                                 },
                               );
                             },
