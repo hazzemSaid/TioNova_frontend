@@ -315,8 +315,21 @@ class _ChallengeWaitingLobbyScreenState
   Color get _textSecondary => const Color(0xFF8E8E93);
   Color get _green => const Color.fromRGBO(0, 153, 102, 1);
 
+  /// Get responsive sizing based on screen dimensions
+  double _getResponsiveValue(
+    BuildContext context, {
+    required double mobile,
+    required double tablet,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return screenWidth > 600 ? tablet : mobile;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenHeight < 700;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -327,24 +340,76 @@ class _ChallengeWaitingLobbyScreenState
       child: Scaffold(
         backgroundColor: _bg,
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-                _buildTrophyIcon(),
-                const SizedBox(height: 32),
-                _buildTitle(),
-                const SizedBox(height: 16),
-                _buildParticipantCount(),
-                const SizedBox(height: 32),
-                _buildWaitingMessage(),
-                const SizedBox(height: 48),
-                _buildLoadingIndicator(),
-                const Spacer(),
-                _buildLeaveButton(),
-              ],
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight:
+                    screenHeight -
+                    MediaQuery.of(context).padding.top -
+                    MediaQuery.of(context).padding.bottom,
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: _getResponsiveValue(
+                    context,
+                    mobile: 20,
+                    tablet: 32,
+                  ),
+                  vertical: isSmallScreen ? 12 : 24,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    if (!isSmallScreen) const Spacer(flex: 1),
+                    _buildTrophyIcon(context),
+                    SizedBox(
+                      height: _getResponsiveValue(
+                        context,
+                        mobile: 20,
+                        tablet: 32,
+                      ),
+                    ),
+                    _buildTitle(context),
+                    SizedBox(
+                      height: _getResponsiveValue(
+                        context,
+                        mobile: 12,
+                        tablet: 16,
+                      ),
+                    ),
+                    _buildParticipantCount(context),
+                    SizedBox(
+                      height: _getResponsiveValue(
+                        context,
+                        mobile: 20,
+                        tablet: 32,
+                      ),
+                    ),
+                    _buildWaitingMessage(context),
+                    SizedBox(
+                      height: _getResponsiveValue(
+                        context,
+                        mobile: 24,
+                        tablet: 48,
+                      ),
+                    ),
+                    _buildLoadingIndicator(context),
+                    if (!isSmallScreen) const Spacer(flex: 1),
+                    SizedBox(
+                      height: _getResponsiveValue(
+                        context,
+                        mobile: 12,
+                        tablet: 16,
+                      ),
+                    ),
+                    _buildLeaveButton(context),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -352,31 +417,36 @@ class _ChallengeWaitingLobbyScreenState
     );
   }
 
-  Widget _buildTrophyIcon() {
+  Widget _buildTrophyIcon(BuildContext context) {
+    final trophySize = _getResponsiveValue(context, mobile: 100, tablet: 120);
+    final iconSize = _getResponsiveValue(context, mobile: 56, tablet: 64);
+
     return Container(
-      width: 120,
-      height: 120,
+      width: trophySize,
+      height: trophySize,
       decoration: BoxDecoration(
         color: _green.withOpacity(0.15),
         shape: BoxShape.circle,
       ),
-      child: Icon(Icons.emoji_events_outlined, size: 64, color: _green),
+      child: Icon(Icons.emoji_events_outlined, size: iconSize, color: _green),
     );
   }
 
-  Widget _buildTitle() {
+  Widget _buildTitle(BuildContext context) {
+    final fontSize = _getResponsiveValue(context, mobile: 28, tablet: 32);
+
     return Text(
       'Get Ready!',
       style: TextStyle(
         color: _textPrimary,
-        fontSize: 32,
+        fontSize: fontSize,
         fontWeight: FontWeight.w800,
       ),
       textAlign: TextAlign.center,
     );
   }
 
-  Widget _buildParticipantCount() {
+  Widget _buildParticipantCount(BuildContext context) {
     print('WaitingLobbyScreen - _buildParticipantCount called');
     print('WaitingLobbyScreen - _participantCount: $_participantCount');
     print('WaitingLobbyScreen - _participants: $_participants');
@@ -392,8 +462,16 @@ class _ChallengeWaitingLobbyScreenState
     );
     print('WaitingLobbyScreen - activeParticipants: $activeParticipants');
 
+    final containerPadding = _getResponsiveValue(
+      context,
+      mobile: 16,
+      tablet: 20,
+    );
+    final maxListHeight = MediaQuery.of(context).size.height * 0.25;
+    final fontSize = _getResponsiveValue(context, mobile: 18, tablet: 20);
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(containerPadding),
       decoration: BoxDecoration(
         color: _cardBg,
         borderRadius: BorderRadius.circular(16),
@@ -410,7 +488,7 @@ class _ChallengeWaitingLobbyScreenState
                 '$_participantCount players',
                 style: TextStyle(
                   color: _textPrimary,
-                  fontSize: 20,
+                  fontSize: fontSize,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -429,63 +507,72 @@ class _ChallengeWaitingLobbyScreenState
             const SizedBox(height: 16),
             Container(
               width: double.infinity,
+              constraints: BoxConstraints(maxHeight: maxListHeight),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: _panelBg,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Players in Lobby',
-                    style: TextStyle(
-                      color: _textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Players in Lobby',
+                      style: TextStyle(
+                        color: _textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: activeParticipants.map((participant) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _cardBg,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: _green.withOpacity(0.2)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: _green,
-                                shape: BoxShape.circle,
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: activeParticipants.map((participant) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _cardBg,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: _green.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: _green,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              participant['username'] ?? 'Unknown',
-                              style: TextStyle(
-                                color: _textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  participant['username'] ?? 'Unknown',
+                                  style: TextStyle(
+                                    color: _textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -494,14 +581,21 @@ class _ChallengeWaitingLobbyScreenState
     );
   }
 
-  Widget _buildWaitingMessage() {
+  Widget _buildWaitingMessage(BuildContext context) {
+    final titleFontSize = _getResponsiveValue(context, mobile: 16, tablet: 18);
+    final subtitleFontSize = _getResponsiveValue(
+      context,
+      mobile: 13,
+      tablet: 15,
+    );
+
     return Column(
       children: [
         Text(
           widget.challengeName,
           style: TextStyle(
             color: _textPrimary,
-            fontSize: 18,
+            fontSize: titleFontSize,
             fontWeight: FontWeight.w600,
           ),
           textAlign: TextAlign.center,
@@ -509,19 +603,22 @@ class _ChallengeWaitingLobbyScreenState
         const SizedBox(height: 12),
         Text(
           'Waiting for the host to start the challenge...',
-          style: TextStyle(color: _textSecondary, fontSize: 15),
+          style: TextStyle(color: _textSecondary, fontSize: subtitleFontSize),
           textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget _buildLoadingIndicator() {
+  Widget _buildLoadingIndicator(BuildContext context) {
+    final loaderSize = _getResponsiveValue(context, mobile: 36, tablet: 40);
+    final fontSize = _getResponsiveValue(context, mobile: 12, tablet: 14);
+
     return Column(
       children: [
         SizedBox(
-          width: 40,
-          height: 40,
+          width: loaderSize,
+          height: loaderSize,
           child: CircularProgressIndicator(
             strokeWidth: 3,
             valueColor: AlwaysStoppedAnimation<Color>(_green),
@@ -532,7 +629,7 @@ class _ChallengeWaitingLobbyScreenState
           'Connected',
           style: TextStyle(
             color: _green,
-            fontSize: 14,
+            fontSize: fontSize,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -540,10 +637,12 @@ class _ChallengeWaitingLobbyScreenState
     );
   }
 
-  Widget _buildLeaveButton() {
+  Widget _buildLeaveButton(BuildContext context) {
+    final buttonHeight = _getResponsiveValue(context, mobile: 48, tablet: 52);
+
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: buttonHeight,
       child: OutlinedButton.icon(
         onPressed: () => _showLeaveDialog(),
         icon: const Icon(Icons.exit_to_app, size: 20),

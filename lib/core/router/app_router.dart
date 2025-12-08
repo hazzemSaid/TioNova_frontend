@@ -17,8 +17,8 @@ import 'package:tionova/features/auth/presentation/view/screens/reset_password_s
 import 'package:tionova/features/auth/presentation/view/screens/verify_reset_code_screen.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/EnterCode_screen.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challenge_completion_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/challenge_screen_responsive.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challenge_waiting_lobby_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/create_challenge_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/live_question_screen.dart';
@@ -472,7 +472,7 @@ class AppRouter {
           builder: (BuildContext context, GoRouterState state) =>
               BlocProvider<ChallengeCubit>(
                 create: (context) => getIt<ChallengeCubit>(),
-                child: ChallangeScreen(),
+                child: const ChallengeScreenResponsive(),
               ),
         ),
         GoRoute(

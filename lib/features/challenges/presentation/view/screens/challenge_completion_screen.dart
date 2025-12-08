@@ -375,7 +375,6 @@ class ChallengeCompletionScreen extends StatelessWidget {
                 entry['name'] ?? entry['username'] ?? 'Player ${index + 1}';
             final photoUrl = entry['photoUrl'] ?? '';
             final score = entry['score'] ?? 0;
-            final time = entry['time'] ?? '0s';
             final isCurrentUser = currentRank == rank;
 
             return _buildRankingEntry(
@@ -383,7 +382,6 @@ class ChallengeCompletionScreen extends StatelessWidget {
               name: name,
               photoUrl: photoUrl,
               score: score,
-              time: time,
               isCurrentUser: isCurrentUser,
             );
           }).toList(),
@@ -397,7 +395,6 @@ class ChallengeCompletionScreen extends StatelessWidget {
     required String name,
     String? photoUrl,
     required int score,
-    required String time,
     required bool isCurrentUser,
   }) {
     return Container(
@@ -470,10 +467,6 @@ class ChallengeCompletionScreen extends StatelessWidget {
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
-                ),
-                Text(
-                  'Time: $time',
-                  style: TextStyle(color: _textSecondary, fontSize: 12),
                 ),
               ],
             ),

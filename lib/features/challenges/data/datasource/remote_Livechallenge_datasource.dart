@@ -30,7 +30,7 @@ class RemoteLiveChallengeDataSource implements LiveChallengeRepo {
     required String challengeCode,
   }) async {
     final response = await _dio.post(
-      "/live/challenges/disconnect",
+      " /api/live/challenges/disconnect",
       data: {'challengeCode': challengeCode},
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
