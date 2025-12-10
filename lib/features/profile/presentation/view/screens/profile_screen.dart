@@ -9,6 +9,7 @@ import 'package:tionova/features/profile/presentation/view/widgets/achievements_
 import 'package:tionova/features/profile/presentation/view/widgets/activity_tab.dart';
 import 'package:tionova/features/profile/presentation/view/widgets/overview_tab.dart';
 import 'package:tionova/features/profile/presentation/view/widgets/settings_section.dart';
+import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/widgets/page_header.dart';
 import 'package:tionova/utils/widgets/sliver_app_bar_delegate.dart';
 
@@ -36,12 +37,21 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    // Fetch profile data when screen loads
+    Future.microtask(() {
+      context.read<ProfileCubit>().fetchProfile();
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _refreshProfile() async {
+    if (!mounted) return;
+    await context.read<ProfileCubit>().fetchProfile();
   }
 
   @override
@@ -54,94 +64,129 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
       body: BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {
           if (state is ProfileLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return RefreshIndicator(
+              onRefresh: _refreshProfile,
+              color: theme.colorScheme.primary,
+              child: const CustomScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ],
+              ),
+            );
           } else if (state is ProfileError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading profile',
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    state.message,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      context.read<ProfileCubit>().retry();
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
+            return RefreshIndicator(
+              onRefresh: _refreshProfile,
+              color: theme.colorScheme.primary,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error loading profile',
+                            style: theme.textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            state.message,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              context.read<ProfileCubit>().retry();
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             );
           } else if (state is ProfileLoaded) {
             final profile = state.profile;
-            return NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) {
-                return [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 60, 16, 0),
-                      child: Column(
-                        children: [
-                          const PageHeader(
-                            title: 'Profile',
-                            subtitle: 'Your personal study stats',
+            return RefreshIndicator(
+              onRefresh: _refreshProfile,
+              color: theme.colorScheme.primary,
+              child: ScrollConfiguration(
+                behavior: const NoGlowScrollBehavior(),
+                child: NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 60, 16, 0),
+                          child: Column(
+                            children: [
+                              const PageHeader(
+                                title: 'Profile',
+                                subtitle: 'Your personal study stats',
+                              ),
+                              // Profile Card Container
+                              ProfileCard(profile: profile),
+                            ],
                           ),
-                          // Profile Card Container
-                          ProfileCard(profile: profile),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverPersistentHeader(
-                    delegate: SliverAppBarDelegate(
-                      TabBar(
-                        controller: _tabController,
-                        isScrollable: true,
-                        labelColor: theme.colorScheme.primary,
-                        unselectedLabelColor: theme.hintColor,
-                        indicatorColor: theme.colorScheme.primary,
-                        indicatorWeight: 3,
-                        labelStyle: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
                         ),
-                        unselectedLabelStyle: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 15,
-                        ),
-                        dividerColor: Colors.transparent,
-                        tabAlignment: TabAlignment.start,
-                        tabs: const [
-                          Tab(text: 'Overview'),
-                          Tab(text: 'Activity'),
-                          Tab(text: 'Achievements'),
-                          Tab(text: 'Settings'),
-                        ],
                       ),
-                    ),
-                    pinned: true,
+                      SliverPersistentHeader(
+                        delegate: SliverAppBarDelegate(
+                          TabBar(
+                            controller: _tabController,
+                            isScrollable: true,
+                            labelColor: theme.colorScheme.primary,
+                            unselectedLabelColor: theme.hintColor,
+                            indicatorColor: theme.colorScheme.primary,
+                            indicatorWeight: 3,
+                            labelStyle: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                            unselectedLabelStyle: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 15,
+                            ),
+                            dividerColor: Colors.transparent,
+                            tabAlignment: TabAlignment.start,
+                            tabs: const [
+                              Tab(text: 'Overview'),
+                              Tab(text: 'Activity'),
+                              Tab(text: 'Achievements'),
+                              Tab(text: 'Settings'),
+                            ],
+                          ),
+                        ),
+                        pinned: true,
+                      ),
+                    ];
+                  },
+                  body: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildTabContent(0, screenHeight, profile),
+                      _buildTabContent(1, screenHeight, profile),
+                      _buildTabContent(2, screenHeight, profile),
+                      _buildTabContent(3, screenHeight, profile),
+                    ],
                   ),
-                ];
-              },
-              body: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildTabContent(0, screenHeight, profile),
-                  _buildTabContent(1, screenHeight, profile),
-                  _buildTabContent(2, screenHeight, profile),
-                  _buildTabContent(3, screenHeight, profile),
-                ],
+                ),
               ),
             );
           }

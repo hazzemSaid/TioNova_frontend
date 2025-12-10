@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/validators.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
@@ -226,6 +227,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                               hintText: 'Username',
                                               prefixIcon: Icons.person_rounded,
                                               isDark: isDark,
+                                              validator:
+                                                  Validators.validateUsername,
                                             ),
                                             SizedBox(height: fieldSpacing),
 
@@ -246,6 +249,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                               keyboardType:
                                                   TextInputType.emailAddress,
                                               isDark: isDark,
+                                              validator:
+                                                  Validators.validateEmail,
                                             ),
                                             SizedBox(height: fieldSpacing),
 
@@ -265,6 +270,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                               prefixIcon: Icons.lock_rounded,
                                               obscureText: _obscure1,
                                               isDark: isDark,
+                                              validator: Validators
+                                                  .validatePasswordStrong,
                                               suffixIcon: IconButton(
                                                 onPressed: () => setState(
                                                   () => _obscure1 = !_obscure1,
@@ -300,6 +307,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                   Icons.lock_outline_rounded,
                                               obscureText: _obscure2,
                                               isDark: isDark,
+                                              validator:
+                                                  Validators.validateConfirmPassword(
+                                                    _passwordController.text,
+                                                  ),
                                               suffixIcon: IconButton(
                                                 onPressed: () => setState(
                                                   () => _obscure2 = !_obscure2,
@@ -326,32 +337,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                 final isLoading =
                                                     state is AuthLoading ||
                                                     state is RegisterLoading;
-                                                VoidCallback? onPressed;
-                                                if (!isLoading) {
-                                                  onPressed = () {
+                                                return PrimaryBtn(
+                                                  label: 'Create Account',
+                                                  isLoading: isLoading,
+                                                  onPressed: () {
                                                     if (formKey.currentState!
                                                         .validate()) {
-                                                      if (_passwordController
-                                                              .text !=
-                                                          _confirmController
-                                                              .text) {
-                                                        ScaffoldMessenger.of(
-                                                          context,
-                                                        ).showSnackBar(
-                                                          SnackBar(
-                                                            content: const Text(
-                                                              'Passwords do not match',
-                                                            ),
-                                                            backgroundColor:
-                                                                Theme.of(
-                                                                      context,
-                                                                    )
-                                                                    .colorScheme
-                                                                    .error,
-                                                          ),
-                                                        );
-                                                        return;
-                                                      }
                                                       context
                                                           .read<AuthCubit>()
                                                           .register(
@@ -365,13 +356,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                                 .text,
                                                           );
                                                     }
-                                                  };
-                                                }
-                                                return PrimaryBtn(
-                                                  label: isLoading
-                                                      ? 'Creating...'
-                                                      : 'Create Account',
-                                                  onPressed: onPressed,
+                                                  },
                                                   buttonColor: isDark
                                                       ? Colors.white10
                                                       : Colors.black87,

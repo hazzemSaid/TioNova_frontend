@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_navigation.dart';
+import 'package:tionova/core/utils/validators.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/SecondaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/auth_background.dart';
-import 'package:tionova/features/preferences/presentation/Bloc/PreferencesCubit.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -223,6 +223,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                               keyboardType:
                                                   TextInputType.emailAddress,
                                               isDark: isDark,
+                                              validator:
+                                                  Validators.validateEmail,
                                             ),
                                             SizedBox(height: fieldSpacing),
 
@@ -242,6 +244,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                               prefixIcon: Icons.lock_rounded,
                                               obscureText: _obscure,
                                               isDark: isDark,
+                                              validator:
+                                                  Validators.validatePassword,
                                               suffixIcon: IconButton(
                                                 onPressed: () => setState(
                                                   () => _obscure = !_obscure,
@@ -283,28 +287,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 final isLoading =
                                                     state is AuthLoading;
                                                 return PrimaryBtn(
-                                                  label: isLoading
-                                                      ? 'Signing In...'
-                                                      : 'Sign In',
-                                                  onPressed: isLoading
-                                                      ? null
-                                                      : () {
-                                                          if (formKey
-                                                              .currentState!
-                                                              .validate()) {
-                                                            context
-                                                                .read<
-                                                                  AuthCubit
-                                                                >()
-                                                                .login(
-                                                                  _emailController
-                                                                      .text
-                                                                      .trim(),
-                                                                  _passwordController
-                                                                      .text,
-                                                                );
-                                                          }
-                                                        },
+                                                  label: 'Sign In',
+                                                  isLoading: isLoading,
+                                                  onPressed: () {
+                                                    if (formKey.currentState!
+                                                        .validate()) {
+                                                      context
+                                                          .read<AuthCubit>()
+                                                          .login(
+                                                            _emailController
+                                                                .text
+                                                                .trim(),
+                                                            _passwordController
+                                                                .text,
+                                                          );
+                                                    }
+                                                  },
                                                   buttonColor: isDark
                                                       ? Colors.white10
                                                       : Colors.black87,

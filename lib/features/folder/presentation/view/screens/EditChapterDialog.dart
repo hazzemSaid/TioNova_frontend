@@ -57,7 +57,17 @@ class _EditChapterDialogState extends State<EditChapterDialog> {
   IconData _parseIcon(String? iconString) {
     if (iconString == null) return Icons.folder;
     try {
-      return IconData(int.parse(iconString), fontFamily: 'MaterialIcons');
+      // Map icon strings to const IconData for tree-shaking
+      final iconMap = {
+        '57469': Icons.folder,
+        '57470': Icons.book,
+        '57471': Icons.music_note,
+        '57472': Icons.image,
+        '57473': Icons.videocam,
+        '57474': Icons.description,
+        '57475': Icons.article,
+      };
+      return iconMap[iconString] ?? Icons.folder;
     } catch (e) {
       return Icons.folder;
     }

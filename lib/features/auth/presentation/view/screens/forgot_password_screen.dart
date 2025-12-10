@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/validators.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
@@ -197,6 +198,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                           keyboardType:
                                               TextInputType.emailAddress,
                                           isDark: isDark,
+                                          validator: Validators.validateEmail,
                                         ),
                                         SizedBox(
                                           height: keyboardHeight > 0
@@ -209,29 +211,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                           builder: (context, state) {
                                             final isLoading =
                                                 state is AuthLoading;
-                                            return Column(
-                                              children: [
-                                                PrimaryBtn(
-                                                  label: isLoading
-                                                      ? 'Sending...'
-                                                      : 'Send Reset Code',
-                                                  onPressed: isLoading
-                                                      ? null
-                                                      : _sendResetCode,
-                                                  buttonColor: isDark
-                                                      ? Colors.white10
-                                                      : Colors.black87,
-                                                  textColor: Colors.white,
-                                                ),
-                                                if (isLoading)
-                                                  const Padding(
-                                                    padding: EdgeInsets.only(
-                                                      top: 16.0,
-                                                    ),
-                                                    child:
-                                                        CircularProgressIndicator(),
-                                                  ),
-                                              ],
+                                            return PrimaryBtn(
+                                              label: 'Send Reset Code',
+                                              isLoading: isLoading,
+                                              onPressed: _sendResetCode,
+                                              buttonColor: isDark
+                                                  ? Colors.white10
+                                                  : Colors.black87,
+                                              textColor: Colors.white,
                                             );
                                           },
                                         ),

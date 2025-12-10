@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/core/theme/app_theme.dart';
+import 'package:tionova/core/utils/validators.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
@@ -267,16 +268,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                                 ),
                                               ),
                                               isDark: isDark,
-                                              validator: (value) {
-                                                if (value == null ||
-                                                    value.isEmpty) {
-                                                  return 'Please enter a password';
-                                                }
-                                                if (value.length < 8) {
-                                                  return 'Password must be at least 8 characters';
-                                                }
-                                                return null;
-                                              },
+                                              validator: Validators
+                                                  .validatePasswordStrong,
                                             ),
                                             SizedBox(height: sectionSpacing),
 
@@ -316,17 +309,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                                 ),
                                               ),
                                               isDark: isDark,
-                                              validator: (value) {
-                                                if (value == null ||
-                                                    value.isEmpty) {
-                                                  return 'Please confirm your password';
-                                                }
-                                                if (value !=
-                                                    _passwordController.text) {
-                                                  return 'Passwords do not match';
-                                                }
-                                                return null;
-                                              },
+                                              validator:
+                                                  Validators.validateConfirmPassword(
+                                                    _passwordController.text,
+                                                  ),
                                             ),
                                             SizedBox(height: fieldSpacing),
 
@@ -393,13 +379,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                               SizedBox(height: sectionSpacing),
 
                                             // Reset Password button
-                                            PrimaryBtn(
-                                              label: 'Reset Password',
-                                              onPressed: _resetPassword,
-                                              buttonColor: isDark
-                                                  ? Colors.white10
-                                                  : Colors.black87,
-                                              textColor: Colors.white,
+                                            BlocBuilder<AuthCubit, AuthState>(
+                                              builder: (context, state) {
+                                                final isLoading =
+                                                    state is AuthLoading;
+                                                return PrimaryBtn(
+                                                  label: 'Reset Password',
+                                                  isLoading: isLoading,
+                                                  onPressed: _resetPassword,
+                                                  buttonColor: isDark
+                                                      ? Colors.white10
+                                                      : Colors.black87,
+                                                  textColor: Colors.white,
+                                                );
+                                              },
                                             ),
                                           ],
                                         ),

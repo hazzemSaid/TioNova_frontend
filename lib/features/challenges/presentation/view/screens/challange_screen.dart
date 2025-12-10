@@ -153,26 +153,6 @@ class _ChallangeScreenState extends State<ChallangeScreen>
                         outlined: true,
                       ),
                       const SizedBox(height: 16),
-                      OptionCard(
-                        gradientColors: const [
-                          Color(0xFF006B54),
-                          Color(0xFF00C46A),
-                        ],
-                        leading: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(0xFF00C46A),
-                          ),
-                        ),
-                        title: 'Live Challenge Active!',
-                        subtitle: '"Quick BST Quiz" - 23 participants online',
-                        actionLabel: 'Join Now',
-                        onTap: () {
-                          // TODO: Implement Join Now action
-                        },
-                      ),
                     ],
                   ),
                 ),

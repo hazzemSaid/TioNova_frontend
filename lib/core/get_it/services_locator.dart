@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/core/services/firebase_realtime_service.dart';
+import 'package:tionova/core/utils/network_error_helper.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/localauthdatasource.dart';
@@ -71,8 +72,9 @@ import 'package:tionova/features/preferences/domain/repo/PreferencesRepository.d
 import 'package:tionova/features/preferences/domain/usecase/GetPreferencesUseCase.dart';
 import 'package:tionova/features/preferences/domain/usecase/UpdatePreferencesUseCase.dart';
 import 'package:tionova/features/preferences/presentation/Bloc/PreferencesCubit.dart';
-import 'package:tionova/features/profile/data/repositories/profile_repository.dart';
+import 'package:tionova/features/profile/data/datasource/remote_data_source_profile.dart';
 import 'package:tionova/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:tionova/features/profile/domain/repo/profile_repository.dart';
 import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:tionova/features/quiz/data/datasources/remotequizdatasource.dart';
 import 'package:tionova/features/quiz/data/repo/Quizrepoimp.dart';
@@ -86,8 +88,8 @@ import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 final getIt = GetIt.instance;
 // http://192.168.1.12:3000/api/v1
 //https://tio-nova-backend.vercel.app/api/v1
-// final baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
-final baseUrl = 'http://192.168.1.12:3000/api/v1';
+final baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
+// final baseUrl = 'http://192.168.1.12:3000/api/v1';
 Future<void> setupServiceLocator() async {
   // Initialize Hive
   // Hive.init(appDocumentDir.path); // Removed redundant init, use Hive.initFlutter() from main.dart
@@ -200,6 +202,27 @@ Future<void> setupServiceLocator() async {
           options.headers['Authorization'] = 'Bearer $accessToken';
         }
         handler.next(options);
+      },
+    ),
+  );
+
+  // Connection error interceptor - shows dialog when server is unreachable
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onError: (DioException error, ErrorInterceptorHandler handler) {
+        // Check for connection errors
+        if (error.type == DioExceptionType.connectionError ||
+            error.type == DioExceptionType.connectionTimeout ||
+            NetworkErrorHelper.isConnectionError(error)) {
+          // Show the server down dialog
+          NetworkErrorHelper.showServerDownDialog(
+            title: 'Server Unavailable',
+            message:
+                'The app is currently unable to connect to the server. Please check your internet connection or try again later.',
+          );
+        }
+        // Always pass the error to the next handler
+        handler.next(error);
       },
     ),
   );
@@ -537,8 +560,14 @@ Future<void> setupServiceLocator() async {
   );
 
   // Profile
+  getIt.registerLazySingleton<remoteDataSourceProfile>(
+    () => RemoteDataSourceProfileImpl(dio: getIt<Dio>()),
+  );
+
   getIt.registerLazySingleton<ProfileRepository>(
-    () => ProfileRepositoryImpl(dio: getIt<Dio>()),
+    () => ProfileRepositoryImpl(
+      remoteDataSource: getIt<remoteDataSourceProfile>(),
+    ),
   );
 
   getIt.registerFactory(

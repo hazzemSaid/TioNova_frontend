@@ -74,6 +74,8 @@ class AppRouter {
 
   static late final GoRouter _router;
   static late final AuthStateNotifier _authNotifier;
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   static GoRouter get router => _router;
 
@@ -105,6 +107,7 @@ class AppRouter {
     _authNotifier = AuthStateNotifier(authCubit);
 
     _router = GoRouter(
+      navigatorKey: navigatorKey,
       initialLocation: '/splash',
       refreshListenable: _authNotifier,
       debugLogDiagnostics: false,
