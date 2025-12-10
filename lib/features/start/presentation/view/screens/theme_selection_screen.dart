@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
 
 class ThemeSelectionScreen extends StatefulWidget {
@@ -132,6 +131,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         context.read<ThemeCubit>().setTheme(_selectedTheme);
+                        // Don't mark first-time complete yet - do it after onboarding
                         context.go('/onboarding');
                       },
                       style: ElevatedButton.styleFrom(
@@ -157,8 +157,8 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   // Back Button
                   TextButton(
                     onPressed: () {
-                      // Safely pop back or navigate to auth if no history
-                      context.safePop(fallback: '/auth');
+                      // Go back to splash
+                      context.go('/splash');
                     },
                     child: Text(
                       'Back',

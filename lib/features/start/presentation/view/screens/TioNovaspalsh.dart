@@ -51,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen>
                   if (authState is AuthSuccess) {
                     GoRouter.of(context).go('/');
                   } else if (isFirst) {
-                    GoRouter.of(context).go('/onboarding');
+                    GoRouter.of(context).go('/theme-selection');
                   } else {
                     GoRouter.of(context).go('/auth');
                   }

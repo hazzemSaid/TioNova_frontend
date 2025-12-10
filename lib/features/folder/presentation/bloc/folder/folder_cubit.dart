@@ -121,6 +121,18 @@ class FolderCubit extends Cubit<FolderState> {
       return;
     }
 
+    // Security check: Ensure folder exists in the current user's map
+    // (Folders are only loaded if user is the owner or folder is shared with them)
+    final folderToDelete = _folderMap[id];
+    if (folderToDelete == null) {
+      safeEmit(
+        DeleteFolderError(
+          ValidationFailure('Unauthorized: Cannot delete this folder'),
+        ),
+      );
+      return;
+    }
+
     safeEmit(
       DeleteFolderLoading(_folderMap.values.toList()),
     ); // Emit loading state
@@ -159,6 +171,19 @@ class FolderCubit extends Cubit<FolderState> {
         );
         return;
       }
+
+      // Security check: Ensure folder exists in the current user's map
+      // (Folders are only loaded if user is the owner or folder is shared with them)
+      final folderToUpdate = _folderMap[id];
+      if (folderToUpdate == null) {
+        safeEmit(
+          UpdateFolderError(
+            ValidationFailure('Unauthorized: Cannot update this folder'),
+          ),
+        );
+        return;
+      }
+
       int chapterCount = _folderMap[id]!.chapterCount ?? 0;
       int passedCount = _folderMap[id]!.passedCount ?? 0;
       int attemptedCount = _folderMap[id]!.attemptedCount ?? 0;

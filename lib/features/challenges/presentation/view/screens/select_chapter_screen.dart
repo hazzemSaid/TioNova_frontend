@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/folder/data/models/FolderModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
@@ -21,7 +20,7 @@ class SelectChapterScreen extends StatefulWidget {
 class _SelectChapterScreenState extends State<SelectChapterScreen>
     with SafeContextMixin {
   Foldermodel? _selectedFolder;
-  final Set<String> _selectedChapterIds = {};
+  String? _selectedChapterId; // Only allow single chapter selection
   bool _showChapters = false;
   String? _firstChapterTitle;
 
@@ -102,7 +101,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _showChapters ? 'Select Chapters' : 'Select a Folder',
+                  _showChapters ? 'Select Chapter' : 'Select a Folder',
                   style: TextStyle(
                     color: _textPrimary,
                     fontSize: 18,
@@ -117,7 +116,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
               ],
             ),
           ),
-          if (_showChapters && _selectedChapterIds.isNotEmpty)
+          if (_showChapters && _selectedChapterId != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -125,7 +124,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                '${_selectedChapterIds.length}',
+                '1',
                 style: TextStyle(color: _green, fontWeight: FontWeight.w700),
               ),
             ),
@@ -167,7 +166,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
                   onTap: () {
                     setState(() {
                       _selectedFolder = folder;
-                      _selectedChapterIds.clear();
+                      _selectedChapterId = null;
                       _firstChapterTitle = null;
                       _showChapters = true;
                     });
@@ -261,18 +260,14 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
               itemBuilder: (context, index) {
                 final chapter = chapters[index];
                 final chapterId = chapter.id;
-                final selected =
-                    chapterId != null &&
-                    _selectedChapterIds.contains(chapterId);
+                final selected = _selectedChapterId == chapterId;
                 return InkWell(
                   onTap: () {
                     setState(() {
-                      if (chapterId != null) {
-                        if (selected) {
-                          _selectedChapterIds.remove(chapterId);
-                        } else {
-                          _selectedChapterIds.add(chapterId);
-                        }
+                      if (selected) {
+                        _selectedChapterId = null;
+                      } else {
+                        _selectedChapterId = chapterId;
                       }
                       _firstChapterTitle ??= chapter.title;
                     });
@@ -315,8 +310,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
   }
 
   Widget _buildContinueButton() {
-    final canContinue =
-        _selectedFolder != null && _selectedChapterIds.isNotEmpty;
+    final canContinue = _selectedFolder != null && _selectedChapterId != null;
     return BlocConsumer<ChallengeCubit, ChallengeState>(
       listener: (context, state) {
         if (state is ChallengeCreated) {
@@ -367,10 +361,13 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
             child: ElevatedButton(
               onPressed: (canContinue && !isLoading)
                   ? () async {
-                      if (_selectedFolder == null || !contextIsValid) return;
+                      if (_selectedFolder == null ||
+                          _selectedChapterId == null ||
+                          !contextIsValid)
+                        return;
 
-                      // Get the first selected chapter ID as string
-                      final firstChapterId = _selectedChapterIds.first;
+                      // Get the selected chapter ID
+                      final firstChapterId = _selectedChapterId!;
 
                       // Create challenge via API (Step 1)
                       await context.read<ChallengeCubit>().createChallenge(

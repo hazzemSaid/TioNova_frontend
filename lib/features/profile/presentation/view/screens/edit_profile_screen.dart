@@ -88,6 +88,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _updateProfile() async {
     if (_usernameController.text.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Username cannot be empty'),
@@ -96,6 +97,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       return;
     }
+
+    if (!mounted) return;
 
     setState(() {
       _isUpdating = true;
@@ -109,6 +112,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       };
 
       // Call the cubit method to update profile
+      if (!mounted) return;
       await context.read<ProfileCubit>().updateProfile(
         updateData,
         imageFile: _selectedImage,
@@ -116,7 +120,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (!mounted) return;
 
-      // Navigate back after successful update
+      // Show success message and navigate back
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Delay slightly to allow snackbar to show before navigation
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -156,38 +172,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Text(
-                'Save',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: BlocListener<ProfileCubit, ProfileState>(
         listener: (context, state) {
-          if (state is ProfileLoaded) {
-            // Show success message
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Profile updated successfully!'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 2),
-              ),
-            );
-            // Navigate back immediately without delay
-            if (mounted) {
-              Navigator.of(context).pop(true);
-            }
-          } else if (state is ProfileError) {
+          // Only listen for errors now
+          // Success is handled in _updateProfile() method
+          if (state is ProfileError) {
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -367,10 +357,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.camera_alt,
                           size: 20,
-                          color: Colors.white,
+                          color: isDark ? Colors.black : Colors.white,
                         ),
                       ),
                     ),
@@ -594,14 +584,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 width: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.colorScheme.onPrimary,
+                  ),
                 ),
               )
             : Text(
                 'Update Profile',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: theme.colorScheme.onPrimary,
                   fontSize: 16,
                 ),
               ),

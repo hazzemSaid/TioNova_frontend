@@ -18,10 +18,8 @@ import 'package:tionova/features/folder/presentation/view/widgets/folder_options
 import 'package:tionova/features/folder/presentation/view/widgets/folder_shimmer_list.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/static.dart';
-import 'package:tionova/utils/widgets/app_search_bar.dart';
 import 'package:tionova/utils/widgets/page_header.dart';
 
-import '../widgets/category_filter.dart';
 import '../widgets/create_folder_card.dart';
 import '../widgets/create_folder_dialog.dart';
 import '../widgets/folder_tabs.dart';
@@ -129,32 +127,6 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   // Helper method to get categories from folders
-  List<String> _getCategories(FolderState state) {
-    final categories = ['All'];
-    final categorySet = <String>{};
-
-    if (selectedTab == 'My Folders' && state is FolderLoaded) {
-      for (final folder in state.folders) {
-        if (folder.category != null && folder.category!.isNotEmpty) {
-          categorySet.add(folder.category!);
-        }
-      }
-      categories.addAll(categorySet);
-      _cachedCategories = categories;
-      return categories;
-    } else if (selectedTab == 'Public Folders' &&
-        state is PublicFoldersLoaded) {
-      for (final folder in state.publicFolders) {
-        if (folder.category != null && folder.category!.isNotEmpty) {
-          categorySet.add(folder.category!);
-        }
-      }
-      categories.addAll(categorySet);
-      _cachedCategories = categories;
-      return categories;
-    }
-    return _cachedCategories;
-  }
 
   List<Foldermodel> _getFoldersFromState(FolderState state) {
     if (state is FolderLoaded) {
@@ -331,14 +303,7 @@ class _FolderScreenState extends State<FolderScreen> {
                             subtitle: 'Organize and manage your study folders',
                           ),
                           SizedBox(height: verticalSpacing * 1.5),
-                          const AppSearchBar(hintText: 'Search folders'),
-                          SizedBox(height: verticalSpacing * 1.5),
-                          CategoryFilter(
-                            categories: _getCategories(state),
-                            selectedCategory: selectedCategory,
-                            onCategorySelected: onCategorySelected,
-                          ),
-                          SizedBox(height: verticalSpacing),
+
                           FolderTabs(
                             tabs: const ['My Folders', 'Public Folders'],
                             selectedTab: selectedTab,

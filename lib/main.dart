@@ -1,7 +1,6 @@
 // // main.dart
-// import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +15,7 @@ import 'package:tionova/core/router/app_router.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/hive_manager.dart';
+import 'package:tionova/core/services/notification/notification_service.dart';
 import 'package:tionova/core/services/shorebird_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/core/theme/app_theme.dart';
@@ -26,23 +26,30 @@ import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
 import 'package:tionova/firebase_options.dart';
 
-// Create an instance of NotificationService
-// final notificationService = NotificationService();
+// Background message handler
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await NotificationService.backgroundMessageHandler(message);
+}
 
-// // Background message handler
-// @pragma('vm:entry-point')
-// Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-//   await NotificationService.backgroundMessageHandler(message);
-// }
+// Handle notification tap
+Future<void> _handleNotificationTap(RemoteMessage message) async {
+  print('📬 Notification tapped: ${message.notification?.title}');
+  // You can add custom navigation or logic here based on notification data
+  // Example: navigate to specific screen based on notification type
+  // final data = message.data;
+  // if (data['type'] == 'challenge') {
+  //   navigateToChallengeScreen(data['challengeId']);
+  // }
+}
 
 Future<void> main() async {
   // Initialize Flutter bindings and services
   WidgetsFlutterBinding.ensureInitialized();
 
   // ==========================================
-  // CRITICAL INITIALIZATION ONLY (Fast Path)
+  // CRITICAL: Initialize Firebase FIRST
   // ==========================================
-
   // Initialize Firebase - check using Firebase.apps list
   print('🔧 Checking Firebase initialization...');
   print('🔧 Number of existing Firebase apps: ${Firebase.apps.length}');
@@ -82,6 +89,21 @@ Future<void> main() async {
     print('❌ Error initializing Firebase: $e');
     rethrow;
   }
+
+  // ==========================================
+  // Register background message handler
+  // ==========================================
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // ==========================================
+  // Initialize Notification Service (after Firebase)
+  // ==========================================
+  final notificationService = NotificationService();
+  await notificationService.initialize(
+    onNotificationTap: _handleNotificationTap,
+  );
+
+  print('✅ Push notifications initialized');
 
   // Initialize Hive (needed for theme and auth)
   await HiveManager.initializeHive();
@@ -175,6 +197,22 @@ Future<void> main() async {
       final shorebirdService = ShorebirdService();
       await shorebirdService.initialize();
       print('✅ Shorebird Code Push initialized');
+
+      // Get FCM token and setup notification subscriptions
+      try {
+        final token = await notificationService.getFcmToken();
+        print('🔑 Device FCM Token: $token');
+
+        // Subscribe to default topics based on user context
+        // You can customize this based on your app logic
+        await notificationService.subscribeToTopics([
+          'all_users', // Send to all users
+          // Add more topics as needed based on user role, class, etc.
+        ]);
+        print('✅ Subscribed to notification topics');
+      } catch (e) {
+        print('⚠️ Error setting up FCM: $e');
+      }
 
       print('✅ All deferred services initialized successfully');
     } catch (e) {

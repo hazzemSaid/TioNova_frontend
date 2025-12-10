@@ -37,8 +37,9 @@ class ProfileCubit extends Cubit<ProfileState> {
 
       await repository.updateProfile(profileData);
 
-      // Refresh profile after successful update
-      await fetchProfile();
+      // Don't automatically fetch profile after update
+      // This prevents widget deactivation issues during navigation
+      // The screen that initiated the update will handle UI updates
     } catch (e) {
       emit(ProfileError(e.toString()));
     }

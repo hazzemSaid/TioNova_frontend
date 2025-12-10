@@ -38,6 +38,8 @@ class FolderOptionsBottomSheet extends StatelessWidget {
     final currentUserId = authState is AuthSuccess ? authState.user.id : null;
 
     // Check if current user is the owner
+    // For shared folders (Status.share), only the owner can edit/delete/share
+    // This applies the same restriction as public folders
     final isOwner = currentUserId != null && currentUserId == folder.ownerId;
 
     return Container(

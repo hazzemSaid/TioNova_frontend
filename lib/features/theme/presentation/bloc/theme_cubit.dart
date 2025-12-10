@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tionova/core/utils/safe_emit.dart';
 
 class ThemeCubit extends Cubit<ThemeMode> {
   final SharedPreferences prefs;
@@ -18,8 +18,10 @@ class ThemeCubit extends Cubit<ThemeMode> {
   }
 
   Future<void> setTheme(ThemeMode themeMode) async {
-    await prefs.setString(_themeModeKey, _getStringFromThemeMode(themeMode));
+    // Emit immediately for instant UI update
     safeEmit(themeMode);
+    // Save to preferences in background (don't await to avoid blocking UI)
+    prefs.setString(_themeModeKey, _getStringFromThemeMode(themeMode)).ignore();
   }
 
   ThemeMode _getThemeModeFromString(String value) {

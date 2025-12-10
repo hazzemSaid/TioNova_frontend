@@ -35,7 +35,7 @@ class AchievementsSection extends StatelessWidget {
         border: Border.all(color: colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Header
           Row(
@@ -81,80 +81,85 @@ class AchievementsSection extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      decoration: BoxDecoration(
-        color: achievement.isEarned
-            ? colorScheme.surface
-            : colorScheme.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          // Emoji Icon
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: achievement.isEarned
-                  ? colorScheme.surface.withOpacity(0.5)
-                  : colorScheme.surfaceVariant.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                achievement.emoji,
-                style: const TextStyle(fontSize: 28),
+    return Opacity(
+      opacity: 0.5,
+      child: Container(
+        width: double.infinity,
+        constraints: BoxConstraints(
+          minHeight: 120,
+          maxHeight: screenWidth < 600 ? 160 : 140,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Emoji Icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colorScheme.surface.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    achievement.emoji,
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                ),
               ),
-            ),
+
+              const SizedBox(height: 10),
+
+              // Achievement Title
+              Text(
+                achievement.title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: screenWidth < 600 ? 13 : 15,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: screenWidth < 600 ? 13 : 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+
+              const SizedBox(height: 4),
+
+              // Achievement Description
+              Text(
+                achievement.description,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: screenWidth < 600 ? 10 : 11,
+                    ) ??
+                    TextStyle(
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: screenWidth < 600 ? 10 : 11,
+                    ),
+              ),
+            ],
           ),
-
-          const SizedBox(height: 12),
-
-          // Achievement Title
-          Text(
-            achievement.title,
-            textAlign: TextAlign.center,
-            style:
-                textTheme.bodyLarge?.copyWith(
-                  color: achievement.isEarned
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant.withOpacity(0.6),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ) ??
-                TextStyle(
-                  color: achievement.isEarned
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant.withOpacity(0.6),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-
-          const SizedBox(height: 4),
-
-          // Achievement Description
-          Text(
-            achievement.description,
-            textAlign: TextAlign.center,
-            style:
-                textTheme.bodySmall?.copyWith(
-                  color: achievement.isEarned
-                      ? colorScheme.onSurface.withOpacity(0.7)
-                      : colorScheme.onSurfaceVariant.withOpacity(0.5),
-                  fontSize: 11,
-                ) ??
-                TextStyle(
-                  color: achievement.isEarned
-                      ? colorScheme.onSurface.withOpacity(0.7)
-                      : colorScheme.onSurfaceVariant.withOpacity(0.5),
-                  fontSize: 11,
-                ),
-          ),
-        ],
+        ),
       ),
     );
   }

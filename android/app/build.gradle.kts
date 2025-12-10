@@ -8,16 +8,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-
 android {
-    namespace = "com.example.tionova"
+    namespace ="com.example.tionova"
     compileSdk = 36
     ndkVersion = "28.0.13004108"
-    
-    // Add SHA-1 for Google Sign-In
-   
- compileOptions {
-        // Enable core library desugaring
+
+    compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -28,12 +24,14 @@ android {
     }
 
     defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.tionova"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
-        multiDexEnabled = true
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     buildTypes {
@@ -75,28 +73,7 @@ android {
 flutter {
     source = "../.."
 }
-
 dependencies {
-    // Core library desugaring
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-
-    // Android 12+ Splash Screen API
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.core:core-splashscreen:1.0.1")
-
-    // Firebase - Using older BOM compatible with Kotlin 2.0.21
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-messaging")
-
-    // Fix for R8: Force Kotlin stdlib version to match plugin version
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
-    implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
-}
-
-configurations.all {
-    resolutionStrategy {
-        force("org.jetbrains.kotlin:kotlin-stdlib:2.0.21")
-        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.21")
-        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.21")
-    }
 }

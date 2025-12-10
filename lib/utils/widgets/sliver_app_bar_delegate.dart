@@ -24,6 +24,7 @@ class SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(SliverAppBarDelegate oldDelegate) {
-    return false;
+    // Rebuild when TabBar changes to apply new theme colors immediately
+    return oldDelegate._tabBar != _tabBar;
   }
 }

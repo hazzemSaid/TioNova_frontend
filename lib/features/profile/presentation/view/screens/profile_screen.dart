@@ -9,6 +9,7 @@ import 'package:tionova/features/profile/presentation/view/widgets/achievements_
 import 'package:tionova/features/profile/presentation/view/widgets/activity_tab.dart';
 import 'package:tionova/features/profile/presentation/view/widgets/overview_tab.dart';
 import 'package:tionova/features/profile/presentation/view/widgets/settings_section.dart';
+import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/widgets/page_header.dart';
 import 'package:tionova/utils/widgets/sliver_app_bar_delegate.dart';
@@ -126,67 +127,76 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
             return RefreshIndicator(
               onRefresh: _refreshProfile,
               color: theme.colorScheme.primary,
-              child: ScrollConfiguration(
-                behavior: const NoGlowScrollBehavior(),
-                child: NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 60, 16, 0),
-                          child: Column(
-                            children: [
-                              const PageHeader(
-                                title: 'Profile',
-                                subtitle: 'Your personal study stats',
+              child: BlocBuilder<ThemeCubit, ThemeMode>(
+                builder: (context, themeMode) {
+                  // Rebuild header when theme changes for instant TabBar update
+                  final currentTheme = Theme.of(context);
+                  return ScrollConfiguration(
+                    behavior: const NoGlowScrollBehavior(),
+                    child: NestedScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      headerSliverBuilder: (context, innerBoxIsScrolled) {
+                        return [
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 60, 16, 0),
+                              child: Column(
+                                children: [
+                                  const PageHeader(
+                                    title: 'Profile',
+                                    subtitle: 'Your personal study stats',
+                                  ),
+                                  // Profile Card Container
+                                  ProfileCard(profile: profile),
+                                ],
                               ),
-                              // Profile Card Container
-                              ProfileCard(profile: profile),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SliverPersistentHeader(
-                        delegate: SliverAppBarDelegate(
-                          TabBar(
-                            controller: _tabController,
-                            isScrollable: true,
-                            labelColor: theme.colorScheme.primary,
-                            unselectedLabelColor: theme.hintColor,
-                            indicatorColor: theme.colorScheme.primary,
-                            indicatorWeight: 3,
-                            labelStyle: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
                             ),
-                            unselectedLabelStyle: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 15,
-                            ),
-                            dividerColor: Colors.transparent,
-                            tabAlignment: TabAlignment.start,
-                            tabs: const [
-                              Tab(text: 'Overview'),
-                              Tab(text: 'Activity'),
-                              Tab(text: 'Achievements'),
-                              Tab(text: 'Settings'),
-                            ],
                           ),
-                        ),
-                        pinned: true,
+                          SliverPersistentHeader(
+                            delegate: SliverAppBarDelegate(
+                              TabBar(
+                                controller: _tabController,
+                                isScrollable: true,
+                                labelColor: currentTheme.colorScheme.primary,
+                                unselectedLabelColor: currentTheme.hintColor,
+                                indicatorColor:
+                                    currentTheme.colorScheme.primary,
+                                indicatorWeight: 3,
+                                labelStyle: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                                unselectedLabelStyle: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 15,
+                                ),
+                                dividerColor: Colors.transparent,
+                                tabAlignment: TabAlignment.start,
+                                tabs: const [
+                                  Tab(text: 'Overview'),
+                                  Tab(text: 'Activity'),
+                                  Tab(text: 'Achievements'),
+                                  Tab(text: 'Settings'),
+                                ],
+                              ),
+                            ),
+                            pinned: true,
+                          ),
+                        ];
+                      },
+                      body: TabBarView(
+                        controller: _tabController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          _buildTabContent(0, screenHeight, profile),
+                          _buildTabContent(1, screenHeight, profile),
+                          _buildTabContent(2, screenHeight, profile),
+                          _buildTabContent(3, screenHeight, profile),
+                        ],
                       ),
-                    ];
-                  },
-                  body: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildTabContent(0, screenHeight, profile),
-                      _buildTabContent(1, screenHeight, profile),
-                      _buildTabContent(2, screenHeight, profile),
-                      _buildTabContent(3, screenHeight, profile),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             );
           }
@@ -250,6 +260,14 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
           child: SettingsSection(
             notificationsEnabled: true,
             darkModeEnabled: true,
+            changeTheme: () {
+              final themeCubit = context.read<ThemeCubit>();
+              if (themeCubit.state == ThemeMode.light) {
+                themeCubit.setTheme(ThemeMode.dark);
+              } else {
+                themeCubit.setTheme(ThemeMode.light);
+              }
+            },
             onNotificationsToggle: () {},
             onDarkModeToggle: () {},
             onExportData: () {},

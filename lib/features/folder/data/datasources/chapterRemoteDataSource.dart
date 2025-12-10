@@ -120,29 +120,27 @@ class ChapterRemoteDataSource extends IChapterRepository {
         // Safely access nested properties
         final success = responseData['success'];
         final content = responseData['content'];
+        final contentType = responseData['contentType'] ?? '';
+
+        print('Content type from API: $contentType');
+        print('Content type in response: ${content.runtimeType}');
 
         if (success == true && content != null) {
-          // Ensure content is a Map before accessing 'data'
-          if (content is! Map<String, dynamic>) {
-            print('Unexpected content type: ${content.runtimeType}');
-            return Left(
-              ServerFailure(
-                'Invalid content format: expected Map, got ${content.runtimeType}',
-              ),
-            );
-          }
+          try {
+            Uint8List uint8List;
 
-          final contentData = content['data'];
-
-          if (contentData is List) {
-            // Convert List<dynamic> to List<int> then to Uint8List
-            // Handle both int and String (for base64 or string-encoded numbers)
-            try {
-              final intList = contentData.map((e) {
+            // Handle different content formats
+            if (content is String) {
+              // Content is likely base64-encoded
+              print('Decoding base64 content...');
+              uint8List = Uint8List.fromList(base64Decode(content));
+            } else if (content is List) {
+              // Content is a list of bytes
+              print('Converting list content to Uint8List...');
+              final intList = content.map((e) {
                 if (e is int) {
                   return e;
                 } else if (e is String) {
-                  // Try to parse string as int
                   return int.parse(e);
                 } else if (e is num) {
                   return e.toInt();
@@ -150,20 +148,47 @@ class ChapterRemoteDataSource extends IChapterRepository {
                   throw FormatException('Cannot convert $e to int');
                 }
               }).toList();
-              final uint8List = Uint8List.fromList(intList);
-              print(
-                'Successfully converted PDF data, size: ${uint8List.length} bytes',
-              );
-              return Right(uint8List);
-            } catch (e) {
-              print('Error converting content data to Uint8List: $e');
-              return Left(
-                ServerFailure('Failed to convert PDF data: ${e.toString()}'),
+              uint8List = Uint8List.fromList(intList);
+            } else if (content is Map<String, dynamic>) {
+              // Content might be nested with 'data' property
+              final contentData = content['data'];
+              if (contentData is List) {
+                print('Converting nested content data to Uint8List...');
+                final intList = contentData.map((e) {
+                  if (e is int) {
+                    return e;
+                  } else if (e is String) {
+                    return int.parse(e);
+                  } else if (e is num) {
+                    return e.toInt();
+                  } else {
+                    throw FormatException('Cannot convert $e to int');
+                  }
+                }).toList();
+                uint8List = Uint8List.fromList(intList);
+              } else if (contentData is String) {
+                print('Decoding nested base64 content...');
+                uint8List = Uint8List.fromList(base64Decode(contentData));
+              } else {
+                throw FormatException(
+                  'Unexpected nested content data type: ${contentData.runtimeType}',
+                );
+              }
+            } else {
+              throw FormatException(
+                'Unexpected content type: ${content.runtimeType}',
               );
             }
-          } else {
-            print('Unexpected content data type: ${contentData.runtimeType}');
-            return Left(ServerFailure('Invalid PDF data format received'));
+
+            print(
+              'Successfully converted PDF data, size: ${uint8List.length} bytes',
+            );
+            return Right(uint8List);
+          } catch (e) {
+            print('Error converting content data to Uint8List: $e');
+            return Left(
+              ServerFailure('Failed to convert PDF data: ${e.toString()}'),
+            );
           }
         } else {
           final errorMessage = responseData['message'] ?? 'Unknown error';

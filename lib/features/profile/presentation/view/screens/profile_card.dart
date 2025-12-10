@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/profile/data/models/profile_model.dart';
+import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:tionova/features/profile/presentation/view/screens/edit_profile_screen.dart';
 
 class ProfileCard extends StatelessWidget {
   final Profile profile;
@@ -68,7 +72,16 @@ class ProfileCard extends StatelessWidget {
             SizedBox(
               width: 200,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => BlocProvider(
+                        create: (context) => getIt<ProfileCubit>(),
+                        child: EditProfileScreen(profile: profile),
+                      ),
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.edit, size: 18),
                 label: const Text('Edit Profile'),
                 style: ElevatedButton.styleFrom(

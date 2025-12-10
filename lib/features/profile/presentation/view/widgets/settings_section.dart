@@ -11,9 +11,10 @@ class SettingsSection extends StatefulWidget {
   final VoidCallback? onShareProgress;
   final VoidCallback? onHelpSupport;
   final VoidCallback? onSignOut;
-
+  final VoidCallback? changeTheme;
   const SettingsSection({
     super.key,
+    this.changeTheme,
     required this.notificationsEnabled,
     required this.darkModeEnabled,
     this.onNotificationsToggle,
@@ -33,6 +34,13 @@ class _SettingsSectionState extends State<SettingsSection> {
   bool _quizResults = true;
   bool _streakAlerts = true;
   bool _weeklyReport = false;
+  late bool _changeThemedMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _changeThemedMode = widget.darkModeEnabled;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +85,17 @@ class _SettingsSectionState extends State<SettingsSection> {
             },
           ),
 
+          const SizedBox(height: 20),
+          _buildToggleItem(
+            context,
+            "Change Theme",
+            "Toggle between light and dark mode",
+            _changeThemedMode,
+            (value) {
+              setState(() => _changeThemedMode = value);
+              widget.changeTheme?.call();
+            },
+          ),
           const SizedBox(height: 20),
           Divider(color: colorScheme.outline.withOpacity(0.3), height: 1),
           const SizedBox(height: 20),
@@ -136,7 +155,10 @@ class _SettingsSectionState extends State<SettingsSection> {
             'Study Reminders',
             'Daily study time notifications',
             _studyReminders,
-            (value) => setState(() => _studyReminders = value),
+            (value) {
+              setState(() => _studyReminders = value);
+              widget.onNotificationsToggle?.call();
+            },
           ),
           const SizedBox(height: 8),
           _buildToggleItem(
@@ -146,6 +168,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             _quizResults,
             (value) => setState(() => _quizResults = value),
           ),
+
           const SizedBox(height: 8),
           _buildToggleItem(
             context,
@@ -184,10 +207,6 @@ class _SettingsSectionState extends State<SettingsSection> {
           ),
           const SizedBox(height: 12),
 
-          _buildActionRow(context, 'Study Preferences', Icons.tune, () {
-            context.go('/preferences');
-          }),
-          const SizedBox(height: 8),
           _buildActionRow(
             context,
             'Help & Support',
