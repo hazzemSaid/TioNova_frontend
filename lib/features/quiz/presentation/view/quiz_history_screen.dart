@@ -73,7 +73,15 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
             Container(
               margin: const EdgeInsets.only(right: 16),
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  context.push(
+                    '/quiz-start',
+                    extra: {
+                      'chapterId': widget.chapterId,
+                      'quizTitle': widget.quizTitle,
+                    },
+                  );
+                },
                 icon: Icon(Icons.add, size: 16, color: colorScheme.onSurface),
                 label: Text(
                   'New Quiz',
