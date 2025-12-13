@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tionova/features/folder/data/models/FolderModel.dart';
+import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_card.dart';
 import 'package:tionova/utils/static.dart';

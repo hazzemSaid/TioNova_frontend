@@ -6,7 +6,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:tionova/features/challenges/data/datasource/remote_Livechallenge_datasource.dart';
 import 'package:tionova/features/folder/data/datasources/FolderRemoteDataSource.dart';
 import 'package:tionova/features/folder/data/datasources/chapterRemoteDataSource.dart';
-import 'package:tionova/features/folder/data/models/FolderModel.dart';
+import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/home/data/datasource/analysis_remote_datasource.dart';
 

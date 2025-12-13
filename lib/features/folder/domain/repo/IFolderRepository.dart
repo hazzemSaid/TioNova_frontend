@@ -1,6 +1,6 @@
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
-import 'package:tionova/features/folder/data/models/FolderModel.dart';
+import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 
 abstract class IFolderRepository {
