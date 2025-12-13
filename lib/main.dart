@@ -92,6 +92,7 @@ Future<void> main() async {
 
   // ==========================================
   // Register background message handler
+
   // ==========================================
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 

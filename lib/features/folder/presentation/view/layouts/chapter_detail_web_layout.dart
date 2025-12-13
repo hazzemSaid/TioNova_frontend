@@ -805,6 +805,7 @@ class ChapterDetailWebLayout extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
+                      flex: 2,
                       child: ElevatedButton(
                         onPressed: () async {
                           context.push('/quiz/${chapter.id}');
@@ -813,87 +814,110 @@ class ChapterDetailWebLayout extends StatelessWidget {
                           backgroundColor: colorScheme.primary,
                           foregroundColor: colorScheme.onPrimary,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
                             Icon(Icons.emoji_events_outlined, size: 20),
-                            SizedBox(width: 10),
-                            Text(
-                              'Start New Quiz',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                            SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Start New Quiz',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    OutlinedButton(
-                      onPressed: () {
-                        // Practice mode - can be implemented later
-                        CustomDialogs.showInfoDialog(
-                          context,
-                          title: 'Info',
-                          message: 'Practice mode coming soon!',
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colorScheme.onSurface,
-                        side: BorderSide(color: colorScheme.outline, width: 1),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          // Practice mode - can be implemented later
+                          CustomDialogs.showInfoDialog(
+                            context,
+                            title: 'Info',
+                            message: 'Practice mode coming soon!',
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colorScheme.onSurface,
+                          side: BorderSide(
+                            color: colorScheme.outline,
+                            width: 1,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        'Practice Mode',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                        child: const Text(
+                          'Practice',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    OutlinedButton(
-                      onPressed: () async {
-                        context.push(
-                          '/quiz-history/${chapter.id}',
-                          extra: {'quizTitle': chapter.title},
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colorScheme.onSurfaceVariant,
-                        side: BorderSide(color: colorScheme.outline, width: 1),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.history, size: 18),
-                          SizedBox(width: 8),
-                          Text(
-                            'History',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          context.push(
+                            '/quiz-history/${chapter.id}',
+                            extra: {'quizTitle': chapter.title},
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colorScheme.onSurfaceVariant,
+                          side: BorderSide(
+                            color: colorScheme.outline,
+                            width: 1,
                           ),
-                        ],
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.history, size: 18),
+                            SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                'History',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

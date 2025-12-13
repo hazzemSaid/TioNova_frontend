@@ -1,9 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
-import 'package:tionova/features/auth/presentation/view/widgets/PrimaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/auth_background.dart';
 
 class VerifyResetCodeScreen extends StatefulWidget {
@@ -82,6 +82,221 @@ class _VerifyResetCodeScreenState extends State<VerifyResetCodeScreen> {
     context.read<AuthCubit>().verifyCode(email: widget.email, code: code);
   }
 
+  Widget _buildFormContent(bool isDark, bool isDesktop) {
+    final maskedEmail = _maskEmail(widget.email);
+    final isCompact = MediaQuery.of(context).size.height < 650;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Title
+        Text(
+          'Verify Reset Code',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: isDesktop ? 32 : 24,
+            fontWeight: FontWeight.bold,
+            color: isDesktop
+                ? Colors.white
+                : (isDark ? Colors.white : Colors.black),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Description
+        Text(
+          'Enter the 6-digit code sent to\n$maskedEmail',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: isDesktop ? 16 : 14,
+            color: isDesktop
+                ? Colors.white70
+                : (isDark ? Colors.white70 : Colors.black54),
+          ),
+        ),
+        SizedBox(height: isDesktop ? 32 : 24),
+
+        // Code input fields
+        Center(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                6,
+                (index) => Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCompact ? 3.0 : 4.0,
+                  ),
+                  child: _buildCodeDigitField(index, isCompact),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        SizedBox(height: isDesktop ? 20 : 16),
+
+        // Progress indicator
+        Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              6,
+              (index) => Container(
+                width: 24,
+                height: 3,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: _codeDigits[index].isNotEmpty
+                      ? (isDesktop
+                            ? Colors.white
+                            : (isDark ? Colors.white : Colors.black87))
+                      : (isDesktop
+                            ? Colors.white24
+                            : (isDark ? Colors.white24 : Colors.black26)),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        SizedBox(height: isDesktop ? 24 : 20),
+
+        // Verify Code button
+        BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            final isLoading = state is AuthLoading;
+            return SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : _verifyCode,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.black,
+                          ),
+                        ),
+                      )
+                    : const Text(
+                        'Verify Code',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            );
+          },
+        ),
+
+        SizedBox(height: isDesktop ? 20 : 16),
+
+        // Didn't receive code
+        Text(
+          'Didn\'t receive the code?',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isDesktop
+                ? Colors.white70
+                : (isDark ? Colors.white70 : Colors.black54),
+            fontSize: isDesktop ? 16 : 14,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Resend button
+        Center(
+          child: TextButton(
+            onPressed: _remainingSeconds > 0 ? null : _resendCode,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              _isResending
+                  ? 'Sending...'
+                  : _remainingSeconds > 0
+                  ? 'Resend in $_formattedTime'
+                  : 'Resend Code',
+              style: TextStyle(
+                color: _remainingSeconds > 0
+                    ? (isDesktop
+                          ? Colors.white38
+                          : (isDark ? Colors.white38 : Colors.black38))
+                    : (isDesktop
+                          ? Colors.white
+                          : (isDark ? Colors.white : Colors.black87)),
+                fontSize: isDesktop ? 16 : 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+
+        SizedBox(height: isDesktop ? 20 : 16),
+
+        // Check spam folder note
+        Center(
+          child: Text(
+            'Check your spam folder if you don\'t see the email.\nThe code will expire in 10 minutes.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: isDesktop ? 14 : 12,
+              color: isDesktop
+                  ? Colors.white38
+                  : (isDark ? Colors.white38 : Colors.black38),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Back to Login
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => context.go('/auth/login'),
+            icon: Icon(
+              Icons.arrow_back_rounded,
+              size: 16,
+              color: isDesktop
+                  ? Colors.white70
+                  : (isDark ? Colors.white70 : Colors.black54),
+            ),
+            label: Text(
+              'Back to Login',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: isDesktop
+                    ? Colors.white70
+                    : (isDark ? Colors.white70 : Colors.black54),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   void dispose() {
     for (var controller in _codeControllers) {
@@ -96,7 +311,9 @@ class _VerifyResetCodeScreenState extends State<VerifyResetCodeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final maskedEmail = _maskEmail(widget.email);
+    final width = MediaQuery.of(context).size.width;
+    final isDesktop = width > 800;
+    final effectiveIsDark = kIsWeb ? true : isDark;
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
@@ -116,335 +333,22 @@ class _VerifyResetCodeScreenState extends State<VerifyResetCodeScreen> {
         }
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
         body: AuthBackground(
-          isDark: isDark,
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Main content - centered and scrollable
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final keyboardHeight = MediaQuery.of(
-                        context,
-                      ).viewInsets.bottom;
-                      final w = MediaQuery.of(context).size.width;
-                      final h = MediaQuery.of(context).size.height;
-                      final isTablet = w >= 800;
-                      final isCompact = h < 650;
-                      final logoWidth = isTablet ? w * 0.15 : w * 0.25;
-
-                      return SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: keyboardHeight > 0 ? 8 : 16,
-                        ),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight:
-                                constraints.maxHeight -
-                                (keyboardHeight > 0 ? 16 : 32),
-                            maxWidth: isTablet ? 520 : double.infinity,
-                          ),
-                          child: IntrinsicHeight(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // Add flexible space on top when keyboard is closed
-                                if (keyboardHeight == 0) const Spacer(),
-
-                                // Form Container
-                                Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.all(
-                                    keyboardHeight > 0
-                                        ? 16
-                                        : (isCompact ? 24 : 32),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(24),
-                                    color: isDark
-                                        ? const Color(0xFF1E1E1E)
-                                        : Colors.white.withOpacity(0.95),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 30,
-                                        offset: const Offset(0, 10),
-                                        spreadRadius: 0,
-                                      ),
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 5),
-                                        spreadRadius: -5,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        height: keyboardHeight > 0
-                                            ? 4
-                                            : (isCompact ? 8 : 15),
-                                      ),
-                                      // Logo
-                                      Center(
-                                        child: Image.asset(
-                                          isDark
-                                              ? 'assets/images/logo2.png'
-                                              : 'assets/images/logo1.png',
-                                          width: keyboardHeight > 0
-                                              ? 50
-                                              : (isCompact
-                                                    ? 60
-                                                    : logoWidth.clamp(
-                                                        60.0,
-                                                        80.0,
-                                                      )),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: keyboardHeight > 0
-                                            ? 8
-                                            : (isCompact ? 16 : 25),
-                                      ),
-                                      // Title
-                                      Text(
-                                        'Verify Reset Code',
-                                        style: TextStyle(
-                                          fontSize: isCompact ? 20 : 24,
-                                          fontWeight: FontWeight.bold,
-                                          color: isDark
-                                              ? Colors.white
-                                              : Colors.black,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: keyboardHeight > 0
-                                            ? 6
-                                            : (isCompact ? 8 : 12),
-                                      ),
-                                      // Description
-                                      Text(
-                                        'Enter the 6-digit code sent to\n$maskedEmail',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: isCompact ? 13 : 14,
-                                          color: isDark
-                                              ? Colors.white70
-                                              : Colors.black54,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: keyboardHeight > 0
-                                            ? 16
-                                            : (isCompact ? 24 : 32),
-                                      ),
-
-                                      // Code input fields
-                                      SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: List.generate(
-                                            6,
-                                            (index) => Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: isCompact
-                                                    ? 3.0
-                                                    : 4.0,
-                                              ),
-                                              child: _buildCodeDigitField(
-                                                index,
-                                                isCompact,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-
-                                      SizedBox(
-                                        height: keyboardHeight > 0
-                                            ? 8
-                                            : (isCompact ? 12 : 16),
-                                      ),
-
-                                      // Progress indicator
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: List.generate(
-                                          6,
-                                          (index) => Container(
-                                            width: 24,
-                                            height: 3,
-                                            margin: const EdgeInsets.symmetric(
-                                              horizontal: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  _codeDigits[index].isNotEmpty
-                                                  ? (isDark
-                                                        ? Colors.white
-                                                        : Colors.black87)
-                                                  : (isDark
-                                                        ? Colors.white24
-                                                        : Colors.black26),
-                                              borderRadius:
-                                                  BorderRadius.circular(2),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-
-                                      SizedBox(
-                                        height: keyboardHeight > 0
-                                            ? 12
-                                            : (isCompact ? 20 : 24),
-                                      ),
-
-                                      // Verify Code button with loading
-                                      BlocBuilder<AuthCubit, AuthState>(
-                                        builder: (context, state) {
-                                          final isLoading =
-                                              state is AuthLoading;
-                                          return Column(
-                                            children: [
-                                              PrimaryBtn(
-                                                label: isLoading
-                                                    ? 'Verifying...'
-                                                    : 'Verify Code',
-                                                onPressed: isLoading
-                                                    ? null
-                                                    : _verifyCode,
-                                                buttonColor: isDark
-                                                    ? Colors.white10
-                                                    : Colors.black87,
-                                                textColor: Colors.white,
-                                              ),
-                                              if (isLoading)
-                                                const Padding(
-                                                  padding: EdgeInsets.only(
-                                                    top: 16.0,
-                                                  ),
-                                                  child:
-                                                      CircularProgressIndicator(),
-                                                ),
-                                            ],
-                                          );
-                                        },
-                                      ),
-
-                                      SizedBox(
-                                        height: keyboardHeight > 0
-                                            ? 12
-                                            : (isCompact ? 16 : 24),
-                                      ),
-
-                                      // Didn't receive code
-                                      Text(
-                                        'Didn\'t receive the code?',
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? Colors.white70
-                                              : Colors.black54,
-                                          fontSize: isCompact ? 13 : 14,
-                                        ),
-                                      ),
-
-                                      const SizedBox(height: 8),
-
-                                      TextButton(
-                                        onPressed: _remainingSeconds > 0
-                                            ? null
-                                            : _resendCode,
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 16,
-                                          ),
-                                          minimumSize: const Size(0, 0),
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        child: Text(
-                                          _isResending
-                                              ? 'Sending...'
-                                              : _remainingSeconds > 0
-                                              ? 'Resend in $_formattedTime'
-                                              : 'Resend Code',
-                                          style: TextStyle(
-                                            color: _remainingSeconds > 0
-                                                ? isDark
-                                                      ? Colors.white38
-                                                      : Colors.black38
-                                                : isDark
-                                                ? Colors.white
-                                                : Colors.black87,
-                                            fontSize: isCompact ? 13 : 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-
-                                      SizedBox(
-                                        height: keyboardHeight > 0
-                                            ? 8
-                                            : (isCompact ? 12 : 16),
-                                      ),
-
-                                      // Check spam folder note
-                                      Text(
-                                        'Check your spam folder if you don\'t see the email.\nThe code will expire in 10 minutes.',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: isCompact ? 11 : 12,
-                                          color: isDark
-                                              ? Colors.white38
-                                              : Colors.black38,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Add flexible space on bottom when keyboard is closed
-                                if (keyboardHeight == 0) const Spacer(),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+          isDark: effectiveIsDark,
+          child: SingleChildScrollView(
+            child: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 32,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: _buildFormContent(effectiveIsDark, kIsWeb),
                   ),
                 ),
-
-                // Back to Login button - fixed at bottom
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: TextButton.icon(
-                    onPressed: () => context.go('/auth/login'),
-                    icon: const Icon(
-                      Icons.arrow_back_rounded,
-                      size: 16,
-                      color: Colors.white70,
-                    ),
-                    label: const Text(
-                      'Back to Login',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

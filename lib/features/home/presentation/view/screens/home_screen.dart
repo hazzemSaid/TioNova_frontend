@@ -9,6 +9,7 @@ import 'package:tionova/features/home/data/models/analysisModel.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysiscubit.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysisstate.dart';
 import 'package:tionova/features/home/presentation/provider/index_mainLayout.dart';
+import 'package:tionova/features/home/presentation/view/layouts/home_web_layout.dart';
 import 'package:tionova/features/home/presentation/view/widgets/CustomHeaderDelegate.dart';
 import 'package:tionova/features/home/presentation/view/widgets/SectionHeader.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
@@ -193,7 +194,10 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
           final stats = _buildStatsList(analysisData);
 
           // Prepare chapters data from API
-          final chapters = _buildChaptersList(analysisData);
+          final chaptersData = _buildChaptersList(analysisData);
+          final chapters = chaptersData
+              .map((ch) => ch['chapterModel'] as ChapterModel)
+              .toList();
 
           // Prepare folders data from API
           final folders = _buildFoldersList(analysisData, colorScheme);
@@ -214,6 +218,20 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
 
           // Show empty state if no content
           if (!hasAnyContent) {
+            if (isWeb) {
+              return HomeWebLayout(
+                theme: theme,
+                analysisData: analysisData,
+                stats: stats,
+                chapters: const [],
+                folders: const [],
+                lastSummary: null,
+                mindMaps: const [],
+                todayProgress: todayProgress,
+                onRefresh: _loadAnalysisData,
+              );
+            }
+
             return Scaffold(
               backgroundColor: theme.scaffoldBackgroundColor,
               body: RefreshIndicator(
@@ -243,6 +261,21 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                   ],
                 ),
               ),
+            );
+          }
+
+          // Return web layout if screen width > 800
+          if (isWeb) {
+            return HomeWebLayout(
+              theme: theme,
+              analysisData: analysisData,
+              stats: stats,
+              chapters: chapters,
+              folders: folders,
+              lastSummary: lastSummary,
+              mindMaps: mindMaps,
+              todayProgress: todayProgress,
+              onRefresh: _loadAnalysisData,
             );
           }
 
@@ -276,7 +309,8 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                           crossAxisCount: 4,
                           mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
-                          childAspectRatio: 1.0,
+                          childAspectRatio:
+                              1.1, // Increased to provide more vertical space
                         ),
                         delegate: SliverChildBuilderDelegate((context, index) {
                           return _StatCard(
@@ -350,23 +384,22 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                             context,
                             index,
                           ) {
-                            final chapter = chapters[index];
+                            final chapterModel = chapters[index];
                             return Padding(
                               padding: EdgeInsets.only(
                                 bottom: screenHeight * 0.015,
                               ),
                               child: _EnhancedChapterCard(
-                                title: chapter['title'] as String,
-                                subject: chapter['subject'] as String,
-                                progress: chapter['progress'] as double,
-                                pages: chapter['pages'] as String,
-                                timeAgo: chapter['timeAgo'] as String,
+                                title: chapterModel.title ?? 'Untitled',
+                                subject: chapterModel.category ?? 'General',
+                                progress: 0.0,
+                                pages:
+                                    '${chapterModel.description?.length ?? 0} content',
+                                timeAgo: formatTimeAgo(chapterModel.createdAt),
                                 colorScheme: colorScheme,
                                 textTheme: textTheme,
                                 onTap: () {
                                   // Navigate to chapter detail
-                                  final chapterModel =
-                                      chapter['chapterModel'] as ChapterModel;
                                   context.push(
                                     '/chapter/${chapterModel.id}',
                                     extra: {
@@ -890,7 +923,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -906,23 +939,25 @@ class _StatCard extends StatelessWidget {
               style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
-                fontSize: 18, // Fixed size to prevent overflow
+                fontSize: 16, // Reduced size for better mobile fit
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 10,
+          const SizedBox(height: 2),
+          Flexible(
+            child: Text(
+              label,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 9,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
