@@ -58,7 +58,10 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+    final isWeb = screenWidth > 800;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -127,83 +130,303 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
             return RefreshIndicator(
               onRefresh: _refreshProfile,
               color: theme.colorScheme.primary,
-              child: BlocBuilder<ThemeCubit, ThemeMode>(
-                builder: (context, themeMode) {
-                  // Rebuild header when theme changes for instant TabBar update
-                  final currentTheme = Theme.of(context);
-                  return ScrollConfiguration(
-                    behavior: const NoGlowScrollBehavior(),
-                    child: NestedScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      headerSliverBuilder: (context, innerBoxIsScrolled) {
-                        return [
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 60, 16, 0),
-                              child: Column(
-                                children: [
-                                  const PageHeader(
-                                    title: 'Profile',
-                                    subtitle: 'Your personal study stats',
-                                  ),
-                                  // Profile Card Container
-                                  ProfileCard(profile: profile),
-                                ],
-                              ),
-                            ),
-                          ),
-                          SliverPersistentHeader(
-                            delegate: SliverAppBarDelegate(
-                              TabBar(
-                                controller: _tabController,
-                                isScrollable: true,
-                                labelColor: currentTheme.colorScheme.primary,
-                                unselectedLabelColor: currentTheme.hintColor,
-                                indicatorColor:
-                                    currentTheme.colorScheme.primary,
-                                indicatorWeight: 3,
-                                labelStyle: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                                unselectedLabelStyle: const TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 15,
-                                ),
-                                dividerColor: Colors.transparent,
-                                tabAlignment: TabAlignment.start,
-                                tabs: const [
-                                  Tab(text: 'Overview'),
-                                  Tab(text: 'Activity'),
-                                  Tab(text: 'Achievements'),
-                                  Tab(text: 'Settings'),
-                                ],
-                              ),
-                            ),
-                            pinned: true,
-                          ),
-                        ];
-                      },
-                      body: TabBarView(
-                        controller: _tabController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          _buildTabContent(0, screenHeight, profile),
-                          _buildTabContent(1, screenHeight, profile),
-                          _buildTabContent(2, screenHeight, profile),
-                          _buildTabContent(3, screenHeight, profile),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+              child: isWeb
+                  ? _buildWebLayout(context, profile)
+                  : _buildMobileLayout(context, profile, screenHeight),
             );
           }
           return const SizedBox.shrink();
         },
       ),
     );
+  }
+
+  // Web Layout
+  Widget _buildWebLayout(BuildContext context, Profile profile) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxContentWidth = 1200.0;
+    final horizontalPadding = screenWidth > maxContentWidth
+        ? (screenWidth - maxContentWidth) / 2
+        : 48.0;
+
+    return BlocBuilder<ThemeCubit, ThemeMode>(
+      builder: (context, themeMode) {
+        return ScrollConfiguration(
+          behavior: const NoGlowScrollBehavior(),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // Header Section
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    40,
+                    horizontalPadding,
+                    32,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Profile',
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          color: colorScheme.onBackground,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 36,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Your personal study stats',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Profile Card and Content
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left Column - Profile Card (Sticky)
+                      SizedBox(
+                        width: 350,
+                        child: ProfileCard(profile: profile),
+                      ),
+                      const SizedBox(width: 32),
+                      // Right Column - Tabs and Content
+                      Expanded(child: _buildWebTabs(context, profile)),
+                    ],
+                  ),
+                ),
+              ),
+
+              SliverToBoxAdapter(child: const SizedBox(height: 48)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Web Tabs
+  Widget _buildWebTabs(BuildContext context, Profile profile) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return DefaultTabController(
+      length: 4,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+            ),
+            child: TabBar(
+              labelColor: colorScheme.primary,
+              unselectedLabelColor: colorScheme.onSurfaceVariant,
+              indicatorColor: colorScheme.primary,
+              indicatorWeight: 3,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+              ),
+              tabs: const [
+                Tab(text: 'Overview'),
+                Tab(text: 'Activity'),
+                Tab(text: 'Achievements'),
+                Tab(text: 'Settings'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 800,
+            child: TabBarView(
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                SingleChildScrollView(
+                  child: OverviewTab(
+                    screenHeight: MediaQuery.of(context).size.height,
+                    profile: profile,
+                  ),
+                ),
+                SingleChildScrollView(
+                  child: ActivityTab(
+                    screenHeight: MediaQuery.of(context).size.height,
+                    profile: profile,
+                  ),
+                ),
+                SingleChildScrollView(
+                  child: AchievementsSection(achievements: _getAchievements()),
+                ),
+                SingleChildScrollView(
+                  child: SettingsSection(
+                    notificationsEnabled: true,
+                    darkModeEnabled:
+                        context.read<ThemeCubit>().state == ThemeMode.dark,
+                    changeTheme: () {
+                      final themeCubit = context.read<ThemeCubit>();
+                      if (themeCubit.state == ThemeMode.light) {
+                        themeCubit.setTheme(ThemeMode.dark);
+                      } else {
+                        themeCubit.setTheme(ThemeMode.light);
+                      }
+                    },
+                    onNotificationsToggle: () {},
+                    onDarkModeToggle: () {},
+                    onExportData: () {},
+                    onShareProgress: () {},
+                    onHelpSupport: () {},
+                    onSignOut: () {
+                      context.read<AuthCubit>().signOut();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Mobile Layout
+  Widget _buildMobileLayout(
+    BuildContext context,
+    Profile profile,
+    double screenHeight,
+  ) {
+    return BlocBuilder<ThemeCubit, ThemeMode>(
+      builder: (context, themeMode) {
+        final currentTheme = Theme.of(context);
+        return ScrollConfiguration(
+          behavior: const NoGlowScrollBehavior(),
+          child: NestedScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 60, 16, 0),
+                    child: Column(
+                      children: [
+                        const PageHeader(
+                          title: 'Profile',
+                          subtitle: 'Your personal study stats',
+                        ),
+                        ProfileCard(profile: profile),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverPersistentHeader(
+                  delegate: SliverAppBarDelegate(
+                    TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      labelColor: currentTheme.colorScheme.primary,
+                      unselectedLabelColor: currentTheme.hintColor,
+                      indicatorColor: currentTheme.colorScheme.primary,
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                      ),
+                      dividerColor: Colors.transparent,
+                      tabAlignment: TabAlignment.start,
+                      tabs: const [
+                        Tab(text: 'Overview'),
+                        Tab(text: 'Activity'),
+                        Tab(text: 'Achievements'),
+                        Tab(text: 'Settings'),
+                      ],
+                    ),
+                  ),
+                  pinned: true,
+                ),
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                _buildTabContent(0, screenHeight, profile),
+                _buildTabContent(1, screenHeight, profile),
+                _buildTabContent(2, screenHeight, profile),
+                _buildTabContent(3, screenHeight, profile),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<Achievement> _getAchievements() {
+    return [
+      Achievement(
+        title: 'First Quiz',
+        description: 'Completed your first quiz',
+        isEarned: true,
+        emoji: '🔥',
+      ),
+      Achievement(
+        title: '7 Day Streak',
+        description: '7 days in a row',
+        isEarned: true,
+        emoji: '🔥',
+      ),
+      Achievement(
+        title: 'High Scorer',
+        description: 'Scored 90%+ on 5 quizzes',
+        isEarned: true,
+        emoji: '⚡',
+      ),
+      Achievement(
+        title: 'Speed Reader',
+        description: 'Complete 10 chapters in a week',
+        isEarned: false,
+        emoji: '⚡',
+      ),
+      Achievement(
+        title: 'Challenge Master',
+        description: 'Win 3 challenges',
+        isEarned: false,
+        emoji: '🏆',
+      ),
+      Achievement(
+        title: 'Study Buddy',
+        description: 'Help 5 other students',
+        isEarned: false,
+        emoji: '🥇',
+      ),
+    ];
   }
 
   Widget _buildTabContent(int index, double screenHeight, Profile profile) {
@@ -214,52 +437,13 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
         return ActivityTab(screenHeight: screenHeight, profile: profile);
       case 2:
         return SingleChildScrollView(
-          child: AchievementsSection(
-            achievements: [
-              Achievement(
-                title: 'First Quiz',
-                description: 'Completed your first quiz',
-                isEarned: true,
-                emoji: '🔥',
-              ),
-              Achievement(
-                title: '7 Day Streak',
-                description: '7 days in a row',
-                isEarned: true,
-                emoji: '🔥',
-              ),
-              Achievement(
-                title: 'High Scorer',
-                description: 'Scored 90%+ on 5 quizzes',
-                isEarned: true,
-                emoji: '⚡',
-              ),
-              Achievement(
-                title: 'Speed Reader',
-                description: 'Complete 10 chapters in a week',
-                isEarned: false,
-                emoji: '⚡',
-              ),
-              Achievement(
-                title: 'Challenge Master',
-                description: 'Win 3 challenges',
-                isEarned: false,
-                emoji: '🏆',
-              ),
-              Achievement(
-                title: 'Study Buddy',
-                description: 'Help 5 other students',
-                isEarned: false,
-                emoji: '🥇',
-              ),
-            ],
-          ),
+          child: AchievementsSection(achievements: _getAchievements()),
         );
       case 3:
         return SingleChildScrollView(
           child: SettingsSection(
             notificationsEnabled: true,
-            darkModeEnabled: true,
+            darkModeEnabled: context.read<ThemeCubit>().state == ThemeMode.dark,
             changeTheme: () {
               final themeCubit = context.read<ThemeCubit>();
               if (themeCubit.state == ThemeMode.light) {

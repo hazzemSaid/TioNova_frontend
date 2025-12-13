@@ -19,6 +19,8 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   bool _isDisposed = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isSidebarClosed = false;
 
   // Lazy loaded screens
   final List<Widget?> _screens = List.filled(4, null);
@@ -68,7 +70,13 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return _buildMobileLayout(context);
+    final isWeb = _isWeb();
+    return isWeb ? _buildWebLayout(context) : _buildMobileLayout(context);
+  }
+
+  bool _isWeb() {
+    // Check if running on web platform
+    return identical(0, 0.0); // This returns true only on web
   }
 
   // Mobile layout with bottom navigation
@@ -90,6 +98,255 @@ class _MainLayoutState extends State<MainLayout> {
         ),
       ),
       bottomNavigationBar: _customBottomNavigationBar(context),
+    );
+  }
+
+  // Web/Desktop layout with permanent sidebar
+  Widget _buildWebLayout(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final indexProvider = context.watch<IndexMainLayout>();
+    final currentIndex = indexProvider.index;
+
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: colorScheme.onPrimary,
+      body: Stack(
+        children: [
+          // Main Content Area (behind sidebar)
+          Column(
+            children: [
+              // Top bar with menu button
+              Container(
+                height: 60,
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: colorScheme.outline.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.menu, color: colorScheme.onSurface),
+                      onPressed: () {
+                        _safeSetState(() {
+                          _isSidebarClosed = !_isSidebarClosed;
+                        });
+                      },
+                      tooltip: _isSidebarClosed
+                          ? 'Open sidebar'
+                          : 'Close sidebar',
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
+              ),
+              // Main content
+              Expanded(
+                child: Container(
+                  color: colorScheme.onPrimary,
+                  child: IndexedStack(
+                    index: currentIndex,
+                    sizing: StackFit.expand,
+                    children: List.generate(
+                      _screens.length,
+                      (index) =>
+                          currentIndex == index || _screens[index] != null
+                          ? _getScreen(index)
+                          : Container(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Sidebar (overlay on top with slide animation)
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            left: _isSidebarClosed ? -240 : 0,
+            top: 0,
+            bottom: 0,
+            child: _buildSidebar(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Permanent Sidebar for Web
+  Widget _buildSidebar(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final indexProvider = context.watch<IndexMainLayout>();
+    final currentIndex = indexProvider.index;
+
+    return Container(
+      width: 240,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          right: BorderSide(
+            color: colorScheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header with toggle and close buttons
+          Container(
+            height: 80,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'TioNova',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'Study Assistant',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.close,
+                    color: colorScheme.onSurface,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    _safeSetState(() {
+                      _isSidebarClosed = true;
+                    });
+                  },
+                  tooltip: 'Close sidebar',
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Navigation Items
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              children: [
+                _buildSidebarItem(
+                  context: context,
+                  icon: Icons.home,
+                  label: 'Home',
+                  index: 0,
+                  currentIndex: currentIndex,
+                ),
+                _buildSidebarItem(
+                  context: context,
+                  icon: Icons.folder_outlined,
+                  label: 'Folders',
+                  index: 1,
+                  currentIndex: currentIndex,
+                ),
+                _buildSidebarItem(
+                  context: context,
+                  icon: Icons.emoji_events_outlined,
+                  label: 'Challenges',
+                  index: 2,
+                  currentIndex: currentIndex,
+                ),
+                _buildSidebarItem(
+                  context: context,
+                  icon: Icons.person_outline,
+                  label: 'Profile',
+                  index: 3,
+                  currentIndex: currentIndex,
+                ),
+              ],
+            ),
+          ),
+          // Footer
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              '© 2025 TioNova',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarItem({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required int index,
+    required int currentIndex,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isSelected = currentIndex == index;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          _safeSetState(() {
+            context.read<IndexMainLayout>().index = index;
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 24,
+                color: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.onSurface.withOpacity(0.7),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurface.withOpacity(0.7),
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -20,15 +20,19 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
       final response = await dio.get("/profile/preferences");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = response.data;
-        if (data is Map<String, dynamic> && data['success'] == true) {
-          return Right(PreferencesModel.fromJson(data['data']));
-        } else {
-          return Left(
-            ServerFailure(
-              data['message']?.toString() ?? 'Failed to load preferences',
-            ),
-          );
+        try {
+          final data = response.data;
+          if (data is Map<String, dynamic> && data['success'] == true) {
+            return Right(PreferencesModel.fromJson(data['data']));
+          } else {
+            return Left(
+              ServerFailure(
+                data['message']?.toString() ?? 'Failed to load preferences',
+              ),
+            );
+          }
+        } catch (parseError) {
+          return Left(ServerFailure('Failed to parse preferences data'));
         }
       } else {
         return Left(
@@ -36,16 +40,50 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
         );
       }
     } on DioException catch (e) {
-      // Handle 404 specifically for new users (Option 2)
+      // Handle 404 specifically for new users
       if (e.response?.statusCode == 404) {
         return Left(ServerFailure('No preferences found', '404'));
       }
 
-      final errorMessage =
-          e.response?.data?['message']?.toString() ??
-          e.message?.toString() ??
-          'Failed to load preferences';
-      return Left(ServerFailure(errorMessage));
+      // Parse error response from API
+      if (e.response != null) {
+        try {
+          final errorData = e.response!.data;
+          final errorMessage =
+              errorData['error'] ??
+              errorData['message'] ??
+              'Failed to load preferences';
+
+          return Left(ServerFailure(errorMessage.toString()));
+        } catch (_) {
+          return Left(
+            ServerFailure('Failed to load preferences. Please try again.'),
+          );
+        }
+      }
+
+      // Handle network errors
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        return Left(
+          ServerFailure(
+            'Connection timeout. Please check your internet connection.',
+          ),
+        );
+      }
+
+      if (e.type == DioExceptionType.unknown) {
+        return Left(
+          ServerFailure(
+            'Network error. Please check your internet connection.',
+          ),
+        );
+      }
+
+      return Left(
+        ServerFailure('An unexpected error occurred. Please try again.'),
+      );
     } catch (e) {
       return Left(ServerFailure('Unexpected error: ${e.toString()}'));
     }
@@ -65,19 +103,24 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
       print('🌐 Remote: Response data: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = response.data;
-        if (data is Map<String, dynamic> && data['success'] == true) {
-          print('🌐 Remote: Parsing successful response');
-          final model = PreferencesModel.fromJson(data['data']);
-          print('🌐 Remote: Model parsed successfully: ${model.toJson()}');
-          return Right(model);
-        } else {
-          print('❌ Remote: Response format error');
-          return Left(
-            ServerFailure(
-              data['message']?.toString() ?? 'Failed to update preferences',
-            ),
-          );
+        try {
+          final data = response.data;
+          if (data is Map<String, dynamic> && data['success'] == true) {
+            print('🌐 Remote: Parsing successful response');
+            final model = PreferencesModel.fromJson(data['data']);
+            print('🌐 Remote: Model parsed successfully: ${model.toJson()}');
+            return Right(model);
+          } else {
+            print('❌ Remote: Response format error');
+            return Left(
+              ServerFailure(
+                data['message']?.toString() ?? 'Failed to update preferences',
+              ),
+            );
+          }
+        } catch (parseError) {
+          print('❌ Remote: Parsing error: $parseError');
+          return Left(ServerFailure('Failed to parse preferences data'));
         }
       } else {
         print('❌ Remote: Bad status code: ${response.statusCode}');
@@ -87,11 +130,46 @@ class PreferencesRemoteDataSourceImpl implements PreferencesRemoteDataSource {
       }
     } on DioException catch (e) {
       print('❌ Remote: DioException: ${e.message}');
-      final errorMessage =
-          e.response?.data?['message']?.toString() ??
-          e.message?.toString() ??
-          'Failed to update preferences';
-      return Left(ServerFailure(errorMessage));
+
+      // Parse error response from API
+      if (e.response != null) {
+        try {
+          final errorData = e.response!.data;
+          final errorMessage =
+              errorData['error'] ??
+              errorData['message'] ??
+              'Failed to update preferences';
+
+          return Left(ServerFailure(errorMessage.toString()));
+        } catch (_) {
+          return Left(
+            ServerFailure('Failed to update preferences. Please try again.'),
+          );
+        }
+      }
+
+      // Handle network errors
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        return Left(
+          ServerFailure(
+            'Connection timeout. Please check your internet connection.',
+          ),
+        );
+      }
+
+      if (e.type == DioExceptionType.unknown) {
+        return Left(
+          ServerFailure(
+            'Network error. Please check your internet connection.',
+          ),
+        );
+      }
+
+      return Left(
+        ServerFailure('An unexpected error occurred. Please try again.'),
+      );
     } catch (e) {
       print('❌ Remote: Unexpected error: $e');
       return Left(ServerFailure('Unexpected error: ${e.toString()}'));

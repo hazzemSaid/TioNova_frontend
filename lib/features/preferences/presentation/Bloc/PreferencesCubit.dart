@@ -42,8 +42,11 @@ class PreferencesCubit extends Cubit<PreferencesState> {
     // Prevent duplicate requests if already fetched or loading
     if (_hasFetched ||
         state is PreferencesLoading ||
-        state is PreferencesLoaded)
+        state is PreferencesLoaded ||
+        state is PreferencesUpdated) {
+      print('🛑 getPreferences blocked: state is ${state.runtimeType}');
       return;
+    }
     safeEmit(PreferencesLoading());
     final result = await getPreferencesUseCase.call();
     result.fold(
@@ -67,7 +70,7 @@ class PreferencesCubit extends Cubit<PreferencesState> {
       },
       (preferences) {
         print('✅ PreferencesCubit: Success - Emitting PreferencesUpdated');
-        print('✅ Preferences data: ${preferences.toJson()}');
+        _hasFetched = true; // Mark as fetched to prevent reload
         safeEmit(PreferencesUpdated(preferences: preferences));
         print('✅ PreferencesCubit: State after emit: $state');
       },

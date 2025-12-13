@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -39,21 +40,34 @@ class _SplashScreenState extends State<SplashScreen>
           vsync: this,
         )..addStatusListener((status) {
           if (status == AnimationStatus.completed) {
-            // Navigate immediately after animation completes
+            // Navigate after animation completes
             Future.delayed(const Duration(milliseconds: 300), () async {
               if (mounted) {
-                // Check if it's the first time opening the app
-                final isFirst = await AppRouter.isFirstTime();
                 final authState = context.read<AuthCubit>().state;
 
                 // Navigate using GoRouter
                 if (context.mounted) {
                   if (authState is AuthSuccess) {
+                    // Authenticated users go to home
                     GoRouter.of(context).go('/');
-                  } else if (isFirst) {
-                    GoRouter.of(context).go('/theme-selection');
                   } else {
-                    GoRouter.of(context).go('/auth');
+                    // Unauthenticated users - different flow for mobile app vs web
+                    if (kIsWeb) {
+                      // Web (desktop/mobile web): Go directly to auth
+                      GoRouter.of(context).go('/auth');
+                    } else {
+                      // Mobile App: Check if first time for onboarding
+                      final isFirstTime = await AppRouter.isFirstTime();
+                      if (context.mounted) {
+                        if (isFirstTime) {
+                          // First time mobile app user: Show onboarding
+                          GoRouter.of(context).go('/onboarding');
+                        } else {
+                          // Returning mobile app user: Go to auth
+                          GoRouter.of(context).go('/auth');
+                        }
+                      }
+                    }
                   }
                 }
               }

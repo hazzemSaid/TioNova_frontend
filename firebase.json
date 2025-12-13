@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"tionova-c566b","appId":"1:187048592726:android:24724b2055759ee39402f7","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"tionova-c566b","configurations":{"android":"1:187048592726:android:24724b2055759ee39402f7","ios":"1:187048592726:ios:b729badbcd887f4c9402f7","macos":"1:187048592726:ios:b729badbcd887f4c9402f7","web":"1:187048592726:web:34d266cdb991ecb89402f7","windows":"1:187048592726:web:b92dcc80485909799402f7"}}}}}}
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "tionova-c566b",
+          "appId": "1:187048592726:android:24724b2055759ee39402f7",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tionova-c566b",
+          "configurations": {
+            "android": "1:187048592726:android:24724b2055759ee39402f7",
+            "ios": "1:187048592726:ios:b729badbcd887f4c9402f7",
+            "macos": "1:187048592726:ios:b729badbcd887f4c9402f7",
+            "web": "1:187048592726:web:34d266cdb991ecb89402f7",
+            "windows": "1:187048592726:web:b92dcc80485909799402f7"
+          }
+        }
+      }
+    }
+  }
+}
