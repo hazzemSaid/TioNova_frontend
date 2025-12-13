@@ -57,7 +57,53 @@ class Remoteauthdatasource implements IAuthDataSource {
         );
       }
     } on DioError catch (e) {
-      return Left(ServerFailure(e.toString()));
+      // Parse error response from API
+      if (e.response != null) {
+        try {
+          final errorData = e.response!.data is String
+              ? jsonDecode(e.response!.data)
+              : e.response!.data as Map<String, dynamic>;
+
+          final errorMessage =
+              errorData['error'] ?? errorData['message'] ?? 'Login failed';
+
+          // Handle specific status codes
+          if (e.response!.statusCode == 401) {
+            return Left(
+              ServerFailure(
+                'Invalid email or password. Please check your credentials and try again.',
+              ),
+            );
+          }
+
+          return Left(ServerFailure(errorMessage.toString()));
+        } catch (_) {
+          return Left(ServerFailure('Login failed. Please try again.'));
+        }
+      }
+
+      // Handle network errors
+      if (e.type == DioErrorType.connectionTimeout ||
+          e.type == DioErrorType.receiveTimeout ||
+          e.type == DioErrorType.sendTimeout) {
+        return Left(
+          ServerFailure(
+            'Connection timeout. Please check your internet connection.',
+          ),
+        );
+      }
+
+      if (e.type == DioErrorType.unknown) {
+        return Left(
+          ServerFailure(
+            'Network error. Please check your internet connection.',
+          ),
+        );
+      }
+
+      return Left(
+        ServerFailure('An unexpected error occurred. Please try again.'),
+      );
     }
   }
 

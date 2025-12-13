@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/widgets/custom_dialogs.dart';
@@ -54,8 +53,24 @@ class _EntercodeScreenState extends State<EntercodeScreen>
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
     final isWeb = width > 900;
-    final maxContentWidth = 520.0; // keeps a compact, focused panel on web
+    final isTablet = width > 600 && width <= 900;
+
+    // Responsive max width
+    late double maxContentWidth;
+    late double horizontalPadding;
+
+    if (isWeb) {
+      maxContentWidth = 500;
+      horizontalPadding = 24;
+    } else if (isTablet) {
+      maxContentWidth = 450;
+      horizontalPadding = 20;
+    } else {
+      maxContentWidth = double.infinity;
+      horizontalPadding = 16;
+    }
 
     return BlocListener<ChallengeCubit, ChallengeState>(
       listener: (context, state) {
@@ -107,36 +122,40 @@ class _EntercodeScreenState extends State<EntercodeScreen>
           body: SafeArea(
             child: ScrollConfiguration(
               behavior: const NoGlowScrollBehavior(),
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight:
+                          height -
+                          (MediaQuery.of(context).padding.top +
+                              MediaQuery.of(context).padding.bottom),
+                      maxWidth: maxContentWidth,
+                    ),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: isWeb ? (width - maxContentWidth) / 2 : 16,
-                        vertical: 16,
+                        horizontal: horizontalPadding,
+                        vertical: 24,
                       ),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: isWeb ? maxContentWidth : double.infinity,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildHeader(context),
-                            const SizedBox(height: 12),
-                            _buildHeroIcon(),
-                            const SizedBox(height: 16),
-                            _buildTitleSection(),
-                            const SizedBox(height: 16),
-                            _buildCodeInputCard(context),
-                            const SizedBox(height: 16),
-                            _buildRecentChallengesCard(context),
-                          ],
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          _buildHeader(context),
+                          const SizedBox(height: 20),
+                          _buildHeroIcon(),
+                          const SizedBox(height: 24),
+                          _buildTitleSection(),
+                          const SizedBox(height: 32),
+                          _buildCodeInputCard(context),
+                          const SizedBox(height: 20),
+                          _buildRecentChallengesCard(context),
+                          const SizedBox(height: 20),
+                        ],
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),

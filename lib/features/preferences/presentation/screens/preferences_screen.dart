@@ -144,18 +144,20 @@ class _PreferencesScreenState extends State<_PreferencesScreenContent>
   }
 
   void _populateFromLoadedPreferences(PreferencesState state) {
-    if (state is PreferencesLoaded) {
+    if (state is PreferencesLoaded || state is PreferencesUpdated) {
+      final preferences = state is PreferencesLoaded
+          ? state.preferences
+          : (state as PreferencesUpdated).preferences;
+
       setState(() {
-        _studyPerDay = state.preferences.studyPerDay.toDouble();
-        _preferredStudyTime = state.preferences.preferredStudyTimes;
-        _dailyTimeCommitmentMinutes = state
-            .preferences
-            .dailyTimeCommitmentMinutes
+        _studyPerDay = preferences.studyPerDay.toDouble();
+        _preferredStudyTime = preferences.preferredStudyTimes;
+        _dailyTimeCommitmentMinutes = preferences.dailyTimeCommitmentMinutes
             .toDouble();
-        _daysPerWeek = state.preferences.daysPerWeek.toDouble();
+        _daysPerWeek = preferences.daysPerWeek.toDouble();
         _selectedGoals.clear();
-        _selectedGoals.addAll(state.preferences.goals);
-        _contentDifficulty = state.preferences.contentDifficulty;
+        _selectedGoals.addAll(preferences.goals);
+        _contentDifficulty = preferences.contentDifficulty;
       });
     }
   }
@@ -166,40 +168,57 @@ class _PreferencesScreenState extends State<_PreferencesScreenContent>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWeb = screenWidth > 800;
 
     return BlocListener<PreferencesCubit, PreferencesState>(
       listener: (context, state) {
-        if (state is PreferencesLoaded) {
-          // Auto-populate fields when preferences are loaded
-          _populateFromLoadedPreferences(state);
-        } else if (state is PreferencesUpdated) {
-          // Show success message and navigate after a brief delay
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Preferences saved successfully! 🎉'),
-                backgroundColor: theme.colorScheme.primary,
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 1),
-              ),
-            );
-            // Delay navigation to allow SnackBar to display
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted) {
-                context.go('/');
-              }
-            });
+        try {
+          print('🔔 Listener received state: ${state.runtimeType}');
+          if (state is PreferencesLoaded) {
+            // Auto-populate fields when preferences are loaded
+            _populateFromLoadedPreferences(state);
+          } else if (state is PreferencesUpdated) {
+            print('✅ PreferencesUpdated received in listener');
+            // Show success message and navigate after a brief delay
+            if (mounted) {
+              print('✅ Widget is mounted, showing snackbar');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Preferences saved successfully! 🎉'),
+                  backgroundColor: theme.colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+              // Navigate immediately after showing snackbar
+              print('✅ Navigating to home...');
+              Future.delayed(const Duration(milliseconds: 300), () {
+                if (mounted) {
+                  print('✅ Executing navigation');
+                  context.go('/');
+                }
+              });
+            }
+          } else if (state is PreferencesError) {
+            print('❌ PreferencesError received: ${state.message}');
+            // Show error message
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: theme.colorScheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
           }
-        } else if (state is PreferencesError) {
-          // Show error message
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: theme.colorScheme.error,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+        } catch (e, stackTrace) {
+          print('❌ Listener error: $e');
+          print('❌ Stack trace: $stackTrace');
+          // Still try to navigate on success
+          if (state is PreferencesUpdated && mounted) {
+            context.go('/');
           }
         }
       },
@@ -209,40 +228,9 @@ class _PreferencesScreenState extends State<_PreferencesScreenContent>
             children: [
               Scaffold(
                 backgroundColor: theme.scaffoldBackgroundColor,
-                body: SafeArea(
-                  child: Column(
-                    children: [
-                      // Progress Bar Section (Fixed at top)
-                      _buildProgressBar(theme, isDark),
-
-                      // Scrollable Content using CustomScrollView
-                      Expanded(
-                        child: CustomScrollView(
-                          controller: _scrollController,
-                          physics: const BouncingScrollPhysics(),
-                          slivers: [
-                            // Animated content for current step
-                            SliverFillRemaining(
-                              hasScrollBody: false,
-                              child: FadeTransition(
-                                opacity: _fadeAnimation,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                  ),
-                                  child: _buildCurrentStep(theme, isDark),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Bottom Navigation (Fixed at bottom)
-                      _buildBottomNavigation(theme, isDark),
-                    ],
-                  ),
-                ),
+                body: isWeb
+                    ? _buildWebLayout(theme, isDark)
+                    : _buildMobileLayout(theme, isDark),
               ),
               // Loading overlay
               if (state is PreferencesLoading)
@@ -276,6 +264,266 @@ class _PreferencesScreenState extends State<_PreferencesScreenContent>
             ],
           );
         },
+      ),
+    );
+  }
+
+  // Web Layout
+  Widget _buildWebLayout(ThemeData theme, bool isDark) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxContentWidth = 900.0;
+    final horizontalPadding = screenWidth > maxContentWidth
+        ? (screenWidth - maxContentWidth) / 2
+        : 48.0;
+    final canContinue = _canProceed();
+
+    return SafeArea(
+      child: CustomScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          // Header with progress
+          SliverToBoxAdapter(
+            child: Container(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                40,
+                horizontalPadding,
+                32,
+              ),
+              child: Column(
+                children: [
+                  // Title and subtitle
+                  Text(
+                    'Set Up Your Study Preferences',
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      color: theme.colorScheme.onBackground,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 36,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Customize your learning experience in just a few steps',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Progress indicator
+                  _buildWebProgressBar(theme),
+                ],
+              ),
+            ),
+          ),
+
+          // Main content card
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 700),
+                margin: const EdgeInsets.symmetric(horizontal: 0),
+                padding: const EdgeInsets.all(48),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.shadow.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: _buildCurrentStep(theme, isDark),
+                ),
+              ),
+            ),
+          ),
+
+          // Navigation buttons
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                32,
+                horizontalPadding,
+                48,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_currentStep > 0) ...[
+                    SizedBox(
+                      width: 140,
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: _previousStep,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.colorScheme.onSurface,
+                          side: BorderSide(color: theme.colorScheme.outline),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.arrow_back, size: 20),
+                        label: const Text(
+                          'Back',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+
+                  SizedBox(
+                    width: 180,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: canContinue ? _nextStep : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        disabledBackgroundColor:
+                            theme.colorScheme.surfaceVariant,
+                        disabledForegroundColor: theme.colorScheme.onSurface
+                            .withOpacity(0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: Icon(
+                        _currentStep == 5 ? Icons.check : Icons.arrow_forward,
+                        size: 20,
+                      ),
+                      label: Text(
+                        _currentStep == 5 ? 'Get Started' : 'Continue',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  TextButton(
+                    onPressed: _skipForNow,
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onSurfaceVariant,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text(
+                      'Skip for now',
+                      style: TextStyle(fontSize: 15),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebProgressBar(ThemeData theme) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 600),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Step ${_currentStep + 1} of 6',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '${(_progress * 100).toInt()}% Complete',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+              tween: Tween<double>(begin: (_currentStep) / 6, end: _progress),
+              builder: (context, value, child) {
+                return LinearProgressIndicator(
+                  value: value,
+                  minHeight: 8,
+                  backgroundColor: theme.colorScheme.surfaceVariant,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.colorScheme.primary,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Mobile Layout
+  Widget _buildMobileLayout(ThemeData theme, bool isDark) {
+    return SafeArea(
+      child: Column(
+        children: [
+          // Progress Bar Section (Fixed at top)
+          _buildProgressBar(theme, isDark),
+
+          // Scrollable Content using CustomScrollView
+          Expanded(
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Animated content for current step
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _buildCurrentStep(theme, isDark),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Bottom Navigation (Fixed at bottom)
+          _buildBottomNavigation(theme, isDark),
+        ],
       ),
     );
   }
