@@ -685,6 +685,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
       'keyPoints': firstSummary.keyPoints.length,
       'readTime': 8, // TODO: Calculate read time
       'badge': 'AI Generated',
+      'summaryModel': firstSummary, // Pass the full model for navigation
     };
   }
 

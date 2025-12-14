@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
+import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/home/data/models/analysisModel.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
@@ -585,7 +587,10 @@ class HomeWebLayout extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                context.push('/chapter/${chapter.id}');
+                context.push(
+                  '/chapter/${chapter.id}',
+                  extra: {'chapter': chapter},
+                );
               },
               icon: const Icon(Icons.arrow_forward, size: 16),
               label: const Text('Read', style: TextStyle(fontSize: 13)),
@@ -663,7 +668,17 @@ class HomeWebLayout extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () {
-                context.push('/folders/${folder['id']}');
+                context.push(
+                  '/folder/${folder['id']}',
+                  extra: {
+                    'title': folder['name'] as String? ?? 'Folder',
+                    'subtitle': folder['subtitle'] as String? ?? '',
+                    'chapters': folder['chapters'] as int? ?? 0,
+                    'passed': folder['passed'] as int? ?? 0,
+                    'attempted': folder['attempted'] as int? ?? 0,
+                    'ownerId': folder['ownerId'] as String? ?? '',
+                  },
+                );
               },
               icon: const Icon(Icons.arrow_forward, size: 14),
               label: const Text('View', style: TextStyle(fontSize: 11)),
@@ -717,7 +732,18 @@ class HomeWebLayout extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () {
-                // Navigate to summary details
+                final summaryModel = summary['summaryModel'] as SummaryModel?;
+                final chapterTitle = summary['title'] as String? ?? 'Summary';
+
+                if (summaryModel != null) {
+                  context.push(
+                    '/summary-viewer',
+                    extra: {
+                      'summaryData': summaryModel,
+                      'chapterTitle': chapterTitle,
+                    },
+                  );
+                }
               },
               icon: const Icon(Icons.visibility, size: 14),
               label: const Text('View', style: TextStyle(fontSize: 10)),
@@ -753,30 +779,41 @@ class HomeWebLayout extends StatelessWidget {
     TextTheme textTheme,
     BuildContext context,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.map, size: 16, color: colorScheme.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              mindMap['title'] as String? ?? 'Mind Map',
-              style: textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+    return InkWell(
+      onTap: () {
+        final mindmapModel = mindMap['mindmapModel'] as Mindmapmodel?;
+        if (mindmapModel != null) {
+          context.push('/mindmap-viewer', extra: {'mindmap': mindmapModel});
+        }
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
           ),
-          Icon(Icons.arrow_forward, size: 14, color: colorScheme.primary),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.map, size: 16, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                mindMap['title'] as String? ?? 'Mind Map',
+                style: textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(Icons.arrow_forward, size: 14, color: colorScheme.primary),
+          ],
+        ),
       ),
     );
   }

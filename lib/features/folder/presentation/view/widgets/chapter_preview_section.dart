@@ -42,13 +42,15 @@ class ChapterPreviewSection extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    Text(
-                      '${chapter.quizScore ?? 0} pages',
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 14,
+                    if (chapter.quizScore != null) ...[
+                      Text(
+                        'quizScore ${chapter.quizScore ?? 0}',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(width: 8),
                     StatusBadge(status: chapter.quizStatus ?? 'Not Started'),
                   ],
@@ -113,6 +115,7 @@ class ChapterPreviewSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.access_time,
@@ -121,13 +124,13 @@ class ChapterPreviewSection extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Last opened',
+                  'create at :',
                   style: TextStyle(
                     color: colorScheme.onSurfaceVariant,
                     fontSize: 12,
                   ),
                 ),
-                const Spacer(),
+
                 Text(
                   formatDate(chapter.createdAt),
                   style: TextStyle(
