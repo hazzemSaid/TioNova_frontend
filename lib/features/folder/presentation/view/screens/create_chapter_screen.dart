@@ -1,21 +1,21 @@
-// features/folder/presentation/view/screens/create_chapter_screen.dart
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/FileDataModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/view/widgets/WavyProgressPainter.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/create_chapter/create_chapter_widgets.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
+/// Screen for creating a new chapter within a folder.
 class CreateChapterScreen extends StatefulWidget {
   final String folderTitle;
   final String folderId;
@@ -32,18 +32,21 @@ class CreateChapterScreen extends StatefulWidget {
 
 class _CreateChapterScreenState extends State<CreateChapterScreen>
     with SafeContextMixin, TickerProviderStateMixin {
+  // Controllers
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+
+  // State variables
   FileData? _selectedFile;
   String? _selectedFileName;
   late ChapterCubit _chapterCubit;
   bool _didInitCubit = false;
   bool _didShowSuccessDialog = false;
   bool _isDialogVisible = false;
-  bool _isCreatingChapter =
-      false; // Local flag to prevent duplicate submissions
-  Timer? _timeoutTimer; // Timer for request timeout
+  bool _isCreatingChapter = false;
+  Timer? _timeoutTimer;
   late AnimationController _waveController;
+
   @override
   void initState() {
     super.initState();
@@ -58,9 +61,9 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
     _titleController.dispose();
     _descriptionController.dispose();
     _waveController.dispose();
-    _timeoutTimer?.cancel(); // Cancel timeout timer
-    _didShowSuccessDialog = false; // Reset success dialog flag
-    _isCreatingChapter = false; // Reset creation flag
+    _timeoutTimer?.cancel();
+    _didShowSuccessDialog = false;
+    _isCreatingChapter = false;
     if (_didInitCubit) {
       _chapterCubit.unsubscribeFromChapterCreationProgress();
     }
@@ -76,14 +79,214 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isTablet = screenWidth >= 768;
+        final isDesktop = screenWidth >= 1024;
+
+        final horizontalPadding = isDesktop
+            ? 40.0
+            : isTablet
+                ? 24.0
+                : 12.0;
+        final maxContentWidth = isDesktop ? 800.0 : screenWidth;
+
+        return BlocConsumer<ChapterCubit, ChapterState>(
+          listener: _handleChapterState,
+          builder: (context, state) {
+            final colorScheme = Theme.of(context).colorScheme;
+            final isProcessing =
+                state is CreateChapterLoading || state is CreateChapterProgress;
+
+            return WillPopScope(
+              onWillPop: () async {
+                return !isProcessing && !_isCreatingChapter;
+              },
+              child: Scaffold(
+                backgroundColor: colorScheme.surface,
+                appBar: _buildAppBar(
+                  colorScheme: colorScheme,
+                  isProcessing: isProcessing,
+                  isDesktop: isDesktop,
+                  isTablet: isTablet,
+                ),
+                body: Stack(
+                  children: [
+                    _buildBody(
+                      colorScheme: colorScheme,
+                      isProcessing: isProcessing,
+                      isDesktop: isDesktop,
+                      isTablet: isTablet,
+                      horizontalPadding: horizontalPadding,
+                      maxContentWidth: maxContentWidth,
+                    ),
+                    _buildProgressOverlay(
+                      state: state,
+                      colorScheme: colorScheme,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar({
+    required ColorScheme colorScheme,
+    required bool isProcessing,
+    required bool isDesktop,
+    required bool isTablet,
+  }) {
+    return AppBar(
+      backgroundColor: colorScheme.surface,
+      elevation: 0,
+      leading: IconButton(
+        icon: Icon(
+          Icons.arrow_back,
+          color: (isProcessing || _isCreatingChapter)
+              ? colorScheme.onSurface.withOpacity(0.3)
+              : colorScheme.onSurface,
+        ),
+        onPressed: () {
+          if (!(isProcessing || _isCreatingChapter || _isDialogVisible)) {
+            Navigator.pop(context);
+          }
+        },
+      ),
+      title: Text(
+        'New Chapter in ${widget.folderTitle}',
+        style: TextStyle(
+          color: colorScheme.onSurface,
+          fontSize: isDesktop
+              ? 24
+              : isTablet
+                  ? 22
+                  : 20,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      centerTitle: false,
+    );
+  }
+
+  Widget _buildBody({
+    required ColorScheme colorScheme,
+    required bool isProcessing,
+    required bool isDesktop,
+    required bool isTablet,
+    required double horizontalPadding,
+    required double maxContentWidth,
+  }) {
+    return ScrollConfiguration(
+      behavior: NoGlowScrollBehavior(),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxContentWidth),
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: isDesktop
+                      ? 32
+                      : isTablet
+                          ? 24
+                          : 12,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // PDF Upload Section
+                      PdfUploadSection(
+                        selectedFile: _selectedFile,
+                        selectedFileName: _selectedFileName,
+                        onPickFile: _pickFile,
+                      ),
+                      SizedBox(
+                        height: isDesktop
+                            ? 40
+                            : isTablet
+                                ? 24
+                                : 16,
+                      ),
+
+                      // Chapter Details Form
+                      ChapterDetailsForm(
+                        titleController: _titleController,
+                        descriptionController: _descriptionController,
+                        onFieldChanged: () => setState(() {}),
+                      ),
+                      SizedBox(
+                        height: isDesktop
+                            ? 60
+                            : isTablet
+                                ? 50
+                                : 40,
+                      ),
+
+                      // Action Buttons
+                      ChapterActionButtons(
+                        isProcessing: isProcessing,
+                        isDialogVisible: _isDialogVisible,
+                        onCancel: () => Navigator.pop(context),
+                        onCreate: _createChapter,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressOverlay({
+    required ChapterState state,
+    required ColorScheme colorScheme,
+  }) {
+    final bool isLoading = state is CreateChapterLoading;
+    final bool isProgress = state is CreateChapterProgress;
+
+    if (!isLoading && !isProgress && !_isCreatingChapter) {
+      return const SizedBox.shrink();
+    }
+
+    final CreateChapterProgress? progressState =
+        state is CreateChapterProgress ? state : null;
+    final int progressValue =
+        progressState != null ? progressState.progress.clamp(0, 100) : 0;
+    final String statusMessage =
+        progressState != null && progressState.message.isNotEmpty
+            ? progressState.message
+            : 'Uploading your materials...';
+
+    return Positioned.fill(
+      child: ChapterCreationProgressOverlay(
+        progressValue: progressValue,
+        statusMessage: statusMessage,
+        waveAnimation: _waveController,
+        colorScheme: colorScheme,
+      ),
+    );
+  }
+
+  // ==================== Business Logic Methods ====================
+
   Future<void> _pickFile() async {
     try {
       print('Starting file picker...');
 
-      // Try different file picker methods based on platform
       FilePickerResult? result;
 
-      // First try the custom type with PDF extension
       try {
         print('Trying custom type with PDF extension...');
         result = await FilePicker.platform.pickFiles(
@@ -93,7 +296,6 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
         );
         print('Custom type result: $result');
       } catch (e) {
-        // If custom type fails, try with document type
         print('Custom type failed, trying document type: $e');
         try {
           result = await FilePicker.platform.pickFiles(
@@ -102,7 +304,6 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
           );
           print('Document type result: $result');
         } catch (e2) {
-          // If all file picker methods fail, show a dialog for manual file name input
           print('All file picker methods failed: $e2');
           _showManualFileInputDialog();
           return;
@@ -112,14 +313,11 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
 
-        // Validate that it's a PDF file
         if (file.extension?.toLowerCase() == 'pdf' ||
             file.name.toLowerCase().endsWith('.pdf')) {
-          // Try to get file bytes, either from memory or by reading the file
           Uint8List? fileBytes = file.bytes;
 
           if (fileBytes == null && file.path != null) {
-            // If bytes are null but path exists, try to read the file
             try {
               final fileData = await File(file.path!).readAsBytes();
               fileBytes = fileData;
@@ -195,13 +393,12 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
   Future<void> _createChapter() async {
     print('🚀 _createChapter() called');
 
-    // CRITICAL: Prevent duplicate submissions (Bug #1 & #2 fix)
     if (_isCreatingChapter) {
       print('⚠️ Already creating chapter, ignoring duplicate tap');
       return;
     }
 
-    // Validation checks
+    // Validation
     if (_titleController.text.trim().isEmpty) {
       print('❌ Title is empty');
       safeContext((ctx) {
@@ -249,16 +446,13 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
       return;
     }
 
-    // Set creating flag and update UI
     setState(() => _isCreatingChapter = true);
 
     try {
-      // Start SSE subscription for progress updates
       _chapterCubit.subscribeToChapterCreationProgress(
         userId: authState.user.id,
       );
 
-      // Start chapter creation
       _chapterCubit.createChapter(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -266,7 +460,6 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
         file: _selectedFile!,
       );
 
-      // Add timeout handler - give backend enough time for PDF processing
       _timeoutTimer?.cancel();
       _timeoutTimer = Timer(const Duration(seconds: 120), () {
         if (_isCreatingChapter && mounted) {
@@ -274,7 +467,6 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
         }
       });
     } catch (e) {
-      // Bug #7 fix: Use safeContext for error handling
       print('❌ Error in _createChapter: $e');
       if (mounted) {
         setState(() => _isCreatingChapter = false);
@@ -307,708 +499,26 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final screenWidth = constraints.maxWidth;
-        final isTablet = screenWidth >= 768;
-        final isDesktop = screenWidth >= 1024;
-
-        // Responsive padding and sizing
-        final horizontalPadding = isDesktop
-            ? 40.0
-            : isTablet
-            ? 24.0
-            : 12.0;
-        final maxContentWidth = isDesktop ? 800.0 : screenWidth;
-
-        return BlocConsumer<ChapterCubit, ChapterState>(
-          listener: _handleChapterState,
-          builder: (context, state) {
-            final colorScheme = Theme.of(context).colorScheme;
-            final isProcessing =
-                state is CreateChapterLoading || state is CreateChapterProgress;
-
-            return WillPopScope(
-              onWillPop: () async {
-                // Simply block navigation if creating, no SnackBar to avoid interference
-                return !isProcessing && !_isCreatingChapter;
-              },
-              child: Scaffold(
-                backgroundColor: colorScheme.surface,
-                appBar: AppBar(
-                  backgroundColor: colorScheme.surface,
-                  elevation: 0,
-                  leading: IconButton(
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: (isProcessing || _isCreatingChapter)
-                          ? colorScheme.onSurface.withOpacity(0.3)
-                          : colorScheme.onSurface,
-                    ),
-                    onPressed: () {
-                      // Only allow navigation if not creating
-                      if (!(isProcessing ||
-                          _isCreatingChapter ||
-                          _isDialogVisible)) {
-                        Navigator.pop(context);
-                      }
-                      // If blocked, do nothing - progress overlay shows status
-                    },
-                  ),
-                  title: Text(
-                    'New Chapter in ${widget.folderTitle}',
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: isDesktop
-                          ? 24
-                          : isTablet
-                          ? 22
-                          : 20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  centerTitle: false,
-                ),
-                body: Stack(
-                  children: [
-                    ScrollConfiguration(
-                      behavior: NoGlowScrollBehavior(),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: maxContentWidth,
-                          ),
-                          child: CustomScrollView(
-                            slivers: [
-                              SliverPadding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: horizontalPadding,
-                                  vertical: isDesktop
-                                      ? 32
-                                      : isTablet
-                                      ? 24
-                                      : 12,
-                                ),
-                                sliver: SliverToBoxAdapter(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Upload PDF section
-                                      Builder(
-                                        builder: (context) {
-                                          final screenWidth = MediaQuery.of(
-                                            context,
-                                          ).size.width;
-                                          final isTablet = screenWidth >= 768;
-                                          final isDesktop = screenWidth >= 1024;
-                                          final colorScheme = Theme.of(
-                                            context,
-                                          ).colorScheme;
-
-                                          return Align(
-                                            alignment: Alignment.center,
-                                            child: Container(
-                                              margin: EdgeInsets.all(
-                                                isDesktop
-                                                    ? 40
-                                                    : isTablet
-                                                    ? 30
-                                                    : 20,
-                                              ),
-                                              height: isDesktop
-                                                  ? 380
-                                                  : isTablet
-                                                  ? 340
-                                                  : 300,
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    colorScheme.surfaceVariant,
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                      isDesktop ? 16 : 12,
-                                                    ),
-                                                border: Border.all(
-                                                  color: colorScheme.outline,
-                                                  width: 2,
-                                                  style: BorderStyle.solid,
-                                                ),
-                                              ),
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  // Icon
-                                                  Container(
-                                                    width: isDesktop
-                                                        ? 80
-                                                        : isTablet
-                                                        ? 70
-                                                        : 60,
-                                                    height: isDesktop
-                                                        ? 80
-                                                        : isTablet
-                                                        ? 70
-                                                        : 60,
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          colorScheme.surface,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
-                                                          ),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons
-                                                          .description_outlined,
-                                                      color:
-                                                          _selectedFile != null
-                                                          ? colorScheme.primary
-                                                          : colorScheme
-                                                                .onSurfaceVariant,
-                                                      size: isDesktop
-                                                          ? 40
-                                                          : isTablet
-                                                          ? 35
-                                                          : 30,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    height: isDesktop
-                                                        ? 20
-                                                        : isTablet
-                                                        ? 16
-                                                        : 12,
-                                                  ),
-
-                                                  // Title text
-                                                  Text(
-                                                    _selectedFile != null
-                                                        ? 'File Selected'
-                                                        : 'Upload PDF Files',
-                                                    style: TextStyle(
-                                                      color:
-                                                          colorScheme.onSurface,
-                                                      fontSize: isDesktop
-                                                          ? 20
-                                                          : isTablet
-                                                          ? 18
-                                                          : 16,
-                                                      fontWeight:
-                                                          _selectedFile != null
-                                                          ? FontWeight.w500
-                                                          : FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    height: isDesktop ? 8 : 6,
-                                                  ),
-
-                                                  // Subtitle text
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 24,
-                                                        ),
-                                                    child: Text(
-                                                      _selectedFile != null
-                                                          ? _selectedFileName ??
-                                                                ''
-                                                          : 'Click to browse or drag and drop\nPDF files here',
-                                                      style: TextStyle(
-                                                        color: colorScheme
-                                                            .onSurfaceVariant,
-                                                        fontSize: isDesktop
-                                                            ? 14
-                                                            : isTablet
-                                                            ? 13
-                                                            : 12,
-                                                        height: 1.4,
-                                                      ),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    height: isDesktop
-                                                        ? 24
-                                                        : isTablet
-                                                        ? 20
-                                                        : 16,
-                                                  ),
-
-                                                  // Choose PDF Files Button
-                                                  ElevatedButton.icon(
-                                                    onPressed: _pickFile,
-                                                    icon: Icon(
-                                                      Icons.upload_file,
-                                                      color:
-                                                          _selectedFile != null
-                                                          ? colorScheme
-                                                                .onPrimary
-                                                          : colorScheme
-                                                                .onSurfaceVariant,
-                                                      size: isDesktop ? 20 : 18,
-                                                    ),
-                                                    label: Text(
-                                                      _selectedFile == null
-                                                          ? 'Choose PDF Files'
-                                                          : 'Rechange PDF Files',
-                                                      style: TextStyle(
-                                                        fontSize: isDesktop
-                                                            ? 16
-                                                            : isTablet
-                                                            ? 15
-                                                            : 14,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor:
-                                                          colorScheme.primary,
-                                                      foregroundColor:
-                                                          colorScheme.onPrimary,
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                            horizontal:
-                                                                isDesktop
-                                                                ? 28
-                                                                : isTablet
-                                                                ? 24
-                                                                : 20,
-                                                            vertical: isDesktop
-                                                                ? 16
-                                                                : isTablet
-                                                                ? 14
-                                                                : 12,
-                                                          ),
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                      ),
-                                                      elevation: 0,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    height: isDesktop
-                                                        ? 12
-                                                        : isTablet
-                                                        ? 10
-                                                        : 8,
-                                                  ),
-
-                                                  // Max file size text
-                                                  Text(
-                                                    'Max file size: 50MB per file',
-                                                    style: TextStyle(
-                                                      color: colorScheme
-                                                          .onSurfaceVariant,
-                                                      fontSize: isDesktop
-                                                          ? 13
-                                                          : isTablet
-                                                          ? 12
-                                                          : 11,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                      SizedBox(
-                                        height: isDesktop
-                                            ? 40
-                                            : isTablet
-                                            ? 24
-                                            : 16,
-                                      ),
-                                      // Chapter Details Section
-                                      Builder(
-                                        builder: (context) {
-                                          final colorScheme = Theme.of(
-                                            context,
-                                          ).colorScheme;
-                                          return Container(
-                                            decoration: BoxDecoration(
-                                              color: colorScheme
-                                                  .surfaceContainerHighest,
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    isDesktop ? 24 : 16,
-                                                  ),
-                                              border: Border.all(
-                                                color: colorScheme.outline,
-                                              ),
-                                            ),
-                                            child: Padding(
-                                              padding: EdgeInsets.all(
-                                                isDesktop ? 24 : 16,
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    'Chapter Details',
-                                                    style: TextStyle(
-                                                      color:
-                                                          colorScheme.onSurface,
-                                                      fontSize: isDesktop
-                                                          ? 24
-                                                          : isTablet
-                                                          ? 22
-                                                          : 20,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    height: isDesktop ? 24 : 16,
-                                                  ),
-                                                  _buildFormField(
-                                                    label: 'Title',
-                                                    hint: 'Enter chapter title',
-                                                    controller:
-                                                        _titleController,
-                                                    isRequired: true,
-                                                    // ...existing code...
-                                                  ),
-                                                  SizedBox(
-                                                    height: isDesktop ? 24 : 16,
-                                                  ),
-                                                  _buildFormField(
-                                                    label: 'Description',
-                                                    hint:
-                                                        'Enter chapter description (at least 10 characters)',
-                                                    controller:
-                                                        _descriptionController,
-                                                    isRequired: true,
-                                                    maxLines: 3,
-                                                    showCharCount: true,
-                                                    // ...existing code...
-                                                  ),
-                                                  SizedBox(
-                                                    height: isDesktop ? 24 : 16,
-                                                  ),
-                                                  // _buildDropdown(),
-                                                ],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-
-                                      SizedBox(
-                                        height: isDesktop
-                                            ? 60
-                                            : isTablet
-                                            ? 50
-                                            : 40,
-                                      ),
-
-                                      // Bottom buttons
-                                      Builder(
-                                        builder: (context) {
-                                          final colorScheme = Theme.of(
-                                            context,
-                                          ).colorScheme;
-                                          return isDesktop
-                                              ? Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    SizedBox(
-                                                      width: 180,
-                                                      child: GestureDetector(
-                                                        onTap: () {
-                                                          if (!(isProcessing ||
-                                                              _isDialogVisible)) {
-                                                            Navigator.pop(
-                                                              context,
-                                                            );
-                                                          }
-                                                        },
-                                                        child: Container(
-                                                          height: isDesktop
-                                                              ? 60
-                                                              : isTablet
-                                                              ? 54
-                                                              : 48,
-                                                          decoration: BoxDecoration(
-                                                            color: Colors
-                                                                .transparent,
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  isDesktop
-                                                                      ? 30
-                                                                      : isTablet
-                                                                      ? 27
-                                                                      : 24,
-                                                                ),
-                                                            border: Border.all(
-                                                              color: colorScheme
-                                                                  .outline,
-                                                            ),
-                                                          ),
-                                                          child: Center(
-                                                            child: Text(
-                                                              'Cancel',
-                                                              style: TextStyle(
-                                                                color: colorScheme
-                                                                    .onSurface,
-                                                                fontSize:
-                                                                    isDesktop
-                                                                    ? 20
-                                                                    : isTablet
-                                                                    ? 18
-                                                                    : 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      width: isDesktop
-                                                          ? 32
-                                                          : isTablet
-                                                          ? 20
-                                                          : 12,
-                                                    ),
-                                                    SizedBox(
-                                                      width: 180,
-                                                      child: GestureDetector(
-                                                        onTap: isProcessing
-                                                            ? null
-                                                            : _createChapter,
-                                                        child: Container(
-                                                          height: isDesktop
-                                                              ? 60
-                                                              : isTablet
-                                                              ? 54
-                                                              : 48,
-                                                          decoration: BoxDecoration(
-                                                            color: isProcessing
-                                                                ? colorScheme
-                                                                      .surfaceVariant
-                                                                : colorScheme
-                                                                      .primary,
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  isDesktop
-                                                                      ? 30
-                                                                      : isTablet
-                                                                      ? 27
-                                                                      : 24,
-                                                                ),
-                                                          ),
-                                                          child: Center(
-                                                            child: _buildCreateButtonChild(
-                                                              isProcessing:
-                                                                  isProcessing,
-                                                              isTablet:
-                                                                  isTablet,
-                                                              colorScheme:
-                                                                  colorScheme,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                )
-                                              : Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: GestureDetector(
-                                                        onTap: () {
-                                                          if (!(isProcessing ||
-                                                              _isDialogVisible)) {
-                                                            Navigator.pop(
-                                                              context,
-                                                            );
-                                                          }
-                                                        },
-                                                        child: Container(
-                                                          height: isTablet
-                                                              ? 54
-                                                              : 48,
-                                                          decoration: BoxDecoration(
-                                                            color: Colors
-                                                                .transparent,
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  isTablet
-                                                                      ? 27
-                                                                      : 24,
-                                                                ),
-                                                            border: Border.all(
-                                                              color: colorScheme
-                                                                  .outline,
-                                                            ),
-                                                          ),
-                                                          child: Center(
-                                                            child: Text(
-                                                              'Cancel',
-                                                              style: TextStyle(
-                                                                color: colorScheme
-                                                                    .onSurface,
-                                                                fontSize:
-                                                                    isTablet
-                                                                    ? 18
-                                                                    : 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      width: isTablet ? 20 : 12,
-                                                    ),
-                                                    Expanded(
-                                                      child: GestureDetector(
-                                                        onTap: isProcessing
-                                                            ? null
-                                                            : _createChapter,
-                                                        child: Container(
-                                                          height: isTablet
-                                                              ? 54
-                                                              : 48,
-                                                          decoration: BoxDecoration(
-                                                            color: isProcessing
-                                                                ? colorScheme
-                                                                      .surfaceVariant
-                                                                : colorScheme
-                                                                      .primary,
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  isTablet
-                                                                      ? 27
-                                                                      : 24,
-                                                                ),
-                                                          ),
-                                                          child: Center(
-                                                            child: _buildCreateButtonChild(
-                                                              isProcessing:
-                                                                  isProcessing,
-                                                              isTablet:
-                                                                  isTablet,
-                                                              colorScheme:
-                                                                  colorScheme,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    _buildCreationProgressOverlay(
-                      state: state,
-                      colorScheme: colorScheme,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-    // End of build method
-  }
-
-  Widget _buildCreateButtonChild({
-    required bool isProcessing,
-    required bool isTablet,
-    required ColorScheme colorScheme,
-  }) {
-    if (!isProcessing) {
-      return Text(
-        'Create Chapter',
-        style: TextStyle(
-          color: colorScheme.onPrimary,
-          fontSize: isTablet ? 18 : 16,
-          fontWeight: FontWeight.w600,
-        ),
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onSurface),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'Processing...',
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontSize: isTablet ? 18 : 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
   void _handleChapterState(BuildContext context, ChapterState state) {
     print('📍 _handleChapterState: ${state.runtimeType}');
 
     if (state is CreateChapterProgress) {
       print('📊 Progress: ${state.progress}% - ${state.message}');
-      // Check if progress reached 100%
       if (state.progress >= 100) {
         print('✅ Progress reached 100%, unlocking navigation soon...');
-        // Keep _isCreatingChapter true until CreateChapterSuccess
       }
     }
 
     if (state is CreateChapterError) {
       print('❌ CreateChapterError detected in state handler');
 
-      // CRITICAL: Reset flags BEFORE showing dialog (Bug #3 fix)
       _timeoutTimer?.cancel();
       if (mounted) {
         setState(() => _isCreatingChapter = false);
       }
 
-      // Unsubscribe from SSE
       _chapterCubit.unsubscribeFromChapterCreationProgress();
 
-      // Use safeContext for dialog (Bug #5 fix)
       safeContext((ctx) {
         CustomDialogs.showErrorDialog(
           ctx,
@@ -1019,16 +529,12 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
     } else if (state is CreateChapterSuccess) {
       print('✅ CreateChapterSuccess detected in state handler');
 
-      // CRITICAL: Reset flags BEFORE showing dialog
       _timeoutTimer?.cancel();
       if (mounted) {
         setState(() => _isCreatingChapter = false);
       }
 
-      // Reset success dialog flag for next creation (Bug #5 fix)
       _didShowSuccessDialog = false;
-
-      // Unsubscribe from SSE
       _chapterCubit.unsubscribeFromChapterCreationProgress();
 
       safeContext((ctx) {
@@ -1039,437 +545,14 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
             title: 'Success!',
             message: 'Chapter created successfully',
             onPressed: () {
-              Navigator.pop(ctx); // Close dialog
+              Navigator.pop(ctx);
               if (mounted) {
-                Navigator.pop(
-                  context,
-                  true,
-                ); // Go back to folder screen with success result
+                Navigator.pop(context, true);
               }
             },
           );
         }
       });
     }
-  }
-
-  Widget _buildCreationProgressOverlay({
-    required ChapterState state,
-    required ColorScheme colorScheme,
-  }) {
-    final bool isLoading = state is CreateChapterLoading;
-    final bool isProgress = state is CreateChapterProgress;
-
-    // Show overlay if state indicates processing OR if the local flag is still set
-    if (!isLoading && !isProgress && !_isCreatingChapter) {
-      return const SizedBox.shrink();
-    }
-
-    final CreateChapterProgress? progressState = state is CreateChapterProgress
-        ? state
-        : null;
-    final int progressValue = progressState != null
-        ? progressState.progress.clamp(0, 100)
-        : 0;
-    final String statusMessage =
-        progressState != null && progressState.message.isNotEmpty
-        ? progressState.message
-        : 'Uploading your materials...';
-
-    return Positioned.fill(
-      child: Builder(
-        builder: (context) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          final isTablet = screenWidth >= 768;
-          final isDesktop = screenWidth >= 1024;
-
-          return Container(
-            color: colorScheme.scrim.withOpacity(0.55),
-            child: Center(
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: isDesktop
-                      ? 500
-                      : isTablet
-                      ? 440
-                      : 360,
-                ),
-                margin: EdgeInsets.symmetric(
-                  horizontal: isDesktop
-                      ? 0
-                      : isTablet
-                      ? 0
-                      : 24,
-                ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop
-                      ? 32
-                      : isTablet
-                      ? 28
-                      : 24,
-                  vertical: isDesktop
-                      ? 36
-                      : isTablet
-                      ? 32
-                      : 28,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(
-                    isDesktop
-                        ? 36
-                        : isTablet
-                        ? 32
-                        : 28,
-                  ),
-                  border: Border.all(
-                    color: colorScheme.outline.withOpacity(0.3),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.shadow.withOpacity(0.1),
-                      blurRadius: isDesktop ? 40 : 30,
-                      offset: Offset(0, isDesktop ? 24 : 20),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Creating Your Chapter',
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: isDesktop
-                              ? 26
-                              : isTablet
-                              ? 24
-                              : 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(
-                        height: isDesktop
-                            ? 8
-                            : isTablet
-                            ? 6
-                            : 6,
-                      ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isDesktop
-                              ? 16
-                              : isTablet
-                              ? 8
-                              : 4,
-                        ),
-                        child: Text(
-                          "We're processing your materials and generating AI-powered content",
-                          style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
-                            fontSize: isDesktop
-                                ? 17
-                                : isTablet
-                                ? 16
-                                : 13,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      SizedBox(
-                        height: isDesktop
-                            ? 28
-                            : isTablet
-                            ? 24
-                            : 20,
-                      ),
-                      Container(
-                        width: isDesktop
-                            ? 240
-                            : isTablet
-                            ? 220
-                            : 200,
-                        height: isDesktop
-                            ? 280
-                            : isTablet
-                            ? 260
-                            : 230,
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(
-                            isDesktop ? 32 : 28,
-                          ),
-                          border: Border.all(
-                            color: colorScheme.outline.withOpacity(0.4),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colorScheme.shadow.withOpacity(0.08),
-                              blurRadius: isDesktop ? 20 : 18,
-                              offset: Offset(0, isDesktop ? 16 : 14),
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Percentage and Processing text
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '$progressValue%',
-                                  style: TextStyle(
-                                    color: colorScheme.onSurface,
-                                    fontSize: isDesktop
-                                        ? 40
-                                        : isTablet
-                                        ? 36
-                                        : 32,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: isDesktop ? 8 : 6),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      width: isDesktop ? 18 : 16,
-                                      height: isDesktop ? 18 : 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              colorScheme.onSurfaceVariant,
-                                            ),
-                                      ),
-                                    ),
-                                    SizedBox(width: isDesktop ? 8 : 6),
-                                    Text(
-                                      'Processing',
-                                      style: TextStyle(
-                                        color: colorScheme.onSurfaceVariant,
-                                        fontSize: isDesktop
-                                            ? 15
-                                            : isTablet
-                                            ? 14
-                                            : 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            // Animated wavy progress bar at the bottom
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(
-                                    isDesktop ? 32 : 28,
-                                  ),
-                                  bottomRight: Radius.circular(
-                                    isDesktop ? 32 : 28,
-                                  ),
-                                ),
-                                child: AnimatedBuilder(
-                                  animation: _waveController,
-                                  builder: (context, child) {
-                                    return SizedBox(
-                                      width: isDesktop
-                                          ? 220
-                                          : isTablet
-                                          ? 200
-                                          : 180,
-                                      height: isDesktop
-                                          ? 260
-                                          : isTablet
-                                          ? 240
-                                          : 210,
-                                      child: CustomPaint(
-                                        painter: WavyProgressPainter(
-                                          progress: progressValue / 100.0,
-                                          waveOffset:
-                                              _waveController.value *
-                                              2 *
-                                              math.pi,
-                                          color: colorScheme.primary,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        height: isDesktop
-                            ? 28
-                            : isTablet
-                            ? 24
-                            : 20,
-                      ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isDesktop
-                              ? 16
-                              : isTablet
-                              ? 8
-                              : 0,
-                        ),
-                        child: Text(
-                          statusMessage,
-                          style: TextStyle(
-                            color: colorScheme.onSurface,
-                            fontSize: isDesktop
-                                ? 17
-                                : isTablet
-                                ? 16
-                                : 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      SizedBox(height: isDesktop ? 20 : 18),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isDesktop
-                              ? 20
-                              : isTablet
-                              ? 16
-                              : 14,
-                          vertical: isDesktop ? 14 : 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(
-                            isDesktop ? 18 : 16,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.tips_and_updates,
-                              color: colorScheme.primary,
-                              size: isDesktop ? 20 : 18,
-                            ),
-                            SizedBox(width: isDesktop ? 10 : 8),
-                            Flexible(
-                              child: Text(
-                                'Tip: You can add multiple PDFs and videos to each chapter',
-                                style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontSize: isDesktop
-                                      ? 14
-                                      : isTablet
-                                      ? 13
-                                      : 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFormField({
-    required String label,
-    required String hint,
-    required TextEditingController controller,
-    bool isRequired = false,
-    int maxLines = 1,
-    bool showCharCount = false,
-  }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth >= 768;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            text: label,
-            style: TextStyle(
-              color: colorScheme.onSurface,
-              fontSize: isTablet ? 18 : 16,
-              fontWeight: FontWeight.w500,
-            ),
-            children: [
-              if (isRequired)
-                TextSpan(
-                  text: ' *',
-                  style: TextStyle(
-                    color: colorScheme.error,
-                    fontSize: isTablet ? 18 : 16,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        SizedBox(height: isTablet ? 10 : 8),
-        Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-            border: Border.all(color: colorScheme.outline),
-          ),
-          child: Stack(
-            children: [
-              TextField(
-                controller: controller,
-                maxLines: maxLines,
-                style: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontSize: isTablet ? 16 : 14,
-                ),
-                decoration: InputDecoration(
-                  hintText: hint,
-                  hintStyle: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: isTablet ? 16 : 14,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(isTablet ? 16 : 12),
-                ),
-                onChanged: (text) {
-                  setState(() {});
-                },
-              ),
-              if (showCharCount)
-                Positioned(
-                  bottom: isTablet ? 12 : 8,
-                  right: isTablet ? 16 : 12,
-                  child: Text(
-                    '${_descriptionController.text.length}/200',
-                    style: TextStyle(
-                      color: _descriptionController.text.length < 10
-                          ? colorScheme.error
-                          : colorScheme.onSurfaceVariant,
-                      fontSize: isTablet ? 14 : 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 }

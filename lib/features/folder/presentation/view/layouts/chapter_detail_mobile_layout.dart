@@ -46,6 +46,10 @@ class ChapterDetailMobileLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+    final horizontalPadding = isTablet ? 32.0 : 24.0;
+
     return CustomScrollView(
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
@@ -53,47 +57,91 @@ class ChapterDetailMobileLayout extends StatelessWidget {
       slivers: [
         ChapterDetailAppBar(title: chapter.title),
         SliverToBoxAdapter(
-          child: ChapterPreviewSection(
-            chapter: chapter,
-            formatDate: formatDate,
-            onDownloadPDF: onDownloadPDF,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 8.0 : 0.0),
+            child: ChapterPreviewSection(
+              chapter: chapter,
+              formatDate: formatDate,
+              onDownloadPDF: onDownloadPDF,
+            ),
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 8)),
+        SliverToBoxAdapter(child: SizedBox(height: isTablet ? 12 : 8)),
         SliverToBoxAdapter(
-          child: AISummarySection(
-            isSummaryAvailable:
-                summaryData != null ||
-                rawSummaryText != null ||
-                (chapter.summaryId != null && chapter.summaryId!.isNotEmpty),
-            isSummaryLoading: isSummaryLoading,
-            onViewSummary: (summaryData != null || rawSummaryText != null)
-                ? onViewSummary
-                : onGenerateSummary, // If not loaded but ID exists, generate calls fetch
-            onGenerateSummary: onGenerateSummary,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 8.0 : 0.0),
+            child: AISummarySection(
+              isSummaryAvailable:
+                  summaryData != null ||
+                  rawSummaryText != null ||
+                  (chapter.summaryId != null && chapter.summaryId!.isNotEmpty),
+              isSummaryLoading: isSummaryLoading,
+              onViewSummary: (summaryData != null || rawSummaryText != null)
+                  ? onViewSummary
+                  : onGenerateSummary,
+              onGenerateSummary: onGenerateSummary,
+            ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: MindMapSection(
-            isLoading: isMindmapLoading,
-            onOpen: onGenerateMindmap,
-            isAvailable:
-                chapter.mindmapId != null && chapter.mindmapId!.isNotEmpty,
+        // For tablets, show MindMap and Notes side by side
+        if (isTablet)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: 8,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: MindMapSection(
+                      isLoading: isMindmapLoading,
+                      onOpen: onGenerateMindmap,
+                      isAvailable:
+                          chapter.mindmapId != null &&
+                          chapter.mindmapId!.isNotEmpty,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: NotesSection(
+                      chapterId: chapter.id,
+                      chapterTitle: chapter.title ?? 'Chapter',
+                      accentColor: folderColor,
+                      folderOwnerId: folderOwnerId,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else ...[
+          SliverToBoxAdapter(
+            child: MindMapSection(
+              isLoading: isMindmapLoading,
+              onOpen: onGenerateMindmap,
+              isAvailable:
+                  chapter.mindmapId != null && chapter.mindmapId!.isNotEmpty,
+            ),
           ),
-        ),
-        SliverToBoxAdapter(
-          child: NotesSection(
-            chapterId: chapter.id,
-            chapterTitle: chapter.title ?? 'Chapter',
-            accentColor: folderColor,
-            folderOwnerId: folderOwnerId,
+          SliverToBoxAdapter(
+            child: NotesSection(
+              chapterId: chapter.id,
+              chapterTitle: chapter.title ?? 'Chapter',
+              accentColor: folderColor,
+              folderOwnerId: folderOwnerId,
+            ),
           ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 8)),
+        ],
+        SliverToBoxAdapter(child: SizedBox(height: isTablet ? 12 : 8)),
         SliverToBoxAdapter(
-          child: QuizChatbotTabs(
-            activeTab: activeTab,
-            onTabChanged: onTabChanged,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 8.0 : 0.0),
+            child: QuizChatbotTabs(
+              activeTab: activeTab,
+              onTabChanged: onTabChanged,
+            ),
           ),
         ),
         if (activeTab == "quiz")

@@ -1,13 +1,17 @@
-import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
+// Conditional import for file operations
+
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/pdf_viewer/file_helper_stub.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/pdf_viewer/web_pdf_viewer.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 class PDFViewerScreen extends StatefulWidget {
@@ -55,7 +59,14 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
         isReady = false;
       });
 
-      // Check if PDF is already cached and show it first
+      // On web, skip file-based caching and load directly from API
+      if (kIsWeb) {
+        print('Web platform: fetching PDF from API for viewing');
+        await _downloadPDFFromAPIForViewing();
+        return;
+      }
+
+      // Check if PDF is already cached and show it first (non-web only)
       if (DownloadService.isPDFCached(widget.chapterId)) {
         print('Loading PDF from cache for chapter: ${widget.chapterId}');
         final cachedPdfBytes = DownloadService.getCachedPDF(widget.chapterId);
@@ -136,17 +147,33 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
   }
 
   Future<String> _createFileFromBytes(Uint8List bytes) async {
+    // Web doesn't support file system - we use pdfBytes directly
+    if (kIsWeb) {
+      throw UnsupportedError('File creation not supported on web');
+    }
+
     try {
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/chapter_${widget.chapterId}.pdf');
-      await file.writeAsBytes(bytes);
-      return file.path;
+      final path = '${dir.path}/chapter_${widget.chapterId}.pdf';
+      await writeFileBytes(path, bytes);
+      return path;
     } catch (e) {
       throw Exception('Failed to create PDF file: $e');
     }
   }
 
   Future<void> _downloadPDF() async {
+    // On web, download directly using pdfBytes
+    if (kIsWeb && pdfBytes != null) {
+      final fileName = DownloadService.sanitizeFileName(widget.chapterTitle);
+      await DownloadService.downloadPDF(
+        pdfBytes: pdfBytes!,
+        fileName: fileName,
+        context: context,
+      );
+      return;
+    }
+
     // First check if PDF is already cached
     if (DownloadService.isPDFCached(widget.chapterId)) {
       final cachedPDF = DownloadService.getCachedPDF(widget.chapterId);
@@ -225,25 +252,37 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
             );
           }
 
-          _createFileFromBytes(state.pdfData)
-              .then((path) {
-                if (mounted) {
-                  setState(() {
-                    localPath = path;
-                    _showNoPdfView = false;
-                  });
-                }
-              })
-              .catchError((error) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error loading PDF: $error'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+          // On web, we use pdfBytes directly with WebPdfViewer, no file needed
+          if (kIsWeb) {
+            if (mounted) {
+              setState(() {
+                _showNoPdfView = false;
+                isReady = true;
               });
+              print('Web PDF ready, pdfBytes length: ${pdfBytes?.length}');
+            }
+          } else {
+            // On non-web platforms, create a file from bytes
+            _createFileFromBytes(state.pdfData)
+                .then((path) {
+                  if (mounted) {
+                    setState(() {
+                      localPath = path;
+                      _showNoPdfView = false;
+                    });
+                  }
+                })
+                .catchError((error) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error loading PDF: $error'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                });
+          }
         } else if (state is GetChapterContentPdfError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -386,6 +425,14 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
               return _buildNoPdfView(isTablet);
             }
 
+            // On web, check pdfBytes; on other platforms, check localPath
+            if (kIsWeb) {
+              if (pdfBytes == null) {
+                return _buildLoadingView(isTablet);
+              }
+              return _buildWebPDFView(isTablet);
+            }
+
             if (localPath == null) {
               return _buildLoadingView(isTablet);
             }
@@ -393,7 +440,8 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
             return _buildPDFView(isTablet);
           },
         ),
-        bottomNavigationBar: localPath != null && isReady && totalPages > 1
+        bottomNavigationBar:
+            !kIsWeb && localPath != null && isReady && totalPages > 1
             ? _buildNavigationBar(isTablet)
             : null,
       ),
@@ -575,6 +623,27 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
     );
   }
 
+  /// Web-specific PDF viewer using iframe with Blob URL.
+  Widget _buildWebPDFView(bool isTablet) {
+    if (pdfBytes == null) {
+      return _buildLoadingView(isTablet);
+    }
+
+    return WebPdfViewer(
+      pdfBytes: pdfBytes!,
+      title: widget.chapterTitle,
+      currentPage: currentPage,
+      totalPages: totalPages,
+      onReady: () {
+        if (mounted) {
+          setState(() {
+            isReady = true;
+          });
+        }
+      },
+    );
+  }
+
   Widget _buildPDFView(bool isTablet) {
     return ScrollConfiguration(
       behavior: NoGlowScrollBehavior(),
@@ -719,12 +788,13 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
 
   @override
   void dispose() {
-    // Clean up temporary file
-    if (localPath != null) {
-      File(localPath!).delete().catchError((e) {
-        // Ignore deletion errors
-        return File(''); // Return a dummy file to satisfy the return type
-      });
+    // Clean up temporary file (non-web only)
+    if (!kIsWeb && localPath != null) {
+      try {
+        deleteFile(localPath!);
+      } catch (e) {
+        // Ignore errors on platforms where File is not available
+      }
     }
     super.dispose();
   }
