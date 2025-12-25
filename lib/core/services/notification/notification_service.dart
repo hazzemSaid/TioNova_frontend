@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 typedef NotificationHandler = Future<void> Function(RemoteMessage);
@@ -11,8 +12,8 @@ class NotificationService {
 
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  // Only create local notifications plugin on non-web platforms
+  FlutterLocalNotificationsPlugin? _localNotificationsPlugin;
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
   // Callback for when user taps a notification
@@ -27,14 +28,18 @@ class NotificationService {
   Future<void> initialize({NotificationHandler? onNotificationTap}) async {
     _onNotificationTap = onNotificationTap;
 
-    // Initialize local notifications
-    await _initializeLocalNotifications();
+    // Skip local notifications on web (not supported)
+    if (!kIsWeb) {
+      _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+      // Initialize local notifications
+      await _initializeLocalNotifications();
 
-    // Request notification permissions
+      // Setup notification channel for Android
+      await _setupNotificationChannel();
+    }
+
+    // Request notification permissions (works on web too via Firebase)
     await _requestPermissions();
-
-    // Setup notification channel for Android
-    await _setupNotificationChannel();
 
     // Configure foreground message handling
     await _configureForegroundMessageHandling();
@@ -53,6 +58,8 @@ class NotificationService {
   // ==========================================
 
   Future<void> _initializeLocalNotifications() async {
+    if (kIsWeb || _localNotificationsPlugin == null) return;
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -77,7 +84,7 @@ class NotificationService {
           macOS: initializationSettingsMacOS,
         );
 
-    await _localNotificationsPlugin.initialize(
+    await _localNotificationsPlugin!.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         print('Notification tapped: ${response.payload}');
@@ -110,6 +117,8 @@ class NotificationService {
   }
 
   Future<void> _setupNotificationChannel() async {
+    if (kIsWeb || _localNotificationsPlugin == null) return;
+
     try {
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
         'high_importance_channel',
@@ -121,7 +130,7 @@ class NotificationService {
         showBadge: true,
       );
 
-      final androidPlugin = _localNotificationsPlugin
+      final androidPlugin = _localNotificationsPlugin!
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
@@ -163,6 +172,14 @@ class NotificationService {
 
   /// Show a local notification (usually from FCM)
   Future<void> showNotification(RemoteMessage message) async {
+    // On web, we can't show local notifications, but the browser handles FCM notifications
+    if (kIsWeb || _localNotificationsPlugin == null) {
+      print(
+        '📬 Web notification handled by browser: ${message.notification?.title}',
+      );
+      return;
+    }
+
     try {
       final title = message.notification?.title ?? 'New Notification';
       final body = message.notification?.body ?? '';
@@ -196,7 +213,7 @@ class NotificationService {
         iOS: iOSPlatformChannelSpecifics,
       );
 
-      await _localNotificationsPlugin.show(
+      await _localNotificationsPlugin!.show(
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title,
         body,
@@ -213,7 +230,12 @@ class NotificationService {
   /// Get FCM token for this device
   Future<String?> getFcmToken() async {
     try {
-      final token = await _firebaseMessaging.getToken();
+      // On web, we need to provide VAPID key for FCM
+      final token = kIsWeb
+          ? await _firebaseMessaging.getToken(
+              vapidKey: null, // Add your VAPID key here if needed for web push
+            )
+          : await _firebaseMessaging.getToken();
       print('🔑 FCM Token: $token');
       return token;
     } catch (e) {
@@ -244,6 +266,10 @@ class NotificationService {
 
   /// Subscribe to multiple topics at once
   Future<void> subscribeToTopics(List<String> topics) async {
+    // On web, topic subscription might not work the same way
+    if (kIsWeb) {
+      print('ℹ️ Topic subscription on web may have limitations');
+    }
     for (final topic in topics) {
       await subscribeToTopic(topic);
     }
@@ -271,6 +297,12 @@ class NotificationService {
   /// This should be registered as a top-level function
   @pragma('vm:entry-point')
   static Future<void> backgroundMessageHandler(RemoteMessage message) async {
+    // Background messages are not supported on web
+    if (kIsWeb) {
+      print('📬 Web background message: ${message.notification?.title}');
+      return;
+    }
+
     try {
       print('📬 Background message received: ${message.notification?.title}');
 

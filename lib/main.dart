@@ -1,6 +1,7 @@
 // // main.dart
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -26,9 +27,10 @@ import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
 import 'package:tionova/firebase_options.dart';
 
-// Background message handler
+// Background message handler - only used on non-web platforms
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (kIsWeb) return; // Skip on web
   await NotificationService.backgroundMessageHandler(message);
 }
 
@@ -91,20 +93,23 @@ Future<void> main() async {
   }
 
   // ==========================================
-  // Register background message handler
-
+  // Register background message handler (skip on web)
   // ==========================================
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  NotificationService? notificationService;
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // ==========================================
-  // Initialize Notification Service (after Firebase)
-  // ==========================================
-  final notificationService = NotificationService();
-  await notificationService.initialize(
-    onNotificationTap: _handleNotificationTap,
-  );
-
-  print('✅ Push notifications initialized');
+    // ==========================================
+    // Initialize Notification Service (after Firebase)
+    // ==========================================
+    notificationService = NotificationService();
+    await notificationService.initialize(
+      onNotificationTap: _handleNotificationTap,
+    );
+    print('✅ Push notifications initialized');
+  } else {
+    print('ℹ️ Skipping push notifications on web platform');
+  }
 
   // Initialize Hive (needed for theme and auth)
   await HiveManager.initializeHive();
@@ -199,20 +204,22 @@ Future<void> main() async {
       await shorebirdService.initialize();
       print('✅ Shorebird Code Push initialized');
 
-      // Get FCM token and setup notification subscriptions
-      try {
-        final token = await notificationService.getFcmToken();
-        print('🔑 Device FCM Token: $token');
+      // Get FCM token and setup notification subscriptions (skip on web)
+      if (!kIsWeb && notificationService != null) {
+        try {
+          final token = await notificationService.getFcmToken();
+          print('🔑 Device FCM Token: $token');
 
-        // Subscribe to default topics based on user context
-        // You can customize this based on your app logic
-        await notificationService.subscribeToTopics([
-          'all_users', // Send to all users
-          // Add more topics as needed based on user role, class, etc.
-        ]);
-        print('✅ Subscribed to notification topics');
-      } catch (e) {
-        print('⚠️ Error setting up FCM: $e');
+          // Subscribe to default topics based on user context
+          // You can customize this based on your app logic
+          await notificationService.subscribeToTopics([
+            'all_users', // Send to all users
+            // Add more topics as needed based on user role, class, etc.
+          ]);
+          print('✅ Subscribed to notification topics');
+        } catch (e) {
+          print('⚠️ Error setting up FCM: $e');
+        }
       }
 
       print('✅ All deferred services initialized successfully');

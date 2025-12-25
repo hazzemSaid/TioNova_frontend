@@ -11,10 +11,10 @@ class FolderOptionsBottomSheet extends StatelessWidget {
   final Foldermodel folder;
   final Color color;
   final VoidCallback onEdit;
-  final VoidCallback onShare;
-  final VoidCallback onDuplicate;
-  final VoidCallback onExportPDF;
-  final VoidCallback onArchive;
+  // final VoidCallback onShare;
+  // final VoidCallback onDuplicate;
+  // final VoidCallback onExportPDF;
+  // final VoidCallback onArchive;
   final VoidCallback onDelete;
 
   const FolderOptionsBottomSheet({
@@ -22,10 +22,10 @@ class FolderOptionsBottomSheet extends StatelessWidget {
     required this.folder,
     required this.color,
     required this.onEdit,
-    required this.onShare,
-    required this.onDuplicate,
-    required this.onExportPDF,
-    required this.onArchive,
+    // required this.onShare,
+    // required this.onDuplicate,
+    // required this.onExportPDF,
+    // required this.onArchive,
     required this.onDelete,
   });
 
@@ -187,130 +187,133 @@ class FolderOptionsBottomSheet extends StatelessWidget {
                       indent: 52,
                     ),
                   ],
+
                   // Share option - Only for owners
-                  if (isOwner) ...[
-                    FolderOptionItem(
-                      icon: Icons.share_outlined,
-                      label: 'Share Folder',
-                      iconColor: colorScheme.primary,
-                      textColor: colorScheme.onSurface,
-                      onTap: () {
-                        Navigator.pop(context);
-                        onShare();
-                      },
+                  //       if (isOwner) ...[
+                  //         FolderOptionItem(
+                  //           icon: Icons.share_outlined,
+                  //           label: 'Share Folder',
+                  //           iconColor: colorScheme.primary,
+                  //           textColor: colorScheme.onSurface,
+                  //           onTap: () {
+                  //             Navigator.pop(context);
+                  //             onShare();
+                  //           },
+                  //         ),
+                  //         Divider(
+                  //           color: colorScheme.outline,
+                  //           height: 1,
+                  //           thickness: 0.5,
+                  //           indent: 52,
+                  //         ),
+                  //       ],
+                  //       // Duplicate option - Available for everyone
+                  //       FolderOptionItem(
+                  //         icon: Icons.content_copy_outlined,
+                  //         label: 'Duplicate Folder',
+                  //         iconColor: Color(0xFFBF5AF2),
+                  //         textColor: colorScheme.onSurface,
+                  //         onTap: () {
+                  //           Navigator.pop(context);
+                  //           onDuplicate();
+                  //         },
+                  //       ),
+                  //       Divider(
+                  //         color: colorScheme.outline,
+                  //         height: 1,
+                  //         thickness: 0.5,
+                  //         indent: 52,
+                  //       ),
+                  //       // Export PDF - Available for everyone
+                  //       FolderOptionItem(
+                  //         icon: Icons.picture_as_pdf_outlined,
+                  //         label: 'Export as PDF',
+                  //         iconColor: Colors.green,
+                  //         textColor: colorScheme.onSurface,
+                  //         onTap: () {
+                  //           Navigator.pop(context);
+                  //           onExportPDF();
+                  //         },
+                  //       ),
+                  //       // Archive option - Only for owners
+                  //       if (isOwner) ...[
+                  //         Divider(
+                  //           color: colorScheme.outline,
+                  //           height: 1,
+                  //           thickness: 0.5,
+                  //           indent: 52,
+                  //         ),
+                  //         FolderOptionItem(
+                  //           icon: Icons.archive_outlined,
+                  //           label: 'Archive Folder',
+                  //           iconColor: Colors.orange,
+                  //           textColor: colorScheme.onSurface,
+                  //           onTap: () {
+                  //             Navigator.pop(context);
+                  //             onArchive();
+                  //           },
+                  //         ),
+                  //       ],
+                  //     ],
+                  //   ),
+                  // ),
+                  const SizedBox(height: 12),
+
+                  // Delete option (separate) - Only for owners
+                  if (isOwner)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: FolderOptionItem(
+                        icon: Icons.delete_outline,
+                        label: 'Delete Folder',
+                        iconColor: colorScheme.error,
+                        textColor: colorScheme.error,
+                        onTap: () {
+                          Navigator.pop(context);
+                          onDelete();
+                        },
+                      ),
                     ),
-                    Divider(
-                      color: colorScheme.outline,
-                      height: 1,
-                      thickness: 0.5,
-                      indent: 52,
+
+                  const SizedBox(height: 16),
+
+                  // Cancel button
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                  // Duplicate option - Available for everyone
-                  FolderOptionItem(
-                    icon: Icons.content_copy_outlined,
-                    label: 'Duplicate Folder',
-                    iconColor: Color(0xFFBF5AF2),
-                    textColor: colorScheme.onSurface,
-                    onTap: () {
-                      Navigator.pop(context);
-                      onDuplicate();
-                    },
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.zero,
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ),
                   ),
-                  Divider(
-                    color: colorScheme.outline,
-                    height: 1,
-                    thickness: 0.5,
-                    indent: 52,
-                  ),
-                  // Export PDF - Available for everyone
-                  FolderOptionItem(
-                    icon: Icons.picture_as_pdf_outlined,
-                    label: 'Export as PDF',
-                    iconColor: Colors.green,
-                    textColor: colorScheme.onSurface,
-                    onTap: () {
-                      Navigator.pop(context);
-                      onExportPDF();
-                    },
-                  ),
-                  // Archive option - Only for owners
-                  if (isOwner) ...[
-                    Divider(
-                      color: colorScheme.outline,
-                      height: 1,
-                      thickness: 0.5,
-                      indent: 52,
-                    ),
-                    FolderOptionItem(
-                      icon: Icons.archive_outlined,
-                      label: 'Archive Folder',
-                      iconColor: Colors.orange,
-                      textColor: colorScheme.onSurface,
-                      onTap: () {
-                        Navigator.pop(context);
-                        onArchive();
-                      },
-                    ),
-                  ],
+
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
                 ],
               ),
             ),
-
-            const SizedBox(height: 12),
-
-            // Delete option (separate) - Only for owners
-            if (isOwner)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: FolderOptionItem(
-                  icon: Icons.delete_outline,
-                  label: 'Delete Folder',
-                  iconColor: colorScheme.error,
-                  textColor: colorScheme.error,
-                  onTap: () {
-                    Navigator.pop(context);
-                    onDelete();
-                  },
-                ),
-              ),
-
-            const SizedBox(height: 16),
-
-            // Cancel button
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              width: double.infinity,
-              height: 56,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: TextButton(
-                onPressed: () => Navigator.pop(context),
-                style: TextButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: EdgeInsets.zero,
-                ),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
           ],
         ),
       ),

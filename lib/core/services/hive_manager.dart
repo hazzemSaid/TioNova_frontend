@@ -1,7 +1,10 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
+
+// Conditional import for dart:io
+import 'hive_manager_stub.dart'
+    if (dart.library.io) 'hive_manager_io.dart'
+    as platform;
 
 class HiveManager {
   /// Initialize Hive with error handling for corrupted data
@@ -10,35 +13,23 @@ class HiveManager {
       await Hive.initFlutter();
     } catch (e) {
       print('Error initializing Hive: $e');
-      // Clear all Hive data and try again
-      await clearAllHiveData();
+      // Clear all Hive data and try again (only on non-web)
+      if (!kIsWeb) {
+        await clearAllHiveData();
+      }
       await Hive.initFlutter();
     }
   }
 
   /// Clear all Hive data (use when corrupted)
+  /// This only works on non-web platforms
   static Future<void> clearAllHiveData() async {
-    try {
-      final appDocDir = await getApplicationDocumentsDirectory();
-      final hiveDir = Directory('${appDocDir.path}');
-
-      if (await hiveDir.exists()) {
-        final files = await hiveDir.list().where((entity) {
-          return entity.path.contains('.hive') || entity.path.contains('.lock');
-        }).toList();
-
-        for (final file in files) {
-          try {
-            await file.delete();
-            print('Deleted Hive file: ${file.path}');
-          } catch (e) {
-            print('Error deleting ${file.path}: $e');
-          }
-        }
-      }
-    } catch (e) {
-      print('Error clearing Hive data: $e');
+    if (kIsWeb) {
+      // On web, we can only clear boxes through Hive API
+      print('Clearing Hive data on web is limited');
+      return;
     }
+    await platform.clearAllHiveData();
   }
 
   /// Safe box opening with error handling

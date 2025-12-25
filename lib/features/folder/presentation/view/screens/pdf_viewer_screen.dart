@@ -10,7 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/view/widgets/pdf_viewer/file_helper_stub.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/pdf_viewer/file_helper.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/pdf_viewer/web_pdf_viewer.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
@@ -263,16 +263,20 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
             }
           } else {
             // On non-web platforms, create a file from bytes
+            print('Creating PDF file from bytes on mobile...');
             _createFileFromBytes(state.pdfData)
                 .then((path) {
+                  print('PDF file created successfully at: $path');
                   if (mounted) {
                     setState(() {
                       localPath = path;
                       _showNoPdfView = false;
                     });
+                    print('localPath set, triggering UI rebuild');
                   }
                 })
                 .catchError((error) {
+                  print('Error creating PDF file: $error');
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -326,7 +330,8 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
           ),
           centerTitle: false,
           actions: [
-            if (localPath != null && isReady)
+            if ((kIsWeb && pdfBytes != null && isReady) ||
+                (!kIsWeb && localPath != null && isReady))
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
                 color: const Color(0xFF1C1C1E),
@@ -348,10 +353,12 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
                       _downloadPDFFromAPIForViewing();
                       break;
                     case 'first':
-                      controller?.setPage(0);
+                      if (!kIsWeb) {
+                        controller?.setPage(0);
+                      }
                       break;
                     case 'last':
-                      if (totalPages > 0) {
+                      if (!kIsWeb && totalPages > 0) {
                         controller?.setPage(totalPages - 1);
                       }
                       break;
@@ -381,62 +388,75 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
-                    value: 'first',
-                    child: Row(
-                      children: [
-                        Icon(Icons.first_page, color: Colors.white, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'First Page',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
+                  if (!kIsWeb) ...[
+                    const PopupMenuItem(
+                      value: 'first',
+                      child: Row(
+                        children: [
+                          Icon(Icons.first_page, color: Colors.white, size: 20),
+                          SizedBox(width: 12),
+                          Text(
+                            'First Page',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'last',
-                    child: Row(
-                      children: [
-                        Icon(Icons.last_page, color: Colors.white, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'Last Page',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
+                    const PopupMenuItem(
+                      value: 'last',
+                      child: Row(
+                        children: [
+                          Icon(Icons.last_page, color: Colors.white, size: 20),
+                          SizedBox(width: 12),
+                          Text(
+                            'Last Page',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
           ],
         ),
         body: BlocBuilder<ChapterCubit, ChapterState>(
           builder: (context, state) {
+            print(
+              'BlocBuilder state: ${state.runtimeType}, localPath: $localPath, pdfBytes: ${pdfBytes?.length}, isWeb: $kIsWeb',
+            );
+
             if (state is GetChapterContentPdfLoading) {
+              print('Showing loading view');
               return _buildLoadingView(isTablet);
             }
 
             if (state is GetChapterContentPdfError) {
+              print('Showing error view');
               return _buildErrorView(state.message.errMessage, isTablet);
             }
 
             if (_showNoPdfView) {
+              print('Showing no PDF view');
               return _buildNoPdfView(isTablet);
             }
 
             // On web, check pdfBytes; on other platforms, check localPath
             if (kIsWeb) {
               if (pdfBytes == null) {
+                print('Web: pdfBytes is null, showing loading view');
                 return _buildLoadingView(isTablet);
               }
+              print('Web: Showing web PDF view');
               return _buildWebPDFView(isTablet);
             }
 
             if (localPath == null) {
+              print('Mobile: localPath is null, showing loading view');
               return _buildLoadingView(isTablet);
             }
 
+            print('Mobile: Showing native PDF view');
             return _buildPDFView(isTablet);
           },
         ),
@@ -645,6 +665,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
   }
 
   Widget _buildPDFView(bool isTablet) {
+    print('Building PDFView with localPath: $localPath');
     return ScrollConfiguration(
       behavior: NoGlowScrollBehavior(),
       child: Container(
@@ -660,12 +681,14 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
           fitPolicy: FitPolicy.BOTH,
           preventLinkNavigation: false,
           onRender: (pages) {
+            print('PDF rendered successfully! Total pages: $pages');
             setState(() {
               totalPages = pages ?? 0;
               isReady = true;
             });
           },
           onError: (error) {
+            print('PDF Error: $error');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('PDF Error: $error'),
@@ -674,6 +697,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
             );
           },
           onPageError: (page, error) {
+            print('Page $page Error: $error');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Page $page Error: $error'),
@@ -682,6 +706,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
             );
           },
           onViewCreated: (PDFViewController pdfViewController) {
+            print('PDF View Created');
             controller = pdfViewController;
           },
           onLinkHandler: (uri) {
