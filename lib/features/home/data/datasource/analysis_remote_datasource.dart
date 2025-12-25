@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/home/data/models/analysisModel.dart';
 
 abstract class AnalysisRemoteDataSource {
@@ -26,18 +27,17 @@ class AnalysisRemoteDataSourceImpl implements AnalysisRemoteDataSource {
   Future<Either<Failure, Analysismodel>> fetchAnalysisData() async {
     try {
       final response = await _dio.get('/analysis');
-      if (response.statusCode == 200) {
-        final analysisData = Analysismodel.fromJson(response.data['data']);
-        return Right(analysisData);
-      } else {
-        return Left(
-          ServerFailure(
-            'Failed to fetch analysis data: ${response.statusCode}',
-          ),
+      return ErrorHandlingUtils.handleApiResponse<Analysismodel>(
+        response: response,
+        onSuccess: (data) {
+          if (data is Map<String, dynamic> && data.containsKey('data')) {
+            return Analysismodel.fromJson(data['data']);
+          }
+          return Analysismodel.fromJson(data);
+        },
         );
-      }
     } catch (e) {
-      return Left(ServerFailure('Failed to fetch analysis data: $e'));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 }

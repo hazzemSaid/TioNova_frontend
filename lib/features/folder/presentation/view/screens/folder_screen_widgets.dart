@@ -23,21 +23,24 @@ class FolderGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FolderCard(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      title: folder.title,
-      description: folder.description ?? 'No description',
-      category: folder.category ?? 'Uncategorized',
-      privacy: folder.status == Status.private
-          ? 'Private'
-          : (folder.status == Status.share ? 'Shared' : 'Public'),
-      chapters: folder.chapterCount ?? 0,
-      lastAccessed:
-          '${DateTime.now().difference(folder.createdAt).inDays} days ago',
-      color: color,
-      sharedWith: folder.sharedWith,
-      icon: folder.icon != null ? defaultIcons[int.parse(folder.icon!)] : null,
+    return SizedBox.expand(
+      child: FolderCard(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        title: folder.title,
+        description: folder.description ?? 'No description',
+        privacy: folder.status == Status.private
+            ? 'Private'
+            : (folder.status == Status.share ? 'Shared' : 'Public'),
+        chapters: folder.chapterCount ?? 0,
+        lastAccessed:
+            '${DateTime.now().difference(folder.createdAt).inDays} days ago',
+        color: color,
+        sharedWith: folder.sharedWith,
+        icon: folder.icon != null
+            ? defaultIcons[int.parse(folder.icon!)]
+            : null,
+      ),
     );
   }
 }

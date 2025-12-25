@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/error_handling_utils.dart';
 
 abstract class remoteDataSourceProfile {
   Future<Either<ServerFailure, Response>> fetchUserProfile();
@@ -18,14 +19,22 @@ class RemoteDataSourceProfileImpl implements remoteDataSourceProfile {
   Future<Either<ServerFailure, Response>> fetchUserProfile() async {
     try {
       final response = await dio.get('/profile');
-
-      if (response.statusCode == 200) {
-        return Right(response);
-      } else {
-        return Left(ServerFailure('Failed to load user profile'));
-      }
+      final result = ErrorHandlingUtils.handleApiResponse<Response>(
+        response: response,
+        onSuccess: (_) => response,
+      );
+      
+      // Convert Failure to ServerFailure for return type compatibility
+      return result.fold(
+        (failure) => Left(ServerFailure(failure.errMessage, failure.statusCode)),
+        (response) => Right(response),
+      );
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      final result = ErrorHandlingUtils.handleDioError<Response>(e);
+      return result.fold(
+        (failure) => Left(ServerFailure(failure.errMessage, failure.statusCode)),
+        (_) => Left(ServerFailure('Unexpected error')),
+      );
     }
   }
 
@@ -34,6 +43,7 @@ class RemoteDataSourceProfileImpl implements remoteDataSourceProfile {
     try {
       // Check if we have a file to upload
       final File? imageFile = profileData['profilePicture'] as File?;
+      Response response;
 
       if (imageFile != null) {
         // Use FormData for multipart file upload
@@ -46,31 +56,37 @@ class RemoteDataSourceProfileImpl implements remoteDataSourceProfile {
           ),
         });
 
-        final response = await dio.put('/profile', data: formData);
-
-        if (response.statusCode != 200) {
-          throw ServerFailure('Failed to update profile');
-        }
-
-        return response;
+        response = await dio.put('/profile', data: formData);
       } else {
         // No file, use regular JSON
-        final response = await dio.put(
+        response = await dio.put(
           '/profile',
           data: {
             'username': profileData['username'] ?? '',
             'universityCollege': profileData['universityCollege'] ?? '',
           },
         );
-
-        if (response.statusCode != 200) {
-          throw ServerFailure('Failed to update profile');
-        }
-
-        return response;
       }
+
+      // Use ErrorHandlingUtils to check response
+      final result = ErrorHandlingUtils.handleApiResponse<Response>(
+        response: response,
+        onSuccess: (_) => response,
+      );
+
+      return result.fold(
+        (failure) => throw ServerFailure(failure.errMessage, failure.statusCode),
+        (response) => response,
+      );
     } catch (e) {
-      throw ServerFailure(e.toString());
+      if (e is ServerFailure) {
+        rethrow;
+      }
+      final result = ErrorHandlingUtils.handleDioError<Response>(e);
+      throw result.fold(
+        (failure) => ServerFailure(failure.errMessage, failure.statusCode),
+        (_) => ServerFailure('Unexpected error'),
+      );
     }
   }
 }

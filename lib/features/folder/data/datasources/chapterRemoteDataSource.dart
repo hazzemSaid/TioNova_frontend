@@ -104,28 +104,26 @@ class ChapterRemoteDataSource extends IChapterRepository {
       print('Response status: ${response.statusCode}');
       print('Response data type: ${response.data.runtimeType}');
 
-      if (response.statusCode == 200) {
-        final responseData = response.data;
-
-        // Ensure responseData is a Map before accessing it
-        if (responseData is! Map<String, dynamic>) {
-          print('Unexpected response data type: ${responseData.runtimeType}');
-          return Left(
-            ServerFailure(
+      return ErrorHandlingUtils.handleApiResponse<Uint8List>(
+        response: response,
+        onSuccess: (responseData) {
+          // Ensure responseData is a Map before accessing it
+          if (responseData is! Map<String, dynamic>) {
+            print('Unexpected response data type: ${responseData.runtimeType}');
+            throw Exception(
               'Invalid response format: expected Map, got ${responseData.runtimeType}',
-            ),
-          );
-        }
+            );
+          }
 
-        // Safely access nested properties
-        final success = responseData['success'];
-        final content = responseData['content'];
-        final contentType = responseData['contentType'] ?? '';
+          // Safely access nested properties
+          final success = responseData['success'];
+          final content = responseData['content'];
+          final contentType = responseData['contentType'] ?? '';
 
-        print('Content type from API: $contentType');
-        print('Content type in response: ${content.runtimeType}');
+          print('Content type from API: $contentType');
+          print('Content type in response: ${content.runtimeType}');
 
-        if (success == true && content != null) {
+          if (success == true && content != null) {
           try {
             Uint8List uint8List;
 
@@ -183,31 +181,19 @@ class ChapterRemoteDataSource extends IChapterRepository {
             print(
               'Successfully converted PDF data, size: ${uint8List.length} bytes',
             );
-            return Right(uint8List);
+            return uint8List;
           } catch (e) {
             print('Error converting content data to Uint8List: $e');
-            return Left(
-              ServerFailure('Failed to convert PDF data: ${e.toString()}'),
-            );
+            throw Exception('Failed to convert PDF data: ${e.toString()}');
           }
         } else {
-          final errorMessage = responseData['message'] ?? 'Unknown error';
-          return Left(
-            ServerFailure('Failed to fetch chapter content: $errorMessage'),
-          );
+          throw Exception('Invalid response: success is false or content is null');
         }
-      } else {
-        return Left(
-          ServerFailure(
-            'Failed to fetch chapter content: ${response.statusMessage}',
-          ),
-        );
-      }
+        },
+      );
     } catch (e) {
       print('Error fetching chapter content: $e');
-      return Left(
-        ServerFailure('Error fetching chapter content: ${e.toString()}'),
-      );
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -258,32 +244,26 @@ class ChapterRemoteDataSource extends IChapterRepository {
       print('Response received - Status: ${response.statusCode}');
       print('Response data keys: ${response.data?.keys}');
 
-      if (response.statusCode == 200) {
-        try {
-          // Sanitize the response data before parsing
-          final sanitizedData = _sanitizeJsonData(response.data);
+      return ErrorHandlingUtils.handleApiResponse<SummaryResponse>(
+        response: response,
+        onSuccess: (data) {
+          try {
+            // Sanitize the response data before parsing
+            final sanitizedData = _sanitizeJsonData(data);
 
-          // Parse the complete response using SummaryResponse.fromJson
-          final summaryResponse = SummaryResponse.fromJson(sanitizedData);
-          print('Summary parsed successfully');
-          return Right(summaryResponse);
-        } catch (parseError) {
-          print('Error parsing summary response: $parseError');
-          return Left(
-            ServerFailure('Failed to parse summary response: $parseError'),
-          );
-        }
-      } else {
-        print('Non-200 status code: ${response.statusCode}');
-        return Left(
-          ServerFailure(
-            'Failed to generate summary - Status: ${response.statusCode}',
-          ),
-        );
-      }
+            // Parse the complete response using SummaryResponse.fromJson
+            final summaryResponse = SummaryResponse.fromJson(sanitizedData);
+            print('Summary parsed successfully');
+            return summaryResponse;
+          } catch (parseError) {
+            print('Error parsing summary response: $parseError');
+            throw Exception('Failed to parse summary response: $parseError');
+          }
+        },
+      );
     } catch (e) {
       print('Exception in GenerateSummary: $e');
-      return Left(ServerFailure(e.toString()));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -549,17 +529,14 @@ class ChapterRemoteDataSource extends IChapterRepository {
     try {
       final response = await _dio.get('/getChapterSummary/$chapterId');
 
-      if (response.statusCode == 200) {
-        // Sanitize the JSON data before parsing
-        final sanitizedData = _sanitizeJsonData(response.data);
-        return Right(SummaryResponse.fromJson(sanitizedData));
-      } else {
-        return Left(
-          ServerFailure(
-            response.data['message'] ?? 'Failed to fetch chapter summary',
-          ),
-        );
-      }
+      return ErrorHandlingUtils.handleApiResponse<SummaryResponse>(
+        response: response,
+        onSuccess: (data) {
+          // Sanitize the JSON data before parsing
+          final sanitizedData = _sanitizeJsonData(data);
+          return SummaryResponse.fromJson(sanitizedData);
+        },
+      );
     } catch (e) {
       return ErrorHandlingUtils.handleDioError(e);
     }
@@ -572,13 +549,12 @@ class ChapterRemoteDataSource extends IChapterRepository {
     try {
       final response = await _dio.get('/getMindmap/$chapterId');
 
-      if (response.statusCode == 200) {
-        return Right(Mindmapmodel.fromJson(response.data['data']));
-      } else {
-        return Left(
-          ServerFailure(response.data['message'] ?? 'Failed to fetch mindmap'),
-        );
-      }
+      return ErrorHandlingUtils.handleApiResponse<Mindmapmodel>(
+        response: response,
+        onSuccess: (data) {
+          return Mindmapmodel.fromJson(data['data']);
+        },
+      );
     } catch (e) {
       return ErrorHandlingUtils.handleDioError(e);
     }

@@ -18,21 +18,35 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
   
-  <!-- Google Sign-In -->
-  <meta name="google-signin-client_id" content="827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <!-- Viewport - MUST be early for iOS Safari -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- iOS Safari specific meta tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="tionova">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
+  <meta name="format-detection" content="telephone=no">
+  
+  <!-- iOS touch icons - multiple sizes for better compatibility -->
+  <link rel="apple-touch-icon" sizes="57x57" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/Icon-192.png">
+  
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="app.icon.png">
 
   <title>tionova</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Google Sign-In - Load after viewport for iOS compatibility -->
+  <meta name="google-signin-client_id" content="827260912271-mo4v9vdg3ovr2cra9nn4baagvqfrru6k.apps.googleusercontent.com">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style id="splash-screen-style">
     html {
       height: 100%
@@ -98,7 +112,6 @@
       document.body.style.background = "transparent";
     }
   </script>
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 </head>
 <body>
   <picture id="splash">

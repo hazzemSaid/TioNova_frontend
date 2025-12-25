@@ -6,6 +6,58 @@ import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/home/data/models/analysisModel.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
+class HoverTransform extends StatefulWidget {
+  final Widget child;
+  const HoverTransform({Key? key, required this.child}) : super(key: key);
+
+  @override
+  _HoverTransformState createState() => _HoverTransformState();
+}
+
+class _HoverTransformState extends State<HoverTransform>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 180),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.015,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => _controller.forward(),
+      onExit: (_) => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            filterQuality: FilterQuality.high,
+            child: child,
+          );
+        },
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 class HomeWebLayout extends StatelessWidget {
   final ThemeData theme;
   final Analysismodel analysisData;
@@ -283,118 +335,127 @@ class HomeWebLayout extends StatelessWidget {
     final total = data['total'] as int? ?? 1;
     final percentage = (completed / total * 100).toStringAsFixed(0);
 
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primary.withOpacity(0.1),
-            colorScheme.primaryContainer.withOpacity(0.05),
+    return HoverTransform(
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.primary.withOpacity(0.1),
+              colorScheme.primaryContainer.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          // Progress Circle
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [colorScheme.primary, colorScheme.primaryContainer],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+        child: Row(
+          children: [
+            // Progress Circle
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [colorScheme.primary, colorScheme.primaryContainer],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 100,
+                    height: 100,
+                    child: CircularProgressIndicator(
+                      value: completed / total,
+                      strokeWidth: 8,
+                      backgroundColor: colorScheme.surface,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '$percentage%',
+                        style: textTheme.headlineSmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
+                      ),
+                      Text(
+                        'Complete',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.primary.withOpacity(0.7),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: CircularProgressIndicator(
-                    value: completed / total,
-                    strokeWidth: 8,
-                    backgroundColor: colorScheme.surface,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      colorScheme.onPrimary,
+            const SizedBox(width: 16),
+            // Progress Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Today\'s Progress',
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '$percentage%',
-                      style: textTheme.headlineSmall?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildProgressItem(
+                        '${data['chapters'] ?? 0}',
+                        'Chapters',
+                        Icons.book_outlined,
+                        colorScheme,
+                        textTheme,
                       ),
-                    ),
-                    Text(
-                      'Complete',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.primary.withOpacity(0.7),
-                        fontSize: 12,
+                      const SizedBox(width: 32),
+                      _buildProgressItem(
+                        '${data['quizzes'] ?? 0}',
+                        'Quizzes',
+                        Icons.quiz_outlined,
+                        colorScheme,
+                        textTheme,
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Progress Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Today\'s Progress',
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                      const SizedBox(width: 32),
+                      _buildProgressItem(
+                        '${data['studyTime'] ?? 0}m',
+                        'Study Time',
+                        Icons.schedule_outlined,
+                        colorScheme,
+                        textTheme,
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildProgressItem(
-                      '${data['chapters'] ?? 0}',
-                      'Chapters',
-                      Icons.book_outlined,
-                      colorScheme,
-                      textTheme,
-                    ),
-                    const SizedBox(width: 32),
-                    _buildProgressItem(
-                      '${data['quizzes'] ?? 0}',
-                      'Quizzes',
-                      Icons.quiz_outlined,
-                      colorScheme,
-                      textTheme,
-                    ),
-                    const SizedBox(width: 32),
-                    _buildProgressItem(
-                      '${data['studyTime'] ?? 0}m',
-                      'Study Time',
-                      Icons.schedule_outlined,
-                      colorScheme,
-                      textTheme,
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -483,36 +544,54 @@ class HomeWebLayout extends StatelessWidget {
     ColorScheme colorScheme,
     TextTheme textTheme,
   ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 28, color: colorScheme.primary),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+    return HoverTransform(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.surface,
+              colorScheme.primaryContainer.withOpacity(0.08),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 12,
-            ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
           ),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 28, color: colorScheme.primary),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -553,55 +632,73 @@ class HomeWebLayout extends StatelessWidget {
     TextTheme textTheme,
     BuildContext context,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            chapter.title ?? 'Untitled Chapter',
-            style: textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+    return HoverTransform(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.surface,
+              colorScheme.primaryContainer.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(height: 10),
-          Text(
-            chapter.description ?? 'No description',
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 12,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
           ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                context.push(
-                  '/chapter/${chapter.id}',
-                  extra: {'chapter': chapter},
-                );
-              },
-              icon: const Icon(Icons.arrow_forward, size: 16),
-              label: const Text('Read', style: TextStyle(fontSize: 13)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 10),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              chapter.title ?? 'Untitled Chapter',
+              style: textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              chapter.description ?? 'No description',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  context.push(
+                    '/chapter/${chapter.id}',
+                    extra: {'chapter': chapter},
+                  );
+                },
+                icon: const Icon(Icons.arrow_forward, size: 16),
+                label: const Text('Read', style: TextStyle(fontSize: 13)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -628,66 +725,88 @@ class HomeWebLayout extends StatelessWidget {
     TextTheme textTheme,
     BuildContext context,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.folder_outlined, color: colorScheme.primary, size: 18),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  folder['name'] as String? ?? 'Unnamed',
-                  style: textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+    return HoverTransform(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.surface,
+              colorScheme.primaryContainer.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.folder_outlined,
+                  color: colorScheme.primary,
+                  size: 18,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    folder['name'] as String? ?? 'Unnamed',
+                    style: textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${folder['chapters'] ?? 0} chapters',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 10,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  context.push(
+                    '/folder/${folder['id']}',
+                    extra: {
+                      'title': folder['name'] as String? ?? 'Folder',
+                      'subtitle': folder['subtitle'] as String? ?? '',
+                      'chapters': folder['chapters'] as int? ?? 0,
+                      'passed': folder['passed'] as int? ?? 0,
+                      'attempted': folder['attempted'] as int? ?? 0,
+                      'ownerId': folder['ownerId'] as String? ?? '',
+                    },
+                  );
+                },
+                icon: const Icon(Icons.arrow_forward, size: 14),
+                label: const Text('View', style: TextStyle(fontSize: 11)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '${folder['chapters'] ?? 0} chapters',
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 10,
             ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                context.push(
-                  '/folder/${folder['id']}',
-                  extra: {
-                    'title': folder['name'] as String? ?? 'Folder',
-                    'subtitle': folder['subtitle'] as String? ?? '',
-                    'chapters': folder['chapters'] as int? ?? 0,
-                    'passed': folder['passed'] as int? ?? 0,
-                    'attempted': folder['attempted'] as int? ?? 0,
-                    'ownerId': folder['ownerId'] as String? ?? '',
-                  },
-                );
-              },
-              icon: const Icon(Icons.arrow_forward, size: 14),
-              label: const Text('View', style: TextStyle(fontSize: 11)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -698,61 +817,79 @@ class HomeWebLayout extends StatelessWidget {
     TextTheme textTheme,
     BuildContext context,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            summary['title'] as String? ?? 'Summary',
-            style: textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+    return HoverTransform(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.surface,
+              colorScheme.tertiaryContainer.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(height: 6),
-          Text(
-            summary['content'] as String? ?? 'No content',
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 9,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
           ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                final summaryModel = summary['summaryModel'] as SummaryModel?;
-                final chapterTitle = summary['title'] as String? ?? 'Summary';
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              summary['title'] as String? ?? 'Summary',
+              style: textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              summary['content'] as String? ?? 'No content',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 9,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  final summaryModel = summary['summaryModel'] as SummaryModel?;
+                  final chapterTitle = summary['title'] as String? ?? 'Summary';
 
-                if (summaryModel != null) {
-                  context.push(
-                    '/summary-viewer',
-                    extra: {
-                      'summaryData': summaryModel,
-                      'chapterTitle': chapterTitle,
-                    },
-                  );
-                }
-              },
-              icon: const Icon(Icons.visibility, size: 14),
-              label: const Text('View', style: TextStyle(fontSize: 10)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                  if (summaryModel != null) {
+                    context.push(
+                      '/summary-viewer',
+                      extra: {
+                        'summaryData': summaryModel,
+                        'chapterTitle': chapterTitle,
+                      },
+                    );
+                  }
+                },
+                icon: const Icon(Icons.visibility, size: 14),
+                label: const Text('View', style: TextStyle(fontSize: 10)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -790,11 +927,25 @@ class HomeWebLayout extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.surface,
+              colorScheme.primaryContainer.withOpacity(0.03),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: colorScheme.outlineVariant.withOpacity(0.5),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [

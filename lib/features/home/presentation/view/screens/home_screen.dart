@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
@@ -130,13 +129,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
           if (state is AnalysisLoading) {
             return Scaffold(
               backgroundColor: theme.scaffoldBackgroundColor,
-              body: Center(
-                child: Lottie.asset(
-                  'assets/animations/Loader cat.json',
-                  width: 200,
-                  height: 200,
-                ),
-              ),
+              body: Center(child: CircularProgressIndicator()),
             );
           }
 
@@ -395,11 +388,6 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                                 bottom: screenHeight * 0.015,
                               ),
                               child: EnhancedChapterCard(
-                                title: chapterModel.title ?? 'Untitled',
-                                subject: chapterModel.category ?? 'General',
-                                progress: 0.0,
-                                pages:
-                                    '${chapterModel.description?.length ?? 0} content',
                                 timeAgo: formatTimeAgo(chapterModel.createdAt),
                                 onTap: () {
                                   // Navigate to chapter detail
@@ -411,6 +399,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                                     },
                                   );
                                 },
+                                title: '${chapterModel.title}',
                               ),
                             );
                           }, childCount: chapters.length),

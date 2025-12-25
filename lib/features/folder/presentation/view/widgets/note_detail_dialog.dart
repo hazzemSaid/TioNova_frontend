@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:audio_waveforms/audio_waveforms.dart';
+import 'package:audio_waveforms/audio_waveforms.dart' as waveforms if (dart.library.html) 'package:tionova/features/folder/presentation/view/widgets/audio_waveforms_stub.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -26,12 +28,14 @@ class NoteDetailDialog extends StatefulWidget {
 }
 
 class _NoteDetailDialogState extends State<NoteDetailDialog> {
-  PlayerController? _playerController;
+  waveforms.PlayerController? _playerController;
+  AudioPlayer? _webAudioPlayer; // For web platform
   bool _isPlaying = false;
   bool _isInitialized = false;
   bool _isDownloading = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  bool _hasWaveform = false; // Track if waveform is available
 
   @override
   void initState() {
@@ -45,7 +49,12 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
     try {
       print('⬇️ Downloading audio file from: $url');
 
-      // Get temporary directory
+      if (kIsWeb) {
+        // On web, we can use the URL directly
+        return url;
+      }
+
+      // Get temporary directory for mobile/desktop
       final tempDir = await getTemporaryDirectory();
       final fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
       final filePath = '${tempDir.path}/$fileName';
@@ -78,12 +87,9 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
 
     print('🎵 Initializing audio player...');
     print('📍 Audio source: $audioData');
+    print('🌐 Platform: ${kIsWeb ? "Web" : "Mobile/Desktop"}');
 
     try {
-      _playerController = PlayerController();
-
-      print('🔄 Preparing player...');
-
       // Check if it's a URL (Cloudinary) or local path
       final isUrl =
           audioData.startsWith('http://') || audioData.startsWith('https://');
@@ -91,8 +97,7 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
       String? audioPath;
 
       if (isUrl) {
-        // Download the file first for audio_waveforms
-        print('🌐 Downloading audio from URL...');
+        print('🌐 Processing audio from URL...');
 
         if (mounted) {
           setState(() {
@@ -111,63 +116,128 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
         if (audioPath == null) {
           throw Exception('Failed to download audio file');
         }
-
-        print('📁 Using downloaded file with waveform extraction...');
       } else {
-        audioPath = audioData;
-        print('📁 Using local file...');
-      }
-
-      // Prepare player with local file path
-      await _playerController!.preparePlayer(
-        path: audioPath,
-        shouldExtractWaveform: true,
-        noOfSamples: 200,
-        volume: 1.0,
-      );
-
-      // Give it time to load and extract waveform
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      // Update duration
-      if (mounted) {
-        setState(() {
-          _duration = Duration(milliseconds: _playerController!.maxDuration);
-          _isInitialized = true;
-        });
-        print('✅ Audio player initialized successfully');
-        print('📊 Duration: ${_duration.inSeconds}s');
-        print(
-          '🎵 Waveform data points: ${_playerController!.waveformData.length}',
-        );
-      }
-
-      // Listen to player state
-      _playerController!.onPlayerStateChanged.listen((state) {
-        print('🎵 Player state changed: $state');
-        if (mounted) {
-          setState(() {
-            _isPlaying = state == PlayerState.playing;
-          });
+        // For base64 data, we need to handle it differently
+        if (kIsWeb) {
+          // On web, convert base64 to data URL
+          try {
+            final cleanBase64 = audioData.contains(',')
+                ? audioData.split(',').last
+                : audioData;
+            audioPath = 'data:audio/m4a;base64,$cleanBase64';
+          } catch (e) {
+            print('❌ Error processing base64 audio: $e');
+            throw Exception('Failed to process audio data');
+          }
+        } else {
+          audioPath = audioData;
         }
-      });
+      }
 
-      // Listen to current position
-      _playerController!.onCurrentDurationChanged.listen((duration) {
-        if (mounted) {
-          setState(() {
-            _position = Duration(milliseconds: duration);
-          });
-
-          // Check if playback finished
-          if (duration >= _playerController!.maxDuration && _isPlaying) {
+      if (kIsWeb) {
+        // Use audioplayers for web
+        _webAudioPlayer = AudioPlayer();
+        
+        // Set up event listeners
+        _webAudioPlayer!.onPlayerStateChanged.listen((state) {
+          if (mounted) {
             setState(() {
-              _isPlaying = false;
-              _position = Duration.zero;
+              _isPlaying = state == PlayerState.playing;
             });
           }
+        });
+
+        _webAudioPlayer!.onDurationChanged.listen((duration) {
+          if (mounted) {
+            setState(() {
+              _duration = duration;
+              _isInitialized = true;
+            });
+          }
+        });
+
+        _webAudioPlayer!.onPositionChanged.listen((position) {
+          if (mounted) {
+            setState(() {
+              _position = position;
+            });
+          }
+        });
+
+        // Load and play the audio source
+        await _webAudioPlayer!.setSource(UrlSource(audioPath));
+        
+        // Get duration
+        final duration = await _webAudioPlayer!.getDuration();
+        if (duration != null && mounted) {
+          setState(() {
+            _duration = duration;
+            _isInitialized = true;
+            _hasWaveform = false; // No waveform on web
+          });
         }
-      });
+
+        print('✅ Web audio player initialized successfully');
+        print('📊 Duration: ${_duration.inSeconds}s');
+      } else {
+        // Use audio_waveforms for mobile/desktop
+        _playerController = waveforms.PlayerController();
+
+        print('🔄 Preparing player...');
+
+        // Prepare player with local file path
+        // audioPath is guaranteed to be non-null at this point
+        await _playerController!.preparePlayer(
+          path: audioPath,
+          shouldExtractWaveform: true,
+          noOfSamples: 200,
+          volume: 1.0,
+        );
+
+        // Give it time to load and extract waveform
+        await Future.delayed(const Duration(milliseconds: 800));
+
+        // Update duration
+        if (mounted) {
+          setState(() {
+            _duration = Duration(milliseconds: _playerController!.maxDuration);
+            _isInitialized = true;
+            _hasWaveform = _playerController!.waveformData.isNotEmpty;
+          });
+          print('✅ Audio player initialized successfully');
+          print('📊 Duration: ${_duration.inSeconds}s');
+          print(
+            '🎵 Waveform data points: ${_playerController!.waveformData.length}',
+          );
+        }
+
+        // Listen to player state
+        _playerController!.onPlayerStateChanged.listen((state) {
+          print('🎵 Player state changed: $state');
+          if (mounted) {
+            setState(() {
+              _isPlaying = state == waveforms.PlayerState.playing;
+            });
+          }
+        });
+
+        // Listen to current position
+        _playerController!.onCurrentDurationChanged.listen((duration) {
+          if (mounted) {
+            setState(() {
+              _position = Duration(milliseconds: duration);
+            });
+
+            // Check if playback finished
+            if (duration >= _playerController!.maxDuration && _isPlaying) {
+              setState(() {
+                _isPlaying = false;
+                _position = Duration.zero;
+              });
+            }
+          }
+        });
+      }
     } catch (e, stackTrace) {
       print('❌ Error initializing audio player: $e');
       print('📚 Stack trace: $stackTrace');
@@ -183,7 +253,7 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
   }
 
   void _seekToPosition(double dx, double waveformWidth) {
-    if (_playerController == null || !_isInitialized) {
+    if (!_isInitialized) {
       print('⚠️ Cannot seek: player not ready');
       return;
     }
@@ -208,7 +278,11 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
       );
 
       // Seek to the position
-      _playerController!.seekTo(targetPositionMs);
+      if (kIsWeb) {
+        _webAudioPlayer?.seek(Duration(milliseconds: targetPositionMs));
+      } else {
+        _playerController?.seekTo(targetPositionMs);
+      }
 
       // Update the position state immediately for visual feedback
       if (mounted) {
@@ -225,35 +299,62 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
   }
 
   Future<void> _togglePlayPause() async {
-    if (_playerController == null) {
-      print('⚠️ Player controller is null');
-      return;
-    }
-
     if (!_isInitialized) {
       print('⚠️ Player not initialized yet');
       return;
     }
 
     try {
-      if (_isPlaying) {
-        print('⏸️ Pausing player...');
-        await _playerController!.pausePlayer();
-        if (mounted) {
-          setState(() {
-            _isPlaying = false;
-          });
+      if (kIsWeb) {
+        if (_webAudioPlayer == null) {
+          print('⚠️ Web audio player is null');
+          return;
         }
-        print('✅ Paused successfully');
+
+        if (_isPlaying) {
+          print('⏸️ Pausing player...');
+          await _webAudioPlayer!.pause();
+          if (mounted) {
+            setState(() {
+              _isPlaying = false;
+            });
+          }
+          print('✅ Paused successfully');
+        } else {
+          print('▶️ Starting player...');
+          await _webAudioPlayer!.resume();
+          if (mounted) {
+            setState(() {
+              _isPlaying = true;
+            });
+          }
+          print('✅ Playing successfully');
+        }
       } else {
-        print('▶️ Starting player...');
-        await _playerController!.startPlayer();
-        if (mounted) {
-          setState(() {
-            _isPlaying = true;
-          });
+        if (_playerController == null) {
+          print('⚠️ Player controller is null');
+          return;
         }
-        print('✅ Playing successfully');
+
+        if (_isPlaying) {
+          print('⏸️ Pausing player...');
+          await _playerController!.pausePlayer();
+          if (mounted) {
+            setState(() {
+              _isPlaying = false;
+            });
+          }
+          print('✅ Paused successfully');
+        } else {
+          print('▶️ Starting player...');
+          await _playerController!.startPlayer();
+          if (mounted) {
+            setState(() {
+              _isPlaying = true;
+            });
+          }
+          print('✅ Playing successfully');
+        }
       }
     } catch (e) {
       print('❌ Error toggling play/pause: $e');
@@ -270,7 +371,11 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
 
   @override
   void dispose() {
-    _playerController?.dispose();
+    if (kIsWeb) {
+      _webAudioPlayer?.dispose();
+    } else {
+      _playerController?.dispose();
+    }
     super.dispose();
   }
 
@@ -495,8 +600,8 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
 
                 // Waveform or Progress Bar
                 Expanded(
-                  child: _playerController != null && _duration.inSeconds > 0
-                      ? (_playerController!.waveformData.isNotEmpty
+                  child: _isInitialized && _duration.inSeconds > 0
+                      ? (_hasWaveform && !kIsWeb && _playerController != null
                             ? LayoutBuilder(
                                 builder: (context, constraints) {
                                   return GestureDetector(
@@ -509,11 +614,11 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
                                           details.localPosition.dx,
                                           constraints.maxWidth,
                                         ),
-                                    child: AudioFileWaveforms(
+                                    child: waveforms.AudioFileWaveforms(
                                       size: Size(constraints.maxWidth, 50),
                                       playerController: _playerController!,
-                                      waveformType: WaveformType.fitWidth,
-                                      playerWaveStyle: PlayerWaveStyle(
+                                      waveformType: waveforms.WaveformType.fitWidth,
+                                      playerWaveStyle: waveforms.PlayerWaveStyle(
                                         fixedWaveColor: const Color(0xFF4A4A4A),
                                         liveWaveColor: Colors.orange,
                                         spacing: 6,
@@ -528,32 +633,61 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
                             : Container(
                                 height: 50,
                                 alignment: Alignment.center,
-                                child: SliderTheme(
-                                  data: SliderThemeData(
-                                    trackHeight: 3,
-                                    thumbShape: const RoundSliderThumbShape(
-                                      enabledThumbRadius: 6,
-                                    ),
-                                    overlayShape: const RoundSliderOverlayShape(
-                                      overlayRadius: 12,
-                                    ),
-                                    trackShape:
-                                        const RoundedRectSliderTrackShape(),
-                                  ),
-                                  child: Slider(
-                                    value: _position.inSeconds.toDouble().clamp(
-                                      0.0,
-                                      _duration.inSeconds.toDouble(),
-                                    ),
-                                    max: _duration.inSeconds.toDouble(),
-                                    activeColor: Colors.orange,
-                                    inactiveColor: const Color(0xFF4A4A4A),
-                                    onChanged: (value) async {
-                                      final positionMs = (value * 1000).toInt();
-                                      await _playerController!.seekTo(
-                                        positionMs,
+                                child: GestureDetector(
+                                  onTapDown: (details) {
+                                    if (!kIsWeb) {
+                                      _seekToPosition(
+                                        details.localPosition.dx,
+                                        50,
                                       );
-                                    },
+                                    }
+                                  },
+                                  onHorizontalDragUpdate: (details) {
+                                    if (!kIsWeb) {
+                                      _seekToPosition(
+                                        details.localPosition.dx,
+                                        50,
+                                      );
+                                    }
+                                  },
+                                  child: SliderTheme(
+                                    data: SliderThemeData(
+                                      trackHeight: 3,
+                                      thumbShape: const RoundSliderThumbShape(
+                                        enabledThumbRadius: 6,
+                                      ),
+                                      overlayShape: const RoundSliderOverlayShape(
+                                        overlayRadius: 12,
+                                      ),
+                                      trackShape:
+                                          const RoundedRectSliderTrackShape(),
+                                    ),
+                                    child: Slider(
+                                      value: _position.inSeconds.toDouble().clamp(
+                                        0.0,
+                                        _duration.inSeconds.toDouble(),
+                                      ),
+                                      max: _duration.inSeconds.toDouble(),
+                                      activeColor: Colors.orange,
+                                      inactiveColor: const Color(0xFF4A4A4A),
+                                      onChanged: (value) async {
+                                        final positionMs = (value * 1000).toInt();
+                                        if (kIsWeb) {
+                                          await _webAudioPlayer?.seek(
+                                            Duration(milliseconds: positionMs),
+                                          );
+                                        } else {
+                                          await _playerController?.seekTo(
+                                            positionMs,
+                                          );
+                                        }
+                                        if (mounted) {
+                                          setState(() {
+                                            _position = Duration(milliseconds: positionMs);
+                                          });
+                                        }
+                                      },
+                                    ),
                                   ),
                                 ),
                               ))
@@ -576,7 +710,7 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
           const SizedBox(height: 16),
 
           // Time progress
-          if (_playerController != null && _duration.inSeconds > 0)
+          if (_isInitialized && _duration.inSeconds > 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -622,8 +756,9 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
           ),
 
           // Error message if audio player failed
-          if (_playerController == null &&
-              widget.note.rawData['data'] != null) ...[
+          if (!_isInitialized &&
+              widget.note.rawData['data'] != null &&
+              !_isDownloading) ...[
             const SizedBox(height: 16),
             Text(
               'Unable to load audio. Please check your connection.',

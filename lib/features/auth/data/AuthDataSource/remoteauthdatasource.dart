@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
 import 'package:tionova/features/auth/data/models/UserModel.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
@@ -29,81 +30,32 @@ class Remoteauthdatasource implements IAuthDataSource {
         '/auth/login',
         data: {'email': email, 'password': password},
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = response.data is String
-            ? jsonDecode(response.data)
-            : response.data as Map<String, dynamic>;
-        final token = responseData['token']?.toString();
-        final refreshToken = responseData['refreshToken']?.toString();
-        if (token == null || refreshToken == null) {
-          return Left(
-            ServerFailure('Invalid response from server: missing tokens'),
-          );
-        }
-        TokenStorage.saveTokens(token, refreshToken);
-        if (responseData['user'] is Map<String, dynamic>) {
-          return Right(UserModel.fromJson(responseData['user']));
-        } else {
-          return Left(ServerFailure('Invalid user data format'));
-        }
-      } else {
-        final errorData = response.data is String
-            ? jsonDecode(response.data)
-            : response.data as Map<String, dynamic>;
-        return Left(
-          ServerFailure(
-            (errorData['message'] ?? 'Unknown error occurred').toString(),
-          ),
-        );
-      }
-    } on DioError catch (e) {
-      // Parse error response from API
-      if (e.response != null) {
-        try {
-          final errorData = e.response!.data is String
-              ? jsonDecode(e.response!.data)
-              : e.response!.data as Map<String, dynamic>;
-
-          final errorMessage =
-              errorData['error'] ?? errorData['message'] ?? 'Login failed';
-
-          // Handle specific status codes
-          if (e.response!.statusCode == 401) {
-            return Left(
-              ServerFailure(
-                'Invalid email or password. Please check your credentials and try again.',
-              ),
-            );
+      
+      return ErrorHandlingUtils.handleApiResponse<UserModel>(
+        response: response,
+        onSuccess: (data) {
+          final responseData = data is String
+              ? jsonDecode(data)
+              : data as Map<String, dynamic>;
+          final token = responseData['token']?.toString();
+          final refreshToken = responseData['refreshToken']?.toString();
+          if (token == null || refreshToken == null) {
+            throw Exception('Invalid response from server: missing tokens');
           }
-
-          return Left(ServerFailure(errorMessage.toString()));
-        } catch (_) {
-          return Left(ServerFailure('Login failed. Please try again.'));
-        }
-      }
-
-      // Handle network errors
-      if (e.type == DioErrorType.connectionTimeout ||
-          e.type == DioErrorType.receiveTimeout ||
-          e.type == DioErrorType.sendTimeout) {
-        return Left(
-          ServerFailure(
-            'Connection timeout. Please check your internet connection.',
-          ),
-        );
-      }
-
-      if (e.type == DioErrorType.unknown) {
-        return Left(
-          ServerFailure(
-            'Network error. Please check your internet connection.',
-          ),
-        );
-      }
-
-      return Left(
-        ServerFailure('An unexpected error occurred. Please try again.'),
+          TokenStorage.saveTokens(token, refreshToken);
+          if (responseData['user'] is Map<String, dynamic>) {
+            return UserModel.fromJson(responseData['user']);
+          } else {
+            throw Exception('Invalid user data format');
+          }
+        },
       );
+    } catch (e) {
+      // Handle DioError (old Dio version) or DioException (new Dio version)
+      if (e is DioException || e is DioError) {
+        return ErrorHandlingUtils.handleDioError(e);
+      }
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -114,13 +66,16 @@ class Remoteauthdatasource implements IAuthDataSource {
     required String password,
   }) async {
     try {
-      await dio.post(
+      final response = await dio.post(
         '/auth/register',
         data: {'email': email, 'username': username, 'password': password},
       );
-      return const Right(null);
-    } on DioError catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -145,35 +100,28 @@ class Remoteauthdatasource implements IAuthDataSource {
         '/auth/verify-email',
         data: {'email': email, 'code': code},
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = response.data is String
-            ? jsonDecode(response.data)
-            : response.data as Map<String, dynamic>;
-        final token = responseData['token']?.toString();
-        final refreshToken = responseData['refreshToken']?.toString();
-        if (token == null || refreshToken == null) {
-          return Left(
-            ServerFailure('Invalid response from server: missing tokens'),
-          );
-        }
-        TokenStorage.saveTokens(token, refreshToken);
-        if (responseData['user'] is Map<String, dynamic>) {
-          return Right(UserModel.fromJson(responseData['user']));
-        } else {
-          return Left(ServerFailure('Invalid user data format'));
-        }
-      } else {
-        final errorData = response.data is String
-            ? jsonDecode(response.data)
-            : response.data as Map<String, dynamic>;
-        return Left(
-          ServerFailure(
-            (errorData['message'] ?? 'Unknown error occurred').toString(),
-          ),
-        );
-      }
-    } on DioError catch (e) {
-      return Left(ServerFailure(e.toString()));
+      
+      return ErrorHandlingUtils.handleApiResponse<UserModel>(
+        response: response,
+        onSuccess: (data) {
+          final responseData = data is String
+              ? jsonDecode(data)
+              : data as Map<String, dynamic>;
+          final token = responseData['token']?.toString();
+          final refreshToken = responseData['refreshToken']?.toString();
+          if (token == null || refreshToken == null) {
+            throw Exception('Invalid response from server: missing tokens');
+          }
+          TokenStorage.saveTokens(token, refreshToken);
+          if (responseData['user'] is Map<String, dynamic>) {
+            return UserModel.fromJson(responseData['user']);
+          } else {
+            throw Exception('Invalid user data format');
+          }
+        },
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -188,48 +136,45 @@ class Remoteauthdatasource implements IAuthDataSource {
         '/auth/reset-password',
         data: {'email': email, 'password': newPassword, 'code': code},
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = response.data is String
-            ? jsonDecode(response.data)
-            : response.data as Map<String, dynamic>;
-        final token = responseData['token']?.toString();
-        final refreshToken = responseData['refreshToken']?.toString();
-        if (token == null || refreshToken == null) {
-          return Left(
-            ServerFailure('Invalid response from server: missing tokens'),
-          );
-        }
-        TokenStorage.saveTokens(token, refreshToken);
-        if (responseData['user'] is Map<String, dynamic>) {
-          return Right(UserModel.fromJson(responseData['user']));
-        } else {
-          return Left(ServerFailure('Invalid user data format'));
-        }
-      } else {
-        final errorData = response.data is String
-            ? jsonDecode(response.data)
-            : response.data as Map<String, dynamic>;
-        return Left(
-          ServerFailure(
-            (errorData['message'] ?? 'Unknown error occurred').toString(),
-          ),
-        );
-      }
-    } on DioError catch (e) {
-      return Left(ServerFailure(e.toString()));
+      
+      return ErrorHandlingUtils.handleApiResponse<UserModel>(
+        response: response,
+        onSuccess: (data) {
+          final responseData = data is String
+              ? jsonDecode(data)
+              : data as Map<String, dynamic>;
+          final token = responseData['token']?.toString();
+          final refreshToken = responseData['refreshToken']?.toString();
+          if (token == null || refreshToken == null) {
+            throw Exception('Invalid response from server: missing tokens');
+          }
+          TokenStorage.saveTokens(token, refreshToken);
+          if (responseData['user'] is Map<String, dynamic>) {
+            return UserModel.fromJson(responseData['user']);
+          } else {
+            throw Exception('Invalid user data format');
+          }
+        },
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
   @override
   Future<Either<Failure, void>> forgetPassword({required String email}) async {
-    final response = await dio.post(
-      '/auth/forgot-password',
-      data: {'email': email},
-    );
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return const Right(null);
+    try {
+      final response = await dio.post(
+        '/auth/forgot-password',
+        data: {'email': email},
+      );
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
-    return Left(ServerFailure('Failed to send password reset email'));
   }
 
   @override
@@ -237,13 +182,17 @@ class Remoteauthdatasource implements IAuthDataSource {
     required String email,
     required String code,
   }) async {
-    final response = await dio.post(
-      '/auth/verify-code',
-      data: {'email': email, 'code': code},
-    );
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return const Right(null);
+    try {
+      final response = await dio.post(
+        '/auth/verify-code',
+        data: {'email': email, 'code': code},
+      );
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
-    return Left(ServerFailure('Failed to verify code'));
   }
 }

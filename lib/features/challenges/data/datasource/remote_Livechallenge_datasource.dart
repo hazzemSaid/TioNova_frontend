@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
+import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/challenges/data/model/challenge_code.dart';
 import 'package:tionova/features/challenges/domain/repo/LiveChallenge_repo.dart';
 
@@ -13,15 +14,17 @@ class RemoteLiveChallengeDataSource implements LiveChallengeRepo {
     required String title,
     required String chapterId,
   }) async {
+    try {
     final response = await _dio.post(
       "/live/challenges",
       data: {'title': title, 'chapterId': chapterId},
     );
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final challengeCode = ChallengeCode.fromJson(response.data);
-      return Right(challengeCode);
-    } else {
-      return Left(ServerFailure('Failed to create live challenge'));
+      return ErrorHandlingUtils.handleApiResponse<ChallengeCode>(
+        response: response,
+        onSuccess: (data) => ChallengeCode.fromJson(data),
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -29,14 +32,17 @@ class RemoteLiveChallengeDataSource implements LiveChallengeRepo {
   Future<Either<Failure, void>> disconnectFromLiveChallenge({
     required String challengeCode,
   }) async {
+    try {
     final response = await _dio.post(
-      " /api/live/challenges/disconnect",
+        "/live/challenges/disconnect",
       data: {'challengeCode': challengeCode},
     );
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return Right(null);
-    } else {
-      return Left(ServerFailure('Failed to disconnect from live challenge'));
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -60,33 +66,13 @@ class RemoteLiveChallengeDataSource implements LiveChallengeRepo {
       print('DataSource - Join response status: ${response.statusCode}');
       print('DataSource - Join response data: ${response.data}');
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return Right(null);
-      } else {
-        final errorMsg =
-            response.data?['message'] ?? 'Failed to join live challenge';
-        print(
-          'DataSource - Join failed with status ${response.statusCode}: $errorMsg',
-        );
-        return Left(ServerFailure(errorMsg, response.statusCode.toString()));
-      }
-    } on DioException catch (e) {
-      print('DataSource - DioException during join: ${e.type}');
-      print('DataSource - Error message: ${e.message}');
-      print('DataSource - Response data: ${e.response?.data}');
-      print('DataSource - Status code: ${e.response?.statusCode}');
-
-      final errorMessage =
-          e.response?.data?['message'] ??
-          e.response?.data?['error'] ??
-          e.message ??
-          'Failed to join challenge';
-      return Left(
-        ServerFailure(errorMessage, e.response?.statusCode.toString()),
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
       );
-    } on Exception catch (e) {
-      print('DataSource - General exception during join: ${e.toString()}');
-      return Left(ServerFailure('Network error: ${e.toString()}'));
+    } catch (e) {
+      print('DataSource - Error during join: $e');
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -105,18 +91,17 @@ Auth: required
 Returns: { success, message, totalQuestions, currentIndex: 0 }
 
 Behavior: sets meta.status = in-progress , current.index = 0 , saves startedAt , updates Mongo status. */
+    try {
     final response = await _dio.post(
       "/live/challenges/start",
       data: {'challengeCode': challengeCode},
     );
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return Right(null);
-    } else {
-      // "message": "Only owner can start"
-      final message = (response.data is Map)
-          ? (response.data as Map)['message']
-          : null;
-      return Left(ServerFailure(message ?? 'Failed to start live challenge'));
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
+      );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -139,16 +124,12 @@ Behavior: writes to answers[currentIndex][userId] , increments score on correctn
         "/live/challenges/answer",
         data: {'challengeCode': challengeCode, 'answer': answer},
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return Right(null);
-      } else {
-        final message = (response.data is Map)
-            ? (response.data as Map)['message']
-            : null;
-        return Left(ServerFailure(message ?? 'Failed to submit answer'));
-      }
+      return ErrorHandlingUtils.handleApiResponse<void>(
+        response: response,
+        onSuccess: (_) => null,
+      );
     } catch (e) {
-      return Left(ServerFailure('Failed to submit answer: ${e.toString()}'));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -170,18 +151,12 @@ Behavior: Checks if all players answered, advances to next question if needed*/
         "/live/challenges/check-advance",
         data: {'challengeCode': challengeCode},
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return Right(response.data as Map<String, dynamic>);
-      } else {
-        final message = (response.data is Map)
-            ? (response.data as Map)['message']
-            : null;
-        return Left(ServerFailure(message ?? 'Failed to check and advance'));
-      }
-    } catch (e) {
-      return Left(
-        ServerFailure('Failed to check and advance: ${e.toString()}'),
+      return ErrorHandlingUtils.handleApiResponse<Map<String, dynamic>>(
+        response: response,
+        onSuccess: (data) => data as Map<String, dynamic>,
       );
+    } catch (e) {
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 }

@@ -1,6 +1,6 @@
 // features/quiz/data/datasources/remotequizdatasource.dart
 import 'package:dio/dio.dart';
-import 'package:either_dart/either.dart' show Either, Left, Right;
+import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/quiz/data/datasources/IRemoteQuizDataSource.dart';
@@ -123,33 +123,33 @@ class RemoteQuizDataSource implements IRemoteQuizDataSource {
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        print(data);
-        // adapt to expected shape: might be { success, message, history: {...} }
-        final historyJson = (data['history'] as Map?) != null
-            ? Map<String, dynamic>.from(data['history'] as Map)
-            : Map<String, dynamic>.from(data as Map);
-        final attemptsJson = (historyJson['attempts'] as List?) ?? const [];
-        final attempts = attemptsJson
-            .map((e) => Attempt.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-        final statusModel = UserQuizStatusModel(
-          attempts: attempts,
-          overallStatus: (historyJson['overallStatus'] ?? '').toString(),
-          overallScore: (historyJson['overallScore'] ?? 0) as int,
-          totalAttempts:
-              (historyJson['totalAttempts'] ?? attempts.length) as int,
-          bestScore: (historyJson['bestScore'] ?? 0) as int,
-          averageScore: (historyJson['averageScore'] ?? 0) as int,
-          passRate: (historyJson['passRate'] ?? 0) as int,
-        );
-        return Right(statusModel);
-      } else {
-        return Left(ServerFailure('Failed to fetch quiz history'));
-      }
+      return ErrorHandlingUtils.handleApiResponse<UserQuizStatusModel>(
+        response: response,
+        onSuccess: (data) {
+          print(data);
+          // adapt to expected shape: might be { success, message, history: {...} }
+          final historyJson = (data['history'] as Map?) != null
+              ? Map<String, dynamic>.from(data['history'] as Map)
+              : Map<String, dynamic>.from(data as Map);
+          final attemptsJson = (historyJson['attempts'] as List?) ?? const [];
+          final attempts = attemptsJson
+              .map((e) => Attempt.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+          final statusModel = UserQuizStatusModel(
+            attempts: attempts,
+            overallStatus: (historyJson['overallStatus'] ?? '').toString(),
+            overallScore: (historyJson['overallScore'] ?? 0) as int,
+            totalAttempts:
+                (historyJson['totalAttempts'] ?? attempts.length) as int,
+            bestScore: (historyJson['bestScore'] ?? 0) as int,
+            averageScore: (historyJson['averageScore'] ?? 0) as int,
+            passRate: (historyJson['passRate'] ?? 0) as int,
+          );
+          return statusModel;
+        },
+      );
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 

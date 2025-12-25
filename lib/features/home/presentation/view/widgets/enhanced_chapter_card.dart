@@ -2,18 +2,15 @@ import 'package:flutter/material.dart';
 
 class EnhancedChapterCard extends StatelessWidget {
   final String title;
-  final String subject;
-  final double progress;
-  final String pages;
+  // final String subject;
+  // final double progress;
+  // final String pages;
   final String timeAgo;
   final VoidCallback? onTap;
 
   const EnhancedChapterCard({
     super.key,
     required this.title,
-    required this.subject,
-    required this.progress,
-    required this.pages,
     required this.timeAgo,
     this.onTap,
   });
@@ -22,9 +19,7 @@ class EnhancedChapterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final progressPercent = (progress * 100).toInt();
-    final isCompleted = progress >= 1.0;
-    final progressColor = isCompleted ? Colors.green : colorScheme.primary;
+    final progressColor = colorScheme.primary;
 
     return InkWell(
       onTap: onTap,
@@ -72,9 +67,7 @@ class EnhancedChapterCard extends StatelessWidget {
                     ),
                   ),
                   child: Icon(
-                    isCompleted
-                        ? Icons.check_circle_outline
-                        : Icons.article_outlined,
+                    Icons.article_outlined,
                     color: progressColor,
                     size: 24,
                   ),
@@ -97,110 +90,12 @@ class EnhancedChapterCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.folder_outlined,
-                            size: 13,
-                            color: colorScheme.onSurfaceVariant.withOpacity(
-                              0.7,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              subject,
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant.withOpacity(
-                                  0.9,
-                                ),
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
+
                 // Progress Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: progressColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: progressColor.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isCompleted)
-                        Icon(Icons.check, size: 12, color: progressColor),
-                      if (isCompleted) const SizedBox(width: 4),
-                      Text(
-                        '$progressPercent%',
-                        style: textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: progressColor,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            // Progress Bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor: colorScheme.surfaceVariant.withOpacity(0.7),
-                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Footer with metadata
-            Row(
-              children: [
-                Icon(
-                  Icons.menu_book_outlined,
-                  size: 14,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  pages,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.9),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.access_time_outlined,
-                  size: 14,
-                  color: colorScheme.outline.withOpacity(0.8),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  timeAgo,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.outline.withOpacity(0.9),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
               ],
             ),
           ],

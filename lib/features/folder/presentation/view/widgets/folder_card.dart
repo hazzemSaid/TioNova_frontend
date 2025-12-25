@@ -5,7 +5,6 @@ import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 class FolderCard extends StatelessWidget {
   final String title;
   final String description;
-  final String category;
   final String privacy;
   final int chapters;
   final String lastAccessed;
@@ -19,7 +18,6 @@ class FolderCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.description,
-    required this.category,
     required this.privacy,
     required this.chapters,
     required this.lastAccessed,
@@ -36,21 +34,6 @@ class FolderCard extends StatelessWidget {
   bool _isSmallPhone(double width) => width < 360;
 
   // Get category color based on category name
-  Color _getCategoryColor(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    switch (category.toLowerCase()) {
-      case 'technology':
-        return colorScheme.primary;
-      case 'science':
-        return Colors.green;
-      case 'business':
-        return Colors.orange;
-      case 'education':
-        return Colors.blue;
-      default:
-        return colorScheme.onSurfaceVariant;
-    }
-  }
 
   // Get privacy colors and icon
   Map<String, dynamic> _getPrivacyConfig(BuildContext context) {
@@ -92,6 +75,8 @@ class FolderCard extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(isTablet ? 16.0 : 12.0),
@@ -107,15 +92,18 @@ class FolderCard extends StatelessWidget {
             ),
           ],
         ),
-        padding: EdgeInsets.all(isLarge ? 12.0 : (isTablet ? 11.0 : 10.0)),
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 12.0 : 10.0,
+          vertical: isTablet ? 12.0 : (isSmallPhone ? 6.0 : 10.0),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHeader(context, isLarge, isTablet),
-            SizedBox(height: isTablet ? 10.0 : 8.0),
+            _buildHeader(context, isLarge, isTablet, isSmallPhone),
+            SizedBox(height: isTablet ? 10.0 : (isSmallPhone ? 4.0 : 8.0)),
             _buildContent(context, isLarge, isTablet, isSmallPhone),
-            SizedBox(height: isTablet ? 10.0 : 8.0),
+            SizedBox(height: isTablet ? 10.0 : (isSmallPhone ? 4.0 : 8.0)),
             _buildFooter(context, isLarge, isTablet, isSmallPhone),
           ],
         ),
@@ -124,10 +112,18 @@ class FolderCard extends StatelessWidget {
   }
 
   // Header with icon and tags
-  Widget _buildHeader(BuildContext context, bool isLarge, bool isTablet) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final iconSize = isLarge ? 52.0 : (isTablet ? 48.0 : 44.0);
-    final innerIconSize = isLarge ? 26.0 : (isTablet ? 22.0 : 20.0);
+  Widget _buildHeader(
+    BuildContext context,
+    bool isLarge,
+    bool isTablet,
+    bool isSmallPhone,
+  ) {
+    final iconSize = isLarge
+        ? 52.0
+        : (isTablet ? 48.0 : (isSmallPhone ? 40.0 : 44.0));
+    final innerIconSize = isLarge
+        ? 26.0
+        : (isTablet ? 22.0 : (isSmallPhone ? 18.0 : 20.0));
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,14 +156,6 @@ class FolderCard extends StatelessWidget {
             alignment: WrapAlignment.end,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              _buildTag(
-                context,
-                category,
-                _getCategoryColor(context),
-                colorScheme.onPrimary,
-                null,
-                isTablet,
-              ),
               if (privacy.isNotEmpty) _buildPrivacyTag(context, isTablet),
             ],
           ),
@@ -234,18 +222,18 @@ class FolderCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Chapters and last accessed
-        _buildMetaRow(context, isLarge, isTablet),
+        _buildMetaRow(context, isLarge, isTablet, isSmallPhone),
         // Shared section
         if (hasShared) ...[
-          SizedBox(height: isTablet ? 8.0 : 6.0),
+          SizedBox(height: isTablet ? 8.0 : (isSmallPhone ? 3.0 : 6.0)),
           Divider(
-            thickness: 1,
-            height: 1,
+            thickness: 0.5,
+            height: 0.5,
             color: Theme.of(
               context,
             ).colorScheme.outlineVariant.withOpacity(0.3),
           ),
-          SizedBox(height: isTablet ? 8.0 : 6.0),
+          SizedBox(height: isTablet ? 8.0 : (isSmallPhone ? 3.0 : 6.0)),
           _buildSharedSection(context, isTablet, isSmallPhone),
         ],
       ],
@@ -253,18 +241,27 @@ class FolderCard extends StatelessWidget {
   }
 
   // Meta information row
-  Widget _buildMetaRow(BuildContext context, bool isLarge, bool isTablet) {
+  Widget _buildMetaRow(
+    BuildContext context,
+    bool isLarge,
+    bool isTablet,
+    bool isSmallPhone,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final metaSize = isLarge ? 12.0 : (isTablet ? 11.0 : 10.5);
-    final iconSize = isLarge ? 16.0 : (isTablet ? 15.0 : 14.0);
+    final metaSize = isLarge
+        ? 12.0
+        : (isTablet ? 11.0 : (isSmallPhone ? 10.0 : 10.5));
+    final iconSize = isLarge
+        ? 16.0
+        : (isTablet ? 15.0 : (isSmallPhone ? 13.0 : 14.0));
 
     return Row(
       children: [
         // Chapters count
         Container(
           padding: EdgeInsets.symmetric(
-            horizontal: isTablet ? 8.0 : 7.0,
-            vertical: isTablet ? 5.0 : 4.0,
+            horizontal: isTablet ? 8.0 : (isSmallPhone ? 6.0 : 7.0),
+            vertical: isTablet ? 5.0 : (isSmallPhone ? 3.0 : 4.0),
           ),
           decoration: BoxDecoration(
             color: colorScheme.surfaceVariant.withOpacity(0.7),
@@ -327,8 +324,8 @@ class FolderCard extends StatelessWidget {
     bool isSmallPhone,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final avatarSize = isSmallPhone ? 24.0 : (isTablet ? 28.0 : 26.0);
-    final fontSize = isSmallPhone ? 10.0 : (isTablet ? 11.0 : 10.5);
+    final avatarSize = isSmallPhone ? 22.0 : (isTablet ? 28.0 : 26.0);
+    final fontSize = isSmallPhone ? 9.5 : (isTablet ? 11.0 : 10.5);
 
     return Row(
       children: [
@@ -340,7 +337,7 @@ class FolderCard extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: isSmallPhone ? 6.0 : 8.0),
         Expanded(
           child: Row(
             children: [
@@ -386,7 +383,9 @@ class FolderCard extends StatelessWidget {
     ];
 
     return Container(
-      margin: EdgeInsets.only(right: index < 2 ? 4.0 : 0),
+      margin: EdgeInsets.only(
+        right: index < 2 ? (isSmallPhone ? 3.0 : 4.0) : 0,
+      ),
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -396,14 +395,17 @@ class FolderCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         shape: BoxShape.circle,
-        border: Border.all(color: colorScheme.surface, width: 2.0),
+        border: Border.all(
+          color: colorScheme.surface,
+          width: isSmallPhone ? 1.5 : 2.0,
+        ),
       ),
       alignment: Alignment.center,
       child: Text(
         username.isNotEmpty ? username.substring(0, 1).toUpperCase() : '?',
         style: TextStyle(
           color: Colors.white,
-          fontSize: isSmallPhone ? 10.0 : 12.0,
+          fontSize: isSmallPhone ? 9.0 : 12.0,
           fontWeight: FontWeight.bold,
         ),
       ),

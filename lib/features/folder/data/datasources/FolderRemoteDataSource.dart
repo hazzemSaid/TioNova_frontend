@@ -116,20 +116,20 @@ class FolderRemoteDataSource implements IFolderRepository {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      if (response.statusCode == 200) {
-        // Parse the updated folder from the response
-        final responseData = response.data;
-        if (responseData != null && responseData['folder'] != null) {
-          final updatedFolder = Foldermodel.fromJson(responseData['folder']);
-          return Right(updatedFolder);
-        } else {
-          return Left(ServerFailure('Invalid response format'));
-        }
-      } else {
-        return Left(ServerFailure('Failed to update folder'));
-      }
+      
+      return ErrorHandlingUtils.handleApiResponse<Foldermodel>(
+        response: response,
+        onSuccess: (data) {
+          // Parse the updated folder from the response
+          if (data != null && data['folder'] != null) {
+            return Foldermodel.fromJson(data['folder']);
+          } else {
+            throw Exception('Invalid response format');
+          }
+        },
+      );
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return ErrorHandlingUtils.handleDioError(e);
     }
   }
 
@@ -143,16 +143,16 @@ class FolderRemoteDataSource implements IFolderRepository {
         data: {'query': query},
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      if (response.statusCode == 200) {
-        List<ShareWithmodel> users = (response.data['results'] as List)
-            .map((userJson) => ShareWithmodel.fromJson(userJson))
-            .toList();
-        return Right(users);
-      } else {
-        return Left(ServerFailure('Failed to fetch users'));
-      }
+      return ErrorHandlingUtils.handleApiResponse<List<ShareWithmodel>>(
+        response: response,
+        onSuccess: (data) {
+          return (data['results'] as List)
+              .map((userJson) => ShareWithmodel.fromJson(userJson))
+              .toList();
+        },
+      );
     } catch (error) {
-      return Left(ServerFailure(error.toString()));
+      return ErrorHandlingUtils.handleDioError(error);
     }
   }
 
