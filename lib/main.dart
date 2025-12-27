@@ -56,19 +56,23 @@ Future<void> main() async {
   print('🔧 Checking Firebase initialization...');
   print('🔧 Number of existing Firebase apps: ${Firebase.apps.length}');
 
-  if (Firebase.apps.isNotEmpty) {
+  // Skip Firebase app deletion on web – delete() not supported.
+  if (!kIsWeb && Firebase.apps.isNotEmpty) {
     print('⚠️ Found existing Firebase apps:');
-    for (var app in Firebase.apps) {
+    for (final app in Firebase.apps) {
       print('   - App name: ${app.name}');
       print('   - App options: ${app.options}');
       print('   - Database URL: ${app.options.databaseURL}');
 
-      // Delete the app
+      // delete() is only available on mobile/desktop runtimes
       await app.delete();
       print('   ✅ Deleted app: ${app.name}');
     }
-  } else {
+  } else if (!kIsWeb) {
     print('ℹ️ No existing Firebase apps found (this is good!)');
+  } else if (kIsWeb && Firebase.apps.isNotEmpty) {
+    // Web: keep existing apps; delete() throws UnsupportedError here.
+    print('ℹ️ Web platform detected – keeping existing Firebase apps intact');
   }
 
   // Now initialize with fresh config
