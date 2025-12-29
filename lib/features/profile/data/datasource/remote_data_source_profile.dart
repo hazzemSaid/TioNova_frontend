@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/error_handling_utils.dart';
+import 'dart:typed_data';
 
 abstract class remoteDataSourceProfile {
   Future<Either<ServerFailure, Response>> fetchUserProfile();
@@ -23,16 +24,18 @@ class RemoteDataSourceProfileImpl implements remoteDataSourceProfile {
         response: response,
         onSuccess: (_) => response,
       );
-      
+
       // Convert Failure to ServerFailure for return type compatibility
       return result.fold(
-        (failure) => Left(ServerFailure(failure.errMessage, failure.statusCode)),
+        (failure) =>
+            Left(ServerFailure(failure.errMessage, failure.statusCode)),
         (response) => Right(response),
       );
     } catch (e) {
       final result = ErrorHandlingUtils.handleDioError<Response>(e);
       return result.fold(
-        (failure) => Left(ServerFailure(failure.errMessage, failure.statusCode)),
+        (failure) =>
+            Left(ServerFailure(failure.errMessage, failure.statusCode)),
         (_) => Left(ServerFailure('Unexpected error')),
       );
     }
@@ -43,9 +46,22 @@ class RemoteDataSourceProfileImpl implements remoteDataSourceProfile {
     try {
       // Check if we have a file to upload
       final File? imageFile = profileData['profilePicture'] as File?;
+      final Uint8List? imageBytes =
+          profileData['profilePictureBytes'] as Uint8List?;
+      final String? imageName = profileData['profilePictureName'] as String?;
       Response response;
 
-      if (imageFile != null) {
+      if (imageBytes != null) {
+        final formData = FormData.fromMap({
+          'username': profileData['username'] ?? '',
+          'universityCollege': profileData['universityCollege'] ?? '',
+          'profilePicture': MultipartFile.fromBytes(
+            imageBytes,
+            filename: imageName ?? 'profile.jpg',
+          ),
+        });
+        response = await dio.put('/profile', data: formData);
+      } else if (imageFile != null) {
         // Use FormData for multipart file upload
         final formData = FormData.fromMap({
           'username': profileData['username'] ?? '',
@@ -75,7 +91,8 @@ class RemoteDataSourceProfileImpl implements remoteDataSourceProfile {
       );
 
       return result.fold(
-        (failure) => throw ServerFailure(failure.errMessage, failure.statusCode),
+        (failure) =>
+            throw ServerFailure(failure.errMessage, failure.statusCode),
         (response) => response,
       );
     } catch (e) {

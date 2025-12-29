@@ -72,8 +72,8 @@ class ProfileCard extends StatelessWidget {
             SizedBox(
               width: 200,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => BlocProvider(
                         create: (context) => getIt<ProfileCubit>(),
@@ -81,6 +81,11 @@ class ProfileCard extends StatelessWidget {
                       ),
                     ),
                   );
+                  if (result == true) {
+                    try {
+                      await context.read<ProfileCubit>().refresh();
+                    } catch (_) {}
+                  }
                 },
                 icon: const Icon(Icons.edit, size: 18),
                 label: const Text('Edit Profile'),

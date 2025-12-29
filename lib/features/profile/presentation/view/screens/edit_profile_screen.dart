@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,6 +25,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late FocusNode _universityFocus;
 
   File? _selectedImage;
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
   bool _isUpdating = false;
 
   @override
@@ -51,29 +55,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 85,
-        maxWidth: 512,
-        maxHeight: 512,
+        maxWidth: 2048,
+        maxHeight: 2048,
       );
 
       if (image != null) {
-        final File file = File(image.path);
-        final int fileSizeInBytes = await file.length();
-        final double fileSizeInMB = fileSizeInBytes / (1024 * 1024);
-
-        if (fileSizeInMB > 5) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Image must be less than 5MB'),
-              backgroundColor: Colors.red,
-            ),
+        if (kIsWeb) {
+          final bytes = await image.readAsBytes();
+          final cropped = await _cropCenterSquareAndResize(
+            bytes,
+            targetSize: 512,
           );
-          return;
+          setState(() {
+            _selectedImageBytes = cropped;
+            _selectedImageName = image.name;
+            _selectedImage = null;
+          });
+        } else {
+          final file = File(image.path);
+          final int fileSizeInBytes = await file.length();
+          final double fileSizeInMB = fileSizeInBytes / (1024 * 1024);
+          if (fileSizeInMB > 5) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Image must be less than 5MB'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+          setState(() {
+            _selectedImage = file;
+            _selectedImageBytes = null;
+            _selectedImageName = null;
+          });
         }
-
-        setState(() {
-          _selectedImage = file;
-        });
       }
     } catch (e) {
       if (!mounted) return;
@@ -84,6 +101,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       );
     }
+  }
+
+  Future<Uint8List> _cropCenterSquareAndResize(
+    Uint8List bytes, {
+    int targetSize = 512,
+  }) async {
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    final w = image.width.toDouble();
+    final h = image.height.toDouble();
+    final size = w < h ? w : h;
+    final left = (w - size) / 2;
+    final top = (h - size) / 2;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final src = Rect.fromLTWH(left, top, size, size);
+    final dst = Rect.fromLTWH(
+      0,
+      0,
+      targetSize.toDouble(),
+      targetSize.toDouble(),
+    );
+    canvas.drawImageRect(image, src, dst, Paint());
+    final picture = recorder.endRecording();
+    final cropped = await picture.toImage(targetSize, targetSize);
+    final byteData = await cropped.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
   }
 
   Future<void> _updateProfile() async {
@@ -113,10 +158,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       // Call the cubit method to update profile
       if (!mounted) return;
-      await context.read<ProfileCubit>().updateProfile(
-        updateData,
-        imageFile: _selectedImage,
-      );
+      if (kIsWeb) {
+        if (_selectedImageBytes != null) {
+          updateData['profilePictureBytes'] = _selectedImageBytes!;
+          updateData['profilePictureName'] =
+              _selectedImageName ?? 'profile.png';
+        }
+        await context.read<ProfileCubit>().updateProfile(updateData);
+      } else {
+        await context.read<ProfileCubit>().updateProfile(
+          updateData,
+          imageFile: _selectedImage,
+        );
+      }
 
       if (!mounted) return;
 
@@ -305,7 +359,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ],
                       ),
                       child: ClipOval(
-                        child: _selectedImage != null
+                        child: _selectedImageBytes != null
+                            ? Image.memory(
+                                _selectedImageBytes!,
+                                fit: BoxFit.cover,
+                                filterQuality: FilterQuality.high,
+                              )
+                            : _selectedImage != null
                             ? Image.file(
                                 _selectedImage!,
                                 fit: BoxFit.cover,
@@ -561,7 +621,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _usernameController.text != widget.profile.username ||
         _universityController.text !=
             (widget.profile.universityCollege ?? '') ||
-        _selectedImage != null;
+        _selectedImage != null ||
+        _selectedImageBytes != null;
 
     return SizedBox(
       width: double.infinity,

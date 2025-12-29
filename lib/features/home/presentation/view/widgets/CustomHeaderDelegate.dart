@@ -27,7 +27,7 @@ class CustomHeaderDelegate extends SliverPersistentHeaderDelegate {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.005),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
                 !isDarkMode

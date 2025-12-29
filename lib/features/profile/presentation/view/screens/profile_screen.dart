@@ -1,5 +1,9 @@
+import 'dart:ui' as ui;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/profile/data/models/profile_model.dart';
 import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
@@ -33,6 +37,8 @@ class _ProfileScreenContent extends StatefulWidget {
 class _ProfileScreenContentState extends State<_ProfileScreenContent>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _processingImage = false;
+  bool _uploadingImage = false;
 
   @override
   void initState() {
@@ -53,6 +59,95 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
   Future<void> _refreshProfile() async {
     if (!mounted) return;
     await context.read<ProfileCubit>().fetchProfile();
+  }
+
+  Future<Uint8List> _cropCenterSquareAndResize(
+    Uint8List bytes, {
+    int targetSize = 512,
+  }) async {
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    final w = image.width.toDouble();
+    final h = image.height.toDouble();
+    final size = w < h ? w : h;
+    final left = (w - size) / 2;
+    final top = (h - size) / 2;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final src = Rect.fromLTWH(left, top, size, size);
+    final dst = Rect.fromLTWH(
+      0,
+      0,
+      targetSize.toDouble(),
+      targetSize.toDouble(),
+    );
+    canvas.drawImageRect(image, src, dst, Paint());
+    final picture = recorder.endRecording();
+    final cropped = await picture.toImage(targetSize, targetSize);
+    final byteData = await cropped.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
+  Future<void> _pickAndUploadImageWeb(Profile profile) async {
+    if (!kIsWeb) return;
+    try {
+      setState(() {
+        _processingImage = true;
+      });
+      final picker = ImagePicker();
+      final xfile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
+      if (xfile == null) {
+        setState(() {
+          _processingImage = false;
+        });
+        return;
+      }
+      final originalBytes = await xfile.readAsBytes();
+      final croppedBytes = await _cropCenterSquareAndResize(
+        originalBytes,
+        targetSize: 512,
+      );
+      setState(() {
+        _processingImage = false;
+        _uploadingImage = true;
+      });
+      final data = {
+        'username': profile.username,
+        'universityCollege': profile.universityCollege ?? '',
+        'profilePictureBytes': croppedBytes,
+        'profilePictureName': xfile.name,
+      };
+      await context.read<ProfileCubit>().updateProfile(data);
+      await _refreshProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile image updated'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _uploadingImage = false;
+        });
+      }
+    }
   }
 
   @override
@@ -201,7 +296,49 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
                       // Left Column - Profile Card (Sticky)
                       SizedBox(
                         width: 350,
-                        child: ProfileCard(profile: profile),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ProfileCard(profile: profile),
+                            const SizedBox(height: 12),
+                            if (kIsWeb)
+                              ElevatedButton.icon(
+                                onPressed: _processingImage || _uploadingImage
+                                    ? null
+                                    : () => _pickAndUploadImageWeb(profile),
+                                icon: const Icon(Icons.camera_alt, size: 18),
+                                label: const Text('Change Photo'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
+                                  elevation: 0,
+                                ),
+                              ),
+                            if (_processingImage || _uploadingImage)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _processingImage
+                                          ? 'Processing image...'
+                                          : 'Uploading...',
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                       const SizedBox(width: 32),
                       // Right Column - Tabs and Content
