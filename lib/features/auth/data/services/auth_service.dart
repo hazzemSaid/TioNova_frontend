@@ -158,7 +158,9 @@ class AuthService {
         }
 
         print('✅ [Tokens] Saving access and refresh tokens...');
-        TokenStorage.saveTokens(token, refreshToken);
+        // IMPORTANT: Await token saving to ensure it completes (fixes Safari issue)
+        await TokenStorage.saveTokens(token, refreshToken);
+        print('✅ [Tokens] Saved successfully');
 
         if (responseData['user'] is Map<String, dynamic>) {
           print('✅ [Auth] Sign-in completed successfully! 🎉');

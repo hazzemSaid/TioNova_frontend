@@ -7,28 +7,22 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tionova/core/blocobserve/blocobserv.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
-import 'package:tionova/core/models/pdf_cache_model.dart';
-import 'package:tionova/core/models/summary_cache_model.dart';
 import 'package:tionova/core/router/app_router.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
-import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/hive_manager.dart';
 import 'package:tionova/core/services/notification/notification_service.dart';
 import 'package:tionova/core/services/shorebird_service.dart';
-import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/core/theme/app_theme.dart';
 import 'package:tionova/core/widgets/update_checker_widget.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/localauthdatasource.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/remoteauthdatasource.dart';
-import 'package:tionova/features/auth/data/models/UserModel.dart';
 import 'package:tionova/features/auth/data/repo/authrepoimp.dart';
 import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/data/services/auth_service.dart';
@@ -70,7 +64,19 @@ Future<void> main() async {
   } catch (e, stackTrace) {
     print('❌ Critical error during app initialization: $e');
     print('Stack trace: $stackTrace');
-    // Run minimal app on error
+
+    // On web, try a minimal fallback initialization instead of showing error
+    if (kIsWeb) {
+      print('ℹ️ Attempting minimal web fallback...');
+      try {
+        await _runMinimalWebApp();
+        return; // Exit main() if fallback succeeds
+      } catch (e2) {
+        print('❌ Minimal web fallback also failed: $e2');
+      }
+    }
+
+    // Run error app only if all else fails
     runApp(
       MaterialApp(
         home: Scaffold(
@@ -200,36 +206,25 @@ Future<void> _initializeApp() async {
   }
 
   // Register Hive adapters - wrap in try-catch for web
-  try {
-    if (!Hive.isAdapterRegistered(0)) {
-      Hive.registerAdapter(PdfCacheModelAdapter());
-      print('Main: Registered PdfCacheModelAdapter with typeId 0');
-    }
-    if (!Hive.isAdapterRegistered(1)) {
-      Hive.registerAdapter(UserModelAdapter());
-      print('Main: Registered UserModelAdapter with typeId 1');
-    }
-    if (!Hive.isAdapterRegistered(2)) {
-      Hive.registerAdapter(SummaryCacheModelAdapter());
-      print('Main: Registered SummaryCacheModelAdapter with typeId 2');
-    }
-  } catch (e) {
-    print('⚠️ Hive adapter registration failed: $e');
-    if (!kIsWeb) rethrow;
-  }
+  // Only register if Hive is available (skips on Safari private mode)
 
   // Open only critical boxes with timeout for web
-  try {
-    await Hive.openBox("themeBox").timeout(
-      const Duration(seconds: 3),
-      onTimeout: () {
-        print('⚠️ Timeout opening themeBox, continuing...');
-        throw TimeoutException('themeBox timeout');
-      },
-    );
-  } catch (e) {
-    print('⚠️ Error opening themeBox: $e');
-    // Continue without the box on web if it fails
+  // Skip if Hive is not available (Safari private mode)
+  if (HiveManager.isHiveAvailable) {
+    try {
+      await Hive.openBox("themeBox").timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          print('⚠️ Timeout opening themeBox, continuing...');
+          throw TimeoutException('themeBox timeout');
+        },
+      );
+    } catch (e) {
+      print('⚠️ Error opening themeBox: $e');
+      // Continue without the box on web if it fails
+    }
+  } else {
+    print('ℹ️ Skipping themeBox (Hive not available)');
   }
 
   // Setup service locator (critical for auth) - with timeout for web
@@ -264,7 +259,22 @@ Future<void> _initializeApp() async {
   }
 
   // Initialize SharedPreferences (needed for theme)
-  final prefs = await SharedPreferences.getInstance();
+  // Safari (especially private mode) can block localStorage
+  SharedPreferences? prefs;
+  try {
+    prefs = await SharedPreferences.getInstance().timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {
+        print('⚠️ SharedPreferences timeout (Safari private mode?)');
+        throw TimeoutException('SharedPreferences timeout');
+      },
+    );
+    print('✅ SharedPreferences initialized');
+  } catch (e) {
+    print('⚠️ Error getting SharedPreferences: $e');
+    // On Safari, SharedPreferences might fail - we'll run without theme persistence
+    prefs = null;
+  }
 
   // Initialize router
   AppRouter.initialize();
@@ -276,7 +286,7 @@ Future<void> _initializeApp() async {
   runApp(
     MultiBlocProvider(
       providers: [
-        BlocProvider<ThemeCubit>(create: (context) => ThemeCubit(prefs: prefs)),
+        BlocProvider<ThemeCubit>(create: (_) => ThemeCubit(prefs: prefs)),
         BlocProvider<AuthCubit>.value(value: authCubit),
       ],
       child: BlocBuilder<AuthCubit, AuthState>(
@@ -306,19 +316,6 @@ Future<void> _initializeApp() async {
     print('🔄 Starting deferred initialization...');
 
     try {
-      // Open cache boxes in background
-      await HiveManager.safeOpenBox<PdfCacheModel>('pdfCache');
-      await HiveManager.safeOpenBox<SummaryCacheModel>('summaryCache');
-      print('✅ Cache boxes opened');
-
-      // Initialize download service
-      await DownloadService.initialize();
-      print('✅ DownloadService initialized');
-
-      // Initialize summary cache service
-      await SummaryCacheService.initialize();
-      print('✅ SummaryCacheService initialized');
-
       // Initialize App Usage Tracker
       final usageTracker = getIt<AppUsageTrackerService>();
       await usageTracker.initialize();
@@ -353,32 +350,6 @@ Future<void> _initializeApp() async {
       // Don't crash the app, just log the error
     }
   });
-}
-
-class MyApp extends StatelessWidget {
-  final SharedPreferences prefs;
-  final GoRouter router;
-
-  const MyApp({super.key, required this.prefs, required this.router});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ThemeCubit(prefs: prefs),
-      child: BlocBuilder<ThemeCubit, ThemeMode>(
-        builder: (context, themeMode) {
-          return MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            title: 'TioNova',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeMode,
-            routerConfig: AppRouter.router,
-          );
-        },
-      ),
-    );
-  }
 }
 
 /// Minimal service locator setup for web when full setup fails
@@ -494,4 +465,54 @@ Future<void> _setupMinimalServiceLocatorForWeb() async {
   }
 
   print('✅ Minimal web services configured');
+}
+
+/// Minimal web app runner for Safari fallback
+/// This runs a basic version of the app without Hive/Firebase dependencies
+Future<void> _runMinimalWebApp() async {
+  print('🔧 Running minimal web app for Safari...');
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Try Firebase but don't fail if it doesn't work
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 5));
+    }
+    print('✅ Firebase initialized in minimal mode');
+  } catch (e) {
+    print('⚠️ Firebase skipped in minimal mode: $e');
+  }
+
+  // Setup minimal services
+  await _setupMinimalServiceLocatorForWeb();
+
+  // Get auth cubit
+  final authCubit = getIt<AuthCubit>();
+
+  // Initialize router
+  AppRouter.initialize();
+  Bloc.observer = AppBlocObserver();
+
+  // Run app with system theme (no SharedPreferences dependency)
+  runApp(
+    MultiBlocProvider(
+      providers: [BlocProvider<AuthCubit>.value(value: authCubit)],
+      child: BlocBuilder<AuthCubit, AuthState>(
+        builder: (context, authState) {
+          return MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            routerConfig: AppRouter.router,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: ThemeMode.system,
+          );
+        },
+      ),
+    ),
+  );
+
+  print('✅ Minimal web app running');
 }

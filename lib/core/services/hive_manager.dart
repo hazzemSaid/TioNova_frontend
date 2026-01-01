@@ -9,32 +9,46 @@ import 'hive_manager_stub.dart'
     as platform;
 
 class HiveManager {
+  /// Flag to track if Hive is available (false on Safari private mode)
+  static bool _isHiveAvailable = false;
+
+  /// Check if Hive storage is available
+  static bool get isHiveAvailable => _isHiveAvailable;
+
   /// Initialize Hive with error handling for corrupted data
   /// Includes timeout for web platforms (iOS Safari can hang)
   static Future<void> initializeHive() async {
     try {
       if (kIsWeb) {
         // On web, use timeout to prevent hanging on iOS Safari
+        // Safari private mode blocks IndexedDB completely
         await Hive.initFlutter().timeout(
-          const Duration(seconds: 5),
+          const Duration(seconds: 3),
           onTimeout: () {
-            print('⚠️ Hive initialization timeout on web');
+            print(
+              '⚠️ Hive initialization timeout on web (Safari private mode?)',
+            );
             throw TimeoutException('Hive init timeout');
           },
         );
+        _isHiveAvailable = true;
       } else {
         await Hive.initFlutter();
+        _isHiveAvailable = true;
       }
       print('✅ Hive initialized successfully');
     } catch (e) {
       print('⚠️ Error initializing Hive: $e');
+      _isHiveAvailable = false;
       // Clear all Hive data and try again (only on non-web)
       if (!kIsWeb) {
         await clearAllHiveData();
         await Hive.initFlutter();
+        _isHiveAvailable = true;
       }
       // On web, continue even if Hive fails - the app should still work
-      // with limited functionality
+      // with limited functionality (in-memory storage fallback)
+      print('ℹ️ Hive not available on web - using in-memory fallback');
     }
   }
 

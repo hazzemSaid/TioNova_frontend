@@ -8,6 +8,7 @@ import 'package:hive/hive.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/core/services/firebase_realtime_service.dart';
+import 'package:tionova/core/services/hive_manager.dart';
 import 'package:tionova/core/utils/network_error_helper.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
@@ -98,19 +99,26 @@ Future<void> setupServiceLocator() async {
   // Hive.init(appDocumentDir.path); // Removed redundant init, use Hive.initFlutter() from main.dart
 
   // Register Hive adapters - wrap in try-catch for web
-  try {
-    if (!Hive.isAdapterRegistered(UserModelAdapter().typeId)) {
-      Hive.registerAdapter(UserModelAdapter());
+  // Only register if Hive is available (skips on Safari private mode)
+  if (HiveManager.isHiveAvailable) {
+    try {
+      if (!Hive.isAdapterRegistered(UserModelAdapter().typeId)) {
+        Hive.registerAdapter(UserModelAdapter());
+      }
+    } catch (e) {
+      print('⚠️ Error registering UserModelAdapter: $e');
+      if (!kIsWeb) rethrow;
     }
-  } catch (e) {
-    print('⚠️ Error registering UserModelAdapter: $e');
-    if (!kIsWeb) rethrow;
   }
 
   // Open Hive box with timeout for web platforms (iOS Safari can hang)
   Box? box;
-  if (kIsWeb) {
-    // On web, use shorter timeout and fallback gracefully
+  if (!HiveManager.isHiveAvailable) {
+    // Hive not available (Safari private mode), use null box
+    print('ℹ️ Skipping auth_box (Hive not available)');
+    box = null;
+  } else if (kIsWeb) {
+    // On web with Hive available, use shorter timeout and fallback gracefully
     try {
       box = await Hive.openBox('auth_box').timeout(
         const Duration(seconds: 2),

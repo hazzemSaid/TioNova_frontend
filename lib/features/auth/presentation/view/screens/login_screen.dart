@@ -274,7 +274,16 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) async {
         if (state is AuthSuccess) {
-          // Navigation handled by router
+          print('✅ AuthSuccess received, navigating to home...');
+          // Explicitly navigate to home on Safari/web since router refresh may not trigger
+          if (kIsWeb) {
+            // Use a small delay to ensure state is fully updated
+            await Future.delayed(const Duration(milliseconds: 100));
+            if (context.mounted) {
+              context.go('/');
+            }
+          }
+          // On non-web platforms, router's refreshListenable handles navigation
         } else if (state is AuthFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
