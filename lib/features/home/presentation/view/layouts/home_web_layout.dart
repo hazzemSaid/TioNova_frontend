@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
@@ -8,10 +8,10 @@ import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 class HoverTransform extends StatefulWidget {
   final Widget child;
-  const HoverTransform({Key? key, required this.child}) : super(key: key);
+  const HoverTransform({super.key, required this.child});
 
   @override
-  _HoverTransformState createState() => _HoverTransformState();
+  State<HoverTransform> createState() => _HoverTransformState();
 }
 
 class _HoverTransformState extends State<HoverTransform>
@@ -86,243 +86,256 @@ class HomeWebLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final maxContentWidth = 1400.0;
-    final horizontalPadding = screenWidth > maxContentWidth
-        ? (screenWidth - maxContentWidth) / 2
-        : 48.0;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: RefreshIndicator(
-        onRefresh: () async => onRefresh(),
-        color: colorScheme.primary,
-        child: ScrollConfiguration(
-          behavior: const NoGlowScrollBehavior(),
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              // Header Section
-              SliverToBoxAdapter(
-                child: Container(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    24,
-                    horizontalPadding,
-                    16,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome back! 👋',
-                        style: textTheme.headlineLarge?.copyWith(
-                          color: colorScheme.onBackground,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 40,
-                        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final maxContentWidth = 1400.0;
+        final horizontalPadding = availableWidth > maxContentWidth
+            ? (availableWidth - maxContentWidth) / 2
+            : 48.0;
+
+        return Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          body: RefreshIndicator(
+            onRefresh: () async => onRefresh(),
+            color: colorScheme.primary,
+            child: ScrollConfiguration(
+              behavior: const NoGlowScrollBehavior(),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // Header Section
+                  SliverToBoxAdapter(
+                    child: Container(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        24,
+                        horizontalPadding,
+                        16,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Here\'s your learning progress',
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 16,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome back! 👋',
+                            style: textTheme.headlineLarge?.copyWith(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 40,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Here\'s your learning progress',
+                            style: textTheme.bodyLarge?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
 
-              // Today's Progress Card
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: _buildTodayProgressCard(
-                    colorScheme,
-                    textTheme,
-                    todayProgress,
+                  // Today's Progress Card
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: _buildTodayProgressCard(
+                        colorScheme,
+                        textTheme,
+                        todayProgress,
+                      ),
+                    ),
                   ),
-                ),
-              ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-              // Statistics Grid (2x2)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: _buildStatisticsSection(
-                    colorScheme,
-                    textTheme,
-                    stats,
-                    context,
+                  // Statistics Grid (2x2)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: _buildStatisticsSection(
+                        colorScheme,
+                        textTheme,
+                        stats,
+                        availableWidth,
+                      ),
+                    ),
                   ),
-                ),
-              ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-              // Main Content: Two Columns
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: screenWidth > 1000
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left Column: Chapters and Folders
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (chapters.isNotEmpty) ...[
-                                    _buildSectionHeader(
-                                      'Recent Chapters',
-                                      colorScheme,
-                                      textTheme,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildChaptersSection(
-                                      chapters,
-                                      colorScheme,
-                                      textTheme,
-                                      context,
-                                    ),
-                                    const SizedBox(height: 24),
-                                  ],
-                                  if (folders.isNotEmpty) ...[
-                                    _buildSectionHeader(
-                                      'Your Folders',
-                                      colorScheme,
-                                      textTheme,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildFoldersSection(
-                                      folders,
-                                      colorScheme,
-                                      textTheme,
-                                      context,
-                                    ),
-                                  ],
+                  // Main Content: Two Columns
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: availableWidth > 1000
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Left Column: Chapters and Folders
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (chapters.isNotEmpty) ...[
+                                        _buildSectionHeader(
+                                          'Recent Chapters',
+                                          colorScheme,
+                                          textTheme,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildChaptersSection(
+                                          chapters,
+                                          colorScheme,
+                                          textTheme,
+                                          context,
+                                        ),
+                                        const SizedBox(height: 24),
+                                      ],
+                                      if (folders.isNotEmpty) ...[
+                                        _buildSectionHeader(
+                                          'Your Folders',
+                                          colorScheme,
+                                          textTheme,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildFoldersSection(
+                                          folders,
+                                          colorScheme,
+                                          textTheme,
+                                          context,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Right Column: Sidebar
+                                SizedBox(
+                                  width: 280,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (lastSummary != null) ...[
+                                        _buildSectionHeader(
+                                          'Latest Summary',
+                                          colorScheme,
+                                          textTheme,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildSummaryCard(
+                                          lastSummary!,
+                                          colorScheme,
+                                          textTheme,
+                                          context,
+                                        ),
+                                        const SizedBox(height: 32),
+                                      ],
+                                      if (mindMaps.isNotEmpty) ...[
+                                        _buildSectionHeader(
+                                          'Mind Maps',
+                                          colorScheme,
+                                          textTheme,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _buildMindMapsSection(
+                                          mindMaps,
+                                          colorScheme,
+                                          textTheme,
+                                          context,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (chapters.isNotEmpty) ...[
+                                  _buildSectionHeader(
+                                    'Recent Chapters',
+                                    colorScheme,
+                                    textTheme,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildChaptersSection(
+                                    chapters,
+                                    colorScheme,
+                                    textTheme,
+                                    context,
+                                  ),
+                                  const SizedBox(height: 24),
                                 ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            // Right Column: Sidebar
-                            SizedBox(
-                              width: 280,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (lastSummary != null) ...[
-                                    _buildSectionHeader(
-                                      'Latest Summary',
-                                      colorScheme,
-                                      textTheme,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildSummaryCard(
-                                      lastSummary!,
-                                      colorScheme,
-                                      textTheme,
-                                      context,
-                                    ),
-                                    const SizedBox(height: 32),
-                                  ],
-                                  if (mindMaps.isNotEmpty) ...[
-                                    _buildSectionHeader(
-                                      'Mind Maps',
-                                      colorScheme,
-                                      textTheme,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildMindMapsSection(
-                                      mindMaps,
-                                      colorScheme,
-                                      textTheme,
-                                      context,
-                                    ),
-                                  ],
+                                if (folders.isNotEmpty) ...[
+                                  _buildSectionHeader(
+                                    'Your Folders',
+                                    colorScheme,
+                                    textTheme,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildFoldersSection(
+                                    folders,
+                                    colorScheme,
+                                    textTheme,
+                                    context,
+                                  ),
+                                  const SizedBox(height: 24),
                                 ],
-                              ),
+                                if (lastSummary != null) ...[
+                                  _buildSectionHeader(
+                                    'Latest Summary',
+                                    colorScheme,
+                                    textTheme,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildSummaryCard(
+                                    lastSummary!,
+                                    colorScheme,
+                                    textTheme,
+                                    context,
+                                  ),
+                                  const SizedBox(height: 24),
+                                ],
+                                if (mindMaps.isNotEmpty) ...[
+                                  _buildSectionHeader(
+                                    'Mind Maps',
+                                    colorScheme,
+                                    textTheme,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildMindMapsSection(
+                                    mindMaps,
+                                    colorScheme,
+                                    textTheme,
+                                    context,
+                                  ),
+                                ],
+                              ],
                             ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (chapters.isNotEmpty) ...[
-                              _buildSectionHeader(
-                                'Recent Chapters',
-                                colorScheme,
-                                textTheme,
-                              ),
-                              const SizedBox(height: 16),
-                              _buildChaptersSection(
-                                chapters,
-                                colorScheme,
-                                textTheme,
-                                context,
-                              ),
-                              const SizedBox(height: 24),
-                            ],
-                            if (folders.isNotEmpty) ...[
-                              _buildSectionHeader(
-                                'Your Folders',
-                                colorScheme,
-                                textTheme,
-                              ),
-                              const SizedBox(height: 16),
-                              _buildFoldersSection(
-                                folders,
-                                colorScheme,
-                                textTheme,
-                                context,
-                              ),
-                              const SizedBox(height: 24),
-                            ],
-                            if (lastSummary != null) ...[
-                              _buildSectionHeader(
-                                'Latest Summary',
-                                colorScheme,
-                                textTheme,
-                              ),
-                              const SizedBox(height: 16),
-                              _buildSummaryCard(
-                                lastSummary!,
-                                colorScheme,
-                                textTheme,
-                                context,
-                              ),
-                              const SizedBox(height: 24),
-                            ],
-                            if (mindMaps.isNotEmpty) ...[
-                              _buildSectionHeader(
-                                'Mind Maps',
-                                colorScheme,
-                                textTheme,
-                              ),
-                              const SizedBox(height: 16),
-                              _buildMindMapsSection(
-                                mindMaps,
-                                colorScheme,
-                                textTheme,
-                                context,
-                              ),
-                            ],
-                          ],
-                        ),
-                ),
-              ),
+                    ),
+                  ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
-            ],
+                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -341,17 +354,17 @@ class HomeWebLayout extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              colorScheme.primary.withOpacity(0.1),
-              colorScheme.primaryContainer.withOpacity(0.05),
+              colorScheme.primary.withValues(alpha: 0.1),
+              colorScheme.primaryContainer.withValues(alpha: 0.05),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
+          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.06),
+              color: colorScheme.shadow.withValues(alpha: 0.06),
               blurRadius: 14,
               offset: const Offset(0, 6),
             ),
@@ -400,7 +413,7 @@ class HomeWebLayout extends StatelessWidget {
                       Text(
                         'Complete',
                         style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.primary.withOpacity(0.7),
+                          color: colorScheme.primary.withValues(alpha: 0.7),
                           fontSize: 12,
                         ),
                       ),
@@ -493,13 +506,14 @@ class HomeWebLayout extends StatelessWidget {
     ColorScheme colorScheme,
     TextTheme textTheme,
     List<Map<String, dynamic>> stats,
-    BuildContext context,
+    double availableWidth,
   ) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = screenWidth > 1200 ? 4 : (screenWidth > 900 ? 3 : 2);
-    final childAspectRatio = screenWidth > 1200
+    final crossAxisCount = availableWidth > 1200
+        ? 4
+        : (availableWidth > 900 ? 3 : 2);
+    final childAspectRatio = availableWidth > 1200
         ? 2.5
-        : (screenWidth > 900 ? 2.2 : 2.0);
+        : (availableWidth > 900 ? 2.2 : 2.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -551,18 +565,18 @@ class HomeWebLayout extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               colorScheme.surface,
-              colorScheme.primaryContainer.withOpacity(0.08),
+              colorScheme.primaryContainer.withValues(alpha: 0.08),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.06),
+              color: colorScheme.shadow.withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -575,19 +589,27 @@ class HomeWebLayout extends StatelessWidget {
           children: [
             Icon(icon, size: 28, color: colorScheme.primary),
             const SizedBox(height: 8),
-            Text(
-              value,
-              style: textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+            Flexible(
+              child: Text(
+                value,
+                style: textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 12,
+            Flexible(
+              child: Text(
+                label,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -639,18 +661,18 @@ class HomeWebLayout extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               colorScheme.surface,
-              colorScheme.primaryContainer.withOpacity(0.05),
+              colorScheme.primaryContainer.withValues(alpha: 0.05),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.05),
+              color: colorScheme.shadow.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -732,18 +754,18 @@ class HomeWebLayout extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               colorScheme.surface,
-              colorScheme.primaryContainer.withOpacity(0.05),
+              colorScheme.primaryContainer.withValues(alpha: 0.05),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.05),
+              color: colorScheme.shadow.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -824,18 +846,18 @@ class HomeWebLayout extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               colorScheme.surface,
-              colorScheme.tertiaryContainer.withOpacity(0.05),
+              colorScheme.tertiaryContainer.withValues(alpha: 0.05),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.05),
+              color: colorScheme.shadow.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -930,18 +952,18 @@ class HomeWebLayout extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               colorScheme.surface,
-              colorScheme.primaryContainer.withOpacity(0.03),
+              colorScheme.primaryContainer.withValues(alpha: 0.03),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.05),
+              color: colorScheme.shadow.withValues(alpha: 0.05),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),

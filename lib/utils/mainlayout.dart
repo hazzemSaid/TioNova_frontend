@@ -108,22 +108,29 @@ class _MainLayoutState extends State<MainLayout> {
     final indexProvider = context.watch<IndexMainLayout>();
     final currentIndex = indexProvider.index;
 
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: colorScheme.onPrimary,
-      body: Stack(
-        children: [
-          // Main Content Area (behind sidebar)
-          Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final isLarge = width >= 1200;
+        final isMedium = width >= 900 && width < 1200;
+        final double minDrawerWidth = isLarge ? 88 : (isMedium ? 80 : 0);
+        final double maxDrawerWidth = isLarge ? 296 : (isMedium ? 264 : 240);
+        final double sidebarWidth = _isSidebarClosed
+            ? minDrawerWidth
+            : maxDrawerWidth;
+
+        return Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: colorScheme.onPrimary,
+          body: Column(
             children: [
-              // Top bar with menu button
               Container(
                 height: 60,
                 decoration: BoxDecoration(
                   color: colorScheme.surface,
                   border: Border(
                     bottom: BorderSide(
-                      color: colorScheme.outline.withOpacity(0.2),
+                      color: colorScheme.outline.withValues(alpha: 0.2),
                       width: 1,
                     ),
                   ),
@@ -145,53 +152,85 @@ class _MainLayoutState extends State<MainLayout> {
                   ],
                 ),
               ),
-              // Main content
               Expanded(
-                child: Container(
-                  color: colorScheme.onPrimary,
-                  child: IndexedStack(
-                    index: currentIndex,
-                    sizing: StackFit.expand,
-                    children: List.generate(
-                      _screens.length,
-                      (index) =>
-                          currentIndex == index || _screens[index] != null
-                          ? _getScreen(index)
-                          : Container(),
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      width: sidebarWidth,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        border: Border(
+                          right: BorderSide(
+                            color: colorScheme.outline.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: ClipRect(
+                        child: OverflowBox(
+                          maxWidth: maxDrawerWidth,
+                          minWidth: maxDrawerWidth,
+                          alignment: Alignment.topLeft,
+                          child: SizedBox(
+                            width: maxDrawerWidth,
+                            child: _buildSidebar(context, sidebarWidth),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!_isSidebarClosed) {
+                            _safeSetState(() {
+                              _isSidebarClosed = true;
+                            });
+                          }
+                        },
+                        behavior: HitTestBehavior.translucent,
+                        child: Container(
+                          color: colorScheme.onPrimary,
+                          child: IndexedStack(
+                            index: currentIndex,
+                            sizing: StackFit.expand,
+                            children: List.generate(
+                              _screens.length,
+                              (index) =>
+                                  currentIndex == index ||
+                                      _screens[index] != null
+                                  ? _getScreen(index)
+                                  : Container(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          // Sidebar (overlay on top with slide animation)
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            left: _isSidebarClosed ? -240 : 0,
-            top: 0,
-            bottom: 0,
-            child: _buildSidebar(context),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   // Permanent Sidebar for Web
-  Widget _buildSidebar(BuildContext context) {
+  Widget _buildSidebar(BuildContext context, double width) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final indexProvider = context.watch<IndexMainLayout>();
     final currentIndex = indexProvider.index;
+    final bool isCollapsed = width < 160;
 
     return Container(
-      width: 240,
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
           right: BorderSide(
-            color: colorScheme.outline.withOpacity(0.2),
+            color: colorScheme.outline.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -205,27 +244,32 @@ class _MainLayoutState extends State<MainLayout> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'TioNova',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
+                if (!isCollapsed)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'TioNova',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      Text(
-                        'Study Assistant',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.6),
+                        Text(
+                          'Study Assistant',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
                 IconButton(
                   icon: Icon(
                     Icons.close,
@@ -254,6 +298,7 @@ class _MainLayoutState extends State<MainLayout> {
                   label: 'Home',
                   index: 0,
                   currentIndex: currentIndex,
+                  isCollapsed: isCollapsed,
                 ),
                 _buildSidebarItem(
                   context: context,
@@ -261,6 +306,7 @@ class _MainLayoutState extends State<MainLayout> {
                   label: 'Folders',
                   index: 1,
                   currentIndex: currentIndex,
+                  isCollapsed: isCollapsed,
                 ),
                 _buildSidebarItem(
                   context: context,
@@ -268,6 +314,7 @@ class _MainLayoutState extends State<MainLayout> {
                   label: 'Challenges',
                   index: 2,
                   currentIndex: currentIndex,
+                  isCollapsed: isCollapsed,
                 ),
                 _buildSidebarItem(
                   context: context,
@@ -275,6 +322,7 @@ class _MainLayoutState extends State<MainLayout> {
                   label: 'Profile',
                   index: 3,
                   currentIndex: currentIndex,
+                  isCollapsed: isCollapsed,
                 ),
               ],
             ),
@@ -285,7 +333,7 @@ class _MainLayoutState extends State<MainLayout> {
             child: Text(
               '© 2025 TioNova',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.5),
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -300,6 +348,7 @@ class _MainLayoutState extends State<MainLayout> {
     required String label,
     required int index,
     required int currentIndex,
+    required bool isCollapsed,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -327,22 +376,24 @@ class _MainLayoutState extends State<MainLayout> {
                 size: 24,
                 color: isSelected
                     ? colorScheme.primary
-                    : colorScheme.onSurface.withOpacity(0.7),
+                    : colorScheme.onSurface.withValues(alpha: 0.7),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  label,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: isSelected
-                        ? colorScheme.primary
-                        : colorScheme.onSurface.withOpacity(0.7),
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
+              if (!isCollapsed) ...[
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurface.withValues(alpha: 0.7),
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -364,14 +415,14 @@ class _MainLayoutState extends State<MainLayout> {
         color: colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: colorScheme.outline.withOpacity(0.4),
+            color: colorScheme.outline.withValues(alpha: 0.4),
             width: 0.5,
           ),
         ),
         boxShadow: isIOS
             ? [
                 BoxShadow(
-                  color: colorScheme.shadow.withOpacity(0.1),
+                  color: colorScheme.shadow.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
