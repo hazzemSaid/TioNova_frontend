@@ -111,6 +111,24 @@
       document.getElementById("splash-branding")?.remove();
       document.body.style.background = "transparent";
     }
+    
+    // Add timeout fallback for iOS Safari - if Flutter doesn't load in 15 seconds, show error
+    window.flutterLoadTimeout = setTimeout(function() {
+      console.error('Flutter failed to load within timeout');
+      var splash = document.getElementById("splash");
+      if (splash) {
+        var errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'position:absolute;bottom:20%;left:50%;transform:translateX(-50%);color:#888;text-align:center;font-family:system-ui;';
+        errorDiv.innerHTML = '<p>Loading...</p><p style="font-size:12px;margin-top:10px;">If this takes too long, try refreshing the page.</p>';
+        splash.appendChild(errorDiv);
+      }
+    }, 15000);
+    
+    // Clear timeout when Flutter loads
+    window.addEventListener('flutter-first-frame', function() {
+      clearTimeout(window.flutterLoadTimeout);
+      removeSplashFromWeb();
+    });
   </script>
 </head>
 <body>

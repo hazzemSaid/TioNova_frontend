@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -94,13 +97,39 @@ Future<void> setupServiceLocator() async {
   // Initialize Hive
   // Hive.init(appDocumentDir.path); // Removed redundant init, use Hive.initFlutter() from main.dart
 
-  // Register Hive adapters
-  if (!Hive.isAdapterRegistered(UserModelAdapter().typeId)) {
-    Hive.registerAdapter(UserModelAdapter());
+  // Register Hive adapters - wrap in try-catch for web
+  try {
+    if (!Hive.isAdapterRegistered(UserModelAdapter().typeId)) {
+      Hive.registerAdapter(UserModelAdapter());
+    }
+  } catch (e) {
+    print('⚠️ Error registering UserModelAdapter: $e');
+    if (!kIsWeb) rethrow;
   }
 
-  // Open Hive box
-  final box = await Hive.openBox('auth_box');
+  // Open Hive box with timeout for web platforms (iOS Safari can hang)
+  Box? box;
+  if (kIsWeb) {
+    // On web, use shorter timeout and fallback gracefully
+    try {
+      box = await Hive.openBox('auth_box').timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          print('⚠️ Timeout opening auth_box on web');
+          throw TimeoutException('auth_box timeout');
+        },
+      );
+      print('✅ auth_box opened successfully on web');
+    } catch (e) {
+      print('⚠️ Error opening auth_box on web: $e');
+      // On web, we'll use null box and handle it in LocalAuthDataSource
+      box = null;
+    }
+  } else {
+    // On mobile/desktop, normal box opening
+    box = await Hive.openBox('auth_box');
+  }
+
   final Dio dio = Dio(BaseOptions(baseUrl: baseUrl));
   final logger = PrettyDioLogger(
     requestHeader: true,
@@ -251,9 +280,18 @@ Future<void> setupServiceLocator() async {
     ),
   );
 
-  getIt.registerLazySingleton<ILocalAuthDataSource>(
-    () => LocalAuthDataSource(box),
-  );
+  // Use web-safe auth data source when Hive box is not available
+  if (box != null) {
+    final nonNullBox = box; // Store in non-nullable local variable
+    getIt.registerLazySingleton<ILocalAuthDataSource>(
+      () => LocalAuthDataSource(nonNullBox),
+    );
+  } else {
+    // Web fallback - use in-memory storage
+    getIt.registerLazySingleton<ILocalAuthDataSource>(
+      () => WebLocalAuthDataSource(),
+    );
+  }
 
   // Repository
   getIt.registerLazySingleton<AuthRepo>(

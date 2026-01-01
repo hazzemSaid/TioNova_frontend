@@ -1,6 +1,7 @@
 // // main.dart
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -23,7 +24,22 @@ import 'package:tionova/core/services/shorebird_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/core/theme/app_theme.dart';
 import 'package:tionova/core/widgets/update_checker_widget.dart';
+import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
+import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
+import 'package:tionova/features/auth/data/AuthDataSource/localauthdatasource.dart';
+import 'package:tionova/features/auth/data/AuthDataSource/remoteauthdatasource.dart';
 import 'package:tionova/features/auth/data/models/UserModel.dart';
+import 'package:tionova/features/auth/data/repo/authrepoimp.dart';
+import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
+import 'package:tionova/features/auth/data/services/auth_service.dart';
+import 'package:tionova/features/auth/domain/repo/authrepo.dart';
+import 'package:tionova/features/auth/domain/usecases/forgetPasswordusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/loginusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/registerusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/resetpasswordusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/verifyCodeusecase.dart';
+import 'package:tionova/features/auth/domain/usecases/verifyEmailusecase.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
@@ -48,6 +64,54 @@ Future<void> _handleNotificationTap(RemoteMessage message) async {
 }
 
 Future<void> main() async {
+  // Wrap entire main in try-catch to prevent white screen on errors
+  try {
+    await _initializeApp();
+  } catch (e, stackTrace) {
+    print('❌ Critical error during app initialization: $e');
+    print('Stack trace: $stackTrace');
+    // Run minimal app on error
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'TioNova',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Loading failed. Please refresh.',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 20),
+                if (kIsWeb)
+                  ElevatedButton(
+                    onPressed: () {
+                      // Attempt to reload on web
+                      // ignore: undefined_prefixed_name
+                      // html.window.location.reload();
+                    },
+                    child: const Text('Retry'),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _initializeApp() async {
   // Initialize Flutter bindings and services
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -86,6 +150,12 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        print('⚠️ Firebase initialization timeout');
+        throw TimeoutException('Firebase init timeout');
+      },
     );
     print('✅ Firebase initialized successfully with NEW config');
 
@@ -95,7 +165,11 @@ Future<void> main() async {
     print('✅ Verified Database URL: ${app.options.databaseURL}');
   } catch (e) {
     print('❌ Error initializing Firebase: $e');
-    rethrow;
+    // On web, continue without Firebase if it fails
+    if (!kIsWeb) {
+      rethrow;
+    }
+    print('ℹ️ Continuing without Firebase on web...');
   }
 
   // ==========================================
@@ -117,21 +191,31 @@ Future<void> main() async {
     print('ℹ️ Skipping push notifications on web platform');
   }
 
-  // Initialize Hive (needed for theme and auth)
-  await HiveManager.initializeHive();
+  // Initialize Hive (needed for theme and auth) - with error handling for web
+  try {
+    await HiveManager.initializeHive();
+  } catch (e) {
+    print('⚠️ Hive initialization failed: $e');
+    if (!kIsWeb) rethrow;
+  }
 
-  // Register Hive adapters
-  if (!Hive.isAdapterRegistered(0)) {
-    Hive.registerAdapter(PdfCacheModelAdapter());
-    print('Main: Registered PdfCacheModelAdapter with typeId 0');
-  }
-  if (!Hive.isAdapterRegistered(1)) {
-    Hive.registerAdapter(UserModelAdapter());
-    print('Main: Registered UserModelAdapter with typeId 1');
-  }
-  if (!Hive.isAdapterRegistered(2)) {
-    Hive.registerAdapter(SummaryCacheModelAdapter());
-    print('Main: Registered SummaryCacheModelAdapter with typeId 2');
+  // Register Hive adapters - wrap in try-catch for web
+  try {
+    if (!Hive.isAdapterRegistered(0)) {
+      Hive.registerAdapter(PdfCacheModelAdapter());
+      print('Main: Registered PdfCacheModelAdapter with typeId 0');
+    }
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(UserModelAdapter());
+      print('Main: Registered UserModelAdapter with typeId 1');
+    }
+    if (!Hive.isAdapterRegistered(2)) {
+      Hive.registerAdapter(SummaryCacheModelAdapter());
+      print('Main: Registered SummaryCacheModelAdapter with typeId 2');
+    }
+  } catch (e) {
+    print('⚠️ Hive adapter registration failed: $e');
+    if (!kIsWeb) rethrow;
   }
 
   // Open only critical boxes with timeout for web
@@ -148,8 +232,22 @@ Future<void> main() async {
     // Continue without the box on web if it fails
   }
 
-  // Setup service locator (critical for auth)
-  await setupServiceLocator();
+  // Setup service locator (critical for auth) - with timeout for web
+  try {
+    await setupServiceLocator().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        print('⚠️ Service locator setup timeout');
+        throw TimeoutException('setupServiceLocator timeout');
+      },
+    );
+  } catch (e) {
+    print('⚠️ Error setting up service locator: $e');
+    if (!kIsWeb) rethrow;
+    // On web, we need to handle this gracefully
+    print('ℹ️ Attempting minimal service locator setup for web...');
+    await _setupMinimalServiceLocatorForWeb();
+  }
 
   // Initialize auth cubit with timeout for web platforms
   final authCubit = getIt<AuthCubit>();
@@ -281,4 +379,119 @@ class MyApp extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Minimal service locator setup for web when full setup fails
+/// This provides just enough to show the auth screen
+Future<void> _setupMinimalServiceLocatorForWeb() async {
+  print('🔧 Setting up minimal services for web...');
+
+  const baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
+
+  // Only register if not already registered
+  if (!getIt.isRegistered<Dio>()) {
+    final dio = Dio(BaseOptions(baseUrl: baseUrl));
+    getIt.registerLazySingleton<Dio>(() => dio);
+  }
+
+  // Register TokenStorage if not registered
+  if (!getIt.isRegistered<TokenStorage>()) {
+    getIt.registerLazySingleton<TokenStorage>(() => TokenStorage());
+  }
+
+  // Register AuthService if not registered
+  if (!getIt.isRegistered<AuthService>()) {
+    getIt.registerLazySingleton<AuthService>(
+      () => AuthService(dio: getIt<Dio>()),
+    );
+  }
+
+  // Register WebLocalAuthDataSource as fallback
+  if (!getIt.isRegistered<ILocalAuthDataSource>()) {
+    getIt.registerLazySingleton<ILocalAuthDataSource>(
+      () => WebLocalAuthDataSource(),
+    );
+  }
+
+  // Register IAuthDataSource if not registered
+  if (!getIt.isRegistered<IAuthDataSource>()) {
+    getIt.registerLazySingleton<IAuthDataSource>(
+      () => Remoteauthdatasource(
+        dio: getIt<Dio>(),
+        authService: getIt<AuthService>(),
+      ),
+    );
+  }
+
+  // Register AuthRepo if not registered
+  if (!getIt.isRegistered<AuthRepo>()) {
+    getIt.registerLazySingleton<AuthRepo>(
+      () => AuthRepoImp(
+        remoteDataSource: getIt<IAuthDataSource>(),
+        localDataSource: getIt<ILocalAuthDataSource>(),
+      ),
+    );
+  }
+
+  // Register all required use cases
+  if (!getIt.isRegistered<Googleauthusecase>()) {
+    getIt.registerLazySingleton<Googleauthusecase>(
+      () => Googleauthusecase(authRepo: getIt<AuthRepo>()),
+    );
+  }
+
+  if (!getIt.isRegistered<LoginUseCase>()) {
+    getIt.registerLazySingleton<LoginUseCase>(
+      () => LoginUseCase(getIt<AuthRepo>()),
+    );
+  }
+
+  if (!getIt.isRegistered<RegisterUseCase>()) {
+    getIt.registerLazySingleton<RegisterUseCase>(
+      () => RegisterUseCase(getIt<AuthRepo>()),
+    );
+  }
+
+  if (!getIt.isRegistered<VerifyEmailUseCase>()) {
+    getIt.registerLazySingleton<VerifyEmailUseCase>(
+      () => VerifyEmailUseCase(getIt<AuthRepo>()),
+    );
+  }
+
+  if (!getIt.isRegistered<ResetPasswordUseCase>()) {
+    getIt.registerLazySingleton<ResetPasswordUseCase>(
+      () => ResetPasswordUseCase(getIt<AuthRepo>()),
+    );
+  }
+
+  if (!getIt.isRegistered<ForgetPasswordUseCase>()) {
+    getIt.registerLazySingleton<ForgetPasswordUseCase>(
+      () => ForgetPasswordUseCase(getIt<AuthRepo>()),
+    );
+  }
+
+  if (!getIt.isRegistered<VerifyCodeUseCase>()) {
+    getIt.registerLazySingleton<VerifyCodeUseCase>(
+      () => VerifyCodeUseCase(getIt<AuthRepo>()),
+    );
+  }
+
+  // Register AuthCubit if not registered
+  if (!getIt.isRegistered<AuthCubit>()) {
+    getIt.registerLazySingleton<AuthCubit>(
+      () => AuthCubit(
+        googleauthusecase: getIt<Googleauthusecase>(),
+        loginUseCase: getIt<LoginUseCase>(),
+        registerUseCase: getIt<RegisterUseCase>(),
+        verifyEmailUseCase: getIt<VerifyEmailUseCase>(),
+        resetPasswordUseCase: getIt<ResetPasswordUseCase>(),
+        forgetPasswordUseCase: getIt<ForgetPasswordUseCase>(),
+        verifyCodeUseCase: getIt<VerifyCodeUseCase>(),
+        localAuthDataSource: getIt<ILocalAuthDataSource>(),
+        tokenStorage: getIt<TokenStorage>(),
+      ),
+    );
+  }
+
+  print('✅ Minimal web services configured');
 }

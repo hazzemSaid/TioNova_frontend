@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -8,16 +10,31 @@ import 'hive_manager_stub.dart'
 
 class HiveManager {
   /// Initialize Hive with error handling for corrupted data
+  /// Includes timeout for web platforms (iOS Safari can hang)
   static Future<void> initializeHive() async {
     try {
-      await Hive.initFlutter();
+      if (kIsWeb) {
+        // On web, use timeout to prevent hanging on iOS Safari
+        await Hive.initFlutter().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            print('⚠️ Hive initialization timeout on web');
+            throw TimeoutException('Hive init timeout');
+          },
+        );
+      } else {
+        await Hive.initFlutter();
+      }
+      print('✅ Hive initialized successfully');
     } catch (e) {
-      print('Error initializing Hive: $e');
+      print('⚠️ Error initializing Hive: $e');
       // Clear all Hive data and try again (only on non-web)
       if (!kIsWeb) {
         await clearAllHiveData();
+        await Hive.initFlutter();
       }
-      await Hive.initFlutter();
+      // On web, continue even if Hive fails - the app should still work
+      // with limited functionality
     }
   }
 

@@ -66,3 +66,34 @@ class LocalAuthDataSource implements ILocalAuthDataSource {
     }
   }
 }
+
+/// Web-safe implementation of [ILocalAuthDataSource] that uses in-memory storage.
+/// This is used as a fallback when Hive/IndexedDB is not available on iOS Safari.
+class WebLocalAuthDataSource implements ILocalAuthDataSource {
+  // In-memory storage for web fallback
+  UserModel? _cachedUser;
+
+  WebLocalAuthDataSource() {
+    print('ℹ️ Using WebLocalAuthDataSource (in-memory storage)');
+  }
+
+  @override
+  Future<Either<Failure, void>> signOut() async {
+    _cachedUser = null;
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, UserModel>> getCurrentUser() async {
+    if (_cachedUser != null) {
+      return Right(_cachedUser!);
+    }
+    return Left(ServerFailure(errMessage: 'User not found'));
+  }
+
+  @override
+  Future<Either<Failure, void>> saveUser(UserModel user) async {
+    _cachedUser = user;
+    return const Right(null);
+  }
+}
