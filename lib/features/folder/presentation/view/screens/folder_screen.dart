@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
@@ -46,20 +44,10 @@ class _FolderScreenState extends State<FolderScreen> {
   void initState() {
     super.initState();
     _fetchFolders();
-    _subscribeToFolderView();
-  }
-
-  void _subscribeToFolderView() {
-    final authState = context.read<AuthCubit>().state;
-    if (authState is! AuthSuccess) return;
-    final userId = authState.user.id;
-    final sseUrl = '$baseUrl/sse/subscribe?userId=$userId';
-    context.read<FolderCubit>().subscribeToFolderSse(sseUrl);
   }
 
   @override
   void dispose() {
-    context.read<FolderCubit>().unsubscribeFromFolderSse();
     super.dispose();
   }
 

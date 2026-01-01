@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:tionova/core/utils/platform_utils.dart';
 
 /// Service to check for app updates and download new APK
 /// This is for direct APK distribution (not Play Store)
@@ -26,6 +28,9 @@ class AppUpdateService {
 
   /// Check if update is available
   Future<UpdateInfo?> checkForUpdate() async {
+    // Skip on Web
+    if (isWeb) return null;
+
     if (_isChecking) return null;
 
     try {
@@ -84,6 +89,9 @@ class AppUpdateService {
     required String downloadUrl,
     required Function(double) onProgress,
   }) async {
+    // Skip on Web
+    if (isWeb) return null;
+
     if (_isDownloading) {
       print('⚠️ Already downloading');
       return null;
@@ -142,6 +150,9 @@ class AppUpdateService {
 
   /// Install downloaded APK
   Future<bool> installUpdate(String apkPath) async {
+    // Skip on Web
+    if (isWeb) return false;
+
     try {
       print('📦 Installing APK: $apkPath');
 

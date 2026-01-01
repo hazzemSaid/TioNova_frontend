@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
+import 'package:tionova/core/utils/platform_utils.dart';
 
 /// Service to manage Shorebird Code Push updates
 /// Handles checking for updates and applying patches automatically
@@ -21,8 +22,8 @@ class ShorebirdService {
   factory ShorebirdService() => _instance;
   ShorebirdService._internal();
 
-  // Shorebird Updater instance
-  final ShorebirdUpdater _updater = ShorebirdUpdater();
+  // Shorebird Updater instance (only for mobile)
+  late final ShorebirdUpdater? _updater = isMobile ? ShorebirdUpdater() : null;
 
   bool _isUpdateAvailable = false;
   bool _isCheckingForUpdate = false;
@@ -43,11 +44,14 @@ class ShorebirdService {
 
   /// Initialize Shorebird and check for updates on app start
   Future<void> initialize() async {
+    // Skip on Web
+    if (isWeb) return;
+
     try {
       print('🚀 ShorebirdService: Initializing...');
 
       // Check if Shorebird is available (only works in release builds)
-      final isAvailable = _updater.isAvailable;
+      final isAvailable = _updater?.isAvailable ?? false;
 
       if (!isAvailable) {
         print(
@@ -61,7 +65,7 @@ class ShorebirdService {
 
       // Get current patch
       try {
-        final currentPatch = await _updater.readCurrentPatch();
+        final currentPatch = await _updater?.readCurrentPatch();
         _currentPatchVersion = currentPatch?.number.toString();
         print(
           'ℹ️ ShorebirdService: Current patch: ${_currentPatchVersion ?? "none"}',
@@ -71,7 +75,7 @@ class ShorebirdService {
       }
 
       // Check for available updates
-      final status = await _updater.checkForUpdate();
+      final status = await _updater?.checkForUpdate();
 
       if (status == UpdateStatus.outdated) {
         print('✅ ShorebirdService: New patch available!');
@@ -93,6 +97,9 @@ class ShorebirdService {
 
   /// Manually check for updates
   Future<bool> checkForUpdate() async {
+    if (isWeb) {
+      return false;
+    }
     if (_isCheckingForUpdate) {
       print('ℹ️ ShorebirdService: Already checking for updates');
       return false;
@@ -103,21 +110,25 @@ class ShorebirdService {
       print('🔍 ShorebirdService: Checking for updates...');
 
       // Check if Shorebird is available
-      final isAvailable = _updater.isAvailable;
+      final isAvailable = _updater?.isAvailable ?? false;
       if (!isAvailable) {
         print('ℹ️ ShorebirdService: Shorebird not available (debug mode)');
         return false;
       }
 
       // Check for new patch
-      final status = await _updater.checkForUpdate();
+      final status = await _updater?.checkForUpdate();
 
       if (status == UpdateStatus.outdated) {
         print('✅ ShorebirdService: New patch found!');
         _isUpdateAvailable = true;
         return true;
-      } else {
+      } else if (status == UpdateStatus.upToDate) {
         print('ℹ️ ShorebirdService: No updates available (status: $status)');
+        _isUpdateAvailable = false;
+        return false;
+      } else {
+        print('ℹ️ ShorebirdService: Update status: $status');
         _isUpdateAvailable = false;
         return false;
       }
@@ -131,6 +142,9 @@ class ShorebirdService {
 
   /// Download and install available update
   Future<bool> downloadUpdate() async {
+    if (isWeb) {
+      return false;
+    }
     if (!_isUpdateAvailable) {
       print('ℹ️ ShorebirdService: No update available to download');
       return false;
@@ -140,7 +154,7 @@ class ShorebirdService {
       print('⬇️ ShorebirdService: Downloading patch...');
 
       // Download the patch
-      await _updater.update();
+      await _updater?.update();
 
       print('✅ ShorebirdService: Patch downloaded successfully');
       print('ℹ️ ShorebirdService: Restart app to apply patch');
@@ -155,7 +169,7 @@ class ShorebirdService {
   /// Check if Shorebird is available (only works in release mode)
   Future<bool> isShorebirdAvailable() async {
     try {
-      return _updater.isAvailable;
+      return _updater?.isAvailable ?? false;
     } catch (e) {
       return false;
     }

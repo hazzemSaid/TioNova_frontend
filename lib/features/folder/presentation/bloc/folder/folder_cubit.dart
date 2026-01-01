@@ -1,15 +1,12 @@
 // features/folder/presentation/bloc/folder/folder_cubit.dart
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
-import 'package:flutter_client_sse/flutter_client_sse.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/safe_emit.dart';
-import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
+import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
 import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
@@ -37,35 +34,6 @@ class FolderCubit extends Cubit<FolderState> {
   final DeleteFolderUseCase deleteFolderUseCase;
   final GetAvailableUsersForShareUseCase getAvailableUsersForShareUseCase;
   final GetPublicFoldersUseCase getPublicFoldersUseCase;
-
-  // SSE subscription reference
-  StreamSubscription<SSEModel>? _sseSubscription;
-
-  // Call this to start listening to SSE events for folder changes
-  void subscribeToFolderSse(String sseUrl) {
-    // Cancel previous subscription if exists
-    _sseSubscription?.cancel();
-    _sseSubscription =
-        SSEClient.subscribeToSSE(
-          url: sseUrl,
-          method: SSERequestType.GET,
-          header: {},
-        ).listen((event) {
-          _handleSseEvent(event);
-        });
-  }
-
-  // Call this to stop listening to SSE events
-  void unsubscribeFromFolderSse() {
-    _sseSubscription?.cancel();
-    _sseSubscription = null;
-  }
-
-  @override
-  Future<void> close() {
-    unsubscribeFromFolderSse();
-    return super.close();
-  }
 
   Future<void> fetchAllFolders() async {
     if (isClosed) return;
@@ -257,42 +225,4 @@ class FolderCubit extends Cubit<FolderState> {
 
   // ... (متغير _folderMap موجود هنا)
   // Map<String, Folder> _folderMap = {};
-
-  // دالة جديدة لمعالجة الأحداث القادمة من السيرفر
-  void _handleSseEvent(SSEModel event) {
-    if (isClosed || event.data == null || event.data!.isEmpty) return;
-
-    try {
-      final eventData = event.data is String
-          ? json.decode(event.data!)
-          : event.data;
-      final String eventType = eventData['type'];
-      final Foldermodel folder = Foldermodel.fromJson(eventData['folder']);
-
-      // 2. حدد نوع الحدث ونفذ التعديل المناسب
-      switch (eventType) {
-        case 'folder_created':
-        case 'folder_shared_created':
-          // أضف المجلد الجديد للخريطة
-          _folderMap[folder.id] = folder;
-          break;
-        case 'folder_updated':
-        case 'folder_shared_updated':
-          // حدث بيانات المجلد الموجود
-          _folderMap[folder.id] = folder;
-          break;
-        case 'folder_deleted':
-        case 'folder_shared_deleted':
-          _folderMap.remove(folder.id);
-          break;
-        default:
-        // تجاهل الأنواع غير المعروفة
-      }
-
-      // 3. أطلق state جديدة بالقائمة المحدثة
-      safeEmit(FolderLoaded(_folderMap.values.toList()));
-    } catch (e) {
-      // يمكنك التعامل مع أخطاء فك التشفير هنا
-    }
-  }
 }

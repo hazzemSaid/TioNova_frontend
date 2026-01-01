@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -8,7 +7,12 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:tionova/core/utils/platform_utils.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+
+import 'voice_file_stub.dart'
+    if (dart.library.io) 'voice_file_io.dart'
+    as voice_fs;
 
 class AddNoteBottomSheet extends StatefulWidget {
   final String chapterId;
@@ -58,6 +62,7 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
   }
 
   Future<void> _initAudioRecorder() async {
+    if (isWeb) return;
     _audioRecorder = FlutterSoundRecorder();
     await _audioRecorder!.openRecorder();
   }
@@ -101,6 +106,16 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
   }
 
   Future<void> _startRecording() async {
+    if (isWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Voice recording is not supported on Web yet'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     final status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -154,6 +169,8 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
   }
 
   Future<void> _stopRecording() async {
+    if (isWeb) return;
+
     if (_isRecording && _audioRecorder != null) {
       await _audioRecorder!.stopRecorder();
       setState(() {
@@ -165,9 +182,8 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
   Future<void> _deleteRecording() async {
     if (_audioPath != null) {
       try {
-        final file = File(_audioPath!);
-        if (await file.exists()) {
-          await file.delete();
+        if (!isWeb) {
+          await voice_fs.deleteFile(_audioPath!);
         }
       } catch (e) {
         print('Error deleting recording: $e');
@@ -232,8 +248,7 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
         );
         return;
       }
-      final file = File(_audioPath!);
-      final bytes = await file.readAsBytes();
+      final bytes = await voice_fs.readFileBytes(_audioPath!);
       rawData['data'] = base64Encode(bytes);
       rawData['meta'] = {
         'duration': _formatDuration(_recordingDuration),
