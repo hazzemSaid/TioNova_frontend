@@ -8,10 +8,10 @@ workflows:
       vars:
         APPETIZE_API_TOKEN: "code" # Set in Codemagic UI
     scripts:
-      - name: Install Flutter 3.35.5
+      - name: Install Flutter 3.38.5
         script: |
           set -euo pipefail
-          FLUTTER_VERSION=3.35.5
+          FLUTTER_VERSION=3.38.5
           git clone --depth 1 -b ${FLUTTER_VERSION} https://github.com/flutter/flutter.git $CM_BUILD_DIR/flutter_${FLUTTER_VERSION} || {
             git clone --depth 1 https://github.com/flutter/flutter.git $CM_BUILD_DIR/flutter_${FLUTTER_VERSION}
             cd $CM_BUILD_DIR/flutter_${FLUTTER_VERSION}
@@ -148,9 +148,25 @@ workflows:
     environment:
       xcode: 16.2
     scripts:
+      - name: Install Flutter 3.38.5
+        script: |
+          set -euo pipefail
+          FLUTTER_VERSION=3.38.5
+          git clone --depth 1 -b ${FLUTTER_VERSION} https://github.com/flutter/flutter.git $CM_BUILD_DIR/flutter_${FLUTTER_VERSION} || {
+            git clone --depth 1 https://github.com/flutter/flutter.git $CM_BUILD_DIR/flutter_${FLUTTER_VERSION}
+            cd $CM_BUILD_DIR/flutter_${FLUTTER_VERSION}
+            git fetch --tags
+            git checkout ${FLUTTER_VERSION}
+          }
+          echo "export PATH=$CM_BUILD_DIR/flutter_${FLUTTER_VERSION}/bin:$PATH" >> $CM_ENV
+          echo "export PUB_CACHE=$CM_BUILD_DIR/.pub-cache" >> $CM_ENV
+          export PATH="$CM_BUILD_DIR/flutter_${FLUTTER_VERSION}/bin:$PATH"
+          export PUB_CACHE="$CM_BUILD_DIR/.pub-cache"
+          flutter precache --ios
       - name: Flutter clean & get
         script: |
           set -euo pipefail
+          source "$CM_ENV" || true
           flutter clean
           flutter pub get
       - name: Set iOS deployment target
