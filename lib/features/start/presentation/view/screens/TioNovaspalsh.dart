@@ -28,6 +28,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   final List<int> order = [0, 1, 2, 3, 4, 5, 6];
 
+  bool _navigationStarted = false;
+
   @override
   void initState() {
     super.initState();
@@ -41,37 +43,7 @@ class _SplashScreenState extends State<SplashScreen>
         )..addStatusListener((status) {
           if (status == AnimationStatus.completed) {
             // Navigate after animation completes
-            Future.delayed(const Duration(milliseconds: 300), () async {
-              if (mounted) {
-                final authState = context.read<AuthCubit>().state;
-
-                // Navigate using GoRouter
-                if (context.mounted) {
-                  if (authState is AuthSuccess) {
-                    // Authenticated users go to home
-                    GoRouter.of(context).go('/');
-                  } else {
-                    // Unauthenticated users - different flow for mobile app vs web
-                    if (kIsWeb) {
-                      // Web (desktop/mobile web): Go directly to auth
-                      GoRouter.of(context).go('/auth');
-                    } else {
-                      // Mobile App: Check if first time for onboarding
-                      final isFirstTime = await AppRouter.isFirstTime();
-                      if (context.mounted) {
-                        if (isFirstTime) {
-                          // First time mobile app user: Show onboarding
-                          GoRouter.of(context).go('/onboarding');
-                        } else {
-                          // Returning mobile app user: Go to auth
-                          GoRouter.of(context).go('/auth');
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            });
+            _navigateAfterSplash();
           }
         });
 
@@ -124,6 +96,62 @@ class _SplashScreenState extends State<SplashScreen>
         // Navigation is now handled in the animation status listener
       }
     });
+  }
+
+  /// Navigate after splash with timeout for web platforms
+  Future<void> _navigateAfterSplash() async {
+    if (_navigationStarted || !mounted) return;
+    _navigationStarted = true;
+
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+
+    try {
+      final authState = context.read<AuthCubit>().state;
+
+      if (context.mounted) {
+        if (authState is AuthSuccess) {
+          // Authenticated users go to home
+          GoRouter.of(context).go('/');
+        } else {
+          // Unauthenticated users - different flow for mobile app vs web
+          if (kIsWeb) {
+            // Web (desktop/mobile web): Go directly to auth
+            // Use a timeout to prevent hanging on iOS Safari
+            GoRouter.of(context).go('/auth');
+          } else {
+            // Mobile App: Check if first time for onboarding
+            // Use timeout to prevent hanging on slow storage
+            bool isFirstTime = true;
+            try {
+              isFirstTime = await AppRouter.isFirstTime().timeout(
+                const Duration(seconds: 2),
+                onTimeout: () => true, // Default to first time on timeout
+              );
+            } catch (e) {
+              print('⚠️ Error checking first time: $e');
+              isFirstTime = true;
+            }
+
+            if (context.mounted) {
+              if (isFirstTime) {
+                // First time mobile app user: Show onboarding
+                GoRouter.of(context).go('/onboarding');
+              } else {
+                // Returning mobile app user: Go to auth
+                GoRouter.of(context).go('/auth');
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('⚠️ Splash navigation error: $e');
+      // Fallback: go to auth on any error
+      if (mounted && context.mounted) {
+        GoRouter.of(context).go('/auth');
+      }
+    }
   }
 
   @override

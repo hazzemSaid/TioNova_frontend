@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -81,19 +82,37 @@ class AppRouter {
 
   // Check if it's the first time opening the app
   static Future<bool> isFirstTime() async {
+    // On web, skip first-time check and go directly to auth
+    if (kIsWeb) {
+      return false; // Skip onboarding on web
+    }
+
     try {
-      final box = await Hive.openBox('app_settings');
+      final box = await Hive.openBox('app_settings').timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          throw TimeoutException('Hive box open timeout');
+        },
+      );
       return box.get('is_first_time', defaultValue: true) as bool;
     } catch (e) {
       // If there's an error, assume it's the first time
+      print('⚠️ Error checking first time: $e');
       return true;
     }
   }
 
   // Mark that the app has been opened before
   static Future<void> setNotFirstTime() async {
+    if (kIsWeb) return; // Skip on web
+
     try {
-      final box = await Hive.openBox('app_settings');
+      final box = await Hive.openBox('app_settings').timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          throw TimeoutException('Hive box open timeout');
+        },
+      );
       await box.put('is_first_time', false);
     } catch (e) {
       // Handle error if needed

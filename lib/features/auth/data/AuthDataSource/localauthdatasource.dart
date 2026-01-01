@@ -1,4 +1,5 @@
 import 'package:either_dart/either.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive/hive.dart';
 import 'package:tionova/core/errors/failure.dart' hide ServerFailure;
 import 'package:tionova/core/errors/server_failure.dart';
@@ -21,6 +22,11 @@ class LocalAuthDataSource implements ILocalAuthDataSource {
       await _storage.delete(_userBoxKey);
       return const Right(null);
     } catch (e) {
+      print('⚠️ LocalAuthDataSource: Error signing out: $e');
+      if (kIsWeb) {
+        // On web, ignore storage errors and return success
+        return const Right(null);
+      }
       return Left(
         ServerFailure(errMessage: 'Failed to sign out: ${e.toString()}'),
       );
@@ -36,9 +42,9 @@ class LocalAuthDataSource implements ILocalAuthDataSource {
       }
       return Left(ServerFailure(errMessage: 'User not found'));
     } catch (e) {
-      return Left(
-        ServerFailure(errMessage: 'Failed to get user: ${e.toString()}'),
-      );
+      print('⚠️ LocalAuthDataSource: Error getting user: $e');
+      // On web or any error, return user not found instead of crashing
+      return Left(ServerFailure(errMessage: 'User not found'));
     }
   }
 
@@ -48,6 +54,12 @@ class LocalAuthDataSource implements ILocalAuthDataSource {
       await _storage.put(_userBoxKey, user);
       return const Right(null);
     } catch (e) {
+      print('⚠️ LocalAuthDataSource: Error saving user: $e');
+      if (kIsWeb) {
+        // On web, log error but don't crash
+        print('ℹ️ LocalAuthDataSource: Web storage may have issues');
+        return const Right(null);
+      }
       return Left(
         ServerFailure(errMessage: 'Failed to save user: ${e.toString()}'),
       );

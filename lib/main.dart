@@ -1,4 +1,6 @@
 // // main.dart
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -132,15 +134,36 @@ Future<void> main() async {
     print('Main: Registered SummaryCacheModelAdapter with typeId 2');
   }
 
-  // Open only critical boxes
-  await Hive.openBox("themeBox");
+  // Open only critical boxes with timeout for web
+  try {
+    await Hive.openBox("themeBox").timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {
+        print('⚠️ Timeout opening themeBox, continuing...');
+        throw TimeoutException('themeBox timeout');
+      },
+    );
+  } catch (e) {
+    print('⚠️ Error opening themeBox: $e');
+    // Continue without the box on web if it fails
+  }
 
   // Setup service locator (critical for auth)
   await setupServiceLocator();
 
-  // Initialize auth cubit
+  // Initialize auth cubit with timeout for web platforms
   final authCubit = getIt<AuthCubit>();
-  await authCubit.start();
+  try {
+    await authCubit.start().timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {
+        print('⚠️ AuthCubit.start() timeout, continuing with initial state');
+      },
+    );
+  } catch (e) {
+    print('⚠️ Error during authCubit.start(): $e');
+    // Continue with initial state
+  }
 
   // Initialize SharedPreferences (needed for theme)
   final prefs = await SharedPreferences.getInstance();
