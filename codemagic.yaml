@@ -32,14 +32,14 @@ workflows:
       - name: Set iOS deployment target
         script: |
           set -euo pipefail
-          # Update deployment target to 13.0 (standard minimum for modern Flutter apps)
-          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/g" ios/Podfile 2>/dev/null || \
-          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/g" ios/Podfile
+          # Update deployment target to 15.0 for Firebase SDK 12.x compatibility
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile 2>/dev/null || \
+          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile
 
           # Also update in project.pbxproj
           if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
-            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/g' ios/Runner.xcodeproj/project.pbxproj
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
+            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj
           fi
 
           echo "✅ iOS deployment target set to 13.0"
@@ -172,12 +172,12 @@ workflows:
       - name: Set iOS deployment target
         script: |
           set -euo pipefail
-          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/g" ios/Podfile 2>/dev/null || \
-          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '13.0'/g" ios/Podfile
+          sed -i '' "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile 2>/dev/null || \
+          sed -i "s/platform :ios, '[0-9.]*'/platform :ios, '15.0'/g" ios/Podfile
 
           if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
-            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
-            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/g' ios/Runner.xcodeproj/project.pbxproj
+            sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj 2>/dev/null || \
+            sed -i 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj
           fi
 
           echo "✅ iOS deployment target set to 13.0"
