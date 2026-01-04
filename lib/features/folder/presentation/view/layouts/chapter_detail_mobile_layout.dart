@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/folder/presentation/view/utils/folder_detail_view_helper.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/ai_summary_section.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_detail_app_bar.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_preview_section.dart';
@@ -18,7 +19,6 @@ class ChapterDetailMobileLayout extends StatelessWidget {
   final String activeTab;
   final SummaryModel? summaryData;
   final String? rawSummaryText;
-  final String Function(String?) formatDate;
   final VoidCallback onDownloadPDF;
   final VoidCallback onGenerateSummary;
   final VoidCallback onViewSummary;
@@ -35,7 +35,6 @@ class ChapterDetailMobileLayout extends StatelessWidget {
     required this.activeTab,
     required this.summaryData,
     required this.rawSummaryText,
-    required this.formatDate,
     required this.onDownloadPDF,
     required this.onGenerateSummary,
     required this.onViewSummary,
@@ -61,7 +60,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: isTablet ? 8.0 : 0.0),
             child: ChapterPreviewSection(
               chapter: chapter,
-              formatDate: formatDate,
+              formatDate: FolderDetailViewHelper.formatDate,
               onDownloadPDF: onDownloadPDF,
             ),
           ),

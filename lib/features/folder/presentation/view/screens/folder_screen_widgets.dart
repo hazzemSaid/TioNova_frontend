@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_card.dart';
-import 'package:tionova/utils/static.dart';
 
 class FolderGridItem extends StatelessWidget {
   final Foldermodel folder;
@@ -10,8 +9,7 @@ class FolderGridItem extends StatelessWidget {
   final IconData icon;
   final VoidCallback onLongPress;
   final VoidCallback onTap;
-  static const defaultColors = Static.defaultColors;
-  static const defaultIcons = Static.defaultIcons;
+
   const FolderGridItem({
     required this.folder,
     required this.color,
@@ -37,16 +35,14 @@ class FolderGridItem extends StatelessWidget {
             '${DateTime.now().difference(folder.createdAt).inDays} days ago',
         color: color,
         sharedWith: folder.sharedWith,
-        icon: folder.icon != null
-            ? defaultIcons[int.parse(folder.icon!)]
-            : null,
+        icon: icon,
       ),
     );
   }
 }
 
 class LongPressHint extends StatelessWidget {
-  const LongPressHint({Key? key}) : super(key: key);
+  const LongPressHint({super.key});
 
   @override
   Widget build(BuildContext context) {

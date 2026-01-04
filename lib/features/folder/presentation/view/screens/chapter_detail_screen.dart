@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
@@ -103,17 +102,6 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
     }
     // Also trigger the cubit check for consistency
     context.read<ChapterCubit>().checkCachedSummary(chapterId: chapterId);
-  }
-
-  // Format date for display
-  String _formatDate(String? dateString) {
-    if (dateString == null) return '';
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('M/d/yyyy').format(date);
-    } catch (e) {
-      return '';
-    }
   }
 
   // Handle summary generation or fetching
@@ -426,7 +414,6 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       activeTab: _activeTab,
       summaryData: _summaryData,
       rawSummaryText: _rawSummaryText,
-      formatDate: _formatDate,
       onDownloadPDF: _downloadChapterPDF,
       onGenerateSummary: _generateSummary,
       onViewSummary: _viewSummary,

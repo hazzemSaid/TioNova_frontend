@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/view/screens/folder_detail_screen.dart';
+import 'package:tionova/features/folder/presentation/view/utils/folder_detail_view_helper.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_action_button.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/chapter_options_bottom_sheet.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_status_chip.dart';
 
 /// Mobile/Tablet Chapter Card Widget
@@ -20,16 +20,6 @@ class FolderChapterCard extends StatelessWidget {
     required this.folderColor,
     this.folderOwnerId,
   });
-
-  String _formatDate(String? dateString) {
-    if (dateString == null) return 'Unknown';
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('MMM dd, yyyy').format(date);
-    } catch (e) {
-      return 'Unknown';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +45,7 @@ class FolderChapterCard extends StatelessWidget {
         );
       },
       onLongPress: () {
-        ShowChapterOptionsBottomSheet(
+        ChapterOptionsBottomSheet(
           chapter: chapter,
           folderId: chapter.folderId ?? '',
           folderOwnerId: folderOwnerId ?? '',
@@ -147,7 +137,9 @@ class FolderChapterCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              _formatDate(chapter.createdAt),
+                              FolderDetailViewHelper.formatDate(
+                                chapter.createdAt,
+                              ),
                               style: TextStyle(
                                 color: colorScheme.onSurfaceVariant.withOpacity(
                                   0.8,
