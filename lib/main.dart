@@ -193,8 +193,6 @@ Future<void> _initializeApp() async {
       onNotificationTap: _handleNotificationTap,
     );
     print('✅ Push notifications initialized');
-  } else {
-    print('ℹ️ Skipping push notifications on web platform');
   }
 
   // Initialize Hive (needed for theme and auth) - with error handling for web
