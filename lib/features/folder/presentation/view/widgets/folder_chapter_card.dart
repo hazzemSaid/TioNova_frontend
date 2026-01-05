@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -33,16 +34,31 @@ class FolderChapterCard extends StatelessWidget {
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
         final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
-        context.pushNamed(
-          'chapter-detail',
-          pathParameters: {'chapterId': chapterId},
-          extra: {
-            'chapter': chapter,
-            'folderColor': folderColor,
-            'chapterCubit': chapterCubit,
-            'folderOwnerId': folderOwnerId,
-          },
-        );
+        final folderId = chapter.folderId ?? '';
+        // Use go() on web to ensure URL updates in browser
+        if (kIsWeb) {
+          context.goNamed(
+            'chapter-detail',
+            pathParameters: {'folderId': folderId, 'chapterId': chapterId},
+            extra: {
+              'chapter': chapter,
+              'folderColor': folderColor,
+              'chapterCubit': chapterCubit,
+              'folderOwnerId': folderOwnerId,
+            },
+          );
+        } else {
+          context.pushNamed(
+            'chapter-detail',
+            pathParameters: {'folderId': folderId, 'chapterId': chapterId},
+            extra: {
+              'chapter': chapter,
+              'folderColor': folderColor,
+              'chapterCubit': chapterCubit,
+              'folderOwnerId': folderOwnerId,
+            },
+          );
+        }
       },
       onLongPress: () {
         ChapterOptionsBottomSheet(

@@ -5,9 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
-// Conditional import for file operations
-
-import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/pdf_viewer/file_helper.dart';
@@ -48,59 +45,59 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
         setState(() {
           _isInitialized = true;
         });
-        _loadPDF();
+        // _loadPDF();
       }
     });
   }
 
-  void _loadPDF() async {
-    try {
-      setState(() {
-        isReady = false;
-      });
+  // void _loadPDF() async {
+  //   try {
+  //     setState(() {
+  //       isReady = false;
+  //     });
 
-      // On web, skip file-based caching and load directly from API
-      if (kIsWeb) {
-        print('Web platform: fetching PDF from API for viewing');
-        await _downloadPDFFromAPIForViewing();
-        return;
-      }
+  //     // On web, skip file-based caching and load directly from API
+  //     if (kIsWeb) {
+  //       print('Web platform: fetching PDF from API for viewing');
+  //       await _downloadPDFFromAPIForViewing();
+  //       return;
+  //     }
 
-      // Check if PDF is already cached and show it first (non-web only)
-      if (DownloadService.isPDFCached(widget.chapterId)) {
-        print('Loading PDF from cache for chapter: ${widget.chapterId}');
-        final cachedPdfBytes = DownloadService.getCachedPDF(widget.chapterId);
+  //     // Check if PDF is already cached and show it first (non-web only)
+  //     // if (DownloadService.isPDFCached(widget.chapterId)) {
+  //     //   print('Loading PDF from cache for chapter: ${widget.chapterId}');
+  //     //   final cachedPdfBytes = DownloadService.getCachedPDF(widget.chapterId);
 
-        if (cachedPdfBytes != null) {
-          pdfBytes = cachedPdfBytes;
-          final path = await _createFileFromBytes(cachedPdfBytes);
-          if (mounted) {
-            setState(() {
-              localPath = path;
-              _showNoPdfView = false;
-            });
-          }
-          // View from cache only; do not make a network request
-          return;
-        }
-      }
+  //     //   if (cachedPdfBytes != null) {
+  //     //     pdfBytes = cachedPdfBytes;
+  //     //     final path = await _createFileFromBytes(cachedPdfBytes);
+  //     //     if (mounted) {
+  //     //       setState(() {
+  //     //         localPath = path;
+  //     //         _showNoPdfView = false;
+  //     //       });
+  //     //     }
+  //     //     // View from cache only; do not make a network request
+  //     //     return;
+  //     //   }
+  //     // }
 
-      // Not cached: fetch from API for viewing (without caching)
-      print(
-        'PDF not cached, fetching from API for viewing: ${widget.chapterId}',
-      );
-      await _downloadPDFFromAPIForViewing();
-    } catch (e) {
-      if (mounted && context.mounted && _isInitialized) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+  //     // Not cached: fetch from API for viewing (without caching)
+  //     print(
+  //       'PDF not cached, fetching from API for viewing: ${widget.chapterId}',
+  //     );
+  //     await _downloadPDFFromAPIForViewing();
+  //   } catch (e) {
+  //     if (mounted && context.mounted && _isInitialized) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Error loading PDF: $e'),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
   Future<void> _downloadPDFFromAPIForViewing() async {
     try {
@@ -162,63 +159,63 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
     }
   }
 
-  Future<void> _downloadPDF() async {
-    // On web, download directly using pdfBytes
-    if (kIsWeb && pdfBytes != null) {
-      final fileName = DownloadService.sanitizeFileName(widget.chapterTitle);
-      await DownloadService.downloadPDF(
-        pdfBytes: pdfBytes!,
-        fileName: fileName,
-        context: context,
-      );
-      return;
-    }
+  // Future<void> _downloadPDF() async {
+  //   // On web, download directly using pdfBytes
+  //   if (kIsWeb && pdfBytes != null) {
+  //     final fileName = DownloadService.sanitizeFileName(widget.chapterTitle);
+  //     await DownloadService.downloadPDF(
+  //       pdfBytes: pdfBytes!,
+  //       fileName: fileName,
+  //       context: context,
+  //     );
+  //     return;
+  //   }
 
-    // First check if PDF is already cached
-    if (DownloadService.isPDFCached(widget.chapterId)) {
-      final cachedPDF = DownloadService.getCachedPDF(widget.chapterId);
-      if (cachedPDF != null) {
-        print('Downloading cached PDF for chapter: ${widget.chapterId}');
-        final fileName = DownloadService.sanitizeFileName(widget.chapterTitle);
-        await DownloadService.downloadPDF(
-          pdfBytes: cachedPDF,
-          fileName: fileName,
-          context: context,
-        );
-        return;
-      }
-    }
+  //   // First check if PDF is already cached
+  //   if (DownloadService.isPDFCached(widget.chapterId)) {
+  //     final cachedPDF = DownloadService.getCachedPDF(widget.chapterId);
+  //     if (cachedPDF != null) {
+  //       print('Downloading cached PDF for chapter: ${widget.chapterId}');
+  //       final fileName = DownloadService.sanitizeFileName(widget.chapterTitle);
+  //       await DownloadService.downloadPDF(
+  //         pdfBytes: cachedPDF,
+  //         fileName: fileName,
+  //         context: context,
+  //       );
+  //       return;
+  //     }
+  //   }
 
-    // If not cached and not currently loaded, download from API first
-    if (pdfBytes == null) {
-      if (mounted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Downloading PDF from server...'),
-            backgroundColor: Colors.blue,
-            action: SnackBarAction(
-              label: 'Cancel',
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              },
-            ),
-          ),
-        );
-      }
+  //   // If not cached and not currently loaded, download from API first
+  //   if (pdfBytes == null) {
+  //     if (mounted && context.mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: const Text('Downloading PDF from server...'),
+  //           backgroundColor: Colors.blue,
+  //           action: SnackBarAction(
+  //             label: 'Cancel',
+  //             onPressed: () {
+  //               ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  //             },
+  //           ),
+  //         ),
+  //       );
+  //     }
 
-      // Download from API (this will cache since it's forDownload=true)
-      await _downloadPDFFromAPI();
-      return;
-    }
+  //     // Download from API (this will cache since it's forDownload=true)
+  //     await _downloadPDFFromAPI();
+  //     return;
+  //   }
 
-    // If PDF is loaded in memory, download it
-    final fileName = DownloadService.sanitizeFileName(widget.chapterTitle);
-    await DownloadService.downloadPDF(
-      pdfBytes: pdfBytes!,
-      fileName: fileName,
-      context: context,
-    );
-  }
+  //   // If PDF is loaded in memory, download it
+  //   final fileName = DownloadService.sanitizeFileName(widget.chapterTitle);
+  //   await DownloadService.downloadPDF(
+  //     pdfBytes: pdfBytes!,
+  //     fileName: fileName,
+  //     context: context,
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -235,14 +232,14 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
 
           // Only cache if this is a download operation
           if (state.forDownload) {
-            DownloadService.cachePDF(
-              widget.chapterId,
-              state.pdfData,
-              fileName:
-                  DownloadService.sanitizeFileName(widget.chapterTitle) +
-                  '.pdf',
-              chapterTitle: widget.chapterTitle,
-            );
+            // DownloadService.cachePDF(
+            //   widget.chapterId,
+            //   state.pdfData,
+            //   fileName:
+            //       DownloadService.sanitizeFileName(widget.chapterTitle) +
+            //       '.pdf',
+            //   chapterTitle: widget.chapterTitle,
+            // );
             print(
               'PDF cached for chapter: ${widget.chapterId}, size: ${state.pdfData.length} bytes',
             );
@@ -338,17 +335,17 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
                 onSelected: (value) {
                   switch (value) {
                     case 'download':
-                      _downloadPDF();
+                      // _downloadPDF();
                       break;
                     case 'refresh':
                       // Clear cache and force reload from API
-                      DownloadService.clearCachedPDF(widget.chapterId);
-                      setState(() {
-                        localPath = null;
-                        pdfBytes = null;
-                        isReady = false;
-                        _showNoPdfView = false;
-                      });
+                      // DownloadService.clearCachedPDF(widget.chapterId);
+                      // setState(() {
+                      //   localPath = null;
+                      //   pdfBytes = null;
+                      //   isReady = false;
+                      //   _showNoPdfView = false;
+                      // });
                       // Force download from API for viewing (without caching)
                       _downloadPDFFromAPIForViewing();
                       break;
@@ -552,7 +549,8 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
             SizedBox(
               width: isTablet ? 200 : 160,
               child: GestureDetector(
-                onTap: _loadPDF,
+                // onTap: _loadPDF,
+                onTap: () {},
                 child: Container(
                   height: isTablet ? 50 : 44,
                   decoration: BoxDecoration(

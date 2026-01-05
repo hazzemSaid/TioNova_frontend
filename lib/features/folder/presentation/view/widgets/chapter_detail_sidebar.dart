@@ -70,8 +70,13 @@ class ChapterDetailSidebar extends StatelessWidget {
           // PDF Preview Area
           GestureDetector(
             onTap: () {
+              final folderId = chapter.folderId;
+              final hasFolder = folderId != null && folderId.isNotEmpty;
+              final path = hasFolder
+                  ? '/folders/$folderId/chapters/${chapter.id}/pdf'
+                  : '/chapters/${chapter.id}/pdf';
               context.push(
-                '/pdf-viewer/${chapter.id}',
+                path,
                 extra: {'chapterTitle': chapter.title ?? 'Chapter'},
               );
             },

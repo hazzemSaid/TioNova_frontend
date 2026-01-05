@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/features/profile/data/models/profile_model.dart';
 import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:tionova/features/profile/presentation/view/screens/edit_profile_screen.dart';
 
 class ProfileCard extends StatelessWidget {
   final Profile profile;
@@ -73,17 +72,14 @@ class ProfileCard extends StatelessWidget {
               width: 200,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  final result = await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => BlocProvider(
-                        create: (context) => getIt<ProfileCubit>(),
-                        child: EditProfileScreen(profile: profile),
-                      ),
-                    ),
+                  final profileCubit = context.read<ProfileCubit>();
+                  final result = await context.push<bool>(
+                    '/profile/edit',
+                    extra: {'profile': profile, 'profileCubit': profileCubit},
                   );
                   if (result == true) {
                     try {
-                      await context.read<ProfileCubit>().refresh();
+                      await profileCubit.refresh();
                     } catch (_) {}
                   }
                 },

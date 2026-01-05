@@ -113,7 +113,7 @@ class ChallengeWebLayout extends StatelessWidget {
                         title: 'Scan QR Code',
                         subtitle: 'Quick access with your camera',
                         actionLabel: 'Start Scanning',
-                        onTap: () => context.push('/challenges/scan-qr'),
+                        onTap: () => context.push('/challenges/scan'),
                       ),
                       const SizedBox(height: 24),
                       ChallengeWebOptionCard(
@@ -125,7 +125,7 @@ class ChallengeWebLayout extends StatelessWidget {
                         title: 'Have an Invite Code?',
                         subtitle: 'Enter code manually to join',
                         actionLabel: 'Enter Code',
-                        onTap: () => context.push('/enter-code'),
+                        onTap: () => context.push('/challenges/join'),
                         outlined: true,
                       ),
                     ],

@@ -6,6 +6,7 @@ import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.
 class NotesSection extends StatefulWidget {
   final String chapterId;
   final String chapterTitle;
+  final String folderId;
   final Color? accentColor;
   final String? folderOwnerId;
 
@@ -13,6 +14,7 @@ class NotesSection extends StatefulWidget {
     super.key,
     required this.chapterId,
     required this.chapterTitle,
+    required this.folderId,
     this.accentColor,
     this.folderOwnerId,
   });
@@ -131,17 +133,37 @@ class _NotesSectionState extends State<NotesSection> {
                               final chapterId = widget.chapterId.isNotEmpty
                                   ? widget.chapterId
                                   : 'temp';
-                              context.pushNamed(
-                                'chapter-notes',
-                                pathParameters: {'chapterId': chapterId},
-                                extra: {
-                                  'chapterTitle': widget.chapterTitle,
-                                  'accentColor':
-                                      widget.accentColor ?? colorScheme.primary,
-                                  'chapterCubit': chapterCubit,
-                                  'folderOwnerId': widget.folderOwnerId,
-                                },
-                              );
+                              final hasFolder = widget.folderId.isNotEmpty;
+                              if (hasFolder) {
+                                context.pushNamed(
+                                  'chapter-notes',
+                                  pathParameters: {
+                                    'folderId': widget.folderId,
+                                    'chapterId': chapterId,
+                                  },
+                                  extra: {
+                                    'chapterTitle': widget.chapterTitle,
+                                    'accentColor':
+                                        widget.accentColor ??
+                                        colorScheme.primary,
+                                    'chapterCubit': chapterCubit,
+                                    'folderOwnerId': widget.folderOwnerId,
+                                  },
+                                );
+                              } else {
+                                context.pushNamed(
+                                  'chapter-notes-quick',
+                                  pathParameters: {'chapterId': chapterId},
+                                  extra: {
+                                    'chapterTitle': widget.chapterTitle,
+                                    'accentColor':
+                                        widget.accentColor ??
+                                        colorScheme.primary,
+                                    'chapterCubit': chapterCubit,
+                                    'folderOwnerId': widget.folderOwnerId,
+                                  },
+                                );
+                              }
                             },
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 52),

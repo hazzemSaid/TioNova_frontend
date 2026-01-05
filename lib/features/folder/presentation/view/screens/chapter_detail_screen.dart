@@ -1,8 +1,8 @@
 // features/folder/presentation/view/screens/chapter_detail_screen.dart
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
@@ -88,7 +88,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
 
   // Check for cached summary and load it if available
   void _checkAndLoadCachedSummary() {
-    final chapterId = widget.chapter.id ?? '';
+    final chapterId = widget.chapter.id;
     // First check if we have cached summary
     if (SummaryCacheService.isSummaryCached(chapterId)) {
       final cachedData = SummaryCacheService.getCachedSummaryWithMetadata(
@@ -131,26 +131,60 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
 
   // Navigate to summary viewer
   void _viewSummary() {
+    final folderId = widget.chapter.folderId;
+    final chapterId = widget.chapter.id;
+    final hasFolder = folderId != null && folderId.isNotEmpty;
+
     if (_summaryData != null) {
       // Navigate to structured summary viewer
-      context.push(
-        '/summary-viewer',
-        extra: {
-          'summaryData': _summaryData!,
-          'chapterTitle': widget.chapter.title ?? 'Chapter',
-          'accentColor': widget.folderColor,
-        },
-      );
+      final path = hasFolder
+          ? '/folders/$folderId/chapters/$chapterId/summary'
+          : '/chapters/$chapterId/summary';
+      // Use go() on web to ensure URL updates in browser
+      if (kIsWeb) {
+        context.go(
+          path,
+          extra: {
+            'summaryData': _summaryData!,
+            'chapterTitle': widget.chapter.title ?? 'Chapter',
+            'accentColor': widget.folderColor,
+          },
+        );
+      } else {
+        context.push(
+          path,
+          extra: {
+            'summaryData': _summaryData!,
+            'chapterTitle': widget.chapter.title ?? 'Chapter',
+            'accentColor': widget.folderColor,
+          },
+        );
+      }
     } else if (_rawSummaryText != null) {
       // Navigate to raw text summary viewer
-      context.push(
-        '/raw-summary-viewer',
-        extra: {
-          'summaryText': _rawSummaryText!,
-          'chapterTitle': widget.chapter.title ?? 'Chapter',
-          'accentColor': widget.folderColor,
-        },
-      );
+      final path = hasFolder
+          ? '/folders/$folderId/chapters/$chapterId/raw-summary'
+          : '/chapters/$chapterId/raw-summary';
+      // Use go() on web to ensure URL updates in browser
+      if (kIsWeb) {
+        context.go(
+          path,
+          extra: {
+            'summaryText': _rawSummaryText!,
+            'chapterTitle': widget.chapter.title ?? 'Chapter',
+            'accentColor': widget.folderColor,
+          },
+        );
+      } else {
+        context.push(
+          path,
+          extra: {
+            'summaryText': _rawSummaryText!,
+            'chapterTitle': widget.chapter.title ?? 'Chapter',
+            'accentColor': widget.folderColor,
+          },
+        );
+      }
     }
   }
 
@@ -183,64 +217,64 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
     }
   }
 
-  // Handle PDF download
-  Future<void> _downloadChapterPDF() async {
-    try {
-      final chapterId = widget.chapter.id ?? '';
+  // // Handle PDF download
+  // Future<void> _downloadChapterPDF() async {
+  //   try {
+  //     final chapterId = widget.chapter.id;
 
-      // Check if PDF is already cached
-      if (DownloadService.isPDFCached(chapterId)) {
-        print('Using cached PDF for download');
-        final cachedPdfBytes = DownloadService.getCachedPDF(chapterId);
+  //     // Check if PDF is already cached
+  //     if (DownloadService.isPDFCached(chapterId)) {
+  //       print('Using cached PDF for download');
+  //       final cachedPdfBytes = DownloadService.getCachedPDF(chapterId);
 
-        if (cachedPdfBytes != null) {
-          // Download from cache immediately
-          final fileName = DownloadService.sanitizeFileName(
-            widget.chapter.title ?? 'chapter',
-          );
-          final success = await DownloadService.downloadPDF(
-            pdfBytes: cachedPdfBytes,
-            fileName: fileName,
-            context: context,
-          );
+  //       if (cachedPdfBytes != null) {
+  //         // Download from cache immediately
+  //         final fileName = DownloadService.sanitizeFileName(
+  //           widget.chapter.title ?? 'chapter',
+  //         );
+  //         final success = await DownloadService.downloadPDF(
+  //           pdfBytes: cachedPdfBytes,
+  //           fileName: fileName,
+  //           context: context,
+  //         );
 
-          if (success) {
-            CustomDialogs.showSuccessDialog(
-              context,
-              title: 'Success!',
-              message: 'PDF downloaded from cache',
-            );
-          }
-          return;
-        }
-      }
+  //         if (success) {
+  //           CustomDialogs.showSuccessDialog(
+  //             context,
+  //             title: 'Success!',
+  //             message: 'PDF downloaded from cache',
+  //           );
+  //         }
+  //         return;
+  //       }
+  //     }
 
-      // If not cached, fetch from API
-      print('Fetching PDF from API for download');
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(
-          child: CircularProgressIndicator(
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-      );
+  //     // If not cached, fetch from API
+  //     print('Fetching PDF from API for download');
+  //     showDialog(
+  //       context: context,
+  //       barrierDismissible: false,
+  //       builder: (context) => Center(
+  //         child: CircularProgressIndicator(
+  //           color: Theme.of(context).colorScheme.primary,
+  //         ),
+  //       ),
+  //     );
 
-      // Fetch PDF content using the cubit
-      context.read<ChapterCubit>().getChapterContentPdf(
-        chapterId: chapterId,
-        forDownload: true, // This is a download operation
-      );
-    } catch (e) {
-      Navigator.of(context).pop(); // Close loading dialog
-      CustomDialogs.showErrorDialog(
-        context,
-        title: 'Error!',
-        message: 'Download failed: $e',
-      );
-    }
-  }
+  //     // Fetch PDF content using the cubit
+  //     context.read<ChapterCubit>().getChapterContentPdf(
+  //       chapterId: chapterId,
+  //       forDownload: true, // This is a download operation
+  //     );
+  //   } catch (e) {
+  //     Navigator.of(context).pop(); // Close loading dialog
+  //     CustomDialogs.showErrorDialog(
+  //       context,
+  //       title: 'Error!',
+  //       message: 'Download failed: $e',
+  //     );
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -259,10 +293,18 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             _isMindmapLoading = false;
           });
           // Navigate to mindmap viewer
-          context.pushNamed(
-            'mindmap-viewer',
-            extra: {'mindmap': state.mindmap},
-          );
+          final folderId = widget.chapter.folderId;
+          final chapterId = widget.chapter.id;
+          final hasFolder = folderId != null && folderId.isNotEmpty;
+          final path = hasFolder
+              ? '/folders/$folderId/chapters/$chapterId/mindmap'
+              : '/chapters/$chapterId/mindmap';
+          // Use go() on web to ensure URL updates in browser
+          if (kIsWeb) {
+            context.go(path, extra: {'mindmap': state.mindmap});
+          } else {
+            context.push(path, extra: {'mindmap': state.mindmap});
+          }
         } else if (state is CreateMindmapError) {
           setState(() {
             _isMindmapLoading = false;
@@ -276,25 +318,25 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
         // Handle PDF download
         else if (state is GetChapterContentPdfSuccess) {
           // Only handle download side-effects when explicitly for download
-          if (state.forDownload) {
-            Navigator.of(context).pop(); // Close loading dialog
-            final fileName = DownloadService.sanitizeFileName(
-              widget.chapter.title ?? 'chapter',
-            );
-            // Cache the PDF data for future use
-            DownloadService.cachePDF(
-              widget.chapter.id.toString(),
-              state.pdfData,
-              fileName: '$fileName.pdf',
-              chapterTitle: widget.chapter.title,
-            );
-            // Download the PDF to device
-            DownloadService.downloadPDF(
-              pdfBytes: state.pdfData,
-              fileName: fileName,
-              context: context,
-            );
-          }
+          // if (state.forDownload) {
+          //   Navigator.of(context).pop(); // Close loading dialog
+          //   final fileName = DownloadService.sanitizeFileName(
+          //     widget.chapter.title ?? 'chapter',
+          //   );
+          //   // Cache the PDF data for future use
+          //   DownloadService.cachePDF(
+          //     widget.chapter.id.toString(),
+          //     state.pdfData,
+          //     fileName: '$fileName.pdf',
+          //     chapterTitle: widget.chapter.title,
+          //   );
+          //   // Download the PDF to device
+          //   DownloadService.downloadPDF(
+          //     pdfBytes: state.pdfData,
+          //     fileName: fileName,
+          //     context: context,
+          //   );
+          // }
         } else if (state is GetChapterContentPdfError) {
           // Only close dialog and show error when it was a download request
           if (state.forDownload) {
@@ -392,7 +434,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       activeTab: _activeTab,
       summaryData: _summaryData,
       rawSummaryText: _rawSummaryText,
-      onDownloadPDF: _downloadChapterPDF,
+      onDownloadPDF: () {},
       onGenerateSummary: _generateSummary,
       onViewSummary: _viewSummary,
       onGenerateMindmap: _generateMindmap,
@@ -414,7 +456,8 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       activeTab: _activeTab,
       summaryData: _summaryData,
       rawSummaryText: _rawSummaryText,
-      onDownloadPDF: _downloadChapterPDF,
+      onDownloadPDF: () {},
+
       onGenerateSummary: _generateSummary,
       onViewSummary: _viewSummary,
       onGenerateMindmap: _generateMindmap,

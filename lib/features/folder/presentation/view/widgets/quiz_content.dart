@@ -4,7 +4,22 @@ import 'package:go_router/go_router.dart';
 class QuizContent extends StatelessWidget {
   final String? chapterId;
   final String? chapterTitle;
-  const QuizContent({super.key, this.chapterId, this.chapterTitle});
+  final String folderId;
+  const QuizContent({
+    super.key,
+    this.chapterId,
+    this.chapterTitle,
+    required this.folderId,
+  });
+
+  // Helper to get the correct route based on folderId availability
+  String _getQuizRoute(String subPath) {
+    final hasFolder = folderId.isNotEmpty;
+    if (hasFolder) {
+      return '/folders/$folderId/chapters/$chapterId$subPath';
+    }
+    return '/chapters/$chapterId$subPath';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +72,10 @@ class QuizContent extends StatelessWidget {
             OutlinedButton(
               onPressed: () async {
                 if (!context.mounted) return;
-                context.push('/quiz/$chapterId');
+                context.push(
+                  _getQuizRoute('/quiz'),
+                  extra: {'folderId': folderId},
+                );
               },
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
@@ -85,7 +103,7 @@ class QuizContent extends StatelessWidget {
                     onPressed: () {
                       if (!context.mounted) return;
                       context.push(
-                        '/practice/$chapterId',
+                        _getQuizRoute('/practice'),
                         extra: {'chapterTitle': chapterTitle},
                       );
                     },
@@ -113,8 +131,11 @@ class QuizContent extends StatelessWidget {
                       if (!context.mounted) return;
 
                       context.push(
-                        '/quiz-history/$chapterId',
-                        extra: {'quizTitle': chapterTitle},
+                        _getQuizRoute('/quiz/history'),
+                        extra: {
+                          'quizTitle': chapterTitle,
+                          'folderId': folderId,
+                        },
                       );
                     },
                     style: OutlinedButton.styleFrom(

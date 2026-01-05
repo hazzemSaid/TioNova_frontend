@@ -12,12 +12,14 @@ class QuizQuestionsScreen extends StatefulWidget {
   final List<String?>
   answers; // This will store the selected option letters (a, b, c, d)
   final String chapterId;
+  final String folderId;
 
   const QuizQuestionsScreen({
     super.key,
     required this.quiz,
     required this.answers,
     required this.chapterId,
+    required this.folderId,
   });
 
   @override
@@ -252,8 +254,12 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
     print('Answers from map: $answersMap');
     print('Final answers list: $finalAnswers');
 
+    final hasFolder = widget.folderId.isNotEmpty;
+    final path = hasFolder
+        ? '/folders/${widget.folderId}/chapters/${widget.chapterId}/quiz/results'
+        : '/chapters/${widget.chapterId}/quiz/results';
     context.pushReplacement(
-      '/quiz-results',
+      path,
       extra: {
         'quiz': widget.quiz,
         'userAnswers': finalAnswers,

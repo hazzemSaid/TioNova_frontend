@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get_it/get_it.dart';
 import 'package:hive/hive.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
-import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/core/services/firebase_realtime_service.dart';
 import 'package:tionova/core/services/hive_manager.dart';
 import 'package:tionova/core/utils/network_error_helper.dart';
@@ -269,10 +268,10 @@ Future<void> setupServiceLocator() async {
   // Register TokenStorage just once
   getIt.registerLazySingleton<TokenStorage>(() => TokenStorage());
 
-  // Register App Usage Tracker Service
-  getIt.registerLazySingleton<AppUsageTrackerService>(
-    () => AppUsageTrackerService(),
-  );
+  // // Register App Usage Tracker Service
+  // getIt.registerLazySingleton<AppUsageTrackerService>(
+  //   () => AppUsageTrackerService(),
+  // );
 
   // Register Firebase Realtime Database
   getIt.registerLazySingleton(() => FirebaseDatabase.instance);

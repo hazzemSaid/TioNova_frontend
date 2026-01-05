@@ -9,9 +9,15 @@ import 'package:tionova/features/quiz/presentation/bloc/quizstate.dart';
 
 class QuizHistoryScreen extends StatefulWidget {
   final String chapterId;
+  final String folderId;
   final String? quizTitle;
 
-  const QuizHistoryScreen({super.key, required this.chapterId, this.quizTitle});
+  const QuizHistoryScreen({
+    super.key,
+    required this.chapterId,
+    required this.folderId,
+    this.quizTitle,
+  });
 
   @override
   State<QuizHistoryScreen> createState() => _QuizHistoryScreenState();
@@ -200,6 +206,8 @@ class _QuizHistoryScreenState extends State<QuizHistoryScreen> {
                         child: _AttemptCard(
                           attempt: attempt,
                           colorScheme: colorScheme,
+                          folderId: widget.folderId,
+                          chapterId: widget.chapterId,
                         ),
                       );
                     }).toList(),
@@ -277,8 +285,15 @@ class _MetricCard extends StatelessWidget {
 class _AttemptCard extends StatelessWidget {
   final Attempt attempt;
   final ColorScheme colorScheme;
+  final String folderId;
+  final String chapterId;
 
-  const _AttemptCard({required this.attempt, required this.colorScheme});
+  const _AttemptCard({
+    required this.attempt,
+    required this.colorScheme,
+    required this.folderId,
+    required this.chapterId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -293,7 +308,11 @@ class _AttemptCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        context.push('/quiz-review', extra: {'attempt': attempt});
+        final hasFolder = folderId.isNotEmpty;
+        final path = hasFolder
+            ? '/folders/$folderId/chapters/$chapterId/quiz/review'
+            : '/chapters/$chapterId/quiz/review';
+        context.push(path, extra: {'attempt': attempt});
       },
       child: Container(
         decoration: BoxDecoration(

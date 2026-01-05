@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/web_option_card.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
@@ -242,7 +241,7 @@ class _ChallengesWebLayoutState extends State<ChallengesWebLayout>
               gradientColors: const [Color(0xFF006B54), Color(0xFF00C46A)],
               actionLabel: 'Scan',
               onTap: () {
-                context.push('/challenges/scan-qr');
+                context.push('/challenges/scan');
               },
             ),
             WebOptionCard(
@@ -252,7 +251,7 @@ class _ChallengesWebLayoutState extends State<ChallengesWebLayout>
               gradientColors: const [Color(0xFF0035D4), Color(0xFF0066FF)],
               actionLabel: 'Enter Code',
               onTap: () {
-                context.push('/enter-code');
+                context.push('/challenges/join');
               },
               outlined: true,
             ),
@@ -270,7 +269,6 @@ class _ChallengesWebLayoutState extends State<ChallengesWebLayout>
                   extra: {
                     'folderCubit': context.read<FolderCubit>(),
                     'chapterCubit': context.read<ChapterCubit>(),
-                    'authCubit': context.read<AuthCubit>(),
                     'challengeCubit': context.read<ChallengeCubit>(),
                   },
                 );

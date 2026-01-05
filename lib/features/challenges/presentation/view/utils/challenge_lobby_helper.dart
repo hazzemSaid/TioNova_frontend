@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 
 class ChallengeLobbyHelper {
   static List<Map<String, dynamic>> parseParticipants(
@@ -45,7 +44,6 @@ class ChallengeLobbyHelper {
       extra: {
         'challengeName': challengeName,
         'challengeCubit': context.read<ChallengeCubit>(),
-        'authCubit': context.read<AuthCubit>(),
       },
     );
   }

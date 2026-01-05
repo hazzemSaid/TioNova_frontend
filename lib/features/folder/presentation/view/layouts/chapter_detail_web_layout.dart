@@ -110,6 +110,7 @@ class ChapterDetailWebLayout extends StatelessWidget {
                             QuizContent(
                               chapterId: chapter.id,
                               chapterTitle: chapter.title,
+                              folderId: chapter.folderId ?? '',
                             ),
                           ),
                         if (activeTab == "chatbot")
@@ -269,17 +270,32 @@ class ChapterDetailWebLayout extends StatelessWidget {
   }
 
   void _openNotes(BuildContext context) {
-    context.pushNamed(
-      'chapter-notes',
-      pathParameters: {
-        'chapterId': chapter.id.isNotEmpty ? chapter.id : 'temp',
-      },
-      extra: {
-        'chapterTitle': chapter.title ?? 'Chapter',
-        'accentColor': folderColor,
-        'chapterCubit': context.read<ChapterCubit>(),
-        'folderOwnerId': folderOwnerId,
-      },
-    );
+    final folderId = chapter.folderId;
+    final hasFolder = folderId != null && folderId.isNotEmpty;
+    final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
+
+    if (hasFolder) {
+      context.pushNamed(
+        'chapter-notes',
+        pathParameters: {'folderId': folderId, 'chapterId': chapterId},
+        extra: {
+          'chapterTitle': chapter.title ?? 'Chapter',
+          'accentColor': folderColor,
+          'chapterCubit': context.read<ChapterCubit>(),
+          'folderOwnerId': folderOwnerId,
+        },
+      );
+    } else {
+      context.pushNamed(
+        'chapter-notes-quick',
+        pathParameters: {'chapterId': chapterId},
+        extra: {
+          'chapterTitle': chapter.title ?? 'Chapter',
+          'accentColor': folderColor,
+          'chapterCubit': context.read<ChapterCubit>(),
+          'folderOwnerId': folderOwnerId,
+        },
+      );
+    }
   }
 }

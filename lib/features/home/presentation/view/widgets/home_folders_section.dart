@@ -62,7 +62,7 @@ class HomeFoldersSection extends StatelessWidget {
                 onTap: () {
                   final folderId = folder['id'] as String;
                   context.push(
-                    '/folder/$folderId',
+                    '/folders/$folderId',
                     extra: {
                       'title': folder['title'],
                       'subtitle': folder['subject'] ?? '',
@@ -70,6 +70,7 @@ class HomeFoldersSection extends StatelessWidget {
                       'passed': 0,
                       'attempted': 0,
                       'color': folder['color'],
+                      'ownerId': folder['ownerId'] ?? '',
                     },
                   );
                 },

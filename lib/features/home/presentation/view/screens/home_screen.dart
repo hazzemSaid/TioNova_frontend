@@ -1,7 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
-import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysiscubit.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysisstate.dart';
@@ -43,7 +43,10 @@ class _HomeScreenContent extends StatefulWidget {
 }
 
 class _HomeScreenContentState extends State<_HomeScreenContent> {
-  final _usageTracker = getIt<AppUsageTrackerService>();
+  // Only initialize usage tracker on non-web platforms
+  // final AppUsageTrackerService? _usageTracker = kIsWeb
+  //     ? null
+  //     : getIt<AppUsageTrackerService>();
   late final AnalysisCubit _analysisCubit;
 
   @override
@@ -75,16 +78,19 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
 
     return BlocListener<AnalysisCubit, AnalysisState>(
       listener: (context, state) {
-        if (state is AnalysisLoaded && state.analysisData.profile != null) {
+        // Skip usage tracking on web
+        if (!kIsWeb &&
+            state is AnalysisLoaded &&
+            state.analysisData.profile != null) {
           final profile = state.analysisData.profile!;
-          _usageTracker.updateProfileFromApi(
-            streak: profile.streak,
-            lastActiveDate: profile.lastActiveDate,
-            totalQuizzesTaken: profile.totalQuizzesTaken,
-            totalMindmapsCreated: profile.totalMindmapsCreated,
-            totalSummariesCreated: profile.totalSummariesCreated,
-            averageQuizScore: profile.averageQuizScore,
-          );
+          // _usageTracker?.updateProfileFromApi(
+          //   streak: profile.streak,
+          //   lastActiveDate: profile.lastActiveDate,
+          //   totalQuizzesTaken: profile.totalQuizzesTaken,
+          //   totalMindmapsCreated: profile.totalMindmapsCreated,
+          //   totalSummariesCreated: profile.totalSummariesCreated,
+          //   averageQuizScore: profile.averageQuizScore,
+          // );
         }
       },
       child: BlocBuilder<AnalysisCubit, AnalysisState>(
@@ -143,13 +149,18 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
           }
 
           // Prepare data for today's progress from API
+          // Safely handle null todayProgress and its nested properties
           final todayProgressData = analysisData.todayProgress;
+          final todayProgressActual = todayProgressData?.actual;
           final todayProgress = {
             'completed': todayProgressData?.current ?? 0,
             'total': todayProgressData?.target ?? 0,
-            'chapters': todayProgressData?.actual.chapters ?? 0,
-            'quizzes': todayProgressData?.actual.quizzes ?? 0,
-            'studyTime': _usageTracker.getTodayUsageMinutes(),
+            'chapters': todayProgressActual?.chapters ?? 0,
+            'quizzes': todayProgressActual?.quizzes ?? 0,
+            // Skip usage tracking on web
+            'studyTime': kIsWeb
+                ? 0
+                : ( /*_usageTracker?.getTodayUsageMinutes() ??*/ 0),
             'percentage': todayProgressData?.percentage ?? 0,
           };
 
@@ -282,22 +293,31 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                           SizedBox(height: verticalSpacing * 2),
 
                           // Today's Progress Section with real-time updates
-                          StreamBuilder<int>(
-                            stream: _usageTracker.getTodayUsageStream(),
-                            initialData: _usageTracker.getTodayUsageMinutes(),
-                            builder: (context, snapshot) {
-                              final realTimeUsage = snapshot.data ?? 0;
-                              final updatedProgress = {
-                                ...todayProgress,
-                                'studyTime': realTimeUsage,
-                              };
-                              return DailyProgressWidget(
-                                progress: updatedProgress,
-                                colorScheme: colorScheme,
-                                textTheme: textTheme,
-                              );
-                            },
-                          ),
+                          // On web, skip StreamBuilder for usage tracking
+                          if (kIsWeb)
+                            DailyProgressWidget(
+                              progress: todayProgress,
+                              colorScheme: colorScheme,
+                              textTheme: textTheme,
+                            )
+                          else
+                            StreamBuilder<int>(
+                              stream: /*_usageTracker?.getTodayUsageStream()*/
+                                  null,
+                              initialData: 0,
+                              builder: (context, snapshot) {
+                                final realTimeUsage = snapshot.data ?? 0;
+                                final updatedProgress = {
+                                  ...todayProgress,
+                                  'studyTime': realTimeUsage,
+                                };
+                                return DailyProgressWidget(
+                                  progress: updatedProgress,
+                                  colorScheme: colorScheme,
+                                  textTheme: textTheme,
+                                );
+                              },
+                            ),
                           SizedBox(height: verticalSpacing * 2),
                         ]),
                       ),

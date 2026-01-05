@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/date_formatter.dart';
@@ -51,13 +52,26 @@ class HomeChaptersSection extends StatelessWidget {
                 child: EnhancedChapterCard(
                   timeAgo: formatTimeAgo(chapterModel.createdAt),
                   onTap: () {
-                    context.push(
-                      '/chapter/${chapterModel.id}',
-                      extra: {
-                        'chapter': chapterModel,
-                        'folderColor': colorScheme.primary,
-                      },
-                    );
+                    // Use go() on web to ensure URL updates in browser
+                    if (kIsWeb) {
+                      context.go(
+                        '/chapters/${chapterModel.id}',
+                        extra: {
+                          'chapter': chapterModel,
+                          'folderColor': colorScheme.primary,
+                          'folderId': chapterModel.folderId ?? '',
+                        },
+                      );
+                    } else {
+                      context.push(
+                        '/chapters/${chapterModel.id}',
+                        extra: {
+                          'chapter': chapterModel,
+                          'folderColor': colorScheme.primary,
+                          'folderId': chapterModel.folderId ?? '',
+                        },
+                      );
+                    }
                   },
                   title: '${chapterModel.title}',
                 ),

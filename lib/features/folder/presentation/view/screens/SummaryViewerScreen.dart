@@ -40,52 +40,52 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
     super.dispose();
   }
 
-  Future<void> _downloadPdf() async {
-    setState(() {
-      _isGeneratingPdf = true;
-    });
+  // Future<void> _downloadPdf() async {
+  //   setState(() {
+  //     _isGeneratingPdf = true;
+  //   });
 
-    try {
-      final pdfBytes = await SummaryPdfService.generateSummaryPdf(
-        summaryData: widget.summaryData,
-        chapterTitle: widget.chapterTitle,
-      );
+  //   try {
+  //     final pdfBytes = await SummaryPdfService.generateSummaryPdf(
+  //       summaryData: widget.summaryData,
+  //       chapterTitle: widget.chapterTitle,
+  //     );
 
-      final fileName = DownloadService.sanitizeFileName(
-        '${widget.chapterTitle}_summary',
-      );
+  //     // final fileName = DownloadService.sanitizeFileName(
+  //     //   '${widget.chapterTitle}_summary',
+  //     // );
 
-      final success = await DownloadService.downloadPDF(
-        pdfBytes: pdfBytes,
-        fileName: fileName,
-        context: context,
-      );
+  //     // final success = await DownloadService.downloadPDF(
+  //     //   pdfBytes: pdfBytes,
+  //     //   fileName: fileName,
+  //     //   context: context,
+  //     // );
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Summary PDF downloaded successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to download PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGeneratingPdf = false;
-        });
-      }
-    }
-  }
+  //     if (success && mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(
+  //           content: Text('Summary PDF downloaded successfully'),
+  //           backgroundColor: Colors.green,
+  //         ),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Failed to download PDF: $e'),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //     }
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         _isGeneratingPdf = false;
+  //       });
+  //     }
+  //   }
+  // }
 
   Color _getTypeColor(String type) {
     switch (type.toLowerCase()) {
@@ -165,7 +165,8 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(
-              onPressed: _isGeneratingPdf ? null : _downloadPdf,
+              onPressed: (){},
+              // onPressed: _isGeneratingPdf ? null : _downloadPdf,
               icon: _isGeneratingPdf
                   ? SizedBox(
                       width: 20,

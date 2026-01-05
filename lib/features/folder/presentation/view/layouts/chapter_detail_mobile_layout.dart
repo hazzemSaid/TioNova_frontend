@@ -107,6 +107,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
                     child: NotesSection(
                       chapterId: chapter.id,
                       chapterTitle: chapter.title ?? 'Chapter',
+                      folderId: chapter.folderId ?? '',
                       accentColor: folderColor,
                       folderOwnerId: folderOwnerId,
                     ),
@@ -128,6 +129,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
             child: NotesSection(
               chapterId: chapter.id,
               chapterTitle: chapter.title ?? 'Chapter',
+              folderId: chapter.folderId ?? '',
               accentColor: folderColor,
               folderOwnerId: folderOwnerId,
             ),
@@ -163,6 +165,7 @@ class ChapterDetailMobileLayout extends StatelessWidget {
                 key: const ValueKey('quiz'),
                 chapterId: chapter.id,
                 chapterTitle: chapter.title,
+                folderId: chapter.folderId ?? '',
               ),
             ),
           ),

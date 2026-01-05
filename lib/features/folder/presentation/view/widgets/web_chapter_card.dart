@@ -28,9 +28,10 @@ class WebChapterCard extends StatelessWidget {
       onTap: () {
         final chapterCubit = context.read<ChapterCubit>();
         final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
-        context.pushNamed(
+        // Use go() on web to ensure URL updates in browser
+        context.goNamed(
           'chapter-detail',
-          pathParameters: {'chapterId': chapterId},
+          pathParameters: {'folderId': folderId, 'chapterId': chapterId},
           extra: {
             'chapter': chapter,
             'folderColor': folderColor,

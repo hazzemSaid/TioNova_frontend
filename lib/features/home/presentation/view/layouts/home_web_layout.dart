@@ -706,8 +706,12 @@ class HomeWebLayout extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () {
                   context.push(
-                    '/chapter/${chapter.id}',
-                    extra: {'chapter': chapter},
+                    '/chapters/${chapter.id}',
+                    extra: {
+                      'chapter': chapter,
+                      'folderColor': colorScheme.primary,
+                      'folderId': chapter.folderId ?? '',
+                    },
                   );
                 },
                 icon: const Icon(Icons.arrow_forward, size: 16),
@@ -809,7 +813,7 @@ class HomeWebLayout extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () {
                   context.push(
-                    '/folder/${folder['id']}',
+                    '/folders/${folder['id']}',
                     extra: {
                       'title': folder['name'] as String? ?? 'Folder',
                       'subtitle': folder['subtitle'] as String? ?? '',

@@ -11,12 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tionova/core/blocobserve/blocobserv.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/router/app_router.dart';
-import 'package:tionova/core/services/app_usage_tracker_service.dart';
 import 'package:tionova/core/services/hive_manager.dart';
 import 'package:tionova/core/services/notification/notification_service.dart';
-import 'package:tionova/core/services/shorebird_service.dart';
 import 'package:tionova/core/theme/app_theme.dart';
-import 'package:tionova/core/widgets/update_checker_widget.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/localauthdatasource.dart';
@@ -219,14 +216,12 @@ class AppInitializer {
           builder: (context, authState) {
             return BlocBuilder<ThemeCubit, ThemeMode>(
               builder: (context, themeMode) {
-                return UpdateCheckerWidget(
-                  child: MaterialApp.router(
-                    debugShowCheckedModeBanner: false,
-                    routerConfig: AppRouter.router,
-                    theme: AppTheme.lightTheme,
-                    darkTheme: AppTheme.darkTheme,
-                    themeMode: themeMode,
-                  ),
+                return MaterialApp.router(
+                  debugShowCheckedModeBanner: false,
+                  routerConfig: AppRouter.router,
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: themeMode,
                 );
               },
             );
@@ -242,14 +237,18 @@ class AppInitializer {
       print('🔄 Starting deferred initialization...');
 
       try {
-        // Initialize App Usage Tracker
-        final usageTracker = getIt<AppUsageTrackerService>();
-        await usageTracker.initialize();
-        print('✅ AppUsageTrackerService initialized');
+        // Initialize App Usage Tracker (skip on web - IndexedDB issues)
+        if (!kIsWeb) {
+          // final usageTracker = getIt<AppUsageTrackerService>();
+          // await usageTracker.initialize();
+          print('✅ AppUsageTrackerService initialized');
+        } else {
+          print('⏭️ AppUsageTrackerService skipped on web');
+        }
 
         // Initialize Shorebird Code Push
-        final shorebirdService = ShorebirdService();
-        await shorebirdService.initialize();
+        // final shorebirdService = ShorebirdService();
+        // await shorebirdService.initialize();
         print('✅ Shorebird Code Push initialized');
 
         // Get FCM token and setup notification subscriptions (skip on web)

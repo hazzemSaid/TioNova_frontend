@@ -1,9 +1,15 @@
 // // main.dart
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:tionova/core/init/app_initializer.dart';
 
 Future<void> main() async {
+  // Configure URL strategy for web (removes # from URLs)
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
+
   // Wrap entire main in try-catch to prevent white screen on errors
   try {
     await AppInitializer.initializeApp();

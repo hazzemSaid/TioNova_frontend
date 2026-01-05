@@ -9,8 +9,13 @@ import 'package:tionova/features/quiz/presentation/widgets/quiz_header.dart';
 
 class QuizScreen extends StatefulWidget {
   final String chapterId;
+  final String folderId;
 
-  const QuizScreen({super.key, required this.chapterId});
+  const QuizScreen({
+    super.key,
+    required this.chapterId,
+    required this.folderId,
+  });
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -256,8 +261,12 @@ class _QuizScreenState extends State<QuizScreen> {
                             onPressed: () {
                               final quizState = state;
                               if (quizState is CreateQuizSuccess) {
+                                final hasFolder = widget.folderId.isNotEmpty;
+                                final path = hasFolder
+                                    ? '/folders/${widget.folderId}/chapters/${widget.chapterId}/quiz/questions'
+                                    : '/chapters/${widget.chapterId}/quiz/questions';
                                 context.push(
-                                  '/quiz-questions',
+                                  path,
                                   extra: {
                                     'quiz': quizState.quiz,
                                     'answers': List.filled(
@@ -503,8 +512,12 @@ class _QuizScreenState extends State<QuizScreen> {
                   const SizedBox(height: 48),
                   OutlinedButton(
                     onPressed: () {
+                      final hasFolder = widget.folderId.isNotEmpty;
+                      final path = hasFolder
+                          ? '/folders/${widget.folderId}/chapters/${widget.chapterId}/quiz/questions'
+                          : '/chapters/${widget.chapterId}/quiz/questions';
                       context.push(
-                        '/quiz-questions',
+                        path,
                         extra: {
                           'quiz': quiz,
                           'answers': List.filled(quiz.questions.length, null),

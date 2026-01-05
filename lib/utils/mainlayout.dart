@@ -1,103 +1,28 @@
 // Main Layout with Adaptive Navigation
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tionova/core/get_it/services_locator.dart';
-import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
-import 'package:tionova/features/folder/presentation/view/screens/folder_screen.dart';
-import 'package:tionova/features/home/presentation/provider/index_mainLayout.dart';
-import 'package:tionova/features/home/presentation/view/screens/home_screen.dart';
-import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:tionova/features/profile/presentation/view/screens/profile_screen.dart';
-import 'package:tionova/utils/widgets/BottomNavItem.dart';
+import 'package:go_router/go_router.dart';
 
-class MainLayout extends StatefulWidget {
-  const MainLayout({super.key});
-  @override
-  State<MainLayout> createState() => _MainLayoutState();
-}
+class MainLayout extends StatelessWidget {
+  final Widget child;
 
-class _MainLayoutState extends State<MainLayout> {
-  bool _isDisposed = false;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _isSidebarClosed = false;
-
-  // Lazy loaded screens
-  final List<Widget?> _screens = List.filled(4, null);
-
-  @override
-  void dispose() {
-    _isDisposed = true;
-    super.dispose();
-  }
-
-  // Safe setState that checks if widget is still mounted
-  void _safeSetState(VoidCallback fn) {
-    if (!_isDisposed && mounted) {
-      setState(fn);
-    }
-  }
-
-  // Get screen by index - creates the widget only when needed
-  Widget _getScreen(int index) {
-    if (_screens[index] == null) {
-      switch (index) {
-        case 0:
-          _screens[index] = const HomeScreen();
-          break;
-        case 1:
-          // FolderCubit is provided by MainLayout route in router
-          _screens[index] = const FolderScreen();
-          break;
-        case 2:
-          // ChallengeCubit will be provided by specific challenge routes
-          // For the main screen, we provide it here since it's accessed from MainLayout
-          _screens[index] = BlocProvider<ChallengeCubit>(
-            create: (context) => getIt<ChallengeCubit>(),
-            child: const ChallangeScreen(),
-          );
-          break;
-        case 3:
-          _screens[index] = BlocProvider<ProfileCubit>(
-            create: (context) => getIt<ProfileCubit>()..fetchProfile(),
-            child: const ProfileScreen(),
-          );
-          break;
-      }
-    }
-    return _screens[index]!;
-  }
+  const MainLayout({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    final isWeb = _isWeb();
-    return isWeb ? _buildWebLayout(context) : _buildMobileLayout(context);
-  }
-
-  bool _isWeb() {
-    // Check if running on web platform
-    return identical(0, 0.0); // This returns true only on web
+    return kIsWeb ? _buildWebLayout(context) : _buildMobileLayout(context);
   }
 
   // Mobile layout with bottom navigation
   Widget _buildMobileLayout(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final indexProvider = context.watch<IndexMainLayout>();
-    final currentIndex = indexProvider.index;
+    final currentPath = GoRouterState.of(context).uri.path;
+
     return Scaffold(
       backgroundColor: colorScheme.onPrimary,
-      body: IndexedStack(
-        index: currentIndex,
-        sizing: StackFit.expand,
-        children: List.generate(
-          _screens.length,
-          (index) => currentIndex == index || _screens[index] != null
-              ? _getScreen(index)
-              : Container(),
-        ),
-      ),
-      bottomNavigationBar: _customBottomNavigationBar(context),
+      body: child,
+      bottomNavigationBar: _customBottomNavigationBar(context, currentPath),
     );
   }
 
@@ -105,8 +30,109 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildWebLayout(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final indexProvider = context.watch<IndexMainLayout>();
-    final currentIndex = indexProvider.index;
+    final currentPath = GoRouterState.of(context).uri.path;
+
+    return _WebLayoutWrapper(currentPath: currentPath, child: child);
+  }
+
+  // Custom Bottom Navigation Bar
+  Widget _customBottomNavigationBar(BuildContext context, String currentPath) {
+    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      height: isIOS ? 70 : 65,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.4),
+            width: 0.5,
+          ),
+        ),
+        boxShadow: isIOS
+            ? [
+                BoxShadow(
+                  color: colorScheme.shadow.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ]
+            : null,
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Material(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: _BottomNavItem(
+                    icon: Icons.home,
+                    label: "Home",
+                    route: '/',
+                    currentPath: currentPath,
+                    onTap: () => context.go('/'),
+                  ),
+                ),
+                Expanded(
+                  child: _BottomNavItem(
+                    icon: Icons.folder_outlined,
+                    label: "Folders",
+                    route: '/folders',
+                    currentPath: currentPath,
+                    onTap: () => context.go('/folders'),
+                  ),
+                ),
+                Expanded(
+                  child: _BottomNavItem(
+                    icon: Icons.emoji_events_outlined,
+                    label: "Challenges",
+                    route: '/challenges',
+                    currentPath: currentPath,
+                    onTap: () => context.go('/challenges'),
+                  ),
+                ),
+                Expanded(
+                  child: _BottomNavItem(
+                    icon: Icons.person_outline,
+                    label: "Profile",
+                    route: '/profile',
+                    currentPath: currentPath,
+                    onTap: () => context.go('/profile'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Stateful wrapper for web layout sidebar state
+class _WebLayoutWrapper extends StatefulWidget {
+  final String currentPath;
+  final Widget child;
+
+  const _WebLayoutWrapper({required this.currentPath, required this.child});
+
+  @override
+  State<_WebLayoutWrapper> createState() => _WebLayoutWrapperState();
+}
+
+class _WebLayoutWrapperState extends State<_WebLayoutWrapper> {
+  bool _isSidebarClosed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -120,7 +146,6 @@ class _MainLayoutState extends State<MainLayout> {
             : maxDrawerWidth;
 
         return Scaffold(
-          key: _scaffoldKey,
           backgroundColor: colorScheme.onPrimary,
           body: Column(
             children: [
@@ -140,7 +165,7 @@ class _MainLayoutState extends State<MainLayout> {
                     IconButton(
                       icon: Icon(Icons.menu, color: colorScheme.onSurface),
                       onPressed: () {
-                        _safeSetState(() {
+                        setState(() {
                           _isSidebarClosed = !_isSidebarClosed;
                         });
                       },
@@ -175,7 +200,11 @@ class _MainLayoutState extends State<MainLayout> {
                           alignment: Alignment.topLeft,
                           child: SizedBox(
                             width: maxDrawerWidth,
-                            child: _buildSidebar(context, sidebarWidth),
+                            child: _buildSidebar(
+                              context,
+                              sidebarWidth,
+                              widget.currentPath,
+                            ),
                           ),
                         ),
                       ),
@@ -184,7 +213,7 @@ class _MainLayoutState extends State<MainLayout> {
                       child: GestureDetector(
                         onTap: () {
                           if (!_isSidebarClosed) {
-                            _safeSetState(() {
+                            setState(() {
                               _isSidebarClosed = true;
                             });
                           }
@@ -192,18 +221,7 @@ class _MainLayoutState extends State<MainLayout> {
                         behavior: HitTestBehavior.translucent,
                         child: Container(
                           color: colorScheme.onPrimary,
-                          child: IndexedStack(
-                            index: currentIndex,
-                            sizing: StackFit.expand,
-                            children: List.generate(
-                              _screens.length,
-                              (index) =>
-                                  currentIndex == index ||
-                                      _screens[index] != null
-                                  ? _getScreen(index)
-                                  : Container(),
-                            ),
-                          ),
+                          child: widget.child,
                         ),
                       ),
                     ),
@@ -218,11 +236,9 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   // Permanent Sidebar for Web
-  Widget _buildSidebar(BuildContext context, double width) {
+  Widget _buildSidebar(BuildContext context, double width, String currentPath) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final indexProvider = context.watch<IndexMainLayout>();
-    final currentIndex = indexProvider.index;
     final bool isCollapsed = width < 160;
 
     return Container(
@@ -277,7 +293,7 @@ class _MainLayoutState extends State<MainLayout> {
                     size: 20,
                   ),
                   onPressed: () {
-                    _safeSetState(() {
+                    setState(() {
                       _isSidebarClosed = true;
                     });
                   },
@@ -296,32 +312,32 @@ class _MainLayoutState extends State<MainLayout> {
                   context: context,
                   icon: Icons.home,
                   label: 'Home',
-                  index: 0,
-                  currentIndex: currentIndex,
+                  route: '/',
+                  currentPath: currentPath,
                   isCollapsed: isCollapsed,
                 ),
                 _buildSidebarItem(
                   context: context,
                   icon: Icons.folder_outlined,
                   label: 'Folders',
-                  index: 1,
-                  currentIndex: currentIndex,
+                  route: '/folders',
+                  currentPath: currentPath,
                   isCollapsed: isCollapsed,
                 ),
                 _buildSidebarItem(
                   context: context,
                   icon: Icons.emoji_events_outlined,
                   label: 'Challenges',
-                  index: 2,
-                  currentIndex: currentIndex,
+                  route: '/challenges',
+                  currentPath: currentPath,
                   isCollapsed: isCollapsed,
                 ),
                 _buildSidebarItem(
                   context: context,
                   icon: Icons.person_outline,
                   label: 'Profile',
-                  index: 3,
-                  currentIndex: currentIndex,
+                  route: '/profile',
+                  currentPath: currentPath,
                   isCollapsed: isCollapsed,
                 ),
               ],
@@ -346,13 +362,13 @@ class _MainLayoutState extends State<MainLayout> {
     required BuildContext context,
     required IconData icon,
     required String label,
-    required int index,
-    required int currentIndex,
+    required String route,
+    required String currentPath,
     required bool isCollapsed,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isSelected = currentIndex == index;
+    final isSelected = currentPath == route;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -363,9 +379,7 @@ class _MainLayoutState extends State<MainLayout> {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          _safeSetState(() {
-            context.read<IndexMainLayout>().index = index;
-          });
+          context.go(route);
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -400,91 +414,57 @@ class _MainLayoutState extends State<MainLayout> {
       ),
     );
   }
+}
 
-  // Custom Bottom Navigation Bar
-  Widget _customBottomNavigationBar(BuildContext context) {
-    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+// Bottom Navigation Item Widget
+class _BottomNavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String route;
+  final String currentPath;
+  final VoidCallback onTap;
+
+  const _BottomNavItem({
+    required this.icon,
+    required this.label,
+    required this.route,
+    required this.currentPath,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isSelected = currentPath == route;
 
-    final indexProvider = context.watch<IndexMainLayout>();
-    final currentIndex = indexProvider.index;
-    return Container(
-      height: isIOS ? 70 : 65,
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.4),
-            width: 0.5,
-          ),
-        ),
-        boxShadow: isIOS
-            ? [
-                BoxShadow(
-                  color: colorScheme.shadow.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ]
-            : null,
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          child: Material(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: BottomNavItem(
-                    icon: Icons.home,
-                    label: "Home",
-                    index: 0,
-                    currentIndex: currentIndex,
-                    onTap: () => _safeSetState(
-                      () => context.read<IndexMainLayout>().index = 0,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: BottomNavItem(
-                    icon: Icons.folder_outlined,
-                    label: "Folders",
-                    index: 1,
-                    currentIndex: currentIndex,
-                    onTap: () => _safeSetState(
-                      () => context.read<IndexMainLayout>().index = 1,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: BottomNavItem(
-                    icon: Icons.emoji_events_outlined,
-                    label: "Challenges",
-                    index: 2,
-                    currentIndex: currentIndex,
-                    onTap: () => _safeSetState(
-                      () => context.read<IndexMainLayout>().index = 2,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: BottomNavItem(
-                    icon: Icons.person_outline,
-                    label: "Profile",
-                    index: 3,
-                    currentIndex: currentIndex,
-                    onTap: () => _safeSetState(
-                      () => context.read<IndexMainLayout>().index = 3,
-                    ),
-                  ),
-                ),
-              ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 24,
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.onSurface.withValues(alpha: 0.6),
             ),
-          ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.onSurface.withValues(alpha: 0.6),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );
