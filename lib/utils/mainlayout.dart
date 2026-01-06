@@ -127,7 +127,7 @@ class _WebLayoutWrapper extends StatefulWidget {
 }
 
 class _WebLayoutWrapperState extends State<_WebLayoutWrapper> {
-  bool _isSidebarClosed = false;
+  bool _isSidebarClosed = true;
 
   @override
   Widget build(BuildContext context) {

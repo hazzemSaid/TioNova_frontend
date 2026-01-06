@@ -17,43 +17,33 @@ import 'package:tionova/features/home/presentation/view/widgets/home_mindmaps_se
 import 'package:tionova/features/home/presentation/view/widgets/home_stats_section.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
-// Home Screen with Enhanced UI/UX - Provider Wrapper
-class HomeScreen extends StatelessWidget {
+// Home Screen with Enhanced UI/UX
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) {
-        final cubit = getIt<AnalysisCubit>();
-        cubit.loadAnalysisData();
-        return cubit;
-      },
-      child: const _HomeScreenContent(),
-    );
-  }
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-// Home Screen Content
-class _HomeScreenContent extends StatefulWidget {
-  const _HomeScreenContent();
-
-  @override
-  State<_HomeScreenContent> createState() => _HomeScreenContentState();
-}
-
-class _HomeScreenContentState extends State<_HomeScreenContent> {
-  // Only initialize usage tracker on non-web platforms
-  // final AppUsageTrackerService? _usageTracker = kIsWeb
-  //     ? null
-  //     : getIt<AppUsageTrackerService>();
+class _HomeScreenState extends State<HomeScreen> {
   late final AnalysisCubit _analysisCubit;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Get cubit reference in initState to avoid context issues during disposal
-    _analysisCubit = context.read<AnalysisCubit>();
+    _analysisCubit = getIt<AnalysisCubit>();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      if (_analysisCubit.state is! AnalysisLoaded) {
+        _analysisCubit.loadAnalysisData();
+      }
+    }
   }
 
   Future<void> _loadAnalysisData() async {
@@ -76,134 +66,198 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    return BlocListener<AnalysisCubit, AnalysisState>(
-      listener: (context, state) {
-        // Skip usage tracking on web
-        if (!kIsWeb &&
-            state is AnalysisLoaded &&
-            state.analysisData.profile != null) {
-          final profile = state.analysisData.profile!;
-          // _usageTracker?.updateProfileFromApi(
-          //   streak: profile.streak,
-          //   lastActiveDate: profile.lastActiveDate,
-          //   totalQuizzesTaken: profile.totalQuizzesTaken,
-          //   totalMindmapsCreated: profile.totalMindmapsCreated,
-          //   totalSummariesCreated: profile.totalSummariesCreated,
-          //   averageQuizScore: profile.averageQuizScore,
-          // );
-        }
-      },
-      child: BlocBuilder<AnalysisCubit, AnalysisState>(
-        buildWhen: (previous, current) => previous != current,
-        builder: (context, state) {
-          // Handle loading state
-          if (state is AnalysisLoading) {
-            return Scaffold(
-              backgroundColor: theme.scaffoldBackgroundColor,
-              body: const Center(child: CircularProgressIndicator()),
-            );
+    return BlocProvider<AnalysisCubit>.value(
+      value: _analysisCubit,
+      child: BlocListener<AnalysisCubit, AnalysisState>(
+        listener: (context, state) {
+          // Skip usage tracking on web
+          if (!kIsWeb &&
+              state is AnalysisLoaded &&
+              state.analysisData.profile != null) {
+            // Usage tracking disabled
           }
-
-          // Handle error state
-          if (state is AnalysisError) {
-            return Scaffold(
-              backgroundColor: theme.scaffoldBackgroundColor,
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: colorScheme.error,
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Failed to load data', style: textTheme.titleLarge),
-                    const SizedBox(height: 8),
-                    Text(
-                      state.message,
-                      style: textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _loadAnalysisData,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
+        },
+        child: BlocBuilder<AnalysisCubit, AnalysisState>(
+          buildWhen: (previous, current) => previous != current,
+          builder: (context, state) {
+            // Handle initial and loading state - show loading indicator
+            if (state is AnalysisInitial || state is AnalysisLoading) {
+              return Scaffold(
+                backgroundColor: theme.scaffoldBackgroundColor,
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Loading...',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              );
+            }
+
+            // Handle error state
+            if (state is AnalysisError) {
+              return Scaffold(
+                backgroundColor: theme.scaffoldBackgroundColor,
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: colorScheme.error,
+                      ),
+                      const SizedBox(height: 16),
+                      Text('Failed to load data', style: textTheme.titleLarge),
+                      const SizedBox(height: 8),
+                      Text(
+                        state.message,
+                        style: textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _loadAnalysisData,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            // Extract data from loaded state
+            final analysisData = state is AnalysisLoaded
+                ? state.analysisData
+                : null;
+            if (analysisData == null) {
+              return Scaffold(
+                backgroundColor: theme.scaffoldBackgroundColor,
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inbox_outlined,
+                        size: 64,
+                        color: colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No data available',
+                        style: textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _loadAnalysisData,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Refresh'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            // Prepare data
+            final todayProgressData = analysisData.todayProgress;
+            final todayProgressActual = todayProgressData?.actual;
+            final todayProgress = {
+              'completed': todayProgressData?.current ?? 0,
+              'total': todayProgressData?.target ?? 0,
+              'chapters': todayProgressActual?.chapters ?? 0,
+              'quizzes': todayProgressActual?.quizzes ?? 0,
+              'studyTime': 0,
+              'percentage': todayProgressData?.percentage ?? 0,
+            };
+
+            final stats = HomeViewHelper.buildStatsList(analysisData);
+            final chaptersData = HomeViewHelper.buildChaptersList(analysisData);
+            final chapters = chaptersData
+                .map((ch) => ch['chapterModel'] as ChapterModel)
+                .toList();
+            final folders = HomeViewHelper.buildFoldersList(
+              analysisData,
+              colorScheme,
             );
-          }
-
-          // Extract data from loaded state
-          final analysisData = state is AnalysisLoaded
-              ? state.analysisData
-              : null;
-          if (analysisData == null) {
-            return Scaffold(
-              backgroundColor: theme.scaffoldBackgroundColor,
-              body: const Center(child: Text('No data available')),
+            final lastSummary = HomeViewHelper.buildLastSummaryData(
+              analysisData,
             );
-          }
+            final mindMaps = HomeViewHelper.buildMindMapsList(analysisData);
 
-          // Prepare data for today's progress from API
-          // Safely handle null todayProgress and its nested properties
-          final todayProgressData = analysisData.todayProgress;
-          final todayProgressActual = todayProgressData?.actual;
-          final todayProgress = {
-            'completed': todayProgressData?.current ?? 0,
-            'total': todayProgressData?.target ?? 0,
-            'chapters': todayProgressActual?.chapters ?? 0,
-            'quizzes': todayProgressActual?.quizzes ?? 0,
-            // Skip usage tracking on web
-            'studyTime': kIsWeb
-                ? 0
-                : ( /*_usageTracker?.getTodayUsageMinutes() ??*/ 0),
-            'percentage': todayProgressData?.percentage ?? 0,
-          };
+            final hasAnyContent =
+                chapters.isNotEmpty ||
+                folders.isNotEmpty ||
+                lastSummary != null ||
+                mindMaps.isNotEmpty;
 
-          // Prepare statistics data
-          final stats = HomeViewHelper.buildStatsList(analysisData);
+            // Show empty state if no content
+            if (!hasAnyContent) {
+              if (isWeb) {
+                return HomeWebLayout(
+                  theme: theme,
+                  analysisData: analysisData,
+                  stats: stats,
+                  chapters: const [],
+                  folders: const [],
+                  lastSummary: null,
+                  mindMaps: const [],
+                  todayProgress: todayProgress,
+                  onRefresh: _loadAnalysisData,
+                );
+              }
 
-          // Prepare chapters data from API
-          final chaptersData = HomeViewHelper.buildChaptersList(analysisData);
-          final chapters = chaptersData
-              .map((ch) => ch['chapterModel'] as ChapterModel)
-              .toList();
+              return Scaffold(
+                backgroundColor: theme.scaffoldBackgroundColor,
+                body: RefreshIndicator(
+                  onRefresh: _loadAnalysisData,
+                  color: colorScheme.primary,
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      if (!isWeb)
+                        SliverPersistentHeader(
+                          delegate: CustomHeaderDelegate(
+                            minHeight: topPadding + (isTablet ? 60 : 80),
+                            maxHeight: topPadding + (isTablet ? 70 : 100),
+                            screenWidth: screenWidth,
+                          ),
+                        ),
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: EmptyStateWidget(
+                          colorScheme: colorScheme,
+                          textTheme: textTheme,
+                          horizontalPadding: horizontalPadding,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
 
-          // Prepare folders data from API
-          final folders = HomeViewHelper.buildFoldersList(
-            analysisData,
-            colorScheme,
-          );
-
-          // Prepare last summary data
-          final lastSummary = HomeViewHelper.buildLastSummaryData(analysisData);
-
-          // Prepare mind maps data
-          final mindMaps = HomeViewHelper.buildMindMapsList(analysisData);
-
-          // Check if all content sections are empty
-          final hasChapters = chapters.isNotEmpty;
-          final hasFolders = folders.isNotEmpty;
-          final hasSummary = lastSummary != null;
-          final hasMindMaps = mindMaps.isNotEmpty;
-          final hasAnyContent =
-              hasChapters || hasFolders || hasSummary || hasMindMaps;
-
-          // Show empty state if no content
-          if (!hasAnyContent) {
+            // Return web layout if screen width > 800
             if (isWeb) {
               return HomeWebLayout(
                 theme: theme,
                 analysisData: analysisData,
                 stats: stats,
-                chapters: const [],
-                folders: const [],
-                lastSummary: null,
-                mindMaps: const [],
+                chapters: chapters,
+                folders: folders,
+                lastSummary: lastSummary,
+                mindMaps: mindMaps,
                 todayProgress: todayProgress,
                 onRefresh: _loadAnalysisData,
               );
@@ -214,163 +268,81 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
               body: RefreshIndicator(
                 onRefresh: _loadAnalysisData,
                 color: colorScheme.primary,
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    // Custom Header
-                    if (!isWeb)
-                      SliverPersistentHeader(
-                        delegate: CustomHeaderDelegate(
-                          minHeight: topPadding + (isTablet ? 60 : 80),
-                          maxHeight: topPadding + (isTablet ? 70 : 100),
-                          screenWidth: screenWidth,
+                child: ScrollConfiguration(
+                  behavior: const NoGlowScrollBehavior(),
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      if (!isWeb)
+                        SliverPersistentHeader(
+                          delegate: CustomHeaderDelegate(
+                            minHeight: topPadding + (isTablet ? 60 : 80),
+                            maxHeight: topPadding + (isTablet ? 70 : 100),
+                            screenWidth: screenWidth,
+                          ),
                         ),
-                      ),
-
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyStateWidget(
+                      HomeStatsSection(
+                        stats: stats,
+                        horizontalPadding: horizontalPadding,
                         colorScheme: colorScheme,
                         textTheme: textTheme,
-                        horizontalPadding: horizontalPadding,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          // Return web layout if screen width > 800
-          if (isWeb) {
-            return HomeWebLayout(
-              theme: theme,
-              analysisData: analysisData,
-              stats: stats,
-              chapters: chapters,
-              folders: folders,
-              lastSummary: lastSummary,
-              mindMaps: mindMaps,
-              todayProgress: todayProgress,
-              onRefresh: _loadAnalysisData,
-            );
-          }
-
-          return Scaffold(
-            backgroundColor: theme.scaffoldBackgroundColor,
-            body: RefreshIndicator(
-              onRefresh: _loadAnalysisData,
-              color: colorScheme.primary,
-              child: ScrollConfiguration(
-                behavior: const NoGlowScrollBehavior(),
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    // Custom Header
-                    if (!isWeb)
-                      SliverPersistentHeader(
-                        delegate: CustomHeaderDelegate(
-                          minHeight: topPadding + (isTablet ? 60 : 80),
-                          maxHeight: topPadding + (isTablet ? 70 : 100),
-                          screenWidth: screenWidth,
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
                         ),
-                      ),
-
-                    // Statistics Cards
-                    HomeStatsSection(
-                      stats: stats,
-                      horizontalPadding: horizontalPadding,
-                      colorScheme: colorScheme,
-                      textTheme: textTheme,
-                    ),
-
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          SizedBox(height: verticalSpacing * 2),
-
-                          // Today's Progress Section with real-time updates
-                          // On web, skip StreamBuilder for usage tracking
-                          if (kIsWeb)
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            SizedBox(height: verticalSpacing * 2),
                             DailyProgressWidget(
                               progress: todayProgress,
                               colorScheme: colorScheme,
                               textTheme: textTheme,
-                            )
-                          else
-                            StreamBuilder<int>(
-                              stream: /*_usageTracker?.getTodayUsageStream()*/
-                                  null,
-                              initialData: 0,
-                              builder: (context, snapshot) {
-                                final realTimeUsage = snapshot.data ?? 0;
-                                final updatedProgress = {
-                                  ...todayProgress,
-                                  'studyTime': realTimeUsage,
-                                };
-                                return DailyProgressWidget(
-                                  progress: updatedProgress,
-                                  colorScheme: colorScheme,
-                                  textTheme: textTheme,
-                                );
-                              },
                             ),
-                          SizedBox(height: verticalSpacing * 2),
-                        ]),
+                            SizedBox(height: verticalSpacing * 2),
+                          ]),
+                        ),
                       ),
-                    ),
-
-                    // Recent Chapters Section
-                    HomeChaptersSection(
-                      chapters: chapters,
-                      horizontalPadding: horizontalPadding,
-                      verticalSpacing: verticalSpacing,
-                      screenHeight: screenHeight,
-                      colorScheme: colorScheme,
-                    ),
-
-                    // Recent Folders Section
-                    HomeFoldersSection(
-                      folders: folders,
-                      horizontalPadding: horizontalPadding,
-                      verticalSpacing: verticalSpacing,
-                      screenWidth: screenWidth,
-                      screenHeight: screenHeight,
-                      isTablet: isTablet,
-                    ),
-
-                    // Last Summary Section
-                    HomeLastSummarySection(
-                      lastSummary: lastSummary,
-                      horizontalPadding: horizontalPadding,
-                      verticalSpacing: verticalSpacing,
-                      colorScheme: colorScheme,
-                      textTheme: textTheme,
-                    ),
-
-                    // Recent Mind Maps Section
-                    HomeMindMapsSection(
-                      mindMaps: mindMaps,
-                      horizontalPadding: horizontalPadding,
-                      verticalSpacing: verticalSpacing,
-                      screenHeight: screenHeight,
-                      colorScheme: colorScheme,
-                      textTheme: textTheme,
-                    ),
-
-                    // Bottom spacing
-                    SliverToBoxAdapter(
-                      child: SizedBox(height: verticalSpacing * 2),
-                    ),
-                  ],
+                      HomeChaptersSection(
+                        chapters: chapters,
+                        horizontalPadding: horizontalPadding,
+                        verticalSpacing: verticalSpacing,
+                        screenHeight: screenHeight,
+                        colorScheme: colorScheme,
+                      ),
+                      HomeFoldersSection(
+                        folders: folders,
+                        horizontalPadding: horizontalPadding,
+                        verticalSpacing: verticalSpacing,
+                        screenWidth: screenWidth,
+                        screenHeight: screenHeight,
+                        isTablet: isTablet,
+                      ),
+                      HomeLastSummarySection(
+                        lastSummary: lastSummary,
+                        horizontalPadding: horizontalPadding,
+                        verticalSpacing: verticalSpacing,
+                        colorScheme: colorScheme,
+                        textTheme: textTheme,
+                      ),
+                      HomeMindMapsSection(
+                        mindMaps: mindMaps,
+                        horizontalPadding: horizontalPadding,
+                        verticalSpacing: verticalSpacing,
+                        screenHeight: screenHeight,
+                        colorScheme: colorScheme,
+                        textTheme: textTheme,
+                      ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(height: verticalSpacing * 2),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

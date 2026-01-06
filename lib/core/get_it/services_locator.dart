@@ -1,21 +1,12 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get_it/get_it.dart';
-import 'package:hive/hive.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
-import 'package:tionova/core/services/firebase_realtime_service.dart';
-import 'package:tionova/core/services/hive_manager.dart';
 import 'package:tionova/core/utils/network_error_helper.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
-import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
-import 'package:tionova/features/auth/data/AuthDataSource/localauthdatasource.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/remoteauthdatasource.dart';
-import 'package:tionova/features/auth/data/models/UserModel.dart';
 import 'package:tionova/features/auth/data/repo/authrepoimp.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/data/services/auth_service.dart';
 import 'package:tionova/features/auth/domain/repo/authrepo.dart';
 import 'package:tionova/features/auth/domain/usecases/forgetPasswordusecase.dart';
@@ -98,44 +89,44 @@ Future<void> setupServiceLocator() async {
   // Hive.init(appDocumentDir.path); // Removed redundant init, use Hive.initFlutter() from main.dart
 
   // Register Hive adapters - wrap in try-catch for web
-  // Only register if Hive is available (skips on Safari private mode)
-  if (HiveManager.isHiveAvailable) {
-    try {
-      if (!Hive.isAdapterRegistered(UserModelAdapter().typeId)) {
-        Hive.registerAdapter(UserModelAdapter());
-      }
-    } catch (e) {
-      print('⚠️ Error registering UserModelAdapter: $e');
-      if (!kIsWeb) rethrow;
-    }
-  }
+  // // Only register if Hive is available (skips on Safari private mode)
+  // if (HiveManager.isHiveAvailable) {
+  //   try {
+  //     if (!Hive.isAdapterRegistered(UserModelAdapter().typeId)) {
+  //       Hive.registerAdapter(UserModelAdapter());
+  //     }
+  //   } catch (e) {
+  //     print('⚠️ Error registering UserModelAdapter: $e');
+  //     if (!kIsWeb) rethrow;
+  //   }
+  // }
 
-  // Open Hive box with timeout for web platforms (iOS Safari can hang)
-  Box? box;
-  if (!HiveManager.isHiveAvailable) {
-    // Hive not available (Safari private mode), use null box
-    print('ℹ️ Skipping auth_box (Hive not available)');
-    box = null;
-  } else if (kIsWeb) {
-    // On web with Hive available, use shorter timeout and fallback gracefully
-    try {
-      box = await Hive.openBox('auth_box').timeout(
-        const Duration(seconds: 2),
-        onTimeout: () {
-          print('⚠️ Timeout opening auth_box on web');
-          throw TimeoutException('auth_box timeout');
-        },
-      );
-      print('✅ auth_box opened successfully on web');
-    } catch (e) {
-      print('⚠️ Error opening auth_box on web: $e');
-      // On web, we'll use null box and handle it in LocalAuthDataSource
-      box = null;
-    }
-  } else {
-    // On mobile/desktop, normal box opening
-    box = await Hive.openBox('auth_box');
-  }
+  // Hive box opening disabled for web compatibility
+  // Box? box;
+  // if (!HiveManager.isHiveAvailable) {
+  //   // Hive not available (Safari private mode), use null box
+  //   print('ℹ️ Skipping auth_box (Hive not available)');
+  //   box = null;
+  // } else if (kIsWeb) {
+  //   // On web with Hive available, use shorter timeout and fallback gracefully
+  //   try {
+  //     box = await Hive.openBox('auth_box').timeout(
+  //       const Duration(seconds: 2),
+  //       onTimeout: () {
+  //         print('⚠️ Timeout opening auth_box on web');
+  //         throw TimeoutException('auth_box timeout');
+  //       },
+  //     );
+  //     print('✅ auth_box opened successfully on web');
+  //   } catch (e) {
+  //     print('⚠️ Error opening auth_box on web: $e');
+  //     // On web, we'll use null box and handle it in LocalAuthDataSource
+  //     box = null;
+  //   }
+  // } else {
+  //   // On mobile/desktop, normal box opening
+  //   box = await Hive.openBox('auth_box');
+  // }
 
   final Dio dio = Dio(BaseOptions(baseUrl: baseUrl));
   final logger = PrettyDioLogger(
@@ -193,50 +184,61 @@ Future<void> setupServiceLocator() async {
         // Check if error is due to unauthorized (token expired)
         if (error.response?.statusCode == 401) {
           // Use static methods directly from TokenStorage
-          final refreshToken = await TokenStorage.getRefreshToken();
+          // final refreshToken = await TokenStorage.getRefreshToken();
 
-          if (refreshToken != null) {
-            try {
-              final refreshResponse = await dio.post(
-                '/auth/refresh-token',
-                data: {'refreshToken': refreshToken},
-              );
-              final newAccessToken = refreshResponse.data['token'];
-              final newRefreshToken = refreshResponse.data['refreshToken'];
-              // Save both tokens
-              await TokenStorage.saveTokens(newAccessToken, newRefreshToken);
+          // if (refreshToken != null) {
+          //   try {
+          //     final refreshResponse = await dio.post(
+          //       '/auth/refresh-token',
+          //       data: {'refreshToken': refreshToken},
+          //     );
+          //     final newAccessToken = refreshResponse.data['token'];
+          //     final newRefreshToken = refreshResponse.data['refreshToken'];
+          //     // Save both tokens
+          //     await TokenStorage.saveTokens(newAccessToken, newRefreshToken);
 
-              // Retry the original request with new token
-              final opts = error.requestOptions;
-              opts.headers['Authorization'] = 'Bearer $newAccessToken';
-              final cloneReq = await dio.fetch(opts);
-              return handler.resolve(cloneReq);
-            } catch (e) {
-              // If refresh fails, sign out the user with token expired flag
-              await TokenStorage.clearTokens();
-              final authCubit = getIt<AuthCubit>();
-              authCubit.signOut(
-                isTokenExpired: true,
-              ); // This will emit AuthFailure with token expired message
+          //     // Retry the original request with new token
+          //     final opts = error.requestOptions;
+          //     opts.headers['Authorization'] = 'Bearer $newAccessToken';
+          //     final cloneReq = await dio.fetch(opts);
+          //     return handler.resolve(cloneReq);
+          //   } catch (e) {
+          //     // If refresh fails, sign out the user with token expired flag
+          //       //     await TokenStorage.clearTokens();
+          //       //     final authCubit = getIt<AuthCubit>();
+          //       //     authCubit.signOut(
+          //       //       isTokenExpired: true,
+          //       //     ); // This will emit AuthFailure with token expired message
 
-              // Forward error to request
-              return handler.next(error);
-            }
-          } else {
-            // No refresh token found, sign out the user with token expired flag
-            final authCubit = getIt<AuthCubit>();
-            authCubit.signOut(isTokenExpired: true);
-            return handler.next(error);
-          }
+          //       //     // Forward error to request
+          //           return handler.next(error);
+          //         }
+          //       } else {
+          //         // No refresh token found, sign out the user with token expired flag
+          //         final authCubit = getIt<AuthCubit>();
+          //         authCubit.signOut(isTokenExpired: true);
+          //         return handler.next(error);
+          //       }
+          //     }
+          //     return handler.next(error);
+          //   },
+          //   onRequest: (options, handler) async {
+          //     // Use static method directly from TokenStorage
+          //     final accessToken = await TokenStorage.getAccessToken();
+          //     if (accessToken != null) {
+          //       options.headers['Authorization'] = 'Bearer $accessToken';
+          //     }
+          //     handler.next(options);
+          //   },
+          // ),
         }
         return handler.next(error);
       },
       onRequest: (options, handler) async {
-        // Use static method directly from TokenStorage
-        final accessToken = await TokenStorage.getAccessToken();
-        if (accessToken != null) {
-          options.headers['Authorization'] = 'Bearer $accessToken';
-        }
+        // Hardcoded token for testing - replace with TokenStorage in production
+        const accessToken =
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImhhYXplbXNhaWRkQGdtYWlsLmNvbSIsIl9pZCI6IjY5NTdlZmM3NWFhZjQ2NjU0MDliNmVmYSIsInJvbGUiOiJ1c2VyIiwidXNlcm5hbWUiOiJoYXplbSBzYWlkIiwicHJvZmlsZVBpY3R1cmUiOiJodHRwczovL3Jlcy5jbG91ZGluYXJ5LmNvbS9kcjVjcGNoMW4vaW1hZ2UvdXBsb2FkL3YxNzY3NjIzNDY1L3Byb2ZpbGUtcGljdHVyZXMveWMzcnhuanh1amdqb254OWZkbXEucG5nIiwiaWF0IjoxNzY3NjU5MzIwLCJleHAiOjE3Njc2NjI5MjB9.nLYQM0lo-kYZ5eymzSaK77HPHEeZ_0AhwFiEC-et0G0";
+        options.headers['Authorization'] = 'Bearer $accessToken';
         handler.next(options);
       },
     ),
@@ -266,7 +268,7 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<Dio>(() => dio);
   getIt.registerLazySingleton<AuthService>(() => AuthService(dio: dio));
   // Register TokenStorage just once
-  getIt.registerLazySingleton<TokenStorage>(() => TokenStorage());
+  // getIt.registerLazySingleton<TokenStorage>(() => TokenStorage());
 
   // // Register App Usage Tracker Service
   // getIt.registerLazySingleton<AppUsageTrackerService>(
@@ -274,10 +276,10 @@ Future<void> setupServiceLocator() async {
   // );
 
   // Register Firebase Realtime Database
-  getIt.registerLazySingleton(() => FirebaseDatabase.instance);
-  getIt.registerLazySingleton(
-    () => FirebaseRealtimeService(getIt<FirebaseDatabase>()),
-  );
+  // getIt.registerLazySingleton(() => FirebaseDatabase.instance);
+  // getIt.registerLazySingleton(
+  //   () => FirebaseRealtimeService(getIt<FirebaseDatabase>()),
+  // );
 
   // Data Sources
   getIt.registerLazySingleton<IAuthDataSource>(
@@ -287,24 +289,24 @@ Future<void> setupServiceLocator() async {
     ),
   );
 
-  // Use web-safe auth data source when Hive box is not available
-  if (box != null) {
-    final nonNullBox = box; // Store in non-nullable local variable
-    getIt.registerLazySingleton<ILocalAuthDataSource>(
-      () => LocalAuthDataSource(nonNullBox),
-    );
-  } else {
-    // Web fallback - use in-memory storage
-    getIt.registerLazySingleton<ILocalAuthDataSource>(
-      () => WebLocalAuthDataSource(),
-    );
-  }
+  // // Use web-safe auth data source when Hive box is not available
+  // if (box != null) {
+  //   final nonNullBox = box; // Store in non-nullable local variable
+  //   getIt.registerLazySingleton<ILocalAuthDataSource>(
+  //     () => LocalAuthDataSource(nonNullBox),
+  //   );
+  // } else {
+  //   // Web fallback - use in-memory storage
+  //   getIt.registerLazySingleton<ILocalAuthDataSource>(
+  //     () => WebLocalAuthDataSource(),
+  //   );
+  // }
 
   // Repository
   getIt.registerLazySingleton<AuthRepo>(
     () => AuthRepoImp(
       remoteDataSource: getIt<IAuthDataSource>(),
-      localDataSource: getIt<ILocalAuthDataSource>(),
+      // localDataSource: getIt<ILocalAuthDataSource>(),
     ),
   );
 
@@ -340,10 +342,10 @@ Future<void> setupServiceLocator() async {
       loginUseCase: getIt<LoginUseCase>(),
       registerUseCase: getIt<RegisterUseCase>(),
       verifyEmailUseCase: getIt<VerifyEmailUseCase>(),
-      tokenStorage:
-          TokenStorage(), // Provide instance directly since TokenStorage uses static methods
+      // tokenStorage:
+      //     TokenStorage(), // Provide instance directly since TokenStorage uses static methods
       googleauthusecase: getIt<Googleauthusecase>(),
-      localAuthDataSource: getIt<ILocalAuthDataSource>(),
+      // localAuthDataSource: getIt<ILocalAuthDataSource>(),
     ),
   );
 
@@ -462,7 +464,7 @@ Future<void> setupServiceLocator() async {
       getChaptersUseCase: getIt<GetChaptersUseCase>(),
       createChapterUseCase: getIt<CreateChapterUseCase>(),
       getChapterContentPdfUseCase: getIt<GetChapterContentPdfUseCase>(),
-      firebaseService: getIt<FirebaseRealtimeService>(),
+      // firebaseService: getIt<FirebaseRealtimeService>(),
       getMindmapUseCase: getIt<GetMindmapUseCase>(),
       getChapterSummaryUseCase: getIt<GetChapterSummaryUseCase>(),
       updateChapterUseCase: getIt<UpdateChapterUseCase>(),
@@ -574,7 +576,7 @@ Future<void> setupServiceLocator() async {
     () => AnalysisUseCase(repository: getIt<AnalysisRepositoryImpl>()),
   );
   // Register AnalysisCubit
-  getIt.registerFactory(
+  getIt.registerLazySingleton(
     () => AnalysisCubit(analysisUseCase: getIt<AnalysisUseCase>()),
   );
 

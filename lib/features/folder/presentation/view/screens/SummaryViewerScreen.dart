@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tionova/core/services/download_service.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/folder/data/models/SummaryModel.dart';
-import 'package:tionova/features/folder/data/services/SummaryPdfService.dart';
 
 class SummaryViewerScreen extends StatefulWidget {
   final SummaryModel summaryData;
@@ -165,7 +163,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(
-              onPressed: (){},
+              onPressed: () {},
               // onPressed: _isGeneratingPdf ? null : _downloadPdf,
               icon: _isGeneratingPdf
                   ? SizedBox(

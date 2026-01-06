@@ -5,7 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:either_dart/either.dart';
 import 'package:equatable/equatable.dart';
 import 'package:tionova/core/errors/failure.dart';
-import 'package:tionova/core/services/firebase_realtime_service.dart';
+// import 'package:tionova/core/services/firebase_realtime_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
@@ -41,7 +41,7 @@ class ChapterCubit extends Cubit<ChapterState> {
     required this.addNoteUseCase,
     required this.deleteNoteUseCase,
     required this.updateNoteUseCase,
-    required this.firebaseService,
+    // required this.firebaseService,
     required this.getMindmapUseCase,
     required this.getChapterSummaryUseCase,
     required this.updateChapterUseCase,
@@ -60,8 +60,8 @@ class ChapterCubit extends Cubit<ChapterState> {
   final GetChapterSummaryUseCase getChapterSummaryUseCase;
   final UpdateChapterUseCase updateChapterUseCase;
   final DeleteChapterUseCase deleteChapterUseCase;
-  final FirebaseRealtimeService firebaseService;
-  StreamSubscription<Map<String, dynamic>>? _firebaseSubscription;
+  // final FirebaseRealtimeService firebaseService;
+  // StreamSubscription<Map<String, dynamic>>? _firebaseSubscription;
   void getChapters({required String folderId}) async {
     safeEmit(ChapterLoading());
     final result = await getChaptersUseCase(folderId: folderId);
@@ -118,16 +118,16 @@ class ChapterCubit extends Cubit<ChapterState> {
         (_) {
           print('✅ [ChapterCubit] CreateChapter API success');
           // Success - let SSE handle completion or emit immediately if no SSE
-          if (_firebaseSubscription == null) {
-            print(
-              '⚠️ [ChapterCubit] No SSE subscription, emitting success immediately',
-            );
-            safeEmit(CreateChapterSuccess(chapters: chapters));
-          } else {
-            print(
-              '✅ [ChapterCubit] SSE subscription active, waiting for events',
-            );
-          }
+          // if (_firebaseSubscription == null) {
+          //   print(
+          //     '⚠️ [ChapterCubit] No SSE subscription, emitting success immediately',
+          //   );
+          //   safeEmit(CreateChapterSuccess(chapters: chapters));
+          // } else {
+          //   print(
+          //     '✅ [ChapterCubit] SSE subscription active, waiting for events',
+          //   );
+          // }
         },
       );
     } catch (e) {
@@ -149,31 +149,32 @@ class ChapterCubit extends Cubit<ChapterState> {
   void subscribeToChapterCreationProgress({required String userId}) {
     print('🔥 [ChapterCubit] Subscribing to Firebase for user: $userId');
 
-    _firebaseSubscription?.cancel();
-    _firebaseSubscription = firebaseService
-        .listenToChapterCreation(userId)
-        .listen(
-          _handleFirebaseUpdate,
-          onError: (error) {
-            print('❌ [ChapterCubit] Firebase error: $error');
-            unsubscribeFromChapterCreationProgress();
-            if (!isClosed) {
-              safeEmit(
-                CreateChapterError(
-                  ServerFailure('Lost connection to creation progress'),
-                  chapters: currentChapters,
-                ),
-              );
-            }
-          },
+    // _firebaseSubscription?.cancel();
+    // _firebaseSubscription = firebaseService
+    // .listenToChapterCreation(userId)
+    // .listen(
+    // _handleFirebaseUpdate,
+    onError:
+    (error) {
+      print('❌ [ChapterCubit] Firebase error: $error');
+      unsubscribeFromChapterCreationProgress();
+      if (!isClosed) {
+        safeEmit(
+          CreateChapterError(
+            ServerFailure('Lost connection to creation progress'),
+            chapters: currentChapters,
+          ),
         );
+      }
+    };
+    // );
   }
 
   /// Unsubscribe from Firebase chapter creation progress
   void unsubscribeFromChapterCreationProgress() {
     print('🔥 [ChapterCubit] Unsubscribing from Firebase');
-    _firebaseSubscription?.cancel();
-    _firebaseSubscription = null;
+    // _firebaseSubscription?.cancel();
+    // _firebaseSubscription = null;
   }
 
   /// Handle Firebase Realtime Database updates for chapter creation
@@ -234,10 +235,18 @@ class ChapterCubit extends Cubit<ChapterState> {
     final result = await getChapterContentPdfUseCase(chapterId: chapterId);
     result.fold(
       (failure) => safeEmit(
-        GetChapterContentPdfError(failure, forDownload: forDownload, chapters: chapters),
+        GetChapterContentPdfError(
+          failure,
+          forDownload: forDownload,
+          chapters: chapters,
+        ),
       ),
       (pdfData) => safeEmit(
-        GetChapterContentPdfSuccess(pdfData, forDownload: forDownload, chapters: chapters),
+        GetChapterContentPdfSuccess(
+          pdfData,
+          forDownload: forDownload,
+          chapters: chapters,
+        ),
       ),
     );
   }
@@ -262,7 +271,13 @@ class ChapterCubit extends Cubit<ChapterState> {
       );
       if (cachedData != null) {
         print('✅ Emitting cached summary');
-        emit(SummaryCachedFound(cachedData.summaryData, cachedData.cacheAge, chapters: chapters));
+        emit(
+          SummaryCachedFound(
+            cachedData.summaryData,
+            cachedData.cacheAge,
+            chapters: chapters,
+          ),
+        );
         return;
       }
     }
@@ -318,7 +333,9 @@ class ChapterCubit extends Cubit<ChapterState> {
             safeEmit(SummaryRegenerateSuccess(summaryData, chapters: chapters));
           } else {
             print('✅ Emitting GenerateSummaryStructuredSuccess');
-            safeEmit(GenerateSummaryStructuredSuccess(summaryData, chapters: chapters));
+            safeEmit(
+              GenerateSummaryStructuredSuccess(summaryData, chapters: chapters),
+            );
           }
         } catch (e) {
           // If there's any issue with the parsed data, log it
@@ -341,7 +358,11 @@ class ChapterCubit extends Cubit<ChapterState> {
       );
       if (cachedData != null) {
         safeEmit(
-          SummaryCachedFound(cachedData.summaryData, cachedData.cacheAge, chapters: currentChapters),
+          SummaryCachedFound(
+            cachedData.summaryData,
+            cachedData.cacheAge,
+            chapters: currentChapters,
+          ),
         );
       }
     }
@@ -374,8 +395,9 @@ class ChapterCubit extends Cubit<ChapterState> {
     final result = await getMindmapUseCase(chapterId: chapterId);
     result.fold(
       (failure) => safeEmit(CreateMindmapError(failure, chapters: chapters)),
-      (mindmap) =>
-          safeEmit(CreateMindmapSuccess(mindmap, chapters: chapters)), // Reuse success state
+      (mindmap) => safeEmit(
+        CreateMindmapSuccess(mindmap, chapters: chapters),
+      ), // Reuse success state
     );
   }
 
@@ -383,15 +405,26 @@ class ChapterCubit extends Cubit<ChapterState> {
     final chapters = currentChapters;
     safeEmit(GenerateSummaryLoading(chapters: chapters)); // Reuse loading state
     final result = await getChapterSummaryUseCase(chapterId: chapterId);
-    result.fold((failure) => safeEmit(GenerateSummaryError(failure, chapters: chapters)), (
-      summaryResponse,
-    ) {
-      if (summaryResponse.success) {
-        safeEmit(GenerateSummaryStructuredSuccess(summaryResponse.summary, chapters: chapters));
-      } else {
-        safeEmit(GenerateSummaryError(ServerFailure(summaryResponse.message), chapters: chapters));
-      }
-    });
+    result.fold(
+      (failure) => safeEmit(GenerateSummaryError(failure, chapters: chapters)),
+      (summaryResponse) {
+        if (summaryResponse.success) {
+          safeEmit(
+            GenerateSummaryStructuredSuccess(
+              summaryResponse.summary,
+              chapters: chapters,
+            ),
+          );
+        } else {
+          safeEmit(
+            GenerateSummaryError(
+              ServerFailure(summaryResponse.message),
+              chapters: chapters,
+            ),
+          );
+        }
+      },
+    );
   }
 
   void getNotesByChapterId({required String chapterId}) async {
@@ -399,8 +432,10 @@ class ChapterCubit extends Cubit<ChapterState> {
     safeEmit(GetNotesByChapterIdLoading(chapters: chapters));
     final result = await getNotesByChapterIdUseCase(chapterId: chapterId);
     result.fold(
-      (failure) => safeEmit(GetNotesByChapterIdError(failure, chapters: chapters)),
-      (notes) => safeEmit(GetNotesByChapterIdSuccess(notes, chapters: chapters)),
+      (failure) =>
+          safeEmit(GetNotesByChapterIdError(failure, chapters: chapters)),
+      (notes) =>
+          safeEmit(GetNotesByChapterIdSuccess(notes, chapters: chapters)),
     );
   }
 
@@ -426,10 +461,13 @@ class ChapterCubit extends Cubit<ChapterState> {
     final chapters = currentChapters;
     safeEmit(DeleteNoteLoading(chapters: chapters));
     final result = await deleteNoteUseCase(noteId: noteId);
-    result.fold((failure) => safeEmit(DeleteNoteError(failure, chapters: chapters)), (_) {
-      safeEmit(DeleteNoteSuccess(chapters: chapters));
-      getNotesByChapterId(chapterId: chapterId);
-    });
+    result.fold(
+      (failure) => safeEmit(DeleteNoteError(failure, chapters: chapters)),
+      (_) {
+        safeEmit(DeleteNoteSuccess(chapters: chapters));
+        getNotesByChapterId(chapterId: chapterId);
+      },
+    );
   }
 
   void updateNote({

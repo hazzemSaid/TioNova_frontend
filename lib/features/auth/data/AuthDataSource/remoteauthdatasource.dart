@@ -6,7 +6,6 @@ import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/error_handling_utils.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
 import 'package:tionova/features/auth/data/models/UserModel.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/data/services/auth_service.dart';
 
 class Remoteauthdatasource implements IAuthDataSource {
@@ -30,7 +29,7 @@ class Remoteauthdatasource implements IAuthDataSource {
         '/auth/login',
         data: {'email': email, 'password': password},
       );
-      
+
       // Parse response directly to handle async token saving
       if (response.statusCode! >= 200 && response.statusCode! < 300) {
         try {
@@ -38,25 +37,26 @@ class Remoteauthdatasource implements IAuthDataSource {
           final responseData = data is String
               ? jsonDecode(data)
               : data as Map<String, dynamic>;
-          
+
           // Check for error in response
           if (responseData['success'] == false) {
-            final errorMessage = responseData['error']?.toString() ?? 
-                                responseData['message']?.toString() ?? 
-                                'Request failed';
-            return Left(ServerFailure( errorMessage));
+            final errorMessage =
+                responseData['error']?.toString() ??
+                responseData['message']?.toString() ??
+                'Request failed';
+            return Left(ServerFailure(errorMessage));
           }
-          
+
           final token = responseData['token']?.toString();
           final refreshToken = responseData['refreshToken']?.toString();
           if (token == null || refreshToken == null) {
             throw Exception('Invalid response from server: missing tokens');
           }
-          
+
           // IMPORTANT: Await token saving to ensure it completes (fixes Safari issue)
-          await TokenStorage.saveTokens(token, refreshToken);
+          // await TokenStorage.saveTokens(token, refreshToken);
           print('✅ Tokens saved successfully');
-          
+
           if (responseData['user'] is Map<String, dynamic>) {
             return Right(UserModel.fromJson(responseData['user']));
           } else {
@@ -64,10 +64,12 @@ class Remoteauthdatasource implements IAuthDataSource {
           }
         } catch (e) {
           print('⚠️ Login parsing error: $e');
-          return Left(ServerFailure( 'Failed to parse response: $e'));
+          return Left(ServerFailure('Failed to parse response: $e'));
         }
       } else {
-        return Left(ServerFailure('Request failed with status: ${response.statusCode}'));
+        return Left(
+          ServerFailure('Request failed with status: ${response.statusCode}'),
+        );
       }
     } catch (e) {
       // Handle DioError (old Dio version) or DioException (new Dio version)
@@ -119,7 +121,7 @@ class Remoteauthdatasource implements IAuthDataSource {
         '/auth/verify-email',
         data: {'email': email, 'code': code},
       );
-      
+
       // Parse response directly to handle async token saving
       if (response.statusCode! >= 200 && response.statusCode! < 300) {
         try {
@@ -127,25 +129,26 @@ class Remoteauthdatasource implements IAuthDataSource {
           final responseData = data is String
               ? jsonDecode(data)
               : data as Map<String, dynamic>;
-          
+
           // Check for error in response
           if (responseData['success'] == false) {
-            final errorMessage = responseData['error']?.toString() ?? 
-                                responseData['message']?.toString() ?? 
-                                'Request failed';
+            final errorMessage =
+                responseData['error']?.toString() ??
+                responseData['message']?.toString() ??
+                'Request failed';
             return Left(ServerFailure(errorMessage));
           }
-          
+
           final token = responseData['token']?.toString();
           final refreshToken = responseData['refreshToken']?.toString();
           if (token == null || refreshToken == null) {
             throw Exception('Invalid response from server: missing tokens');
           }
-          
+
           // IMPORTANT: Await token saving to ensure it completes (fixes Safari issue)
-          await TokenStorage.saveTokens(token, refreshToken);
+          // await TokenStorage.saveTokens(token, refreshToken);
           print('✅ Tokens saved successfully (verifyEmail)');
-          
+
           if (responseData['user'] is Map<String, dynamic>) {
             return Right(UserModel.fromJson(responseData['user']));
           } else {
@@ -156,7 +159,9 @@ class Remoteauthdatasource implements IAuthDataSource {
           return Left(ServerFailure('Failed to parse response: $e'));
         }
       } else {
-        return Left(ServerFailure('Request failed with status: ${response.statusCode}'));
+        return Left(
+          ServerFailure('Request failed with status: ${response.statusCode}'),
+        );
       }
     } catch (e) {
       return ErrorHandlingUtils.handleDioError(e);
@@ -174,7 +179,7 @@ class Remoteauthdatasource implements IAuthDataSource {
         '/auth/reset-password',
         data: {'email': email, 'password': newPassword, 'code': code},
       );
-      
+
       // Parse response directly to handle async token saving
       if (response.statusCode! >= 200 && response.statusCode! < 300) {
         try {
@@ -182,25 +187,26 @@ class Remoteauthdatasource implements IAuthDataSource {
           final responseData = data is String
               ? jsonDecode(data)
               : data as Map<String, dynamic>;
-          
+
           // Check for error in response
           if (responseData['success'] == false) {
-            final errorMessage = responseData['error']?.toString() ?? 
-                                responseData['message']?.toString() ?? 
-                                'Request failed';
+            final errorMessage =
+                responseData['error']?.toString() ??
+                responseData['message']?.toString() ??
+                'Request failed';
             return Left(ServerFailure(errorMessage));
           }
-          
+
           final token = responseData['token']?.toString();
           final refreshToken = responseData['refreshToken']?.toString();
           if (token == null || refreshToken == null) {
             throw Exception('Invalid response from server: missing tokens');
           }
-          
+
           // IMPORTANT: Await token saving to ensure it completes (fixes Safari issue)
-          await TokenStorage.saveTokens(token, refreshToken);
+          // await TokenStorage.saveTokens(token, refreshToken);
           print('✅ Tokens saved successfully (resetPassword)');
-          
+
           if (responseData['user'] is Map<String, dynamic>) {
             return Right(UserModel.fromJson(responseData['user']));
           } else {
@@ -211,7 +217,9 @@ class Remoteauthdatasource implements IAuthDataSource {
           return Left(ServerFailure('Failed to parse response: $e'));
         }
       } else {
-        return Left(ServerFailure('Request failed with status: ${response.statusCode}'));
+        return Left(
+          ServerFailure('Request failed with status: ${response.statusCode}'),
+        );
       }
     } catch (e) {
       return ErrorHandlingUtils.handleDioError(e);

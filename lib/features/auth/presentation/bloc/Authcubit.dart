@@ -2,8 +2,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/safe_emit.dart';
-import 'package:tionova/features/auth/data/AuthDataSource/ilocal_auth_data_source.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/domain/usecases/forgetPasswordusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/loginusecase.dart';
@@ -64,7 +62,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   AuthCubit({
     required this.googleauthusecase,
-    required this.localAuthDataSource,
+    // required this.localAuthDataSource,
     required this.registerUseCase,
     required this.loginUseCase,
     required this.verifyEmailUseCase,
@@ -72,11 +70,11 @@ class AuthCubit extends Cubit<AuthState> {
     required this.forgetPasswordUseCase,
     required this.verifyCodeUseCase,
     // Keep the tokenStorage parameter for backward compatibility
-    required TokenStorage tokenStorage,
+    // required TokenStorage tokenStorage,
   }) : super(AuthInitial());
   final LoginUseCase loginUseCase;
   final Googleauthusecase googleauthusecase;
-  final ILocalAuthDataSource localAuthDataSource;
+  // final ILocalAuthDataSource localAuthDataSource;
   final RegisterUseCase registerUseCase;
   final VerifyEmailUseCase verifyEmailUseCase;
   final ResetPasswordUseCase resetPasswordUseCase;
@@ -98,19 +96,20 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> start() async {
-    safeEmit(AuthLoading()); // Add loading state while checking auth
+    // safeEmit(AuthLoading()); // Add loading state while checking auth
+    safeEmit(AuthInitial());
 
-    final result = await localAuthDataSource.getCurrentUser();
+    // final result = await localAuthDataSource.getCurrentUser();
 
-    await result.fold(
-      (failure) async {
-        // If no user found locally, emit AuthInitial instead of AuthFailure
-        safeEmit(AuthInitial());
-      },
-      (user) async {
-        safeEmit(AuthSuccess(user: user));
-      },
-    );
+    // await result.fold(
+    //   (failure) async {
+    //     // If no user found locally, emit AuthInitial instead of AuthFailure
+    //     safeEmit(AuthInitial());
+    //   },
+    //   (user) async {
+    //     safeEmit(AuthSuccess(user: user));
+    //   },
+    // );
   }
 
   // Method to sign out
@@ -118,8 +117,8 @@ class AuthCubit extends Cubit<AuthState> {
     safeEmit(AuthLoading());
 
     try {
-      await TokenStorage.clearTokens();
-      await localAuthDataSource.signOut();
+      // await TokenStorage.clearTokens();
+      // await localAuthDataSource.signOut();
 
       // If token expired, emit AuthFailure to indicate re-authentication is required
       if (isTokenExpired) {

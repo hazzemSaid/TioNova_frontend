@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+// import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
@@ -34,7 +34,6 @@ import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerS
 import 'package:tionova/features/folder/presentation/view/screens/chapter_detail_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/create_chapter_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_detail_screen.dart';
-import 'package:tionova/features/folder/presentation/view/screens/folder_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/mindmap_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
@@ -44,7 +43,6 @@ import 'package:tionova/features/preferences/presentation/screens/preferences_sc
 import 'package:tionova/features/profile/data/models/profile_model.dart';
 import 'package:tionova/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:tionova/features/profile/presentation/view/screens/edit_profile_screen.dart';
-import 'package:tionova/features/profile/presentation/view/screens/profile_screen.dart';
 import 'package:tionova/features/quiz/data/models/UserQuizStatusModel.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/view/practice_mode_screen.dart';
@@ -86,42 +84,44 @@ class AppRouter {
 
   // Check if it's the first time opening the app
   static Future<bool> isFirstTime() async {
-    // On web, skip first-time check and go directly to auth
-    if (kIsWeb) {
-      return false; // Skip onboarding on web
-    }
-
-    try {
-      final box = await Hive.openBox('app_settings').timeout(
-        const Duration(seconds: 2),
-        onTimeout: () {
-          throw TimeoutException('Hive box open timeout');
-        },
-      );
-      return box.get('is_first_time', defaultValue: true) as bool;
-    } catch (e) {
-      // If there's an error, assume it's the first time
-      print('⚠️ Error checking first time: $e');
-      return true;
-    }
+    return false;
   }
+  //   // On web, skip first-time check and go directly to auth
+  //   if (kIsWeb) {
+  //     return false; // Skip onboarding on web
+  //   }
+
+  //   // try {
+  //   //   // final box = await Hive.openBox('app_settings').timeout(
+  //   //     const Duration(seconds: 2),
+  //   //     onTimeout: () {
+  //   //       throw TimeoutException('Hive box open timeout');
+  //   //     },
+  //   //   );
+  //   //   return box.get('is_first_time', defaultValue: true) as bool;
+  //   // } catch (e) {
+  //   //   // If there's an error, assume it's the first time
+  //   //   print('⚠️ Error checking first time: $e');
+  //   //   return true;
+  //   // }
+  // }
 
   // Mark that the app has been opened before
   static Future<void> setNotFirstTime() async {
     if (kIsWeb) return; // Skip on web
 
-    try {
-      final box = await Hive.openBox('app_settings').timeout(
-        const Duration(seconds: 2),
-        onTimeout: () {
-          throw TimeoutException('Hive box open timeout');
-        },
-      );
-      await box.put('is_first_time', false);
-    } catch (e) {
-      // Handle error if needed
-      print('Error setting first time flag: $e');
-    }
+    // try {
+    //   final box = await Hive.openBox('app_settings').timeout(
+    //     const Duration(seconds: 2),
+    //     onTimeout: () {
+    //       throw TimeoutException('Hive box open timeout');
+    //     },
+    //   );
+    //   await box.put('is_first_time', false);
+    // } catch (e) {
+    //   // Handle error if needed
+    //   print('Error setting first time flag: $e');
+    // }
   }
 
   static void initialize() {
@@ -165,7 +165,9 @@ class AppRouter {
 
           // Allow onboarding to be accessed before login
           if (path == '/onboarding') return null;
-
+          if (path == '/' || path == '/home' || path == '/auth') {
+            return '/';
+          }
           // Block access to any protected routes (/, /notifications, etc.)
           if (!path.startsWith('/auth')) {
             return '/auth';
@@ -275,7 +277,13 @@ class AppRouter {
                     create: (context) => getIt<ChapterCubit>(),
                   ),
                 ],
-                child: const FolderScreen(),
+                // child: const FolderScreen(),
+                child: Scaffold(
+                  appBar: AppBar(title: const Text('Folders')),
+                  body: const Center(
+                    child: Text('Folder Screen Under Construction'),
+                  ),
+                ),
               ),
             ),
 
@@ -299,7 +307,13 @@ class AppRouter {
               name: 'profile',
               builder: (context, state) => BlocProvider<ProfileCubit>(
                 create: (context) => getIt<ProfileCubit>()..fetchProfile(),
-                child: const ProfileScreen(),
+                // child: const ProfileScreen(),
+                child: Scaffold(
+                  appBar: AppBar(title: const Text('Profile')),
+                  body: const Center(
+                    child: Text('Profile Screen Under Construction'),
+                  ),
+                ),
               ),
             ),
 
