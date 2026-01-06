@@ -3,11 +3,16 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class MainLayout extends StatelessWidget {
+class MainLayout extends StatefulWidget {
   final Widget child;
 
   const MainLayout({super.key, required this.child});
 
+  @override
+  State<MainLayout> createState() => _MainLayoutState();
+}
+
+class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return kIsWeb ? _buildWebLayout(context) : _buildMobileLayout(context);
@@ -21,18 +26,14 @@ class MainLayout extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: colorScheme.onPrimary,
-      body: child,
+      body: widget.child,
       bottomNavigationBar: _customBottomNavigationBar(context, currentPath),
     );
   }
 
   // Web/Desktop layout with permanent sidebar
   Widget _buildWebLayout(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final currentPath = GoRouterState.of(context).uri.path;
-
-    return _WebLayoutWrapper(currentPath: currentPath, child: child);
+    return _WebLayoutWrapper(child: widget.child);
   }
 
   // Custom Bottom Navigation Bar
@@ -117,10 +118,9 @@ class MainLayout extends StatelessWidget {
 
 // Stateful wrapper for web layout sidebar state
 class _WebLayoutWrapper extends StatefulWidget {
-  final String currentPath;
   final Widget child;
 
-  const _WebLayoutWrapper({required this.currentPath, required this.child});
+  const _WebLayoutWrapper({required this.child});
 
   @override
   State<_WebLayoutWrapper> createState() => _WebLayoutWrapperState();
@@ -133,6 +133,7 @@ class _WebLayoutWrapperState extends State<_WebLayoutWrapper> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final currentPath = GoRouterState.of(context).uri.path;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -203,7 +204,7 @@ class _WebLayoutWrapperState extends State<_WebLayoutWrapper> {
                             child: _buildSidebar(
                               context,
                               sidebarWidth,
-                              widget.currentPath,
+                              currentPath,
                             ),
                           ),
                         ),

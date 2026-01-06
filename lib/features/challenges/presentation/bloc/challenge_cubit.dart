@@ -10,6 +10,7 @@ import 'package:tionova/features/challenges/domain/usecase/disconnectFromLiveCha
 import 'package:tionova/features/challenges/domain/usecase/joinLiveChallengeusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/startLiveChallengeusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/submitLiveAnswerusecase.dart';
+import 'package:tionova/features/challenges/presentation/services/firebase_challenge_helper.dart';
 
 part 'challenge_state.dart';
 
@@ -350,11 +351,11 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   /// Set up Firebase listeners for real-time challenge updates
   void _setupFirebaseListeners(String challengeCode) {
     print('ChallengeCubit - Setting up Firebase listeners for: $challengeCode');
-    final database = FirebaseDatabase.instance;
+    // Use Safari-compatible helper for Firebase operations
 
     // 1. Listen to challenge status
     final statusPath = 'liveChallenges/$challengeCode/meta/status';
-    _statusSubscription = database.ref(statusPath).onValue.listen((event) {
+    _statusSubscription = FirebaseChallengeHelper.getRef(statusPath).onValue.listen((event) {
       final status = event.snapshot.value as String?;
       print('ChallengeCubit - Status changed to: $status');
 
@@ -367,8 +368,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
     // 2. Listen to current question index
     final currentQuestionPath =
         'liveChallenges/$challengeCode/current/questionIndex';
-    _currentQuestionSubscription = database
-        .ref(currentQuestionPath)
+    _currentQuestionSubscription = FirebaseChallengeHelper.getRef(currentQuestionPath)
         .onValue
         .listen((event) {
           final questionIndex = event.snapshot.value as int?;
@@ -381,7 +381,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
     // 3. Listen to questions list
     final questionsPath = 'liveChallenges/$challengeCode/questions';
-    _questionsSubscription = database.ref(questionsPath).onValue.listen((
+    _questionsSubscription = FirebaseChallengeHelper.getRef(questionsPath).onValue.listen((
       event,
     ) {
       final data = event.snapshot.value;
@@ -400,7 +400,7 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
     // 4. Listen to rankings/leaderboard
     final rankingsPath = 'liveChallenges/$challengeCode/rankings';
-    _rankingsSubscription = database.ref(rankingsPath).onValue.listen((event) {
+    _rankingsSubscription = FirebaseChallengeHelper.getRef(rankingsPath).onValue.listen((event) {
       final data = event.snapshot.value;
       if (data != null) {
         print('ChallengeCubit - Rankings data received');
@@ -451,13 +451,11 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   /// Handle challenge completion
   void _handleChallengeCompletion() {
     if (_currentChallengeCode != null) {
-      // Fetch final rankings
-      final database = FirebaseDatabase.instance;
-      database
-          .ref('liveChallenges/$_currentChallengeCode/rankings')
-          .once()
+      // Fetch final rankings using Safari-compatible helper
+      FirebaseChallengeHelper.getOnce('liveChallenges/$_currentChallengeCode/rankings')
           .then((snapshot) {
-            final data = snapshot.snapshot.value;
+            if (snapshot == null) return;
+            final data = snapshot.value;
             final rankings = _parseRankings(data);
 
             // Find current user's rank and score

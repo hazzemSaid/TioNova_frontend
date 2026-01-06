@@ -11,6 +11,7 @@ import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.da
 import 'package:tionova/features/challenges/presentation/services/challenge_polling_service.dart';
 import 'package:tionova/features/challenges/presentation/services/challenge_sound_service.dart';
 import 'package:tionova/features/challenges/presentation/services/challenge_vibration_service.dart';
+import 'package:tionova/features/challenges/presentation/services/firebase_challenge_helper.dart';
 import 'package:tionova/features/challenges/presentation/view/utils/live_question_helper.dart';
 import 'package:tionova/features/challenges/presentation/view/utils/live_question_theme.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/challenge_header.dart';
@@ -184,11 +185,11 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
 
   void _setupFirebaseListeners() {
     print('LiveQuestionScreen - Setting up Firebase listeners');
-    final database = FirebaseDatabase.instance;
+    // Use Safari-compatible helper for Firebase operations
 
     // 1. Listen to questions list
     final questionsPath = 'liveChallenges/${widget.challengeCode}/questions';
-    _questionsRef = database.ref(questionsPath);
+    _questionsRef = FirebaseChallengeHelper.getRef(questionsPath);
 
     _questionsSubscription = _questionsRef!.onValue.listen(
       (event) {
@@ -238,7 +239,7 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
     // 2. Listen to current question index
     final currentIndexPath =
         'liveChallenges/${widget.challengeCode}/current/index';
-    _currentIndexRef = database.ref(currentIndexPath);
+    _currentIndexRef = FirebaseChallengeHelper.getRef(currentIndexPath);
 
     _currentIndexSubscription = _currentIndexRef!.onValue.listen(
       (event) {
@@ -283,7 +284,7 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
     // 3. Listen to current question start time
     final startTimePath =
         'liveChallenges/${widget.challengeCode}/current/startTime';
-    _currentStartTimeRef = database.ref(startTimePath);
+    _currentStartTimeRef = FirebaseChallengeHelper.getRef(startTimePath);
 
     _currentStartTimeSubscription = _currentStartTimeRef!.onValue.listen(
       (event) {
@@ -303,7 +304,7 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
     // 3b. Listen to current question END time (canonical from backend)
     final endTimePath =
         'liveChallenges/${widget.challengeCode}/current/endTime';
-    _currentEndTimeRef = database.ref(endTimePath);
+    _currentEndTimeRef = FirebaseChallengeHelper.getRef(endTimePath);
 
     _currentEndTimeSubscription = _currentEndTimeRef!.onValue.listen(
       (event) {
@@ -325,7 +326,7 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
 
     // 4. Listen to challenge status (to detect completion)
     final statusPath = 'liveChallenges/${widget.challengeCode}/meta/status';
-    _statusRef = database.ref(statusPath);
+    _statusRef = FirebaseChallengeHelper.getRef(statusPath);
 
     _statusSubscription = _statusRef!.onValue.listen(
       (event) {
@@ -343,7 +344,7 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
 
     // 5. Listen to leaderboard updates
     final leaderboardPath = 'liveChallenges/${widget.challengeCode}/rankings';
-    _leaderboardRef = database.ref(leaderboardPath);
+    _leaderboardRef = FirebaseChallengeHelper.getRef(leaderboardPath);
 
     _leaderboardSubscription = _leaderboardRef!.onValue.listen(
       (event) {
@@ -439,7 +440,7 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
 
     final answersPath =
         'liveChallenges/${widget.challengeCode}/answers/$_currentQuestionIndex';
-    _answersRef = FirebaseDatabase.instance.ref(answersPath);
+    _answersRef = FirebaseChallengeHelper.getRef(answersPath);
 
     _answersSubscription = _answersRef!.onValue.listen(
       (event) {
@@ -476,10 +477,10 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
   void _updateTotalPlayers() {
     final participantsPath =
         'liveChallenges/${widget.challengeCode}/participants';
-    FirebaseDatabase.instance.ref(participantsPath).once().then((event) {
-      if (!mounted) return;
+    FirebaseChallengeHelper.getOnce(participantsPath).then((snapshot) {
+      if (!mounted || snapshot == null) return;
 
-      final data = event.snapshot.value;
+      final data = snapshot.value;
       if (data != null) {
         int count = 0;
         if (data is Map) {

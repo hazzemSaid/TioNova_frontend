@@ -1,13 +1,18 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:tionova/core/constants/app_constants.dart';
+import 'package:tionova/core/services/firebase_realtime_service.dart';
 import 'package:tionova/core/utils/network_error_helper.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/Iauthdatasource.dart';
 import 'package:tionova/features/auth/data/AuthDataSource/remoteauthdatasource.dart';
 import 'package:tionova/features/auth/data/repo/authrepoimp.dart';
 import 'package:tionova/features/auth/data/services/auth_service.dart';
+import 'package:tionova/features/auth/data/services/token_storage.dart';
 import 'package:tionova/features/auth/domain/repo/authrepo.dart';
 import 'package:tionova/features/auth/domain/usecases/forgetPasswordusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
@@ -80,14 +85,13 @@ import 'package:tionova/features/quiz/domain/usecases/UserQuizStatusUseCase.dart
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 
 final getIt = GetIt.instance;
-// http://192.168.1.12:3000/api/v1
-//https://tio-nova-backend.vercel.app/api/v1
-final baseUrl = 'https://tio-nova-backend.vercel.app/api/v1';
-// final baseUrl = 'http://192.168.1.12:3000/api/v1';
+
 Future<void> setupServiceLocator() async {
+  debugPrint('🔧 Setting up service locator...');
   // Initialize Hive
   // Hive.init(appDocumentDir.path); // Removed redundant init, use Hive.initFlutter() from main.dart
-
+  // final Dio dio2 = Dio(BaseOptions(baseUrl: baseUrl));
+  // dio2.post('$baseUrl/error-log', data: {"الحمد لله رب العالمين"});
   // Register Hive adapters - wrap in try-catch for web
   // // Only register if Hive is available (skips on Safari private mode)
   // if (HiveManager.isHiveAvailable) {
@@ -128,7 +132,13 @@ Future<void> setupServiceLocator() async {
   //   box = await Hive.openBox('auth_box');
   // }
 
-  final Dio dio = Dio(BaseOptions(baseUrl: baseUrl));
+  final Dio dio = Dio(
+    BaseOptions(
+      baseUrl: AppConstants.baseUrl,
+      connectTimeout: Duration(milliseconds: AppConstants.connectTimeout),
+      receiveTimeout: Duration(milliseconds: AppConstants.receiveTimeout),
+    ),
+  );
   final logger = PrettyDioLogger(
     requestHeader: true,
     requestBody: true,
@@ -183,62 +193,61 @@ Future<void> setupServiceLocator() async {
       onError: (DioException error, ErrorInterceptorHandler handler) async {
         // Check if error is due to unauthorized (token expired)
         if (error.response?.statusCode == 401) {
-          // Use static methods directly from TokenStorage
-          // final refreshToken = await TokenStorage.getRefreshToken();
+          final tokenStorage = getIt<TokenStorage>();
+          final refreshToken = await tokenStorage.getRefreshToken();
 
-          // if (refreshToken != null) {
-          //   try {
-          //     final refreshResponse = await dio.post(
-          //       '/auth/refresh-token',
-          //       data: {'refreshToken': refreshToken},
-          //     );
-          //     final newAccessToken = refreshResponse.data['token'];
-          //     final newRefreshToken = refreshResponse.data['refreshToken'];
-          //     // Save both tokens
-          //     await TokenStorage.saveTokens(newAccessToken, newRefreshToken);
+          if (refreshToken != null) {
+            try {
+              final refreshResponse = await dio.post(
+                '/auth/refresh-token',
+                data: {'refreshToken': refreshToken},
+              );
 
-          //     // Retry the original request with new token
-          //     final opts = error.requestOptions;
-          //     opts.headers['Authorization'] = 'Bearer $newAccessToken';
-          //     final cloneReq = await dio.fetch(opts);
-          //     return handler.resolve(cloneReq);
-          //   } catch (e) {
-          //     // If refresh fails, sign out the user with token expired flag
-          //       //     await TokenStorage.clearTokens();
-          //       //     final authCubit = getIt<AuthCubit>();
-          //       //     authCubit.signOut(
-          //       //       isTokenExpired: true,
-          //       //     ); // This will emit AuthFailure with token expired message
+              if (refreshResponse.statusCode == 200) {
+                final responseData = refreshResponse.data;
+                final newAccessToken = responseData['token']?.toString();
+                final newRefreshToken = responseData['refreshToken']
+                    ?.toString();
+                final expiresIn = responseData['expiresIn'] as int? ?? 3600;
 
-          //       //     // Forward error to request
-          //           return handler.next(error);
-          //         }
-          //       } else {
-          //         // No refresh token found, sign out the user with token expired flag
-          //         final authCubit = getIt<AuthCubit>();
-          //         authCubit.signOut(isTokenExpired: true);
-          //         return handler.next(error);
-          //       }
-          //     }
-          //     return handler.next(error);
-          //   },
-          //   onRequest: (options, handler) async {
-          //     // Use static method directly from TokenStorage
-          //     final accessToken = await TokenStorage.getAccessToken();
-          //     if (accessToken != null) {
-          //       options.headers['Authorization'] = 'Bearer $accessToken';
-          //     }
-          //     handler.next(options);
-          //   },
-          // ),
+                if (newAccessToken != null && newRefreshToken != null) {
+                  // Save both tokens
+                  await tokenStorage.saveTokens(
+                    newAccessToken,
+                    newRefreshToken,
+                    expiresIn: expiresIn,
+                  );
+
+                  // Retry the original request with new token
+                  final opts = error.requestOptions;
+                  opts.headers['Authorization'] = 'Bearer $newAccessToken';
+                  final cloneReq = await dio.fetch(opts);
+                  return handler.resolve(cloneReq);
+                }
+              }
+            } catch (e) {
+              // If refresh fails, sign out the user with token expired flag
+              await tokenStorage.clearTokens();
+              final authCubit = getIt<AuthCubit>();
+              authCubit.signOut(isTokenExpired: true);
+              return handler.next(error);
+            }
+          } else {
+            // No refresh token found, sign out the user with token expired flag
+            await tokenStorage.clearTokens();
+            final authCubit = getIt<AuthCubit>();
+            authCubit.signOut(isTokenExpired: true);
+            return handler.next(error);
+          }
         }
         return handler.next(error);
       },
       onRequest: (options, handler) async {
-        // Hardcoded token for testing - replace with TokenStorage in production
-        const accessToken =
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImhhYXplbXNhaWRkQGdtYWlsLmNvbSIsIl9pZCI6IjY5NTdlZmM3NWFhZjQ2NjU0MDliNmVmYSIsInJvbGUiOiJ1c2VyIiwidXNlcm5hbWUiOiJoYXplbSBzYWlkIiwicHJvZmlsZVBpY3R1cmUiOiJodHRwczovL3Jlcy5jbG91ZGluYXJ5LmNvbS9kcjVjcGNoMW4vaW1hZ2UvdXBsb2FkL3YxNzY3NjIzNDY1L3Byb2ZpbGUtcGljdHVyZXMveWMzcnhuanh1amdqb254OWZkbXEucG5nIiwiaWF0IjoxNzY3NjU5MzIwLCJleHAiOjE3Njc2NjI5MjB9.nLYQM0lo-kYZ5eymzSaK77HPHEeZ_0AhwFiEC-et0G0";
-        options.headers['Authorization'] = 'Bearer $accessToken';
+        final tokenStorage = getIt<TokenStorage>();
+        final accessToken = await tokenStorage.getAccessToken();
+        if (accessToken != null) {
+          options.headers['Authorization'] = 'Bearer $accessToken';
+        }
         handler.next(options);
       },
     ),
@@ -266,26 +275,35 @@ Future<void> setupServiceLocator() async {
   );
   // Services
   getIt.registerLazySingleton<Dio>(() => dio);
-  getIt.registerLazySingleton<AuthService>(() => AuthService(dio: dio));
+  getIt.registerLazySingleton<AuthService>(
+    () => AuthService(dio: dio, tokenStorage: getIt<TokenStorage>()),
+  );
   // Register TokenStorage just once
-  // getIt.registerLazySingleton<TokenStorage>(() => TokenStorage());
+  getIt.registerLazySingleton<TokenStorage>(() => TokenStorage());
 
   // // Register App Usage Tracker Service
   // getIt.registerLazySingleton<AppUsageTrackerService>(
   //   () => AppUsageTrackerService(),
   // );
 
-  // Register Firebase Realtime Database
-  // getIt.registerLazySingleton(() => FirebaseDatabase.instance);
-  // getIt.registerLazySingleton(
-  //   () => FirebaseRealtimeService(getIt<FirebaseDatabase>()),
-  // );
+  // Register Firebase Realtime Database (Safari iOS/Web compatible)
+  if (!getIt.isRegistered<FirebaseDatabase>()) {
+    getIt.registerLazySingleton<FirebaseDatabase>(
+      () => FirebaseDatabase.instance,
+    );
+  }
+  if (!getIt.isRegistered<FirebaseRealtimeService>()) {
+    getIt.registerLazySingleton<FirebaseRealtimeService>(
+      () => FirebaseRealtimeService(getIt<FirebaseDatabase>()),
+    );
+  }
 
   // Data Sources
   getIt.registerLazySingleton<IAuthDataSource>(
     () => Remoteauthdatasource(
       dio: getIt<Dio>(),
       authService: getIt<AuthService>(),
+      tokenStorage: getIt<TokenStorage>(),
     ),
   );
 
@@ -342,8 +360,7 @@ Future<void> setupServiceLocator() async {
       loginUseCase: getIt<LoginUseCase>(),
       registerUseCase: getIt<RegisterUseCase>(),
       verifyEmailUseCase: getIt<VerifyEmailUseCase>(),
-      // tokenStorage:
-      //     TokenStorage(), // Provide instance directly since TokenStorage uses static methods
+      tokenStorage: getIt<TokenStorage>(),
       googleauthusecase: getIt<Googleauthusecase>(),
       // localAuthDataSource: getIt<ILocalAuthDataSource>(),
     ),
@@ -464,7 +481,7 @@ Future<void> setupServiceLocator() async {
       getChaptersUseCase: getIt<GetChaptersUseCase>(),
       createChapterUseCase: getIt<CreateChapterUseCase>(),
       getChapterContentPdfUseCase: getIt<GetChapterContentPdfUseCase>(),
-      // firebaseService: getIt<FirebaseRealtimeService>(),
+      firebaseService: getIt<FirebaseRealtimeService>(),
       getMindmapUseCase: getIt<GetMindmapUseCase>(),
       getChapterSummaryUseCase: getIt<GetChapterSummaryUseCase>(),
       updateChapterUseCase: getIt<UpdateChapterUseCase>(),

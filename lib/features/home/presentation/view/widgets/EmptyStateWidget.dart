@@ -1,7 +1,6 @@
 // Empty State Widget
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tionova/features/home/presentation/provider/index_mainLayout.dart';
+import 'package:go_router/go_router.dart';
 
 class EmptyStateWidget extends StatelessWidget {
   final ColorScheme colorScheme;
@@ -141,7 +140,7 @@ class EmptyStateWidget extends StatelessWidget {
               children: [
                 ElevatedButton.icon(
                   onPressed: () {
-                    context.read<IndexMainLayout>().index = 1;
+                    context.go('/folders');
                   },
                   icon: const Icon(Icons.create_new_folder),
                   label: const Text('Go to Folders'),

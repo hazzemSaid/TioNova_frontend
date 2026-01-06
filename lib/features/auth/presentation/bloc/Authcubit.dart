@@ -1,7 +1,9 @@
 // features/auth/presentation/bloc/Authcubit.dart
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/safe_emit.dart';
+import 'package:tionova/features/auth/data/services/token_storage.dart';
 import 'package:tionova/features/auth/domain/usecases/forgetPasswordusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/loginusecase.dart';
@@ -62,24 +64,22 @@ class AuthCubit extends Cubit<AuthState> {
 
   AuthCubit({
     required this.googleauthusecase,
-    // required this.localAuthDataSource,
     required this.registerUseCase,
     required this.loginUseCase,
     required this.verifyEmailUseCase,
     required this.resetPasswordUseCase,
     required this.forgetPasswordUseCase,
     required this.verifyCodeUseCase,
-    // Keep the tokenStorage parameter for backward compatibility
-    // required TokenStorage tokenStorage,
+    required this.tokenStorage,
   }) : super(AuthInitial());
   final LoginUseCase loginUseCase;
   final Googleauthusecase googleauthusecase;
-  // final ILocalAuthDataSource localAuthDataSource;
   final RegisterUseCase registerUseCase;
   final VerifyEmailUseCase verifyEmailUseCase;
   final ResetPasswordUseCase resetPasswordUseCase;
   final ForgetPasswordUseCase forgetPasswordUseCase;
   final VerifyCodeUseCase verifyCodeUseCase;
+  final TokenStorage tokenStorage;
 
   Future<void> googleSignIn() async {
     safeEmit(AuthLoading());
@@ -96,20 +96,52 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> start() async {
-    // safeEmit(AuthLoading()); // Add loading state while checking auth
-    safeEmit(AuthInitial());
+    try {
+      debugPrint('🔵 [AuthCubit] Starting authentication check...');
 
-    // final result = await localAuthDataSource.getCurrentUser();
+      // Check if token exists in local storage
+      final token = await tokenStorage.getAccessToken();
 
-    // await result.fold(
-    //   (failure) async {
-    //     // If no user found locally, emit AuthInitial instead of AuthFailure
-    //     safeEmit(AuthInitial());
-    //   },
-    //   (user) async {
-    //     safeEmit(AuthSuccess(user: user));
-    //   },
-    // );
+      if (token == null || token.isEmpty) {
+        debugPrint(
+          'ℹ️ [AuthCubit] No access token found - user needs to login',
+        );
+        safeEmit(AuthInitial());
+        return;
+      }
+
+      debugPrint('✅ [AuthCubit] Access token found, validating with server...');
+      safeEmit(AuthLoading());
+
+      // Try to get current user info to validate the token
+      final result = await loginUseCase.repository.getCurrentUser();
+
+      await result.fold(
+        (failure) async {
+          // If token is invalid or expired, clear it and go to initial
+          debugPrint(
+            '❌ [AuthCubit] Token validation failed: ${failure.errMessage}',
+          );
+          await tokenStorage.clearTokens();
+          safeEmit(AuthInitial());
+        },
+        (user) async {
+          debugPrint(
+            '✅ [AuthCubit] User authenticated successfully: ${user.email}',
+          );
+          safeEmit(AuthSuccess(user: user));
+        },
+      );
+    } catch (e) {
+      debugPrint('❌ [AuthCubit] Error during auth check: $e');
+      // On any error, clear tokens and go to initial state
+      try {
+        await tokenStorage.clearTokens();
+      } catch (clearError) {
+        debugPrint('⚠️ [AuthCubit] Error clearing tokens: $clearError');
+      }
+      safeEmit(AuthInitial());
+    }
   }
 
   // Method to sign out
@@ -117,7 +149,7 @@ class AuthCubit extends Cubit<AuthState> {
     safeEmit(AuthLoading());
 
     try {
-      // await TokenStorage.clearTokens();
+      await tokenStorage.clearTokens();
       // await localAuthDataSource.signOut();
 
       // If token expired, emit AuthFailure to indicate re-authentication is required

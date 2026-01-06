@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 
 // Helper function to sanitize UTF-8 strings
 String _sanitizeUtf8(String input) {
@@ -41,9 +42,8 @@ class SummaryResponse extends Equatable {
   factory SummaryResponse.fromJson(Map<String, dynamic> json) {
     List<SummaryModel> parsedSummaries = [];
 
-    if (json['summary'] != null) {
-      final summaryField = json['summary'];
-
+    final summaryField = json['summary'];
+    if (summaryField != null) {
       // Check if this is a database document wrapper (has _id, chapterId, etc.)
       // and the actual summary is nested inside
       if (summaryField is Map<String, dynamic> &&
@@ -74,7 +74,15 @@ class SummaryResponse extends Equatable {
         // If it has 'chapter_title' key, it's the actual summary content
         if (summaryField.containsKey('chapter_title')) {
           parsedSummaries = [SummaryModel.fromJson(summaryField)];
+        } else {
+          debugPrint(
+            '⚠️ [SummaryResponse.fromJson] Unrecognized map structure in summary field',
+          );
         }
+      } else {
+        debugPrint(
+          '⚠️ [SummaryResponse.fromJson] Unexpected type for summary field: ${summaryField.runtimeType}',
+        );
       }
     }
 
@@ -132,9 +140,8 @@ class SummaryModelData extends Equatable {
   factory SummaryModelData.fromJson(Map<String, dynamic> json) {
     List<SummaryModel> parsedSummaries = [];
 
-    if (json['summary'] != null) {
-      final summaryField = json['summary'];
-
+    final summaryField = json['summary'];
+    if (summaryField != null) {
       // Check if this is a nested structure (summary inside summary)
       // This happens when the backend returns the full database document
       if (summaryField is Map<String, dynamic>) {
@@ -145,8 +152,8 @@ class SummaryModelData extends Equatable {
         } else {
           // This might be a wrapper, content could be in a nested 'summary' field
           // But for SummaryModelData from DB, the structure is typically flat
-          print(
-            '⚠️ [DEBUG] SummaryModelData: Map without chapter_title - unusual structure',
+          debugPrint(
+            '⚠️ [SummaryModelData.fromJson] Map without chapter_title - unusual structure',
           );
         }
       } else if (summaryField is List) {
@@ -155,6 +162,10 @@ class SummaryModelData extends Equatable {
             .where((item) => item != null && item is Map<String, dynamic>)
             .map((item) => SummaryModel.fromJson(item as Map<String, dynamic>))
             .toList();
+      } else {
+        debugPrint(
+          '⚠️ [SummaryModelData.fromJson] Unexpected type for summary field: ${summaryField.runtimeType}',
+        );
       }
     }
 

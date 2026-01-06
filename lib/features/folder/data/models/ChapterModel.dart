@@ -31,18 +31,22 @@ class ChapterModel extends Equatable {
 
   factory ChapterModel.fromJson(Map<String, dynamic> json) {
     return ChapterModel(
-      id: json['_id'],
-      summaryId: json['summaryId'],
-      title: json['title'],
-      description: json['description'],
-      createdBy: json['createdBy'],
-      category: json['category'],
-      createdAt: json['createdAt'],
-      quizStatus: json['quizStatus'],
-      quizScore: json['quizScore'],
-      quizCompleted: json['quizCompleted'],
-      folderId: json['folderId'],
-      mindmapId: json['mindmapId'],
+      id: (json['_id'] ?? json['id'] ?? '').toString(),
+      summaryId: json['summaryId']?.toString(),
+      title: json['title']?.toString(),
+      description: json['description']?.toString(),
+      createdBy: json['createdBy']?.toString(),
+      category: json['category']?.toString(),
+      createdAt: json['createdAt']?.toString(),
+      quizStatus: json['quizStatus']?.toString(),
+      quizScore: json['quizScore'] is int
+          ? json['quizScore'] as int
+          : (int.tryParse(json['quizScore']?.toString() ?? '0') ?? 0),
+      quizCompleted: json['quizCompleted'] is bool
+          ? json['quizCompleted'] as bool
+          : (json['quizCompleted']?.toString().toLowerCase() == 'true'),
+      folderId: json['folderId']?.toString(),
+      mindmapId: json['mindmapId']?.toString(),
     );
   }
   Map<String, dynamic> toJson() {

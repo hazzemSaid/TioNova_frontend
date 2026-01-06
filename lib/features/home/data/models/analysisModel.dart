@@ -60,14 +60,25 @@ class ProfileModel extends Equatable {
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
-      streak: json['streak'] ?? 0,
-      lastActiveDate: json['lastActiveDate'],
-      totalQuizzesTaken: json['totalQuizzesTaken'] ?? 0,
-      totalMindmapsCreated: json['totalMindmapsCreated'] ?? 0,
-      totalSummariesCreated: json['totalSummariesCreated'] ?? 0,
-      averageQuizScore: json['averageQuizScore'] != null
+      streak: json['streak'] is int
+          ? json['streak']
+          : (int.tryParse(json['streak']?.toString() ?? '0') ?? 0),
+      lastActiveDate: json['lastActiveDate']?.toString(),
+      totalQuizzesTaken: json['totalQuizzesTaken'] is int
+          ? json['totalQuizzesTaken']
+          : (int.tryParse(json['totalQuizzesTaken']?.toString() ?? '0') ?? 0),
+      totalMindmapsCreated: json['totalMindmapsCreated'] is int
+          ? json['totalMindmapsCreated']
+          : (int.tryParse(json['totalMindmapsCreated']?.toString() ?? '0') ??
+                0),
+      totalSummariesCreated: json['totalSummariesCreated'] is int
+          ? json['totalSummariesCreated']
+          : (int.tryParse(json['totalSummariesCreated']?.toString() ?? '0') ??
+                0),
+      averageQuizScore: json['averageQuizScore'] is num
           ? (json['averageQuizScore'] as num).toDouble()
-          : 0.0,
+          : (double.tryParse(json['averageQuizScore']?.toString() ?? '0.0') ??
+                0.0),
     );
   }
 
@@ -161,10 +172,7 @@ class TodayProgressActual extends Equatable {
   final int chapters;
   final int quizzes;
 
-  const TodayProgressActual({
-    required this.chapters,
-    required this.quizzes,
-  });
+  const TodayProgressActual({required this.chapters, required this.quizzes});
 
   factory TodayProgressActual.fromJson(Map<String, dynamic> json) {
     return TodayProgressActual(
@@ -174,10 +182,7 @@ class TodayProgressActual extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'chapters': chapters,
-      'quizzes': quizzes,
-    };
+    return {'chapters': chapters, 'quizzes': quizzes};
   }
 
   @override
@@ -233,13 +238,7 @@ class TodayProgressModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    current,
-    target,
-    percentage,
-    preferences,
-    actual,
-  ];
+  List<Object?> get props => [current, target, percentage, preferences, actual];
 }
 
 class Analysismodel extends Equatable {
@@ -269,40 +268,56 @@ class Analysismodel extends Equatable {
   //from json
   factory Analysismodel.fromJson(Map<String, dynamic> json) {
     return Analysismodel(
-      userId: json['userId'],
-      recentChapters: json['recentChapters'] != null
+      userId: json['userId']?.toString() ?? '',
+      recentChapters: json['recentChapters'] is List
           ? (json['recentChapters'] as List)
-                .map((e) => ChapterModel.fromJson(e))
+                .where((e) => e != null && e is Map<String, dynamic>)
+                .map((e) => ChapterModel.fromJson(e as Map<String, dynamic>))
                 .toList()
-          : null,
-      recentFolders: json['recentFolders'] != null
+          : [],
+      recentFolders: json['recentFolders'] is List
           ? (json['recentFolders'] as List)
-                .map((e) => Foldermodel.fromJson(e))
+                .where((e) => e != null && e is Map<String, dynamic>)
+                .map((e) => Foldermodel.fromJson(e as Map<String, dynamic>))
                 .toList()
-          : null,
-      lastMindmaps: json['lastMindmaps'] != null
+          : [],
+      lastMindmaps: json['lastMindmaps'] is List
           ? (json['lastMindmaps'] as List)
-                .map((e) => Mindmapmodel.fromJson(e))
+                .where((e) => e != null && e is Map<String, dynamic>)
+                .map((e) => Mindmapmodel.fromJson(e as Map<String, dynamic>))
                 .toList()
+          : [],
+      totalChapters: json['totalChapters'] is int
+          ? json['totalChapters']
+          : (int.tryParse(json['totalChapters']?.toString() ?? '0') ?? 0),
+      lastSummary:
+          json['lastSummary'] != null &&
+              json['lastSummary'] is Map<String, dynamic>
+          ? SummaryModelData.fromJson(
+              json['lastSummary'] as Map<String, dynamic>,
+            )
           : null,
-      totalChapters: json['totalChapters'] ?? 0,
-      lastSummary: json['lastSummary'] != null
-          ? SummaryModelData.fromJson(json['lastSummary'])
-          : null,
-      avgScore: json['avgScore'] != null
+      avgScore: json['avgScore'] is num
           ? (json['avgScore'] as num).toDouble()
-          : 0,
-      lastRank: json['lastRank'] ?? 0,
-      profile: json['profile'] != null
-          ? ProfileModel.fromJson(json['profile'])
+          : (double.tryParse(json['avgScore']?.toString() ?? '0.0') ?? 0.0),
+      lastRank: json['lastRank'] is int
+          ? json['lastRank']
+          : (int.tryParse(json['lastRank']?.toString() ?? '0') ?? 0),
+      profile:
+          json['profile'] != null && json['profile'] is Map<String, dynamic>
+          ? ProfileModel.fromJson(json['profile'] as Map<String, dynamic>)
           : null,
-      todayProgress: json['todayProgress'] != null
-          ? TodayProgressModel.fromJson(json['todayProgress'])
+      todayProgress:
+          json['todayProgress'] != null &&
+              json['todayProgress'] is Map<String, dynamic>
+          ? TodayProgressModel.fromJson(
+              json['todayProgress'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
+
   @override
-  // TODO: implement props
   List<Object?> get props => [
     userId,
     recentChapters,

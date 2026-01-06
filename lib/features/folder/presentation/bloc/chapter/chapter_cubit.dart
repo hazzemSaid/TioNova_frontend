@@ -5,7 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:either_dart/either.dart';
 import 'package:equatable/equatable.dart';
 import 'package:tionova/core/errors/failure.dart';
-// import 'package:tionova/core/services/firebase_realtime_service.dart';
+import 'package:tionova/core/services/firebase_realtime_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
 import 'package:tionova/core/utils/safe_emit.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
@@ -41,7 +41,7 @@ class ChapterCubit extends Cubit<ChapterState> {
     required this.addNoteUseCase,
     required this.deleteNoteUseCase,
     required this.updateNoteUseCase,
-    // required this.firebaseService,
+    required this.firebaseService,
     required this.getMindmapUseCase,
     required this.getChapterSummaryUseCase,
     required this.updateChapterUseCase,
@@ -60,8 +60,9 @@ class ChapterCubit extends Cubit<ChapterState> {
   final GetChapterSummaryUseCase getChapterSummaryUseCase;
   final UpdateChapterUseCase updateChapterUseCase;
   final DeleteChapterUseCase deleteChapterUseCase;
-  // final FirebaseRealtimeService firebaseService;
-  // StreamSubscription<Map<String, dynamic>>? _firebaseSubscription;
+  final FirebaseRealtimeService firebaseService;
+  StreamSubscription<Map<String, dynamic>>? _firebaseSubscription;
+
   void getChapters({required String folderId}) async {
     safeEmit(ChapterLoading());
     final result = await getChaptersUseCase(folderId: folderId);
@@ -146,35 +147,35 @@ class ChapterCubit extends Cubit<ChapterState> {
 
   /// Subscribe to Firebase Realtime Database for chapter creation progress
   /// Backend writes to: /chapter-creation/{userId}
+  /// Safari iOS/Web compatible implementation
   void subscribeToChapterCreationProgress({required String userId}) {
     print('🔥 [ChapterCubit] Subscribing to Firebase for user: $userId');
 
-    // _firebaseSubscription?.cancel();
-    // _firebaseSubscription = firebaseService
-    // .listenToChapterCreation(userId)
-    // .listen(
-    // _handleFirebaseUpdate,
-    onError:
-    (error) {
-      print('❌ [ChapterCubit] Firebase error: $error');
-      unsubscribeFromChapterCreationProgress();
-      if (!isClosed) {
-        safeEmit(
-          CreateChapterError(
-            ServerFailure('Lost connection to creation progress'),
-            chapters: currentChapters,
-          ),
+    _firebaseSubscription?.cancel();
+    _firebaseSubscription = firebaseService
+        .listenToChapterCreation(userId)
+        .listen(
+          _handleFirebaseUpdate,
+          onError: (error) {
+            print('❌ [ChapterCubit] Firebase error: $error');
+            unsubscribeFromChapterCreationProgress();
+            if (!isClosed) {
+              safeEmit(
+                CreateChapterError(
+                  ServerFailure('Lost connection to creation progress'),
+                  chapters: currentChapters,
+                ),
+              );
+            }
+          },
         );
-      }
-    };
-    // );
   }
 
   /// Unsubscribe from Firebase chapter creation progress
   void unsubscribeFromChapterCreationProgress() {
     print('🔥 [ChapterCubit] Unsubscribing from Firebase');
-    // _firebaseSubscription?.cancel();
-    // _firebaseSubscription = null;
+    _firebaseSubscription?.cancel();
+    _firebaseSubscription = null;
   }
 
   /// Handle Firebase Realtime Database updates for chapter creation
@@ -214,11 +215,11 @@ class ChapterCubit extends Cubit<ChapterState> {
         safeEmit(CreateChapterSuccess(chapter: chapter, chapters: chapters));
         unsubscribeFromChapterCreationProgress();
 
-        // Clear Firebase data
-        // final authState = getIt<AuthCubit>().state;
-        // if (authState is AuthSuccess) {
-        //   firebaseService.clearChapterCreation(authState.user.id);
-        // }
+        // Clear Firebase data - this is safe to do asynchronously
+        if (chapterId != null) {
+          // Use the chapterId path if available
+          firebaseService.clearChapterCreation(chapterId);
+        }
       }
     } catch (e) {
       print('❌ [ChapterCubit] Error parsing Firebase data: $e');

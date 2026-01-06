@@ -29,11 +29,15 @@ class UserModel {
   };
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-    id: json['user_id'],
-    email: json['email'],
-    username: json['username'],
-    profilePicture: json['profilePicture'],
-    streak: json['streak'],
-    verified: json['verified'],
+    id: json['user_id']?.toString() ?? '',
+    email: json['email']?.toString() ?? '',
+    username: json['username']?.toString() ?? '',
+    profilePicture: json['profilePicture']?.toString() ?? '',
+    streak: json['streak'] is int
+        ? json['streak']
+        : (int.tryParse(json['streak']?.toString() ?? '0') ?? 0),
+    verified: json['verified'] is bool
+        ? json['verified']
+        : (json['verified']?.toString().toLowerCase() == 'true'),
   );
 }

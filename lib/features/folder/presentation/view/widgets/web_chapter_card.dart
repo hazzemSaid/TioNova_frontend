@@ -31,12 +31,12 @@ class WebChapterCard extends StatelessWidget {
         // Use go() on web to ensure URL updates in browser
         context.goNamed(
           'chapter-detail',
-          pathParameters: {'folderId': folderId, 'chapterId': chapterId},
+          pathParameters: {'chapterId': chapterId},
           extra: {
             'chapter': chapter,
             'folderColor': folderColor,
-            'chapterCubit': chapterCubit,
             'folderOwnerId': ownerId,
+            'folderId': folderId, // Optional for quiz routes
           },
         );
       },

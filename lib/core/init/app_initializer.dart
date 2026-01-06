@@ -1,12 +1,11 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
 // import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:hive_flutter/hive_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tionova/core/blocobserve/blocobserv.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/router/app_router.dart';
@@ -20,6 +19,7 @@ import 'package:tionova/features/auth/data/AuthDataSource/remoteauthdatasource.d
 // import 'package:tionova/features/auth/data/repo/authrepoimp.dart';
 // import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
 import 'package:tionova/features/auth/data/services/auth_service.dart';
+import 'package:tionova/features/auth/data/services/token_storage.dart';
 import 'package:tionova/features/auth/domain/repo/authrepo.dart';
 import 'package:tionova/features/auth/domain/usecases/forgetPasswordusecase.dart';
 import 'package:tionova/features/auth/domain/usecases/googleauthusecase.dart';
@@ -31,6 +31,7 @@ import 'package:tionova/features/auth/domain/usecases/verifyEmailusecase.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
+import 'package:tionova/firebase_options.dart';
 
 // Background message handler - only used on non-web platforms
 // @pragma('vm:entry-point')
@@ -40,6 +41,42 @@ import 'package:tionova/features/theme/presentation/bloc/theme_cubit.dart';
 // }
 
 class AppInitializer {
+  /// Initialize Firebase with Safari iOS/Web compatibility
+  static Future<bool> _initializeFirebase() async {
+    print('🔥 Initializing Firebase...');
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        ).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            print('⚠️ Firebase initialization timeout');
+            throw TimeoutException('Firebase init timeout');
+          },
+        );
+        print('✅ Firebase initialized successfully');
+      } else {
+        print('ℹ️ Firebase already initialized');
+      }
+
+      // Verify Firebase app
+      final app = Firebase.app();
+      print('✅ Firebase app: ${app.name}');
+      print('✅ Database URL: ${app.options.databaseURL}');
+
+      return true;
+    } catch (e) {
+      print('❌ Error initializing Firebase: $e');
+      // On web (especially Safari), continue without Firebase if it fails
+      if (kIsWeb) {
+        print('ℹ️ Continuing without Firebase on web...');
+        return false;
+      }
+      rethrow;
+    }
+  }
+
   static Future<void> initializeApp() async {
     // Initialize Flutter bindings and services
     WidgetsFlutterBinding.ensureInitialized();
@@ -47,8 +84,8 @@ class AppInitializer {
     // ==========================================
     // CRITICAL: Initialize Firebase FIRST
     // ==========================================
-    // Initialize Firebase - check using Firebase.apps list
-    Dio dio = Dio();
+    await _initializeFirebase();
+
     // dio.post('$baseUrl/error-log', data: {'1'});
     // print('🔧 Number of existing Firebase apps: ${Firebase.apps.length}');
 
@@ -156,43 +193,21 @@ class AppInitializer {
       // dio.post('$baseUrl/error-log', data: {'Service locator setup complete'});
     } catch (e) {
       print('❌ Error setting up service locator: $e');
-      dio.post(
-        '$baseUrl/error-log',
-        data: {'Error setting up service locator: $e'},
-      );
+      // dio.post(
+      //   '$baseUrl/error-log',
+      //   data: {'Error setting up service locator: $e'},
+      // );
       rethrow; // Service locator is critical, can't continue without it
     }
 
     // Initialize auth cubit
     final authCubit = getIt<AuthCubit>();
     print('✅ AuthCubit retrieved');
+    await authCubit.start();
+    print('✅ Auth check completed');
     // dio.post('$baseUrl/error-log', data: {'AuthCubit retrieved'});
     // Initialize SharedPreferences (needed for theme)
     // Safari (especially private mode) can block localStorage
-    SharedPreferences? prefs;
-    try {
-      prefs = await SharedPreferences.getInstance().timeout(
-        const Duration(seconds: 3),
-        onTimeout: () {
-          print('⚠️ SharedPreferences timeout (Safari private mode?)');
-          // dio.post(
-          //   '$baseUrl/error-log',
-          //   data: {'SharedPreferences timeout (Safari private mode?)'},
-          // );
-          throw TimeoutException('SharedPreferences timeout');
-        },
-      );
-      print('✅ SharedPreferences initialized');
-      // dio.post('$baseUrl/error-log', data: {'SharedPreferences initialized'});
-    } catch (e) {
-      print('⚠️ Error getting SharedPreferences: $e');
-      // dio.post(
-      //   '$baseUrl/error-log',
-      //   data: {'Error getting SharedPreferences: $e'},
-      // );
-      // On Safari, SharedPreferences might fail - we'll run without theme persistence
-      prefs = null;
-    }
 
     // Initialize router
     AppRouter.initialize();
@@ -311,7 +326,8 @@ class AppInitializer {
     // Register AuthService if not registered
     if (!getIt.isRegistered<AuthService>()) {
       getIt.registerLazySingleton<AuthService>(
-        () => AuthService(dio: getIt<Dio>()),
+        () =>
+            AuthService(dio: getIt<Dio>(), tokenStorage: getIt<TokenStorage>()),
       );
     }
 
@@ -321,13 +337,19 @@ class AppInitializer {
     //     () => WebLocalAuthDataSource(),
     //   );
     // }
-
+    //token storage
+    // Register TokenStorage if not registered
+    if (!getIt.isRegistered<TokenStorage>()) {
+      print('🔧 Registering TokenStorage in minimal web setup');
+      getIt.registerLazySingleton<TokenStorage>(() => TokenStorage());
+    }
     // Register IAuthDataSource if not registered
     if (!getIt.isRegistered<IAuthDataSource>()) {
       getIt.registerLazySingleton<IAuthDataSource>(
         () => Remoteauthdatasource(
           dio: getIt<Dio>(),
           authService: getIt<AuthService>(),
+          tokenStorage: getIt<TokenStorage>(),
         ),
       );
     }
@@ -389,6 +411,7 @@ class AppInitializer {
     if (!getIt.isRegistered<AuthCubit>()) {
       getIt.registerLazySingleton<AuthCubit>(
         () => AuthCubit(
+          tokenStorage: getIt<TokenStorage>(),
           googleauthusecase: getIt<Googleauthusecase>(),
           loginUseCase: getIt<LoginUseCase>(),
           registerUseCase: getIt<RegisterUseCase>(),
@@ -426,12 +449,14 @@ class AppInitializer {
       // if (!getIt.isRegistered<AnalysisCubit>()) {
       //   getIt.registerLazySingleton<AnalysisCubit>(
       //     () => AnalysisCubit(analysisUseCase: getIt<AnalysisUseCase>()),
-      //   );
-      print('✅ Minimal web services configured');
-      dio2.post(
-        '$baseUrl/error-log',
-        data: {'Minimal web services configured'},
-      );
+      // //   );
+      // print('✅ Minimal web services configured');
+      // dio2.post(
+      //   '$baseUrl/error-log',
+      //   data: {'Minimal web services configured'},
+      // );
+
+      getIt<AuthCubit>().start();
     }
   }
 
@@ -459,6 +484,7 @@ class AppInitializer {
 
     // Get auth cubit
     final authCubit = getIt<AuthCubit>();
+    await authCubit.start();
 
     // Initialize router
     AppRouter.initialize();
@@ -481,9 +507,5 @@ class AppInitializer {
         ),
       ),
     );
-
-    print('✅ Minimal web app running');
-    final dio2 = Dio(BaseOptions(baseUrl: baseUrl));
-    dio2.post('$baseUrl/error-log', data: {'Minimal web app running'});
   }
 }

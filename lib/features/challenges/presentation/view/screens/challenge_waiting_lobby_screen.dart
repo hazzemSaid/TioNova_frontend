@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
+import 'package:tionova/features/challenges/presentation/services/firebase_challenge_helper.dart';
 import 'package:tionova/features/challenges/presentation/view/utils/challenge_lobby_helper.dart';
 import 'package:tionova/features/challenges/presentation/view/utils/challenge_lobby_theme.dart';
 import 'package:tionova/features/challenges/presentation/view/widgets/lobby_leave_button.dart';
@@ -45,16 +46,16 @@ class _ChallengeWaitingLobbyScreenState
   }
 
   void _setupFirebaseListeners() {
-    final database = FirebaseDatabase.instance;
+    // Use Safari-compatible Firebase helper
 
     // 1. Listen to challenge status to know when owner starts
     final statusPath = 'liveChallenges/${widget.challengeCode}/meta/status';
-    _statusRef = database.ref(statusPath);
+    _statusRef = FirebaseChallengeHelper.getRef(statusPath);
 
     // Initial check in case challenge already started
-    _statusRef!.once().then((snapshot) {
-      if (mounted) {
-        final status = snapshot.snapshot.value as String?;
+    FirebaseChallengeHelper.getOnce(statusPath).then((snapshot) {
+      if (mounted && snapshot != null) {
+        final status = snapshot.value as String?;
         if (status == 'in-progress' || status == 'progress') {
           _navigateToQuestions();
         }
@@ -72,7 +73,7 @@ class _ChallengeWaitingLobbyScreenState
     // 2. Listen to participants for live count
     final participantsPath =
         'liveChallenges/${widget.challengeCode}/participants';
-    _participantsRef = database.ref(participantsPath);
+    _participantsRef = FirebaseChallengeHelper.getRef(participantsPath);
 
     _participantsSubscription = _participantsRef!.onValue.listen((event) {
       if (!mounted) return;
