@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:tionova/core/init/app_initializer.dart';
+import 'package:tionova/core/presentation/view/screens/app_error_screen.dart';
 
 Future<void> main() async {
   // Configure URL strategy for web (removes # from URLs)
@@ -33,42 +34,18 @@ Future<void> main() async {
     // Run error app
     runApp(
       MaterialApp(
-        home: Scaffold(
-          backgroundColor: Colors.black,
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'TioNova',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    'Error: ${e.toString()}',
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
-                    textAlign: TextAlign.center,
-                    maxLines: 5,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                if (kIsWeb)
-                  ElevatedButton(
-                    onPressed: () {
-                      // Reload on web
-                    },
-                    child: const Text('Retry'),
-                  ),
-              ],
-            ),
-          ),
+        home: AppErrorScreen(
+          details: FlutterErrorDetails(exception: e, stack: stackTrace),
+          onRetry: () {
+            // Hard reload logic if needed, or re-run main
+            if (kIsWeb) {
+              // Reload page
+              // ignore: unsafe_html
+              // html.window.location.reload();
+              // Since we can't import html here easily, we rely on user action
+            }
+            main();
+          },
         ),
       ),
     );

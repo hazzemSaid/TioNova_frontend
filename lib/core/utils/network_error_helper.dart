@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/core/router/app_router.dart';
 
 /// Helper class for displaying network error dialogs
@@ -41,7 +42,8 @@ class NetworkErrorHelper {
         actions: [
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              GoRouter.of(context).pop();
+
               _isDialogShowing = false;
             },
             style: ElevatedButton.styleFrom(

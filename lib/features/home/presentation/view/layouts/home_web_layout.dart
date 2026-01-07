@@ -705,12 +705,13 @@ class HomeWebLayout extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
+                  final folderId = chapter.folderId ?? '';
                   context.push(
-                    '/chapters/${chapter.id}',
+                    '/folders/$folderId/chapters/${chapter.id}',
                     extra: {
                       'chapter': chapter,
                       'folderColor': colorScheme.primary,
-                      'folderId': chapter.folderId ?? '',
+                      'folderId': folderId,
                     },
                   );
                 },
@@ -903,6 +904,7 @@ class HomeWebLayout extends StatelessWidget {
                       extra: {
                         'summaryData': summaryModel,
                         'chapterTitle': chapterTitle,
+                        'accentColor': colorScheme.primary,
                       },
                     );
                   }

@@ -9,12 +9,16 @@ extension SafeNavigation on BuildContext {
   /// ```dart
   /// context.safePop(); // Pop or go to '/'
   /// context.safePop(fallback: '/auth'); // Pop or go to '/auth'
+  /// context.safePop(folderId: '123', chapterId: '456'); // Pop or go to '/folders/123/chapters/456'
   /// ```
-  void safePop({String fallback = '/'}) {
+  void safePop({String fallback = '/', String? folderId, String? chapterId}) {
     if (canPop()) {
       pop();
     } else {
-      go(fallback);
+      final dynamicFallback = folderId != null && chapterId != null
+          ? '/folders/$folderId/chapters/$chapterId'
+          : fallback;
+      go(dynamicFallback);
     }
   }
 

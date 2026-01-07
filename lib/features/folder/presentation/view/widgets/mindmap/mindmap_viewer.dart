@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
 import 'package:tionova/features/folder/data/models/nodeModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/mindmap/mindmap_cubit.dart';
@@ -405,7 +407,16 @@ class _MindmapViewerState extends State<MindmapViewer>
             backgroundColor: const Color(0xFF0A0E27),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                final pathParams = GoRouterState.of(context).pathParameters;
+                final folderId = pathParams['folderId'];
+                final chapterId = pathParams['chapterId'];
+                context.safePop(
+                  folderId: folderId,
+                  chapterId: chapterId,
+                  fallback: '/',
+                );
+              },
             ),
             title: Row(
               children: [

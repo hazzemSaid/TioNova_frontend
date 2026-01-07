@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
@@ -163,7 +164,7 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
                           ),
                         ),
                       );
-                      Navigator.of(context).pop(); // Close dialog
+                      GoRouter.of(context).pop();
                     }
                     _loadNotes();
                   } else if (state is GetNotesByChapterIdError) {

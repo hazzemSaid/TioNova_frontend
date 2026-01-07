@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// Handles chapter creation progress updates from backend
 /// Safari iOS/Web compatible implementation
 class FirebaseRealtimeService {
-  final FirebaseDatabase _database;
+  final FirebaseDatabase? _database;
   bool _isInitialized = false;
   static bool _isSafariWeb = false;
 
@@ -15,44 +15,50 @@ class FirebaseRealtimeService {
     _initialize();
   }
 
-  /// Initialize Firebase with Safari-specific settings
   void _initialize() {
     if (_isInitialized) return;
     _isInitialized = true;
 
-    // Detect Safari on iOS/Web
+    if (_database == null) {
+      if (kIsWeb) {
+        print(
+          '⚠️ [Firebase] Realtime Database not available on web, running in disabled mode',
+        );
+      } else {
+        print(
+          '⚠️ [Firebase] Realtime Database not available, features depending on it are disabled',
+        );
+      }
+      return;
+    }
+
     _isSafariWeb = _detectSafari();
 
     if (kIsWeb) {
       print('🔥 [Firebase] Web platform detected, Safari: $_isSafariWeb');
-      // For Safari, use long polling instead of WebSocket
-      // This is handled automatically by Firebase SDK, but we log it
       if (_isSafariWeb) {
         print('🔥 [Firebase] Safari detected - using compatible connection');
       }
     }
 
-    // Enable disk persistence for mobile, disable for web (Safari issues)
     if (!kIsWeb) {
-      _database.setPersistenceEnabled(true);
+      _database!.setPersistenceEnabled(true);
     }
 
     print('✅ [Firebase] Realtime service initialized');
   }
 
-  /// Detect if running on Safari browser
   static bool _detectSafari() {
     if (!kIsWeb) return false;
-    // Safari detection is handled by checking user agent in web
-    // For now, assume all web browsers need Safari-compatible mode
     return true;
   }
 
-  /// Get a database reference with Safari-safe settings
   DatabaseReference getRef(String path) {
-    final ref = _database.ref(path);
-    // Keep synced for better real-time performance on Safari
-    // Note: keepSynced is no-op on web but helps on mobile
+    final db = _database;
+    if (db == null) {
+      throw StateError('Firebase Realtime Database is not available');
+    }
+    final ref = db.ref(path);
     if (!kIsWeb) {
       ref.keepSynced(true);
     }
@@ -71,9 +77,16 @@ class FirebaseRealtimeService {
   ///   "timestamp": 1234567890
   /// }
   Stream<Map<String, dynamic>> listenToChapterCreation(String userId) {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, returning empty chapter creation stream',
+      );
+      return Stream<Map<String, dynamic>>.empty();
+    }
+
     print('🔥 [Firebase] Creating listener for /chapter-creation/$userId');
 
-    final ref = getRef('chapter-creation/$userId');
+    final ref = _database!.ref('chapter-creation/$userId');
 
     return ref.onValue
         .map((event) {
@@ -104,6 +117,12 @@ class FirebaseRealtimeService {
   /// Subscribe to a path with Safari-safe settings
   /// Returns a stream that handles Safari-specific issues
   Stream<DatabaseEvent> listenToPath(String path) {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, returning empty stream for $path',
+      );
+      return Stream<DatabaseEvent>.empty();
+    }
     print('🔥 [Firebase] Creating listener for /$path');
     final ref = getRef(path);
     return ref.onValue.handleError((error) {
@@ -113,6 +132,12 @@ class FirebaseRealtimeService {
 
   /// Subscribe to child events (Safari-safe)
   Stream<DatabaseEvent> listenToChildAdded(String path) {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, returning empty childAdded stream for $path',
+      );
+      return Stream<DatabaseEvent>.empty();
+    }
     final ref = getRef(path);
     return ref.onChildAdded.handleError((error) {
       print('❌ [Firebase] Child added error for $path: $error');
@@ -121,6 +146,12 @@ class FirebaseRealtimeService {
 
   /// Subscribe to child changes (Safari-safe)
   Stream<DatabaseEvent> listenToChildChanged(String path) {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, returning empty childChanged stream for $path',
+      );
+      return Stream<DatabaseEvent>.empty();
+    }
     final ref = getRef(path);
     return ref.onChildChanged.handleError((error) {
       print('❌ [Firebase] Child changed error for $path: $error');
@@ -130,9 +161,15 @@ class FirebaseRealtimeService {
   /// Clear chapter creation progress data
   /// Call this after successful completion to clean up
   Future<void> clearChapterCreation(String userId) async {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, skip clearing /chapter-creation/$userId',
+      );
+      return;
+    }
     print('🔥 [Firebase] Clearing /chapter-creation/$userId');
     try {
-      await _database.ref('chapter-creation/$userId').remove();
+      await _database!.ref('chapter-creation/$userId').remove();
       print('✅ [Firebase] Cleared successfully');
     } catch (e) {
       print('❌ [Firebase] Error clearing: $e');
@@ -142,9 +179,15 @@ class FirebaseRealtimeService {
   /// One-time read of chapter creation status
   /// Useful for checking if there's a pending creation
   Future<Map<String, dynamic>?> getChapterCreationStatus(String userId) async {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, getChapterCreationStatus returning null',
+      );
+      return null;
+    }
     print('🔥 [Firebase] Reading /chapter-creation/$userId');
     try {
-      final snapshot = await _database.ref('chapter-creation/$userId').get();
+      final snapshot = await _database!.ref('chapter-creation/$userId').get();
       if (snapshot.exists && snapshot.value != null) {
         final data = snapshot.value;
         if (data is Map) {
@@ -162,9 +205,15 @@ class FirebaseRealtimeService {
 
   /// One-time read of any path (Safari-safe with timeout)
   Future<DataSnapshot?> getOnce(String path) async {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, getOnce returning null for $path',
+      );
+      return null;
+    }
     print('🔥 [Firebase] One-time read: /$path');
     try {
-      final snapshot = await _database
+      final snapshot = await _database!
           .ref(path)
           .get()
           .timeout(
@@ -182,9 +231,15 @@ class FirebaseRealtimeService {
 
   /// Write data to a path
   Future<bool> write(String path, dynamic data) async {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, write skipped for /$path',
+      );
+      return false;
+    }
     print('🔥 [Firebase] Writing to /$path');
     try {
-      await _database.ref(path).set(data);
+      await _database!.ref(path).set(data);
       print('✅ [Firebase] Write successful');
       return true;
     } catch (e) {
@@ -195,9 +250,15 @@ class FirebaseRealtimeService {
 
   /// Update data at a path
   Future<bool> update(String path, Map<String, dynamic> data) async {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, update skipped for /$path',
+      );
+      return false;
+    }
     print('🔥 [Firebase] Updating /$path');
     try {
-      await _database.ref(path).update(data);
+      await _database!.ref(path).update(data);
       print('✅ [Firebase] Update successful');
       return true;
     } catch (e) {
@@ -208,9 +269,15 @@ class FirebaseRealtimeService {
 
   /// Remove data at a path
   Future<bool> remove(String path) async {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, remove skipped for /$path',
+      );
+      return false;
+    }
     print('🔥 [Firebase] Removing /$path');
     try {
-      await _database.ref(path).remove();
+      await _database!.ref(path).remove();
       print('✅ [Firebase] Remove successful');
       return true;
     } catch (e) {
@@ -271,8 +338,14 @@ class FirebaseRealtimeService {
 
   /// Check if Firebase is available and connected
   Future<bool> isConnected() async {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, reporting not connected',
+      );
+      return false;
+    }
     try {
-      final connectedRef = _database.ref('.info/connected');
+      final connectedRef = _database!.ref('.info/connected');
       final snapshot = await connectedRef.get();
       return snapshot.value == true;
     } catch (e) {
@@ -283,7 +356,13 @@ class FirebaseRealtimeService {
 
   /// Listen to connection state changes
   Stream<bool> connectionStream() {
-    return _database.ref('.info/connected').onValue.map((event) {
+    if (_database == null) {
+      print(
+        'ℹ️ [Firebase] Realtime Database disabled, connectionStream returning false',
+      );
+      return Stream<bool>.value(false);
+    }
+    return _database!.ref('.info/connected').onValue.map((event) {
       return event.snapshot.value == true;
     });
   }

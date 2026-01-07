@@ -20,6 +20,7 @@ class FolderDetailWebLayout extends StatelessWidget {
   final int attempted;
   final Color color;
   final String ownerId;
+  final String? currentUserIdParam;
 
   const FolderDetailWebLayout({
     super.key,
@@ -31,6 +32,7 @@ class FolderDetailWebLayout extends StatelessWidget {
     required this.attempted,
     required this.color,
     required this.ownerId,
+    this.currentUserIdParam,
   });
 
   @override
@@ -98,61 +100,49 @@ class FolderDetailWebLayout extends StatelessWidget {
 
   Widget _buildAddChapterButton(BuildContext context, ColorScheme colorScheme) {
     if (!kIsWeb) {
-      debugPrint('Web Debug: kIsWeb=false, skipping web add chapter button');
       return const SizedBox.shrink();
     }
 
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
-        debugPrint('Web Debug: AuthState type: ${authState.runtimeType}');
+        // Get user ID from auth state, fallback to parameter
+        String? currentUserId;
 
-        final currentUserId = authState is AuthSuccess
-            ? authState.user.id
-            : null;
+        if (authState is AuthSuccess && authState.user.id.isNotEmpty) {
+          currentUserId = authState.user.id;
+        } else {
+          currentUserId = currentUserIdParam;
+        }
+
+        // Validate both user ID and owner ID
         final isCurrentUserIdValid =
             currentUserId != null && currentUserId.isNotEmpty;
         final isOwnerIdValid = ownerId.isNotEmpty;
         final isOwner =
-            isCurrentUserIdValid && isOwnerIdValid && currentUserId == ownerId;
+            isCurrentUserIdValid &&
+            isOwnerIdValid &&
+            currentUserId!.trim() == ownerId.trim();
 
-        debugPrint('Web Debug: currentUserId="$currentUserId"');
-        debugPrint('Web Debug: ownerId="$ownerId"');
-        debugPrint('Web Debug: isCurrentUserIdValid=$isCurrentUserIdValid');
-        debugPrint('Web Debug: isOwnerIdValid=$isOwnerIdValid');
-        debugPrint('Web Debug: isOwner=$isOwner');
+        debugPrint(
+          '🌐 [Web] UserId: "$currentUserId" | Owner: "$ownerId" | IsOwner: $isOwner',
+        );
 
         if (!isOwner) {
-          debugPrint('Web Debug: User is not owner, hiding add chapter button');
           return const SizedBox.shrink();
         }
-
-        debugPrint('Web Debug: User is owner, showing add chapter button');
 
         return SizedBox(
           width: double.infinity,
           child: InkWell(
             onTap: () async {
-              print('Debug: Add chapter button tapped');
               final chapterCubit = context.read<ChapterCubit>();
-              try {
-                final result = await context.pushNamed(
-                  'create-chapter',
-                  pathParameters: {'folderId': folderId},
-                  extra: {'folderTitle': title, 'chapterCubit': chapterCubit},
-                );
-                print('Debug: Create chapter result=$result');
-
-                if (result == true) {
-                  print(
-                    'Debug: Chapter created successfully, refreshing chapters list',
-                  );
-                  // Force refresh the chapters list
-                  chapterCubit.getChapters(folderId: folderId);
-                } else {
-                  print('Debug: Chapter creation cancelled or failed');
-                }
-              } catch (e) {
-                print('Debug: Error creating chapter: $e');
+              final result = await context.pushNamed(
+                'create-chapter',
+                pathParameters: {'folderId': folderId},
+                extra: {'folderTitle': title, 'chapterCubit': chapterCubit},
+              );
+              if (result == true) {
+                chapterCubit.getChapters(folderId: folderId);
               }
             },
             borderRadius: BorderRadius.circular(16),
@@ -202,7 +192,7 @@ class FolderDetailWebLayout extends StatelessWidget {
         // Responsive column count based on screen width
         int crossAxisCount;
         double childAspectRatio;
-        print('Web Debug: screenWidth=$screenWidth');
+
         if (screenWidth >= 1400) {
           crossAxisCount = 2;
           childAspectRatio = 2.7;
@@ -260,10 +250,43 @@ class FolderDetailWebLayout extends StatelessWidget {
             child: Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: effectivePadding),
-                child: Text(
-                  'Failed to load chapters: ${state.message}',
-                  style: TextStyle(color: colorScheme.error, fontSize: 16),
-                  textAlign: TextAlign.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: colorScheme.error,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Failed to load chapters',
+                      style: TextStyle(
+                        color: colorScheme.error,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      state.message.errMessage,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: () {
+                        context.read<ChapterCubit>().getChapters(
+                          folderId: folderId,
+                        );
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -286,15 +287,28 @@ Future<void> setupServiceLocator() async {
   //   () => AppUsageTrackerService(),
   // );
 
-  // Register Firebase Realtime Database (Safari iOS/Web compatible)
-  if (!getIt.isRegistered<FirebaseDatabase>()) {
-    getIt.registerLazySingleton<FirebaseDatabase>(
-      () => FirebaseDatabase.instance,
-    );
+  FirebaseDatabase? firebaseDatabase;
+  try {
+    firebaseDatabase = FirebaseDatabase.instance;
+    debugPrint('✅ FirebaseDatabase instance created');
+  } catch (e) {
+    debugPrint('❌ Failed to create FirebaseDatabase instance: $e');
+    if (kIsWeb) {
+      debugPrint(
+        'ℹ️ Web platform detected, continuing without Firebase Realtime Database',
+      );
+    } else {
+      rethrow;
+    }
+  }
+
+  if (firebaseDatabase != null && !getIt.isRegistered<FirebaseDatabase>()) {
+    final db = firebaseDatabase;
+    getIt.registerLazySingleton<FirebaseDatabase>(() => db!);
   }
   if (!getIt.isRegistered<FirebaseRealtimeService>()) {
     getIt.registerLazySingleton<FirebaseRealtimeService>(
-      () => FirebaseRealtimeService(getIt<FirebaseDatabase>()),
+      () => FirebaseRealtimeService(firebaseDatabase),
     );
   }
 

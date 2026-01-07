@@ -61,6 +61,8 @@ class AuthCubit extends Cubit<AuthState> {
           '✅ [AuthCubit.resetPassword] Password reset successful: ${user.email}',
         );
         debugPrint('✅ [AuthCubit.resetPassword] User ID: "${user.id}"');
+        // Save user ID to local storage for persistence across refreshes
+        await tokenStorage.saveUserId(user.id);
         safeEmit(AuthSuccess(user: user));
       },
     );
@@ -96,6 +98,8 @@ class AuthCubit extends Cubit<AuthState> {
       (user) async {
         debugPrint('✅ [AuthCubit.googleSignIn] User signed in: ${user.email}');
         debugPrint('✅ [AuthCubit.googleSignIn] User ID: "${user.id}"');
+        // Save user ID to local storage for persistence across refreshes
+        await tokenStorage.saveUserId(user.id);
         safeEmit(AuthSuccess(user: user));
       },
     );
@@ -137,6 +141,8 @@ class AuthCubit extends Cubit<AuthState> {
           );
           debugPrint('✅ [AuthCubit] User ID: "${user.id}"');
           debugPrint('✅ [AuthCubit] Username: ${user.username}');
+          // Save user ID to local storage for persistence across refreshes
+          await tokenStorage.saveUserId(user.id);
           safeEmit(AuthSuccess(user: user));
         },
       );
@@ -158,7 +164,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     try {
       await tokenStorage.clearTokens();
-      // await localAuthDataSource.signOut();
+      await tokenStorage.clearUserId();
 
       // If token expired, emit AuthFailure to indicate re-authentication is required
       if (isTokenExpired) {
@@ -222,6 +228,8 @@ class AuthCubit extends Cubit<AuthState> {
           '✅ [AuthCubit.verifyEmail] User email verified: ${user.email}',
         );
         debugPrint('✅ [AuthCubit.verifyEmail] User ID: "${user.id}"');
+        // Save user ID to local storage for persistence across refreshes
+        await tokenStorage.saveUserId(user.id);
         safeEmit(AuthSuccess(user: user));
       },
     );
@@ -238,6 +246,8 @@ class AuthCubit extends Cubit<AuthState> {
       (user) async {
         debugPrint('✅ [AuthCubit.login] User logged in: ${user.email}');
         debugPrint('✅ [AuthCubit.login] User ID: "${user.id}"');
+        // Save user ID to local storage for persistence across refreshes
+        await tokenStorage.saveUserId(user.id);
         safeEmit(AuthSuccess(user: user));
       },
     );

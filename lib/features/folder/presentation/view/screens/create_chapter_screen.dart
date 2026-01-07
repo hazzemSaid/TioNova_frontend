@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
@@ -54,6 +54,28 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+
+    // Validate folderId
+    if (widget.folderId.isEmpty || widget.folderId == 'unknown') {
+      debugPrint(
+        '❌ [CreateChapterScreen] Invalid folderId: "${widget.folderId}". This will cause chapter creation to fail.',
+      );
+      // Schedule error dialog after build completes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          CustomDialogs.showErrorDialog(
+            context,
+            title: 'Error',
+            message:
+                'Invalid folder ID. Cannot create chapter without a valid folder.',
+          ).then((_) {
+            if (mounted) {
+              GoRouter.of(context).pop();
+            }
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -90,16 +112,22 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
         final horizontalPadding = isDesktop
             ? 40.0
             : isTablet
-                ? 24.0
-                : 12.0;
+            ? 24.0
+            : 12.0;
         final maxContentWidth = isDesktop ? 800.0 : screenWidth;
 
         return BlocConsumer<ChapterCubit, ChapterState>(
           listener: _handleChapterState,
           builder: (context, state) {
+            debugPrint(
+              '🏗️ [Builder] Building with state: ${state.runtimeType}',
+            );
+
             final colorScheme = Theme.of(context).colorScheme;
             final isProcessing =
                 state is CreateChapterLoading || state is CreateChapterProgress;
+
+            debugPrint('🏗️ [Builder] isProcessing=$isProcessing');
 
             return WillPopScope(
               onWillPop: () async {
@@ -166,8 +194,8 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
           fontSize: isDesktop
               ? 24
               : isTablet
-                  ? 22
-                  : 20,
+              ? 22
+              : 20,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -196,8 +224,8 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
                   vertical: isDesktop
                       ? 32
                       : isTablet
-                          ? 24
-                          : 12,
+                      ? 24
+                      : 12,
                 ),
                 sliver: SliverToBoxAdapter(
                   child: Column(
@@ -213,8 +241,8 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
                         height: isDesktop
                             ? 40
                             : isTablet
-                                ? 24
-                                : 16,
+                            ? 24
+                            : 16,
                       ),
 
                       // Chapter Details Form
@@ -227,8 +255,8 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
                         height: isDesktop
                             ? 60
                             : isTablet
-                                ? 50
-                                : 40,
+                            ? 50
+                            : 40,
                       ),
 
                       // Action Buttons
@@ -255,19 +283,35 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
   }) {
     final bool isLoading = state is CreateChapterLoading;
     final bool isProgress = state is CreateChapterProgress;
+    final bool isSuccess = state is CreateChapterSuccess;
+    final bool isError = state is CreateChapterError;
 
-    if (!isLoading && !isProgress && !_isCreatingChapter) {
+    debugPrint(
+      '🎨 [ProgressOverlay] state: ${state.runtimeType}, isProgress=$isProgress, isLoading=$isLoading',
+    );
+
+    // Hide overlay if success, error, or not processing
+    if (isSuccess ||
+        isError ||
+        (!isLoading && !isProgress && !_isCreatingChapter)) {
+      debugPrint('🎨 [ProgressOverlay] Hiding overlay');
       return const SizedBox.shrink();
     }
 
-    final CreateChapterProgress? progressState =
-        state is CreateChapterProgress ? state : null;
-    final int progressValue =
-        progressState != null ? progressState.progress.clamp(0, 100) : 0;
+    final CreateChapterProgress? progressState = state is CreateChapterProgress
+        ? state
+        : null;
+    final int progressValue = progressState != null
+        ? progressState.progress.clamp(0, 100)
+        : 0;
     final String statusMessage =
         progressState != null && progressState.message.isNotEmpty
-            ? progressState.message
-            : 'Uploading your materials...';
+        ? progressState.message
+        : 'Uploading your materials...';
+
+    debugPrint(
+      '🎨 [ProgressOverlay] Showing overlay: progress=$progressValue%, message="$statusMessage"',
+    );
 
     return Positioned.fill(
       child: ChapterCreationProgressOverlay(
@@ -382,7 +426,7 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => GoRouter.of(context).pop(),
             child: Text('OK', style: TextStyle(color: colorScheme.primary)),
           ),
         ],
@@ -434,6 +478,19 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
       return;
     }
 
+    // Validate folderId before attempting to create chapter
+    if (widget.folderId.isEmpty || widget.folderId == 'unknown') {
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Error!',
+          message:
+              'Invalid folder ID. Cannot create chapter. Please go back and try again.',
+        );
+      });
+      return;
+    }
+
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthSuccess) {
       safeContext((ctx) {
@@ -449,10 +506,14 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
     setState(() => _isCreatingChapter = true);
 
     try {
+      print('🔥 Subscribing to creation progress...');
       _chapterCubit.subscribeToChapterCreationProgress(
         userId: authState.user.id,
       );
 
+      print(
+        '🚀 Initiating chapter creation with folderId: ${widget.folderId}...',
+      );
       _chapterCubit.createChapter(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -466,17 +527,28 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
           _handleTimeout();
         }
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Error in _createChapter: $e');
+      print('Stack trace: $stackTrace');
+
       if (mounted) {
         setState(() => _isCreatingChapter = false);
       }
       _chapterCubit.unsubscribeFromChapterCreationProgress();
+
       safeContext((ctx) {
+        String errorMessage = 'Failed to create chapter';
+        if (e.toString().contains('permission-denied')) {
+          errorMessage = 'Permission denied. Please check your connection.';
+        } else if (e.toString().contains('network')) {
+          errorMessage =
+              'Network error. Please check your internet connection.';
+        }
+
         CustomDialogs.showErrorDialog(
           ctx,
           title: 'Error!',
-          message: 'Failed to create chapter: ${e.toString()}',
+          message: '$errorMessage\n\nDetails: ${e.toString()}',
         );
       });
     }
@@ -500,17 +572,50 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
   }
 
   void _handleChapterState(BuildContext context, ChapterState state) {
-    print('📍 _handleChapterState: ${state.runtimeType}');
+    debugPrint('📍 _handleChapterState: ${state.runtimeType}');
 
-    if (state is CreateChapterProgress) {
-      print('📊 Progress: ${state.progress}% - ${state.message}');
-      if (state.progress >= 100) {
-        print('✅ Progress reached 100%, unlocking navigation soon...');
+    // Handle success first (most important)
+    if (state is CreateChapterSuccess) {
+      debugPrint('✅ CreateChapterSuccess detected in state handler');
+
+      _timeoutTimer?.cancel();
+      if (mounted) {
+        setState(() => _isCreatingChapter = false);
       }
+
+      _chapterCubit.unsubscribeFromChapterCreationProgress();
+
+      // Show success dialog if not already shown
+      if (!_didShowSuccessDialog && mounted) {
+        _didShowSuccessDialog = true;
+        debugPrint('📱 Showing success dialog...');
+
+        safeContext((ctx) {
+          CustomDialogs.showSuccessDialog(
+            ctx,
+            title: 'Success!',
+            message: 'Chapter created successfully',
+            onPressed: () {
+              debugPrint('👈 Success dialog dismissed, navigating back');
+              // Close the dialog
+              Navigator.of(ctx).pop();
+
+              // Pop the CreateChapterScreen
+              if (mounted) {
+                debugPrint('👈 Popping CreateChapterScreen');
+                // Use GoRouter.pop() since we used pushNamed to get here
+                GoRouter.of(context).pop(true);
+              }
+            },
+          );
+        });
+      }
+      return; // Important: prevent other handlers from running
     }
 
+    // Handle errors
     if (state is CreateChapterError) {
-      print('❌ CreateChapterError detected in state handler');
+      debugPrint('❌ CreateChapterError detected in state handler');
 
       _timeoutTimer?.cancel();
       if (mounted) {
@@ -523,36 +628,15 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
         CustomDialogs.showErrorDialog(
           ctx,
           title: 'Error!',
-          message: 'Failed to create chapter',
+          message: 'Failed to create chapter: ${state.message.errMessage}',
         );
       });
-    } else if (state is CreateChapterSuccess) {
-      print('✅ CreateChapterSuccess detected in state handler');
+      return; // Prevent other handlers from running
+    }
 
-      _timeoutTimer?.cancel();
-      if (mounted) {
-        setState(() => _isCreatingChapter = false);
-      }
-
-      _didShowSuccessDialog = false;
-      _chapterCubit.unsubscribeFromChapterCreationProgress();
-
-      safeContext((ctx) {
-        if (!_didShowSuccessDialog && mounted) {
-          _didShowSuccessDialog = true;
-          CustomDialogs.showSuccessDialog(
-            ctx,
-            title: 'Success!',
-            message: 'Chapter created successfully',
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (mounted) {
-                Navigator.pop(context, true);
-              }
-            },
-          );
-        }
-      });
+    // Handle progress
+    if (state is CreateChapterProgress) {
+      debugPrint('📊 Progress: ${state.progress}% - ${state.message}');
     }
   }
 }

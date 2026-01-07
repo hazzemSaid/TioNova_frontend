@@ -52,23 +52,24 @@ class HomeChaptersSection extends StatelessWidget {
                 child: EnhancedChapterCard(
                   timeAgo: formatTimeAgo(chapterModel.createdAt),
                   onTap: () {
+                    final folderId = chapterModel.folderId ?? '';
                     // Use go() on web to ensure URL updates in browser
                     if (kIsWeb) {
                       context.go(
-                        '/chapters/${chapterModel.id}',
+                        '/folders/$folderId/chapters/${chapterModel.id}',
                         extra: {
                           'chapter': chapterModel,
                           'folderColor': colorScheme.primary,
-                          'folderId': chapterModel.folderId ?? '',
+                          'folderId': folderId,
                         },
                       );
                     } else {
                       context.push(
-                        '/chapters/${chapterModel.id}',
+                        '/folders/$folderId/chapters/${chapterModel.id}',
                         extra: {
                           'chapter': chapterModel,
                           'folderColor': colorScheme.primary,
-                          'folderId': chapterModel.folderId ?? '',
+                          'folderId': folderId,
                         },
                       );
                     }

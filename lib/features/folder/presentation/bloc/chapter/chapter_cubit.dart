@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
 import 'package:either_dart/either.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/services/firebase_realtime_service.dart';
 import 'package:tionova/core/services/summary_cache_service.dart';
@@ -62,6 +62,7 @@ class ChapterCubit extends Cubit<ChapterState> {
   final DeleteChapterUseCase deleteChapterUseCase;
   final FirebaseRealtimeService firebaseService;
   StreamSubscription<Map<String, dynamic>>? _firebaseSubscription;
+  Timer? _firebaseTimeoutTimer;
 
   void getChapters({required String folderId}) async {
     safeEmit(ChapterLoading());
@@ -81,17 +82,15 @@ class ChapterCubit extends Cubit<ChapterState> {
     required String folderId,
     required FileData file,
   }) async {
-    print('🔵 [ChapterCubit] createChapter() called');
-    print('📝 Title: $title, FolderId: $folderId, File: ${file.filename}');
+    debugPrint(
+      '🔵 [ChapterCubit] createChapter: title="$title", folderId="$folderId"',
+    );
 
     final chapters = currentChapters; // Capture before emitting
-    print('📚 Current chapters count: ${chapters?.length ?? 0}');
 
     safeEmit(CreateChapterLoading(chapters: chapters));
-    print('✅ [ChapterCubit] Emitted CreateChapterLoading');
 
     try {
-      print('🚀 [ChapterCubit] Calling createChapterUseCase...');
       final result =
           await createChapterUseCase(
             title: title,
@@ -101,7 +100,9 @@ class ChapterCubit extends Cubit<ChapterState> {
           ).timeout(
             const Duration(seconds: 120), // Increased for large PDF processing
             onTimeout: () {
-              print('⏱️ [ChapterCubit] Timeout in createChapterUseCase');
+              debugPrint(
+                '⏱️ [ChapterCubit] CreateChapter timeout after 120 seconds',
+              );
               unsubscribeFromChapterCreationProgress();
               return Left(
                 ServerFailure('Request timed out. Please try again.'),
@@ -109,32 +110,25 @@ class ChapterCubit extends Cubit<ChapterState> {
             },
           );
 
-      print('📦 [ChapterCubit] UseCase returned result');
       result.fold(
         (failure) {
-          print('❌ [ChapterCubit] CreateChapter failed: ${failure.toString()}');
+          debugPrint(
+            '❌ [ChapterCubit] CreateChapter failed: ${failure.errMessage}',
+          );
           safeEmit(CreateChapterError(failure, chapters: chapters));
           unsubscribeFromChapterCreationProgress();
         },
         (_) {
-          print('✅ [ChapterCubit] CreateChapter API success');
-          // Success - let SSE handle completion or emit immediately if no SSE
-          // if (_firebaseSubscription == null) {
-          //   print(
-          //     '⚠️ [ChapterCubit] No SSE subscription, emitting success immediately',
-          //   );
-          //   safeEmit(CreateChapterSuccess(chapters: chapters));
-          // } else {
-          //   print(
-          //     '✅ [ChapterCubit] SSE subscription active, waiting for events',
-          //   );
-          // }
+          debugPrint('✅ [ChapterCubit] CreateChapter API completed');
+          // On ALL platforms: Subscribe to Firebase and show progress updates
+          // Firebase will send real-time progress even on web
+          debugPrint('⏳ Waiting for Firebase progress updates...');
+          // Firebase listener will emit CreateChapterProgress states and final CreateChapterSuccess
+          // No need to emit success here - let Firebase handle it
         },
       );
     } catch (e) {
-      // Catch any unexpected errors
-      print('💥 [ChapterCubit] Exception in createChapter: $e');
-      print('Stack trace: ${StackTrace.current}');
+      debugPrint('❌ [ChapterCubit] Exception in createChapter: $e');
       unsubscribeFromChapterCreationProgress();
       safeEmit(
         CreateChapterError(
@@ -149,15 +143,20 @@ class ChapterCubit extends Cubit<ChapterState> {
   /// Backend writes to: /chapter-creation/{userId}
   /// Safari iOS/Web compatible implementation
   void subscribeToChapterCreationProgress({required String userId}) {
-    print('🔥 [ChapterCubit] Subscribing to Firebase for user: $userId');
+    debugPrint('🔥 [ChapterCubit] Subscribing to Firebase for user: $userId');
 
     _firebaseSubscription?.cancel();
+    _firebaseTimeoutTimer?.cancel();
+
     _firebaseSubscription = firebaseService
         .listenToChapterCreation(userId)
         .listen(
-          _handleFirebaseUpdate,
+          (data) {
+            debugPrint('🔥 [ChapterCubit] Firebase listener received data');
+            _handleFirebaseUpdate(data);
+          },
           onError: (error) {
-            print('❌ [ChapterCubit] Firebase error: $error');
+            debugPrint('❌ [ChapterCubit] Firebase error: $error');
             unsubscribeFromChapterCreationProgress();
             if (!isClosed) {
               safeEmit(
@@ -168,26 +167,52 @@ class ChapterCubit extends Cubit<ChapterState> {
               );
             }
           },
+          onDone: () {
+            debugPrint('✅ [ChapterCubit] Firebase listener closed');
+          },
         );
+
+    // Fallback timeout: if Firebase doesn't send 100% within 60 seconds after API success,
+    // emit success anyway (chapter was created, but Firebase tracking failed)
+    _firebaseTimeoutTimer = Timer(const Duration(seconds: 60), () {
+      if (!isClosed) {
+        debugPrint(
+          '⚠️ [ChapterCubit] Firebase timeout - emitting success anyway (API succeeded)',
+        );
+        safeEmit(
+          CreateChapterSuccess(chapter: null, chapters: currentChapters),
+        );
+        unsubscribeFromChapterCreationProgress();
+      }
+    });
   }
 
   /// Unsubscribe from Firebase chapter creation progress
   void unsubscribeFromChapterCreationProgress() {
-    print('🔥 [ChapterCubit] Unsubscribing from Firebase');
+    debugPrint('🔥 [ChapterCubit] Unsubscribing from Firebase');
     _firebaseSubscription?.cancel();
     _firebaseSubscription = null;
+    _firebaseTimeoutTimer?.cancel();
+    _firebaseTimeoutTimer = null;
   }
 
   /// Handle Firebase Realtime Database updates for chapter creation
   void _handleFirebaseUpdate(Map<String, dynamic> data) {
-    if (isClosed || data.isEmpty) return;
+    if (isClosed || data.isEmpty) {
+      debugPrint(
+        '⚠️ [ChapterCubit] Firebase update ignored - isClosed=$isClosed, isEmpty=${data.isEmpty}',
+      );
+      return;
+    }
 
     try {
       final progress = (data['progress'] as num?)?.toInt() ?? 0;
       final message = data['message'] as String? ?? '';
       final chapterId = data['chapterId'] as String?;
 
-      print('🔥 [ChapterCubit] Firebase update: $progress% - $message');
+      debugPrint(
+        '🔥 [ChapterCubit] Firebase update received: $progress% - "$message"',
+      );
 
       ChapterModel? chapter;
       if (data['chapter'] != null) {
@@ -198,6 +223,9 @@ class ChapterCubit extends Cubit<ChapterState> {
 
       final chapters = currentChapters; // Preserve current chapters
 
+      debugPrint(
+        '🔥 [ChapterCubit] Emitting CreateChapterProgress: $progress%',
+      );
       safeEmit(
         CreateChapterProgress(
           progress: progress,
@@ -210,7 +238,9 @@ class ChapterCubit extends Cubit<ChapterState> {
 
       // When complete, emit success and cleanup
       if (progress >= 100) {
-        print('✅ [ChapterCubit] Chapter creation complete!');
+        debugPrint('✅ [ChapterCubit] Chapter creation complete (100%)');
+        _firebaseTimeoutTimer?.cancel();
+        _firebaseTimeoutTimer = null;
         // Emit success even if chapter is null to unblock UI
         safeEmit(CreateChapterSuccess(chapter: chapter, chapters: chapters));
         unsubscribeFromChapterCreationProgress();
@@ -222,7 +252,8 @@ class ChapterCubit extends Cubit<ChapterState> {
         }
       }
     } catch (e) {
-      print('❌ [ChapterCubit] Error parsing Firebase data: $e');
+      debugPrint('⚠️ [ChapterCubit] Error parsing Firebase data: $e');
+      debugPrint('📦 [ChapterCubit] Firebase data: $data');
       // Don't emit error for parse failures, just log
     }
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_navigation.dart';
 
 class RawSummaryViewerScreen extends StatelessWidget {
@@ -25,7 +26,16 @@ class RawSummaryViewerScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-          onPressed: () => context.safePop(fallback: '/'),
+          onPressed: () {
+            final pathParams = GoRouterState.of(context).pathParameters;
+            final folderId = pathParams['folderId'];
+            final chapterId = pathParams['chapterId'];
+            context.safePop(
+              folderId: folderId,
+              chapterId: chapterId,
+              fallback: '/',
+            );
+          },
         ),
         title: Text(
           'AI Summary',

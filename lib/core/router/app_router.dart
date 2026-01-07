@@ -26,10 +26,13 @@ import 'package:tionova/features/challenges/presentation/view/screens/select_cha
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
+import 'package:tionova/features/folder/presentation/view/screens/RawSummaryViewerScreen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/SummaryViewerScreen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/chapter_detail_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/create_chapter_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_detail_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/folder_screen.dart';
+import 'package:tionova/features/folder/presentation/view/screens/mindmap_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/notes_screen.dart';
 import 'package:tionova/features/folder/presentation/view/screens/pdf_viewer_screen.dart';
 import 'package:tionova/features/home/presentation/view/screens/home_screen.dart';
@@ -273,6 +276,24 @@ class AppRouter {
                 );
               },
               routes: [
+                // Create new chapter: /folders/:folderId/chapters/create
+                GoRoute(
+                  path: 'chapters/create',
+                  name: 'create-chapter',
+                  builder: (context, state) {
+                    final folderId = state.pathParameters['folderId']!;
+                    final extra = state.extra as Map<String, dynamic>?;
+                    // Always use a fresh Cubit to ensure we don't carry over "loading" states from the list or previous attempts
+                    return BlocProvider<ChapterCubit>.value(
+                      value: getIt<ChapterCubit>(),
+                      child: CreateChapterScreen(
+                        folderId: folderId,
+                        folderTitle:
+                            extra?['folderTitle'] as String? ?? 'Folder',
+                      ),
+                    );
+                  },
+                ),
                 // Chapter detail: /folders/:folderId/chapters/:chapterId
                 GoRoute(
                   path: 'chapters/:chapterId',
@@ -284,7 +305,9 @@ class AppRouter {
                     final existingCubit =
                         extra['chapterCubit'] as ChapterCubit?;
                     final child = ChapterDetailScreen(
-                      chapter: extra['chapter'] as ChapterModel,
+                      chapter: extra['chapter'] as ChapterModel?,
+                      chapterId: chapterId,
+                      folderId: folderId,
                       folderColor:
                           extra['folderColor'] as Color? ?? Colors.blue,
                       folderOwnerId: extra['folderOwnerId'] as String?,
@@ -346,6 +369,90 @@ class AppRouter {
                           accentColor: extra?['accentColor'] as Color?,
                           folderOwnerId: extra?['folderOwnerId'] as String?,
                         );
+                        if (chapterCubit != null) {
+                          return BlocProvider.value(
+                            value: chapterCubit,
+                            child: child,
+                          );
+                        }
+                        return BlocProvider<ChapterCubit>(
+                          create: (context) => getIt<ChapterCubit>(),
+                          child: child,
+                        );
+                      },
+                    ),
+
+                    // Summary: /folders/:folderId/:chapterId/summary
+                    GoRoute(
+                      path: 'summary',
+                      name: 'folder-chapter-summary',
+                      builder: (context, state) {
+                        final folderId = state.pathParameters['folderId']!;
+                        final chapterId = state.pathParameters['chapterId']!;
+                        final extra = state.extra as Map<String, dynamic>;
+                        final chapterCubit =
+                            extra['chapterCubit'] as ChapterCubit?;
+                        final child = SummaryViewerScreen(
+                          summaryData: extra['summaryData'],
+                          chapterTitle:
+                              extra['chapterTitle'] as String? ?? 'Summary',
+                          accentColor:
+                              extra['accentColor'] as Color? ?? Colors.blue,
+                        );
+                        if (chapterCubit != null) {
+                          return BlocProvider.value(
+                            value: chapterCubit,
+                            child: child,
+                          );
+                        }
+                        return BlocProvider<ChapterCubit>(
+                          create: (context) => getIt<ChapterCubit>(),
+                          child: child,
+                        );
+                      },
+                    ),
+
+                    // Raw Summary: /folders/:folderId/:chapterId/raw-summary
+                    GoRoute(
+                      path: 'raw-summary',
+                      name: 'folder-chapter-raw-summary',
+                      builder: (context, state) {
+                        final folderId = state.pathParameters['folderId']!;
+                        final chapterId = state.pathParameters['chapterId']!;
+                        final extra = state.extra as Map<String, dynamic>;
+                        final chapterCubit =
+                            extra['chapterCubit'] as ChapterCubit?;
+                        final child = RawSummaryViewerScreen(
+                          summaryText: extra['summaryText'],
+                          chapterTitle:
+                              extra['chapterTitle'] as String? ?? 'Summary',
+                          accentColor:
+                              extra['accentColor'] as Color? ?? Colors.blue,
+                        );
+                        if (chapterCubit != null) {
+                          return BlocProvider.value(
+                            value: chapterCubit,
+                            child: child,
+                          );
+                        }
+                        return BlocProvider<ChapterCubit>(
+                          create: (context) => getIt<ChapterCubit>(),
+                          child: child,
+                        );
+                      },
+                    ),
+
+                    // Mindmap: /folders/:folderId/:chapterId/mindmap
+                    GoRoute(
+                      path: 'mindmap',
+                      name: 'folder-chapter-mindmap',
+                      builder: (context, state) {
+                        final folderId = state.pathParameters['folderId']!;
+                        final chapterId = state.pathParameters['chapterId']!;
+                        final extra = state.extra as Map<String, dynamic>;
+                        final chapterCubit =
+                            extra['chapterCubit'] as ChapterCubit?;
+                        final child = MindmapScreen(mindmap: extra['mindmap']);
                         if (chapterCubit != null) {
                           return BlocProvider.value(
                             value: chapterCubit,
@@ -471,22 +578,130 @@ class AppRouter {
                     ),
                   ],
                 ),
-                // Create new chapter: /folders/:folderId/chapters/new
+              ],
+            ),
+
+            // ──────────────────────────────────────────────────────────────────
+            // STANDALONE CHAPTER ROUTES: /chapters/*
+            // ──────────────────────────────────────────────────────────────────
+            GoRoute(
+              path: '/chapters/:chapterId',
+              name: 'chapter-detail',
+              builder: (context, state) {
+                final chapterId = state.pathParameters['chapterId']!;
+                final extra = (state.extra as Map<String, dynamic>?) ?? {};
+                final existingCubit = extra['chapterCubit'] as ChapterCubit?;
+                final child = ChapterDetailScreen(
+                  chapter: extra['chapter'] as ChapterModel?,
+                  chapterId: chapterId,
+                  folderId: '', // Empty for standalone chapters
+                  folderColor: extra['folderColor'] as Color? ?? Colors.blue,
+                  folderOwnerId: extra['folderOwnerId'] as String?,
+                );
+                if (existingCubit != null) {
+                  return BlocProvider.value(value: existingCubit, child: child);
+                }
+                return BlocProvider<ChapterCubit>(
+                  create: (context) => getIt<ChapterCubit>(),
+                  child: child,
+                );
+              },
+              routes: [
+                // Summary: /chapters/:chapterId/summary
                 GoRoute(
-                  path: 'chapters/new',
-                  name: 'create-chapter',
+                  path: 'summary',
+                  name: 'chapter-summary',
                   builder: (context, state) {
-                    final folderId = state.pathParameters['folderId']!;
-                    final extra = state.extra as Map<String, dynamic>?;
-                    final existingCubit =
-                        extra?['chapterCubit'] as ChapterCubit?;
-                    final child = CreateChapterScreen(
-                      folderId: folderId,
-                      folderTitle: extra?['folderTitle'] as String? ?? 'Folder',
+                    final chapterId = state.pathParameters['chapterId']!;
+                    final extra = state.extra as Map<String, dynamic>;
+                    final chapterCubit = extra['chapterCubit'] as ChapterCubit?;
+                    final child = SummaryViewerScreen(
+                      summaryData: extra['summaryData'],
+                      chapterTitle:
+                          extra['chapterTitle'] as String? ?? 'Summary',
+                      accentColor:
+                          extra['accentColor'] as Color? ?? Colors.blue,
                     );
-                    if (existingCubit != null) {
+                    if (chapterCubit != null) {
                       return BlocProvider.value(
-                        value: existingCubit,
+                        value: chapterCubit,
+                        child: child,
+                      );
+                    }
+                    return BlocProvider<ChapterCubit>(
+                      create: (context) => getIt<ChapterCubit>(),
+                      child: child,
+                    );
+                  },
+                ),
+
+                // Raw Summary: /chapters/:chapterId/raw-summary
+                GoRoute(
+                  path: 'raw-summary',
+                  name: 'chapter-raw-summary',
+                  builder: (context, state) {
+                    final chapterId = state.pathParameters['chapterId']!;
+                    final extra = state.extra as Map<String, dynamic>;
+                    final chapterCubit = extra['chapterCubit'] as ChapterCubit?;
+                    final child = RawSummaryViewerScreen(
+                      summaryText: extra['summaryText'],
+                      chapterTitle:
+                          extra['chapterTitle'] as String? ?? 'Summary',
+                      accentColor:
+                          extra['accentColor'] as Color? ?? Colors.blue,
+                    );
+                    if (chapterCubit != null) {
+                      return BlocProvider.value(
+                        value: chapterCubit,
+                        child: child,
+                      );
+                    }
+                    return BlocProvider<ChapterCubit>(
+                      create: (context) => getIt<ChapterCubit>(),
+                      child: child,
+                    );
+                  },
+                ),
+
+                // Mindmap: /chapters/:chapterId/mindmap
+                GoRoute(
+                  path: 'mindmap',
+                  name: 'chapter-mindmap',
+                  builder: (context, state) {
+                    final chapterId = state.pathParameters['chapterId']!;
+                    final extra = state.extra as Map<String, dynamic>;
+                    final chapterCubit = extra['chapterCubit'] as ChapterCubit?;
+                    final child = MindmapScreen(mindmap: extra['mindmap']);
+                    if (chapterCubit != null) {
+                      return BlocProvider.value(
+                        value: chapterCubit,
+                        child: child,
+                      );
+                    }
+                    return BlocProvider<ChapterCubit>(
+                      create: (context) => getIt<ChapterCubit>(),
+                      child: child,
+                    );
+                  },
+                ),
+
+                // Notes: /chapters/:chapterId/notes
+                GoRoute(
+                  path: 'notes',
+                  name: 'chapter-notes',
+                  builder: (context, state) {
+                    final chapterId = state.pathParameters['chapterId']!;
+                    final extra = state.extra as Map<String, dynamic>;
+                    final chapterCubit = extra['chapterCubit'] as ChapterCubit?;
+                    final child = NotesScreen(
+                      chapterId: chapterId,
+                      chapterTitle: extra['chapterTitle'] as String? ?? 'Notes',
+                      accentColor: extra['accentColor'] as Color?,
+                      folderOwnerId: extra['folderOwnerId'] as String?,
+                    );
+                    if (chapterCubit != null) {
+                      return BlocProvider.value(
+                        value: chapterCubit,
                         child: child,
                       );
                     }
@@ -497,6 +712,34 @@ class AppRouter {
                   },
                 ),
               ],
+            ),
+
+            // ──────────────────────────────────────────────────────────────────
+            // SUMMARY VIEWER: /summary-viewer
+            // ──────────────────────────────────────────────────────────────────
+            GoRoute(
+              path: '/summary-viewer',
+              name: 'summary-viewer',
+              builder: (context, state) {
+                final extra = state.extra as Map<String, dynamic>;
+                return SummaryViewerScreen(
+                  summaryData: extra['summaryData'],
+                  chapterTitle: extra['chapterTitle'] as String? ?? 'Summary',
+                  accentColor: extra['accentColor'] as Color? ?? Colors.blue,
+                );
+              },
+            ),
+
+            // ──────────────────────────────────────────────────────────────────
+            // MINDMAP VIEWER: /mindmap-viewer
+            // ──────────────────────────────────────────────────────────────────
+            GoRoute(
+              path: '/mindmap-viewer',
+              name: 'mindmap-viewer',
+              builder: (context, state) {
+                final extra = state.extra as Map<String, dynamic>;
+                return MindmapScreen(mindmap: extra['mindmap']);
+              },
             ),
 
             // ──────────────────────────────────────────────────────────────────

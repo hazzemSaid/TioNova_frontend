@@ -11,6 +11,7 @@ class TokenStorage {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _tokenExpiryKey = 'token_expiry';
+  static const String _userIdKey = 'user_id';
   static const String _encryptionKey = 'encryption_key';
 
   final FlutterSecureStorage? _secureStorage;
@@ -206,6 +207,83 @@ class TokenStorage {
       return accessToken != null && refreshToken != null;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// Save user ID securely for persistence across app refreshes
+  Future<void> saveUserId(String userId) async {
+    try {
+      if (userId.isEmpty) {
+        debugPrint('⚠️ [TokenStorage] Cannot save empty userId');
+        return;
+      }
+
+      if (kIsWeb) {
+        // Web platform: use SharedPreferences (plain storage, no encryption needed for ID)
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_userIdKey, userId);
+        debugPrint('✅ [TokenStorage] UserId saved to web storage');
+      } else {
+        // Mobile platforms: use flutter_secure_storage
+        if (_secureStorage == null) {
+          throw TokenStorageException(
+            'Secure storage not available on this platform',
+          );
+        }
+        await _secureStorage.write(key: _userIdKey, value: userId);
+        debugPrint('✅ [TokenStorage] UserId saved to secure storage');
+      }
+    } catch (e) {
+      debugPrint('❌ [TokenStorage] Failed to save userId: $e');
+      // Don't throw - be resilient
+    }
+  }
+
+  /// Get stored user ID from local storage
+  /// Returns null if not found or on error (e.g., Safari private mode)
+  Future<String?> getUserId() async {
+    try {
+      if (kIsWeb) {
+        final prefs = await SharedPreferences.getInstance();
+        final userId = prefs.getString(_userIdKey);
+        if (userId != null && userId.isNotEmpty) {
+          debugPrint('✅ [TokenStorage] Retrieved userId from web storage');
+          return userId;
+        }
+        return null;
+      } else {
+        if (_secureStorage == null) {
+          debugPrint('⚠️ [TokenStorage] Secure storage not available');
+          return null;
+        }
+        final userId = await _secureStorage.read(key: _userIdKey);
+        if (userId != null && userId.isNotEmpty) {
+          debugPrint('✅ [TokenStorage] Retrieved userId from secure storage');
+          return userId;
+        }
+        return null;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [TokenStorage] Failed to get userId: $e');
+      return null; // Return null instead of throwing for Safari private mode compatibility
+    }
+  }
+
+  /// Clear stored user ID
+  Future<void> clearUserId() async {
+    try {
+      if (kIsWeb) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_userIdKey);
+      } else {
+        if (_secureStorage != null) {
+          await _secureStorage.delete(key: _userIdKey);
+        }
+      }
+      debugPrint('✅ [TokenStorage] UserId cleared');
+    } catch (e) {
+      debugPrint('⚠️ [TokenStorage] Failed to clear userId: $e');
+      // Don't throw - be resilient
     }
   }
 }

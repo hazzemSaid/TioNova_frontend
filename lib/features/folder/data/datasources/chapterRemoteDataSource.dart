@@ -82,7 +82,14 @@ class ChapterRemoteDataSource extends IChapterRepository {
       print(
         '📦 [DataSource] FormData created, making POST request to /createchapter...',
       );
-      final response = await _dio.post('/createchapter', data: formData);
+
+      // Chapter creation can take longer due to file processing
+      // Using extended timeout: 2 minutes for this operation
+      final response = await _dio.post(
+        '/createchapter',
+        data: formData,
+        options: Options(receiveTimeout: const Duration(minutes: 2)),
+      );
       print('✅ [DataSource] POST response received: ${response.statusCode}');
 
       return ErrorHandlingUtils.handleApiResponse<void>(
