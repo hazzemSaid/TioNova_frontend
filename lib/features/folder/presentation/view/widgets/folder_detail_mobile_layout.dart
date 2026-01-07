@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -88,16 +89,42 @@ class FolderDetailMobileLayout extends StatelessWidget {
   }
 
   Widget _buildAddChapterButton(BuildContext context, ColorScheme colorScheme) {
+    if (kIsWeb) {
+      debugPrint(
+        'Mobile Debug: kIsWeb=true, skipping mobile add chapter button',
+      );
+      return SliverToBoxAdapter(child: SizedBox(height: horizontalPadding));
+    }
+
+    debugPrint('Mobile Debug: Building _buildAddChapterButton');
+
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
+        debugPrint('Mobile Debug: AuthState type: ${authState.runtimeType}');
+
         final currentUserId = authState is AuthSuccess
             ? authState.user.id
             : null;
-        final isOwner = currentUserId != null && currentUserId == ownerId;
+        final isCurrentUserIdValid =
+            currentUserId != null && currentUserId.isNotEmpty;
+        final isOwnerIdValid = ownerId.isNotEmpty;
+        final isOwner =
+            isCurrentUserIdValid && isOwnerIdValid && currentUserId == ownerId;
+
+        debugPrint('Mobile Debug: currentUserId="$currentUserId"');
+        debugPrint('Mobile Debug: ownerId="$ownerId"');
+        debugPrint('Mobile Debug: isCurrentUserIdValid=$isCurrentUserIdValid');
+        debugPrint('Mobile Debug: isOwnerIdValid=$isOwnerIdValid');
+        debugPrint('Mobile Debug: isOwner=$isOwner');
 
         if (!isOwner) {
+          debugPrint(
+            'Mobile Debug: User is not owner, hiding add chapter button',
+          );
           return SliverToBoxAdapter(child: SizedBox(height: horizontalPadding));
         }
+
+        debugPrint('Mobile Debug: User is owner, showing add chapter button');
 
         return SliverToBoxAdapter(
           child: Padding(

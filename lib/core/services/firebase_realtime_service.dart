@@ -75,28 +75,30 @@ class FirebaseRealtimeService {
 
     final ref = getRef('chapter-creation/$userId');
 
-    return ref.onValue.map((event) {
-      if (event.snapshot.value == null) {
-        print('🔥 [Firebase] No data at path');
-        return <String, dynamic>{};
-      }
+    return ref.onValue
+        .map((event) {
+          if (event.snapshot.value == null) {
+            print('🔥 [Firebase] No data at path');
+            return <String, dynamic>{};
+          }
 
-      print('🔥 [Firebase] Data received: ${event.snapshot.value}');
+          print('🔥 [Firebase] Data received: ${event.snapshot.value}');
 
-      // Firebase returns Map<Object?, Object?>, need to convert
-      final data = event.snapshot.value;
-      if (data is Map) {
-        return Map<String, dynamic>.from(
-          data.map((key, value) => MapEntry(key.toString(), value)),
-        );
-      }
+          // Firebase returns Map<Object?, Object?>, need to convert
+          final data = event.snapshot.value;
+          if (data is Map) {
+            return Map<String, dynamic>.from(
+              data.map((key, value) => MapEntry(key.toString(), value)),
+            );
+          }
 
-      return <String, dynamic>{};
-    }).handleError((error) {
-      print('❌ [Firebase] Stream error: $error');
-      // Return empty map on error to prevent stream from breaking
-      return <String, dynamic>{};
-    });
+          return <String, dynamic>{};
+        })
+        .handleError((error) {
+          print('❌ [Firebase] Stream error: $error');
+          // Return empty map on error to prevent stream from breaking
+          return <String, dynamic>{};
+        });
   }
 
   /// Subscribe to a path with Safari-safe settings
@@ -245,17 +247,21 @@ class FirebaseRealtimeService {
     if (data is List) {
       for (var item in data) {
         if (item != null && item is Map) {
-          result.add(Map<String, dynamic>.from(
-            item.map((key, value) => MapEntry(key.toString(), value)),
-          ));
+          result.add(
+            Map<String, dynamic>.from(
+              item.map((key, value) => MapEntry(key.toString(), value)),
+            ),
+          );
         }
       }
     } else if (data is Map) {
       data.forEach((key, value) {
         if (value != null && value is Map) {
-          result.add(Map<String, dynamic>.from(
-            value.map((k, v) => MapEntry(k.toString(), v)),
-          ));
+          result.add(
+            Map<String, dynamic>.from(
+              value.map((k, v) => MapEntry(k.toString(), v)),
+            ),
+          );
         }
       });
     }

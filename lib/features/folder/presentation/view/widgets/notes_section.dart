@@ -136,7 +136,7 @@ class _NotesSectionState extends State<NotesSection> {
                               final hasFolder = widget.folderId.isNotEmpty;
                               if (hasFolder) {
                                 context.pushNamed(
-                                  'chapter-notes',
+                                  'folder-chapter-notes',
                                   pathParameters: {
                                     'folderId': widget.folderId,
                                     'chapterId': chapterId,

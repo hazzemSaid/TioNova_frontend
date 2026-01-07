@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
@@ -31,10 +32,14 @@ class FolderDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isWeb = screenWidth > 900;
     final isTablet = screenWidth > 600;
     final horizontalPadding = screenWidth * (isTablet ? 0.08 : 0.05);
     final colorScheme = Theme.of(context).colorScheme;
+
+    debugPrint(
+      'FolderDetailScreen Debug: screenWidth=$screenWidth, kIsWeb=$kIsWeb, isTablet=$isTablet',
+    );
+    debugPrint('FolderDetailScreen Debug: ownerId="$ownerId"');
 
     return MultiBlocProvider(
       providers: [
@@ -65,7 +70,7 @@ class FolderDetailScreen extends StatelessWidget {
         },
         child: Scaffold(
           backgroundColor: colorScheme.surface,
-          body: isWeb
+          body: kIsWeb
               ? FolderDetailWebLayout(
                   folderId: folderId,
                   title: title,

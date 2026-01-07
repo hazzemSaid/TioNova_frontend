@@ -57,6 +57,10 @@ class AuthCubit extends Cubit<AuthState> {
         safeEmit(ResetPasswordFailure(failure: failure));
       },
       (user) async {
+        debugPrint(
+          '✅ [AuthCubit.resetPassword] Password reset successful: ${user.email}',
+        );
+        debugPrint('✅ [AuthCubit.resetPassword] User ID: "${user.id}"');
         safeEmit(AuthSuccess(user: user));
       },
     );
@@ -90,6 +94,8 @@ class AuthCubit extends Cubit<AuthState> {
         safeEmit(AuthFailure(failure: failure));
       },
       (user) async {
+        debugPrint('✅ [AuthCubit.googleSignIn] User signed in: ${user.email}');
+        debugPrint('✅ [AuthCubit.googleSignIn] User ID: "${user.id}"');
         safeEmit(AuthSuccess(user: user));
       },
     );
@@ -129,6 +135,8 @@ class AuthCubit extends Cubit<AuthState> {
           debugPrint(
             '✅ [AuthCubit] User authenticated successfully: ${user.email}',
           );
+          debugPrint('✅ [AuthCubit] User ID: "${user.id}"');
+          debugPrint('✅ [AuthCubit] Username: ${user.username}');
           safeEmit(AuthSuccess(user: user));
         },
       );
@@ -210,6 +218,10 @@ class AuthCubit extends Cubit<AuthState> {
         safeEmit(AuthFailure(failure: failure));
       },
       (user) async {
+        debugPrint(
+          '✅ [AuthCubit.verifyEmail] User email verified: ${user.email}',
+        );
+        debugPrint('✅ [AuthCubit.verifyEmail] User ID: "${user.id}"');
         safeEmit(AuthSuccess(user: user));
       },
     );
@@ -224,6 +236,8 @@ class AuthCubit extends Cubit<AuthState> {
         safeEmit(AuthFailure(failure: failure));
       },
       (user) async {
+        debugPrint('✅ [AuthCubit.login] User logged in: ${user.email}');
+        debugPrint('✅ [AuthCubit.login] User ID: "${user.id}"');
         safeEmit(AuthSuccess(user: user));
       },
     );

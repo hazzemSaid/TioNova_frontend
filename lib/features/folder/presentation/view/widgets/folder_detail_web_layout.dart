@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -100,29 +101,62 @@ class FolderDetailWebLayout extends StatelessWidget {
   }
 
   Widget _buildAddChapterButton(BuildContext context, ColorScheme colorScheme) {
+    if (!kIsWeb) {
+      debugPrint('Web Debug: kIsWeb=false, skipping web add chapter button');
+      return const SizedBox.shrink();
+    }
+
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
+        debugPrint('Web Debug: AuthState type: ${authState.runtimeType}');
+
         final currentUserId = authState is AuthSuccess
             ? authState.user.id
             : null;
-        final isOwner = currentUserId != null && currentUserId == ownerId;
+        final isCurrentUserIdValid =
+            currentUserId != null && currentUserId.isNotEmpty;
+        final isOwnerIdValid = ownerId.isNotEmpty;
+        final isOwner =
+            isCurrentUserIdValid && isOwnerIdValid && currentUserId == ownerId;
+
+        debugPrint('Web Debug: currentUserId="$currentUserId"');
+        debugPrint('Web Debug: ownerId="$ownerId"');
+        debugPrint('Web Debug: isCurrentUserIdValid=$isCurrentUserIdValid');
+        debugPrint('Web Debug: isOwnerIdValid=$isOwnerIdValid');
+        debugPrint('Web Debug: isOwner=$isOwner');
 
         if (!isOwner) {
+          debugPrint('Web Debug: User is not owner, hiding add chapter button');
           return const SizedBox.shrink();
         }
+
+        debugPrint('Web Debug: User is owner, showing add chapter button');
 
         return Expanded(
           flex: 1,
           child: GestureDetector(
             onTap: () async {
+              print('Debug: Add chapter button tapped');
               final chapterCubit = context.read<ChapterCubit>();
-              final result = await context.pushNamed(
-                'create-chapter',
-                pathParameters: {'folderId': folderId},
-                extra: {'folderTitle': title, 'chapterCubit': chapterCubit},
-              );
-              if (result == true) {
-                chapterCubit.getChapters(folderId: folderId);
+              try {
+                final result = await context.pushNamed(
+                  'create-chapter',
+                  pathParameters: {'folderId': folderId},
+                  extra: {'folderTitle': title, 'chapterCubit': chapterCubit},
+                );
+                print('Debug: Create chapter result=$result');
+
+                if (result == true) {
+                  print(
+                    'Debug: Chapter created successfully, refreshing chapters list',
+                  );
+                  // Force refresh the chapters list
+                  chapterCubit.getChapters(folderId: folderId);
+                } else {
+                  print('Debug: Chapter creation cancelled or failed');
+                }
+              } catch (e) {
+                print('Debug: Error creating chapter: $e');
               }
             },
             child: Container(

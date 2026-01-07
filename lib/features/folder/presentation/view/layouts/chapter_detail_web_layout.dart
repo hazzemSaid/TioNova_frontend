@@ -145,7 +145,24 @@ class ChapterDetailWebLayout extends StatelessWidget {
                 color: colorScheme.onSurface,
                 size: 24,
               ),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                final router = GoRouter.of(context);
+                if (router.canPop()) {
+                  router.pop();
+                } else {
+                  // When the stack is empty (e.g., deep-linked entry), fall back to parent folder.
+                  // Extract folderId from current route parameters
+                  final folderId = GoRouterState.of(
+                    context,
+                  ).pathParameters['folderId'];
+                  if (folderId != null) {
+                    router.go('/folders/$folderId');
+                  } else {
+                    // Fallback to folders list if no folderId is available
+                    router.go('/folders');
+                  }
+                }
+              },
               style: IconButton.styleFrom(
                 backgroundColor: colorScheme.surfaceContainerHighest,
                 shape: RoundedRectangleBorder(
@@ -276,7 +293,7 @@ class ChapterDetailWebLayout extends StatelessWidget {
 
     if (hasFolder) {
       context.pushNamed(
-        'chapter-notes',
+        'folder-chapter-notes',
         pathParameters: {'folderId': folderId, 'chapterId': chapterId},
         extra: {
           'chapterTitle': chapter.title ?? 'Chapter',

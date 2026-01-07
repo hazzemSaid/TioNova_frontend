@@ -138,17 +138,21 @@ class FirebaseChallengeHelper {
     if (data is List) {
       for (var item in data) {
         if (item != null && item is Map) {
-          result.add(Map<String, dynamic>.from(
-            item.map((key, value) => MapEntry(key.toString(), value)),
-          ));
+          result.add(
+            Map<String, dynamic>.from(
+              item.map((key, value) => MapEntry(key.toString(), value)),
+            ),
+          );
         }
       }
     } else if (data is Map) {
       data.forEach((key, value) {
         if (value != null && value is Map) {
-          result.add(Map<String, dynamic>.from(
-            value.map((k, v) => MapEntry(k.toString(), v)),
-          ));
+          result.add(
+            Map<String, dynamic>.from(
+              value.map((k, v) => MapEntry(k.toString(), v)),
+            ),
+          );
         }
       });
     }
@@ -221,12 +225,15 @@ class FirebaseChallengeHelper {
   /// Write data to a path (Safari-safe)
   static Future<bool> write(String path, dynamic data) async {
     try {
-      await database.ref(path).set(data).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('Firebase write timeout for $path');
-        },
-      );
+      await database
+          .ref(path)
+          .set(data)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Firebase write timeout for $path');
+            },
+          );
       return true;
     } catch (e) {
       print('❌ [FirebaseChallenge] Write error for $path: $e');
@@ -237,12 +244,15 @@ class FirebaseChallengeHelper {
   /// Update data at a path (Safari-safe)
   static Future<bool> update(String path, Map<String, dynamic> data) async {
     try {
-      await database.ref(path).update(data).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('Firebase update timeout for $path');
-        },
-      );
+      await database
+          .ref(path)
+          .update(data)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Firebase update timeout for $path');
+            },
+          );
       return true;
     } catch (e) {
       print('❌ [FirebaseChallenge] Update error for $path: $e');
@@ -253,12 +263,15 @@ class FirebaseChallengeHelper {
   /// Remove data at a path (Safari-safe)
   static Future<bool> remove(String path) async {
     try {
-      await database.ref(path).remove().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('Firebase remove timeout for $path');
-        },
-      );
+      await database
+          .ref(path)
+          .remove()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Firebase remove timeout for $path');
+            },
+          );
       return true;
     } catch (e) {
       print('❌ [FirebaseChallenge] Remove error for $path: $e');

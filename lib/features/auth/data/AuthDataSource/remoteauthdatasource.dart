@@ -35,13 +35,29 @@ class Remoteauthdatasource implements IAuthDataSource {
 
       final response = await dio.get('/profile');
 
+      debugPrint(
+        '🔍 [getCurrentUser] Full response status: ${response.statusCode}',
+      );
+      debugPrint(
+        '🔍 [getCurrentUser] Full response data type: ${response.data.runtimeType}',
+      );
+      debugPrint('🔍 [getCurrentUser] Full response data: ${response.data}');
+
       return ErrorHandlingUtils.handleApiResponse<UserModel>(
         response: response,
         onSuccess: (data) {
+          debugPrint(
+            '🔍 [getCurrentUser] API response data keys: ${data.keys.toList()}',
+          );
           if (data['user'] is Map<String, dynamic>) {
+            debugPrint('🔍 [getCurrentUser] Parsing nested user object');
+            debugPrint(
+              '🔍 [getCurrentUser] User data keys: ${(data['user'] as Map<String, dynamic>).keys.toList()}',
+            );
             return UserModel.fromJson(data['user'] as Map<String, dynamic>);
           } else {
             // Some backends return the user object directly at the root
+            debugPrint('🔍 [getCurrentUser] Parsing user object from root');
             return UserModel.fromJson(data as Map<String, dynamic>);
           }
         },
@@ -93,7 +109,11 @@ class Remoteauthdatasource implements IAuthDataSource {
         );
         debugPrint('✅ [Login] Tokens saved successfully');
 
+        debugPrint('🔍 [Login] API response data keys: ${data.keys.toList()}');
         if (data['user'] is Map<String, dynamic>) {
+          debugPrint(
+            '🔍 [Login] User data keys: ${(data['user'] as Map<String, dynamic>).keys.toList()}',
+          );
           return Right(
             UserModel.fromJson(data['user'] as Map<String, dynamic>),
           );
@@ -183,7 +203,13 @@ class Remoteauthdatasource implements IAuthDataSource {
         );
         debugPrint('✅ [VerifyEmail] Tokens saved successfully');
 
+        debugPrint(
+          '🔍 [VerifyEmail] API response data keys: ${data.keys.toList()}',
+        );
         if (data['user'] is Map<String, dynamic>) {
+          debugPrint(
+            '🔍 [VerifyEmail] User data keys: ${(data['user'] as Map<String, dynamic>).keys.toList()}',
+          );
           return Right(
             UserModel.fromJson(data['user'] as Map<String, dynamic>),
           );
@@ -238,7 +264,13 @@ class Remoteauthdatasource implements IAuthDataSource {
         );
         debugPrint('✅ [ResetPassword] Tokens saved successfully');
 
+        debugPrint(
+          '🔍 [ResetPassword] API response data keys: ${data.keys.toList()}',
+        );
         if (data['user'] is Map<String, dynamic>) {
+          debugPrint(
+            '🔍 [ResetPassword] User data keys: ${(data['user'] as Map<String, dynamic>).keys.toList()}',
+          );
           return Right(
             UserModel.fromJson(data['user'] as Map<String, dynamic>),
           );

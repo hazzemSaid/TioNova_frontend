@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/folder/data/models/ChapterModel.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/utils/folder_detail_view_helper.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_options_bottom_sheet.dart';
 
@@ -26,12 +24,18 @@ class WebChapterCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        final chapterCubit = context.read<ChapterCubit>();
         final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
-        // Use go() on web to ensure URL updates in browser
+        final effectiveFolderId = folderId.isNotEmpty ? folderId : 'unknown';
+        print(
+          'Debug: folderId=$folderId, chapterId=$chapterId, effectiveFolderId=$effectiveFolderId',
+        );
+        // Use go() to ensure URL updates properly in web browser
         context.goNamed(
-          'chapter-detail',
-          pathParameters: {'chapterId': chapterId},
+          'folder-chapter-detail',
+          pathParameters: {
+            'folderId': effectiveFolderId,
+            'chapterId': chapterId,
+          },
           extra: {
             'chapter': chapter,
             'folderColor': folderColor,

@@ -355,22 +355,24 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
     // 1. Listen to challenge status
     final statusPath = 'liveChallenges/$challengeCode/meta/status';
-    _statusSubscription = FirebaseChallengeHelper.getRef(statusPath).onValue.listen((event) {
-      final status = event.snapshot.value as String?;
-      print('ChallengeCubit - Status changed to: $status');
+    _statusSubscription = FirebaseChallengeHelper.getRef(statusPath).onValue
+        .listen((event) {
+          final status = event.snapshot.value as String?;
+          print('ChallengeCubit - Status changed to: $status');
 
-      if (status == 'completed') {
-        print('ChallengeCubit - Challenge completed, showing results');
-        _handleChallengeCompletion();
-      }
-    });
+          if (status == 'completed') {
+            print('ChallengeCubit - Challenge completed, showing results');
+            _handleChallengeCompletion();
+          }
+        });
 
     // 2. Listen to current question index
     final currentQuestionPath =
         'liveChallenges/$challengeCode/current/questionIndex';
-    _currentQuestionSubscription = FirebaseChallengeHelper.getRef(currentQuestionPath)
-        .onValue
-        .listen((event) {
+    _currentQuestionSubscription =
+        FirebaseChallengeHelper.getRef(currentQuestionPath).onValue.listen((
+          event,
+        ) {
           final questionIndex = event.snapshot.value as int?;
           if (questionIndex != null && questionIndex != _currentQuestionIndex) {
             print('ChallengeCubit - Question index changed to: $questionIndex');
@@ -381,33 +383,37 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
     // 3. Listen to questions list
     final questionsPath = 'liveChallenges/$challengeCode/questions';
-    _questionsSubscription = FirebaseChallengeHelper.getRef(questionsPath).onValue.listen((
-      event,
-    ) {
-      final data = event.snapshot.value;
-      if (data != null) {
-        print('ChallengeCubit - Questions data received');
-        _questions = _parseQuestions(data);
-        print('ChallengeCubit - Parsed ${_questions.length} questions');
+    _questionsSubscription = FirebaseChallengeHelper.getRef(questionsPath)
+        .onValue
+        .listen((event) {
+          final data = event.snapshot.value;
+          if (data != null) {
+            print('ChallengeCubit - Questions data received');
+            _questions = _parseQuestions(data);
+            print('ChallengeCubit - Parsed ${_questions.length} questions');
 
-        // Update state with questions
-        if (state is ChallengeStarted) {
-          final currentState = state as ChallengeStarted;
-          safeEmit(currentState.copyWith(questions: _questions));
-        }
-      }
-    });
+            // Update state with questions
+            if (state is ChallengeStarted) {
+              final currentState = state as ChallengeStarted;
+              safeEmit(currentState.copyWith(questions: _questions));
+            }
+          }
+        });
 
     // 4. Listen to rankings/leaderboard
     final rankingsPath = 'liveChallenges/$challengeCode/rankings';
-    _rankingsSubscription = FirebaseChallengeHelper.getRef(rankingsPath).onValue.listen((event) {
-      final data = event.snapshot.value;
-      if (data != null) {
-        print('ChallengeCubit - Rankings data received');
-        final rankings = _parseRankings(data);
-        updateLeaderboard(challengeId: challengeCode, leaderboard: rankings);
-      }
-    });
+    _rankingsSubscription = FirebaseChallengeHelper.getRef(rankingsPath).onValue
+        .listen((event) {
+          final data = event.snapshot.value;
+          if (data != null) {
+            print('ChallengeCubit - Rankings data received');
+            final rankings = _parseRankings(data);
+            updateLeaderboard(
+              challengeId: challengeCode,
+              leaderboard: rankings,
+            );
+          }
+        });
 
     print('ChallengeCubit - All Firebase listeners set up successfully');
   }
@@ -452,26 +458,27 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   void _handleChallengeCompletion() {
     if (_currentChallengeCode != null) {
       // Fetch final rankings using Safari-compatible helper
-      FirebaseChallengeHelper.getOnce('liveChallenges/$_currentChallengeCode/rankings')
-          .then((snapshot) {
-            if (snapshot == null) return;
-            final data = snapshot.value;
-            final rankings = _parseRankings(data);
+      FirebaseChallengeHelper.getOnce(
+        'liveChallenges/$_currentChallengeCode/rankings',
+      ).then((snapshot) {
+        if (snapshot == null) return;
+        final data = snapshot.value;
+        final rankings = _parseRankings(data);
 
-            // Find current user's rank and score
-            // This would need user ID to find their specific data
-            safeEmit(
-              ChallengeCompleted(
-                challengeId: _currentChallengeCode!,
-                finalScore: 0, // Will be updated with actual score
-                correctAnswers: 0,
-                totalQuestions: _questions.length,
-                accuracy: 0.0,
-                rank: 0,
-                leaderboard: rankings,
-              ),
-            );
-          });
+        // Find current user's rank and score
+        // This would need user ID to find their specific data
+        safeEmit(
+          ChallengeCompleted(
+            challengeId: _currentChallengeCode!,
+            finalScore: 0, // Will be updated with actual score
+            correctAnswers: 0,
+            totalQuestions: _questions.length,
+            accuracy: 0.0,
+            rank: 0,
+            leaderboard: rankings,
+          ),
+        );
+      });
     }
   }
 
