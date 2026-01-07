@@ -22,134 +22,201 @@ class WebChapterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return GestureDetector(
-      onTap: () {
-        final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
-        final effectiveFolderId = folderId.isNotEmpty ? folderId : 'unknown';
-        print(
-          'Debug: folderId=$folderId, chapterId=$chapterId, effectiveFolderId=$effectiveFolderId',
-        );
-        // Use go() to ensure URL updates properly in web browser
-        context.goNamed(
-          'folder-chapter-detail',
-          pathParameters: {
-            'folderId': effectiveFolderId,
-            'chapterId': chapterId,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth;
+
+        // Responsive sizing based on available width
+        final isCompact = cardWidth < 350;
+        final padding = isCompact ? 16.0 : 24.0;
+        final titleSize = isCompact ? 16.0 : 20.0;
+        final descriptionSize = isCompact ? 13.0 : 15.0;
+        final statusPaddingH = isCompact ? 8.0 : 12.0;
+        final statusPaddingV = isCompact ? 4.0 : 6.0;
+        final buttonPaddingH = isCompact ? 8.0 : 12.0;
+        final buttonPaddingV = isCompact ? 6.0 : 9.0;
+        final iconSize = isCompact ? 12.0 : 16.0;
+
+        return GestureDetector(
+          onTap: () {
+            final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
+            final effectiveFolderId = folderId.isNotEmpty
+                ? folderId
+                : 'unknown';
+            print(
+              'Debug: folderId=$folderId, chapterId=$chapterId, effectiveFolderId=$effectiveFolderId',
+            );
+            // Use go() to ensure URL updates properly in web browser
+            context.goNamed(
+              'folder-chapter-detail',
+              pathParameters: {
+                'folderId': effectiveFolderId,
+                'chapterId': chapterId,
+              },
+              extra: {
+                'chapter': chapter,
+                'folderColor': folderColor,
+                'folderOwnerId': ownerId,
+                'folderId': folderId, // Optional for quiz routes
+              },
+            );
           },
-          extra: {
-            'chapter': chapter,
-            'folderColor': folderColor,
-            'folderOwnerId': ownerId,
-            'folderId': folderId, // Optional for quiz routes
+          onLongPress: () {
+            ChapterOptionsBottomSheet(
+              chapter: chapter,
+              folderId: folderId,
+              folderOwnerId: ownerId,
+            ).show(context);
           },
-        );
-      },
-      onLongPress: () {
-        ChapterOptionsBottomSheet(
-          chapter: chapter,
-          folderId: folderId,
-          folderOwnerId: ownerId,
-        ).show(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outline),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+          child: Container(
+            padding: EdgeInsets.all(padding),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: colorScheme.outline.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.shadow.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        chapter.title ?? 'Untitled Chapter',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildStatusChip(
+                      chapter.quizStatus ?? 'Not Taken',
+                      colorScheme,
+                      statusPaddingH,
+                      statusPaddingV,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Expanded(
                   child: Text(
-                    chapter.title ?? 'Untitled Chapter',
+                    chapter.description ?? 'No description available',
                     style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: descriptionSize,
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
                     ),
-                    maxLines: 1,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 12),
-                _buildStatusChip(
-                  chapter.quizStatus ?? 'Not Taken',
-                  colorScheme,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Text(
-                chapter.description ?? 'No description available',
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Created ${FolderDetailViewHelper.formatDate(chapter.createdAt)}',
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            FolderDetailViewHelper.formatDate(
+                              chapter.createdAt,
+                            ),
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-                if (chapter.summaryId != null)
-                  _buildWebActionButton(context, 'Summary', Icons.summarize),
-                const SizedBox(width: 8),
-                _buildWebActionButton(context, 'Quiz', Icons.quiz),
-                const SizedBox(width: 8),
-                _buildWebActionButton(
-                  context,
-                  'Chat',
-                  Icons.chat_bubble_outline,
+                    if (chapter.summaryId != null)
+                      _buildWebActionButton(
+                        context,
+                        'Summary',
+                        Icons.summarize,
+                        buttonPaddingH,
+                        buttonPaddingV,
+                        iconSize,
+                      ),
+                    _buildWebActionButton(
+                      context,
+                      'Quiz',
+                      Icons.quiz,
+                      buttonPaddingH,
+                      buttonPaddingV,
+                      iconSize,
+                    ),
+                    _buildWebActionButton(
+                      context,
+                      'Chat',
+                      Icons.chat_bubble_outline,
+                      buttonPaddingH,
+                      buttonPaddingV,
+                      iconSize,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildStatusChip(String status, ColorScheme colorScheme) {
+  Widget _buildStatusChip(
+    String status,
+    ColorScheme colorScheme,
+    double paddingH,
+    double paddingV,
+  ) {
     final color = FolderDetailViewHelper.getStatusColor(status, colorScheme);
     final icon = FolderDetailViewHelper.getStatusIcon(status);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: paddingH, vertical: paddingV),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.4), width: 1),
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.5), width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
           Text(
             status,
             style: TextStyle(
               color: color,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
+              letterSpacing: 0.3,
             ),
           ),
         ],
@@ -161,28 +228,39 @@ class WebChapterCard extends StatelessWidget {
     BuildContext context,
     String label,
     IconData icon,
+    double paddingH,
+    double paddingV,
+    double iconSize,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: colorScheme.onSurface, size: 14),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: colorScheme.onSurface,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+    return InkWell(
+      onTap: () {
+        // Handle action button tap
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: paddingH, vertical: 12),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceVariant.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: colorScheme.onSurface, size: iconSize),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.1,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

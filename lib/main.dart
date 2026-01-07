@@ -1,9 +1,7 @@
 // // main.dart
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/core/init/app_initializer.dart';
 
 Future<void> main() async {

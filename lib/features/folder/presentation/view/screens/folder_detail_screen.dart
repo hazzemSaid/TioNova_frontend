@@ -70,7 +70,7 @@ class FolderDetailScreen extends StatelessWidget {
         },
         child: Scaffold(
           backgroundColor: colorScheme.surface,
-          body: kIsWeb
+          body: (kIsWeb && screenWidth > 1000)
               ? FolderDetailWebLayout(
                   folderId: folderId,
                   title: title,

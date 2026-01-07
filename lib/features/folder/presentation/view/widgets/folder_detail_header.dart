@@ -115,10 +115,10 @@ class FolderDetailWebHeader extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 32,
+        top: MediaQuery.of(context).padding.top + 20,
         left: effectivePadding,
         right: effectivePadding,
-        bottom: 32,
+        bottom: 20,
       ),
       child: Row(
         children: [

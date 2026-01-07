@@ -36,9 +36,9 @@ class FolderDetailWebLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    const maxWidth = 1400.0;
+    const maxWidth = 1600.0;
     final horizontalPadding = (screenWidth - maxWidth) / 2;
-    final effectivePadding = horizontalPadding > 0 ? horizontalPadding : 40.0;
+    final effectivePadding = horizontalPadding > 0 ? horizontalPadding : 24.0;
     final colorScheme = Theme.of(context).colorScheme;
 
     return ScrollConfiguration(
@@ -56,45 +56,41 @@ class FolderDetailWebLayout extends StatelessWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: effectivePadding),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
                 children: [
-                  Expanded(
-                    flex: 3,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: FolderStatCard(
-                            title: 'Chapters',
-                            value: chaptersCount.toString(),
-                          ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FolderStatCard(
+                          title: 'Chapters',
+                          value: chaptersCount.toString(),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: FolderStatCard(
-                            title: 'Passed',
-                            value: passed.toString(),
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FolderStatCard(
+                          title: 'Passed',
+                          value: passed.toString(),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: FolderStatCard(
-                            title: 'Attempted',
-                            value: attempted.toString(),
-                          ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FolderStatCard(
+                          title: 'Attempted',
+                          value: attempted.toString(),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 24),
+                  const SizedBox(height: 16),
                   _buildAddChapterButton(context, colorScheme),
                 ],
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
           _buildChaptersGrid(effectivePadding, colorScheme),
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ),
     );
@@ -132,9 +128,9 @@ class FolderDetailWebLayout extends StatelessWidget {
 
         debugPrint('Web Debug: User is owner, showing add chapter button');
 
-        return Expanded(
-          flex: 1,
-          child: GestureDetector(
+        return SizedBox(
+          width: double.infinity,
+          child: InkWell(
             onTap: () async {
               print('Debug: Add chapter button tapped');
               final chapterCubit = context.read<ChapterCubit>();
@@ -159,25 +155,31 @@ class FolderDetailWebLayout extends StatelessWidget {
                 print('Debug: Error creating chapter: $e');
               }
             },
+            borderRadius: BorderRadius.circular(16),
             child: Container(
-              height: 80,
+              height: 60,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: color.withOpacity(0.3), width: 2),
+                border: Border.all(
+                  color: color.withOpacity(0.4),
+                  width: 2,
+                  strokeAlign: BorderSide.strokeAlignInside,
+                ),
               ),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.add_circle_outline, color: color, size: 20),
-                    const SizedBox(width: 8),
+                    Icon(Icons.add_circle_outline, color: color, size: 24),
+                    const SizedBox(width: 12),
                     Text(
-                      'Add Chapter',
+                      'Add New Chapter',
                       style: TextStyle(
                         color: color,
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ],
@@ -195,20 +197,39 @@ class FolderDetailWebLayout extends StatelessWidget {
       builder: (context, state) {
         final chapters = state.chapters;
         final isLoading = state is ChapterLoading;
+        final screenWidth = MediaQuery.of(context).size.width;
+
+        // Responsive column count based on screen width
+        int crossAxisCount;
+        double childAspectRatio;
+        print('Web Debug: screenWidth=$screenWidth');
+        if (screenWidth >= 1400) {
+          crossAxisCount = 2;
+          childAspectRatio = 2.7;
+        } else if (screenWidth >= 1200) {
+          crossAxisCount = 2;
+          childAspectRatio = 2;
+        } else if (screenWidth >= 1100) {
+          crossAxisCount = 2;
+          childAspectRatio = 1.6;
+        } else {
+          crossAxisCount = 2;
+          childAspectRatio = 2.2;
+        }
 
         if (isLoading && chapters == null) {
           return SliverPadding(
             padding: EdgeInsets.symmetric(horizontal: effectivePadding),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 20,
-                crossAxisSpacing: 20,
-                childAspectRatio: 2.5,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 24,
+                crossAxisSpacing: 24,
+                childAspectRatio: childAspectRatio,
               ),
               delegate: SliverChildBuilderDelegate(
                 (ctx, idx) => const FolderChapterWebShimmer(),
-                childCount: 4,
+                childCount: 6,
               ),
             ),
           );
@@ -216,11 +237,11 @@ class FolderDetailWebLayout extends StatelessWidget {
           return SliverPadding(
             padding: EdgeInsets.symmetric(horizontal: effectivePadding),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 20,
-                crossAxisSpacing: 20,
-                childAspectRatio: 2.5,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 90,
+                crossAxisSpacing: 90,
+                childAspectRatio: childAspectRatio,
               ),
               delegate: SliverChildBuilderDelegate((ctx, idx) {
                 final chapter = chapters[idx];
@@ -235,19 +256,32 @@ class FolderDetailWebLayout extends StatelessWidget {
           );
         } else if (state is ChapterError) {
           return SliverFillRemaining(
+            hasScrollBody: false,
             child: Center(
-              child: Text(
-                'Failed to load chapters: ${state.message}',
-                style: TextStyle(color: colorScheme.error),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: effectivePadding),
+                child: Text(
+                  'Failed to load chapters: ${state.message}',
+                  style: TextStyle(color: colorScheme.error, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           );
         } else {
           return SliverFillRemaining(
+            hasScrollBody: false,
             child: Center(
-              child: Text(
-                'No chapters found',
-                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: effectivePadding),
+                child: Text(
+                  'No chapters found',
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           );

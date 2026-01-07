@@ -505,8 +505,18 @@ class AppRouter {
             GoRoute(
               path: '/challenges',
               name: 'challenges',
-              builder: (context, state) => BlocProvider<ChallengeCubit>(
-                create: (context) => getIt<ChallengeCubit>(),
+              builder: (context, state) => MultiBlocProvider(
+                providers: [
+                  BlocProvider<ChallengeCubit>(
+                    create: (context) => getIt<ChallengeCubit>(),
+                  ),
+                  BlocProvider<FolderCubit>(
+                    create: (context) => getIt<FolderCubit>(),
+                  ),
+                  BlocProvider<ChapterCubit>(
+                    create: (context) => getIt<ChapterCubit>(),
+                  ),
+                ],
                 child: const ChallangeScreen(),
               ),
             ),
