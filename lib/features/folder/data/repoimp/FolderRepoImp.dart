@@ -2,7 +2,7 @@ import 'package:either_dart/src/either.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/features/folder/data/datasources/FolderRemoteDataSource.dart';
 import 'package:tionova/features/folder/data/models/foldermodel.dart';
-import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
+import 'package:tionova/features/chapter/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 
 class FolderRepoImp implements IFolderRepository {

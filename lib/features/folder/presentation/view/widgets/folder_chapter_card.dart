@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/features/folder/data/models/ChapterModel.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/utils/folder_detail_view_helper.dart';
-import 'package:tionova/features/folder/presentation/view/widgets/chapter_action_button.dart';
+import 'package:tionova/features/chapter/presentation/view/widgets/chapter_action_button.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_options_bottom_sheet.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_status_chip.dart';
 

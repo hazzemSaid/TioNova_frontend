@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/date_formatter.dart';
-import 'package:tionova/features/folder/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
 import 'package:tionova/features/home/presentation/view/widgets/SectionHeader.dart';
 import 'package:tionova/features/home/presentation/view/widgets/enhanced_chapter_card.dart';
 

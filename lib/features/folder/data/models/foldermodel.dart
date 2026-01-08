@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
+import 'package:tionova/features/chapter/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 
 class Foldermodel extends Equatable {

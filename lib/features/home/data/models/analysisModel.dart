@@ -36,10 +36,10 @@
     "cached": false
 }*/
 import 'package:equatable/equatable.dart';
-import 'package:tionova/features/folder/data/models/ChapterModel.dart';
-import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
 import 'package:tionova/features/folder/data/models/foldermodel.dart';
-import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
+import 'package:tionova/features/chapter/data/models/mindmapmodel.dart';
 
 class ProfileModel extends Equatable {
   final int streak;

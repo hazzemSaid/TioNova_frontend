@@ -1,6 +1,6 @@
 // features/folder/presentation/view/widgets/folder_card.dart
 import 'package:flutter/material.dart';
-import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
+import 'package:tionova/features/chapter/data/models/ShareWithmodel.dart';
 
 class FolderCard extends StatelessWidget {
   final String title;

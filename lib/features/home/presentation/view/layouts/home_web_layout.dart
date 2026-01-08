@@ -1,8 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/features/folder/data/models/ChapterModel.dart';
-import 'package:tionova/features/folder/data/models/SummaryModel.dart';
-import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
+import 'package:tionova/features/chapter/data/models/mindmapmodel.dart';
 import 'package:tionova/features/home/data/models/analysisModel.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 

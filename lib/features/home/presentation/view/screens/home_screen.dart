@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
-import 'package:tionova/features/folder/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysiscubit.dart';
 import 'package:tionova/features/home/presentation/bloc/Analysisstate.dart';
 import 'package:tionova/features/home/presentation/view/layouts/home_web_layout.dart';

@@ -5,7 +5,7 @@ import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/features/folder/data/models/foldermodel.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/widgets/custom_dialogs.dart';

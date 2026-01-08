@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_chapter_shimmer.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_detail_header.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_stat_card.dart';

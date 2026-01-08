@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:tionova/features/folder/data/models/SummaryModel.dart';
+import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
 
 /// Wrapper class to hold cached summary with metadata
 class CachedSummaryData {

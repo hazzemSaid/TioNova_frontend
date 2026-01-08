@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/features/folder/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/status_badge.dart';
 
 class ChapterPreviewSection extends StatelessWidget {

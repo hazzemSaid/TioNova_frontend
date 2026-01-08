@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/auth/data/services/token_storage.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_detail_mobile_layout.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_detail_web_layout.dart';

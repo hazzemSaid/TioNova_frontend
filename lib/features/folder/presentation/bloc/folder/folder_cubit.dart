@@ -5,7 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/safe_emit.dart';
-import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
+import 'package:tionova/features/chapter/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
