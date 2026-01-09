@@ -563,24 +563,6 @@ class ChapterRemoteDataSource extends IChapterRepository {
   }
 
   @override
-  Future<Either<Failure, Mindmapmodel>> getMindmap({
-    required String chapterId,
-  }) async {
-    try {
-      final response = await _dio.get('/getMindmap/$chapterId');
-
-      return ErrorHandlingUtils.handleApiResponse<Mindmapmodel>(
-        response: response,
-        onSuccess: (data) {
-          return Mindmapmodel.fromJson(data['data']);
-        },
-      );
-    } catch (e) {
-      return ErrorHandlingUtils.handleDioError(e);
-    }
-  }
-
-  @override
   Future<Either<Failure, void>> updateChapter({
     required String chapterId,
     String? title,

@@ -9,6 +9,17 @@ abstract class MindmapState extends Equatable {
 
 class MindmapInitial extends MindmapState {}
 
+class MindmapLoading extends MindmapState {}
+
+class MindmapError extends MindmapState {
+  final String message;
+
+  const MindmapError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class MindmapLoaded extends MindmapState {
   final Mindmapmodel mindmap;
   final NodeModel? selectedNode;

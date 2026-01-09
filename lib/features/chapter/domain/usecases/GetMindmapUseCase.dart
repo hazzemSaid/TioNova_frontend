@@ -11,6 +11,6 @@ class GetMindmapUseCase {
   Future<Either<Failure, Mindmapmodel>> call({
     required String chapterId,
   }) async {
-    return await repository.getMindmap(chapterId: chapterId);
+    return await repository.createMindmap(chapterId: chapterId);
   }
 }

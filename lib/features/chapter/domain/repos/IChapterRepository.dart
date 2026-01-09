@@ -30,6 +30,7 @@ abstract class IChapterRepository {
   Future<Either<Failure, Mindmapmodel>> createMindmap({
     required String chapterId,
   });
+
   Future<Either<Failure, List<Notemodel>>> getNotesByChapterId({
     required String chapterId,
   });
@@ -45,7 +46,6 @@ abstract class IChapterRepository {
     Map<String, dynamic>? rawData,
   });
 
-  Future<Either<Failure, Mindmapmodel>> getMindmap({required String chapterId});
   Future<Either<Failure, SummaryResponse>> getChapterSummary({
     required String chapterId,
   });

@@ -33,35 +33,35 @@ import 'package:tionova/features/challenges/domain/usecase/joinLiveChallengeusec
 import 'package:tionova/features/challenges/domain/usecase/startLiveChallengeusecase.dart';
 import 'package:tionova/features/challenges/domain/usecase/submitLiveAnswerusecase.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-import 'package:tionova/features/folder/data/datasources/FolderRemoteDataSource.dart';
 import 'package:tionova/features/chapter/data/datasources/remote/chapterRemoteDataSource.dart';
 import 'package:tionova/features/chapter/data/reposimp/ChapterRepoImpt.dart';
-import 'package:tionova/features/folder/data/repoimp/FolderRepoImp.dart';
 import 'package:tionova/features/chapter/domain/repos/IChapterRepository.dart';
 import 'package:tionova/features/chapter/domain/usecases/AddnoteUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/CreateChapterUseCase.dart';
-import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/DeleteChapterUseCase.dart';
-import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/DeleteNoteUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/GenerateSmartNodeUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/GenerateSummaryUseCase.dart';
-import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/GetChaperContentPdfUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/GetChapterSummaryUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/GetChaptersUserCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/GetMindmapUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/GetNotesByChapterIdUseCase.dart';
-import 'package:tionova/features/folder/domain/usecases/GetPublicFoldersUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/SaveMindmapUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/UpdateChapterUseCase.dart';
-import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/UpdateNoteUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/createMindmapUseCase.dart';
-import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/chapter/presentation/bloc/mindmap/mindmap_cubit.dart';
+import 'package:tionova/features/folder/data/datasources/FolderRemoteDataSource.dart';
+import 'package:tionova/features/folder/data/repoimp/FolderRepoImp.dart';
+import 'package:tionova/features/folder/domain/usecases/CreateFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/DeleteFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetAllFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/GetPublicFoldersUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/UpdateFolderUseCase.dart';
+import 'package:tionova/features/folder/domain/usecases/getAvailableUsersForShareUseCase.dart';
+import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/features/home/data/datasource/analysis_remote_datasource.dart';
 import 'package:tionova/features/home/data/repoImp/analysis_repo_imp.dart';
 import 'package:tionova/features/home/domain/usecases/analysisusecase.dart';
@@ -468,6 +468,7 @@ Future<void> setupServiceLocator() async {
     () => MindmapCubit(
       generateSmartNodeUseCase: getIt<GenerateSmartNodeUseCase>(),
       saveMindmapUseCase: getIt<SaveMindmapUseCase>(),
+      getMindmapUseCase: getIt<GetMindmapUseCase>(),
     ),
   );
 

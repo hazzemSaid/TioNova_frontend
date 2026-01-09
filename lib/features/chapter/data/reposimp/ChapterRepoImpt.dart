@@ -59,6 +59,13 @@ class ChapterRepoImpl extends IChapterRepository {
   }
 
   @override
+  Future<Either<Failure, Mindmapmodel>> getMindmap({
+    required String chapterId,
+  }) {
+    return remoteDataSource.createMindmap(chapterId: chapterId);
+  }
+
+  @override
   //getNotesByChapterId
   Future<Either<Failure, List<Notemodel>>> getNotesByChapterId({
     required String chapterId,
@@ -83,13 +90,6 @@ class ChapterRepoImpl extends IChapterRepository {
   @override
   Future<Either<Failure, void>> deleteNote({required String noteId}) {
     return remoteDataSource.deleteNote(noteId: noteId);
-  }
-
-  @override
-  Future<Either<Failure, Mindmapmodel>> getMindmap({
-    required String chapterId,
-  }) async {
-    return await remoteDataSource.getMindmap(chapterId: chapterId);
   }
 
   @override

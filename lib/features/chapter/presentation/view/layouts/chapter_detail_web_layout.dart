@@ -1,7 +1,7 @@
 // features/folder/presentation/view/layouts/chapter_detail_web_layout.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+import 'package:tionova/core/navigation/navigation_utils.dart';
 import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
 import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
@@ -89,7 +89,7 @@ class ChapterDetailWebLayout extends StatelessWidget {
                               (chapter.summaryId?.isNotEmpty ?? false),
                           onAction:
                               (summaryData != null || rawSummaryText != null)
-                              ? onViewSummary
+                              ? () => _openSummary(context)
                               : onGenerateSummary,
                           onDownload: onDownloadPDF,
                         ),
@@ -139,36 +139,9 @@ class ChapterDetailWebLayout extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(padding, 32, padding, 24),
         child: Row(
           children: [
-            IconButton(
-              icon: Icon(
-                Icons.arrow_back,
-                color: colorScheme.onSurface,
-                size: 24,
-              ),
-              onPressed: () {
-                final router = GoRouter.of(context);
-                if (router.canPop()) {
-                  router.pop();
-                } else {
-                  // When the stack is empty (e.g., deep-linked entry), fall back to parent folder.
-                  // Extract folderId from current route parameters
-                  final folderId = GoRouterState.of(
-                    context,
-                  ).pathParameters['folderId'];
-                  if (folderId != null) {
-                    router.go('/folders/$folderId');
-                  } else {
-                    // Fallback to folders list if no folderId is available
-                    router.go('/folders');
-                  }
-                }
-              },
-              style: IconButton.styleFrom(
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+            ContextAwareBackNavigation.createStyledBackButton(
+              context,
+              iconColor: colorScheme.onSurface,
             ),
             const SizedBox(width: 16),
             Text(
@@ -206,7 +179,7 @@ class ChapterDetailWebLayout extends StatelessWidget {
             actionIcon: (chapter.mindmapId?.isNotEmpty ?? false
                 ? Icons.visibility_outlined
                 : Icons.account_tree_rounded),
-            onAction: onGenerateMindmap,
+            onAction: () => _openMindmap(context),
             isLoading: isMindmapLoading,
           ),
         ),
@@ -287,32 +260,39 @@ class ChapterDetailWebLayout extends StatelessWidget {
   }
 
   void _openNotes(BuildContext context) {
-    final folderId = chapter.folderId;
-    final hasFolder = folderId != null && folderId.isNotEmpty;
-    final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
+    ContextAwareNavigator.navigateToChapterSubScreen(
+      context,
+      subScreen: 'notes',
+      extra: {
+        'chapterTitle': chapter.title ?? 'Chapter',
+        'accentColor': folderColor,
+        'chapterCubit': context.read<ChapterCubit>(),
+        'folderOwnerId': folderOwnerId,
+      },
+    );
+  }
 
-    if (hasFolder) {
-      context.pushNamed(
-        'folder-chapter-notes',
-        pathParameters: {'folderId': folderId, 'chapterId': chapterId},
-        extra: {
-          'chapterTitle': chapter.title ?? 'Chapter',
-          'accentColor': folderColor,
-          'chapterCubit': context.read<ChapterCubit>(),
-          'folderOwnerId': folderOwnerId,
-        },
-      );
-    } else {
-      context.pushNamed(
-        'chapter-notes',
-        pathParameters: {'chapterId': chapterId},
-        extra: {
-          'chapterTitle': chapter.title ?? 'Chapter',
-          'accentColor': folderColor,
-          'chapterCubit': context.read<ChapterCubit>(),
-          'folderOwnerId': folderOwnerId,
-        },
-      );
-    }
+  void _openSummary(BuildContext context) {
+    ContextAwareNavigator.navigateToChapterSubScreen(
+      context,
+      subScreen: 'summary',
+      extra: {
+        'summaryData': summaryData,
+        'chapterTitle': chapter.title ?? 'Chapter',
+        'accentColor': folderColor,
+        'chapterCubit': context.read<ChapterCubit>(),
+      },
+    );
+  }
+
+  void _openMindmap(BuildContext context) {
+    ContextAwareNavigator.navigateToChapterSubScreen(
+      context,
+      subScreen: 'mindmap',
+      extra: {
+        'mindmap': null, // This should be passed from the parent or fetched
+        'chapterCubit': context.read<ChapterCubit>(),
+      },
+    );
   }
 }

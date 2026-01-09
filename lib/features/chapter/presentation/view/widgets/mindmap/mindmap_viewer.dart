@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:tionova/core/utils/safe_navigation.dart';
+import 'package:tionova/core/navigation/navigation_utils.dart';
 import 'package:tionova/features/chapter/data/models/mindmapmodel.dart';
 import 'package:tionova/features/chapter/data/models/nodeModel.dart';
 import 'package:tionova/features/chapter/presentation/bloc/mindmap/mindmap_cubit.dart';
@@ -411,13 +411,10 @@ class _MindmapViewerState extends State<MindmapViewer>
           backgroundColor: const Color(0xFF0A0E27),
           appBar: AppBar(
             backgroundColor: const Color(0xFF0A0E27),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => context.safePop(
-                folderId: widget.folderId,
-                chapterId: widget.chapterId,
-                fallback: '/',
-              ),
+            leading: ContextAwareBackNavigation.createStyledBackButton(
+              context,
+              iconColor: Colors.white,
+              backgroundColor: const Color(0xFF1A1F3A),
             ),
             title: Row(
               children: [

@@ -6,6 +6,7 @@ import 'package:tionova/features/chapter/data/models/mindmapmodel.dart';
 import 'package:tionova/features/chapter/data/models/new_node_model.dart';
 import 'package:tionova/features/chapter/data/models/nodeModel.dart';
 import 'package:tionova/features/chapter/domain/usecases/GenerateSmartNodeUseCase.dart';
+import 'package:tionova/features/chapter/domain/usecases/GetMindmapUseCase.dart';
 import 'package:tionova/features/chapter/domain/usecases/SaveMindmapUseCase.dart';
 
 part 'mindmap_state.dart';
@@ -13,20 +14,61 @@ part 'mindmap_state.dart';
 class MindmapCubit extends Cubit<MindmapState> {
   final GenerateSmartNodeUseCase? generateSmartNodeUseCase;
   final SaveMindmapUseCase? saveMindmapUseCase;
+  final GetMindmapUseCase? getMindmapUseCase;
 
   // Store current mindmap for reference during operations
   Mindmapmodel? _currentMindmap;
   String? _currentChapterId;
   Map<String, Offset> _nodePositions = {};
 
-  MindmapCubit({this.generateSmartNodeUseCase, this.saveMindmapUseCase})
-    : super(MindmapInitial());
+  MindmapCubit({
+    this.generateSmartNodeUseCase,
+    this.saveMindmapUseCase,
+    this.getMindmapUseCase,
+  }) : super(MindmapInitial());
 
   /// Getter for current mindmap
   Mindmapmodel? get currentMindmap => _currentMindmap;
 
   /// Getter for current chapter ID
   String? get currentChapterId => _currentChapterId;
+
+  /// Fetch mindmap from API
+  Future<void> fetchMindmap(String chapterId) async {
+    print('🔄 [MindmapCubit] fetchMindmap() called for chapter: $chapterId');
+
+    if (getMindmapUseCase == null) {
+      print('❌ [MindmapCubit] GetMindmapUseCase not available');
+      safeEmit(MindmapError('Mindmap functionality not available'));
+      return;
+    }
+
+    // Set loading state
+    safeEmit(MindmapLoading());
+    _currentChapterId = chapterId;
+
+    final result = await getMindmapUseCase!(chapterId: chapterId);
+
+    result.fold(
+      (failure) {
+        print('❌ [MindmapCubit] fetchMindmap failed: ${failure.errMessage}');
+        safeEmit(MindmapError(failure.errMessage));
+      },
+      (mindmap) {
+        print('✅ [MindmapCubit] fetchMindmap success');
+        print('📥 Loaded mindmap with ${mindmap.nodes?.length ?? 0} nodes');
+        _currentMindmap = mindmap;
+        _currentChapterId = chapterId;
+        safeEmit(
+          MindmapLoaded(
+            mindmap: mindmap,
+            selectedNode: null,
+            nodePositions: _nodePositions,
+          ),
+        );
+      },
+    );
+  }
 
   void loadMindmap(Mindmapmodel mindmap, {String? chapterId}) {
     _currentMindmap = mindmap;
