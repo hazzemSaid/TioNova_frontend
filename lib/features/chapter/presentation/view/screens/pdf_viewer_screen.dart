@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/pdf_viewer/file_helper.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/pdf_viewer/web_pdf_viewer.dart';
@@ -13,11 +14,13 @@ import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
 class PDFViewerScreen extends StatefulWidget {
   final String chapterId;
+  final String? folderId;
   final String chapterTitle;
 
   const PDFViewerScreen({
     super.key,
     required this.chapterId,
+    this.folderId,
     required this.chapterTitle,
   });
 
@@ -45,7 +48,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
         setState(() {
           _isInitialized = true;
         });
-        // _loadPDF();
+        _downloadPDFFromAPIForViewing();
       }
     });
   }
@@ -300,7 +303,11 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.safePop(
+              folderId: widget.folderId,
+              chapterId: widget.chapterId,
+              fallback: '/',
+            ),
           ),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,8 +556,7 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
             SizedBox(
               width: isTablet ? 200 : 160,
               child: GestureDetector(
-                // onTap: _loadPDF,
-                onTap: () {},
+                onTap: _downloadPDFFromAPIForViewing,
                 child: Container(
                   height: isTablet ? 50 : 44,
                   decoration: BoxDecoration(

@@ -14,7 +14,7 @@ import 'package:tionova/features/chapter/data/models/mindmapmodel.dart';
 import 'package:tionova/features/chapter/data/models/new_node_model.dart';
 import 'package:tionova/features/chapter/data/models/nodeModel.dart';
 import 'package:tionova/features/chapter/data/models/smart_node_response.dart';
-import 'package:tionova/features/folder/domain/repo/IChapterRepository.dart';
+import 'package:tionova/features/chapter/domain/repos/IChapterRepository.dart';
 
 class ChapterRemoteDataSource extends IChapterRepository {
   final Dio _dio;

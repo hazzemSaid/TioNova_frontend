@@ -143,11 +143,22 @@ class ChapterDetailAISummaryCard extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.auto_awesome_rounded, size: 18),
+              if (isLoading) ...[
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ] else
+                const Icon(Icons.auto_awesome_rounded, size: 18),
               const SizedBox(width: 8),
               Text(
                 isLoading
-                    ? 'Loading...'
+                    ? 'Generating...'
                     : (hasSummary ? 'View Summary' : 'Generate Summary'),
                 style: const TextStyle(
                   fontSize: 14,

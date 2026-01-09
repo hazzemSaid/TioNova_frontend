@@ -46,7 +46,7 @@ class ChapterDetailStatsCard extends StatelessWidget {
           _buildStatItem(
             colorScheme,
             'Success Rate',
-            '${attempted > 0 ? ((passed / attempted) * 100).toStringAsFixed(0) : 0}%',
+            '${attempted > 0 ? ((passed / attempted)).toStringAsFixed(0) : 0}%',
             Icons.trending_up_rounded,
             Colors.green,
           ),

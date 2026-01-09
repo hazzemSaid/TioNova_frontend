@@ -18,7 +18,7 @@ class AddNoteBottomSheet extends StatefulWidget {
   final String chapterId;
   final Color accentColor;
   final VoidCallback onNoteAdded;
-  final String? initialNoteType; // 'text', 'image', or 'voice'
+  final String? initialNoteType;
 
   const AddNoteBottomSheet({
     super.key,
@@ -141,7 +141,6 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
         _recordingDuration = Duration.zero;
       });
 
-      // Start duration timer
       _updateRecordingDuration();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,23 +169,18 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
 
   Future<void> _stopRecording() async {
     if (isWeb) return;
-
     if (_isRecording && _audioRecorder != null) {
       await _audioRecorder!.stopRecorder();
-      setState(() {
-        _isRecording = false;
-      });
+      setState(() => _isRecording = false);
     }
   }
 
   Future<void> _deleteRecording() async {
     if (_audioPath != null) {
       try {
-        if (!isWeb) {
-          await voice_fs.deleteFile(_audioPath!);
-        }
+        if (!isWeb) await voice_fs.deleteFile(_audioPath!);
       } catch (e) {
-        print('Error deleting recording: $e');
+        debugPrint('Error deleting recording: $e');
       }
       setState(() {
         _audioPath = null;
@@ -269,13 +263,20 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E0E10),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Padding(
@@ -285,22 +286,14 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
-                _buildHeader(),
-
-                // Type Selector
-                _buildTypeSelector(),
-
-                // Title Input
-                _buildTitleInput(),
-
-                // Content based on type
-                _buildContentSection(),
-
-                // Action Buttons
-                _buildActionButtons(),
+                _buildHeader(colorScheme),
+                _buildTypeSelector(colorScheme),
+                _buildTitleInput(colorScheme),
+                _buildContentSection(colorScheme),
+                _buildActionButtons(colorScheme),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -309,74 +302,90 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ColorScheme colorScheme) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: widget.accentColor.withOpacity(0.2),
-            width: 1,
-          ),
+          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
         ),
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: widget.accentColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
+              color: widget.accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              Icons.add_circle_outline,
+              Icons.add_circle_outline_rounded,
               color: widget.accentColor,
-              size: 24,
             ),
           ),
-          const SizedBox(width: 12),
-          const Expanded(
+          const SizedBox(width: 16),
+          Expanded(
             child: Text(
               'Add New Note',
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
+                color: colorScheme.onSurface,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
               ),
             ),
           ),
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(
+              Icons.close_rounded,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTypeSelector() {
+  Widget _buildTypeSelector(ColorScheme colorScheme) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Note Type',
             style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
-              _buildTypeChip('text', 'Text', Icons.text_fields),
-              const SizedBox(width: 8),
-              _buildTypeChip('image', 'Image', Icons.image),
-              const SizedBox(width: 8),
-              _buildTypeChip('voice', 'Voice', Icons.mic),
+              _buildTypeChip(
+                'text',
+                'Text',
+                Icons.text_fields_rounded,
+                colorScheme,
+              ),
+              const SizedBox(width: 12),
+              _buildTypeChip(
+                'image',
+                'Image',
+                Icons.image_rounded,
+                colorScheme,
+              ),
+              const SizedBox(width: 12),
+              _buildTypeChip('voice', 'Voice', Icons.mic_rounded, colorScheme),
             ],
           ),
         ],
@@ -384,40 +393,240 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
     );
   }
 
-  Widget _buildTypeChip(String type, String label, IconData icon) {
+  Widget _buildTypeChip(
+    String type,
+    String label,
+    IconData icon,
+    ColorScheme colorScheme,
+  ) {
     final isSelected = _selectedType == type;
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedType = type;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+        onTap: () => setState(() => _selectedType = type),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             color: isSelected
-                ? widget.accentColor.withOpacity(0.15)
-                : const Color(0xFF1C1C1E),
-            borderRadius: BorderRadius.circular(12),
+                ? widget.accentColor.withOpacity(0.1)
+                : colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? widget.accentColor : Colors.grey[700]!,
-              width: 1.5,
+              color: isSelected
+                  ? widget.accentColor
+                  : colorScheme.outline.withOpacity(0.1),
+              width: 2,
             ),
           ),
           child: Column(
             children: [
               Icon(
                 icon,
-                color: isSelected ? widget.accentColor : Colors.grey[400],
-                size: 24,
+                color: isSelected
+                    ? widget.accentColor
+                    : colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? widget.accentColor : Colors.grey[400],
-                  fontSize: 12,
+                  color: isSelected
+                      ? widget.accentColor
+                      : colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTitleInput(ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Title',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _titleController,
+            style: TextStyle(color: colorScheme.onSurface),
+            decoration: InputDecoration(
+              hintText: 'Enter note title',
+              filled: true,
+              fillColor: colorScheme.surfaceContainerLow,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.all(20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentSection(ColorScheme colorScheme) {
+    switch (_selectedType) {
+      case 'image':
+        return _buildImageSection(colorScheme);
+      case 'voice':
+        return _buildVoiceSection(colorScheme);
+      default:
+        return _buildTextSection(colorScheme);
+    }
+  }
+
+  Widget _buildTextSection(ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Content',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _textController,
+            maxLines: 6,
+            style: TextStyle(color: colorScheme.onSurface),
+            decoration: InputDecoration(
+              hintText: 'Write your note here...',
+              filled: true,
+              fillColor: colorScheme.surfaceContainerLow,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.all(20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageSection(ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Image',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_imageData != null)
+            Container(
+              height: 240,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: widget.accentColor.withOpacity(0.2),
+                  width: 2,
+                ),
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Image.memory(_imageData!, fit: BoxFit.cover),
+                  ),
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: IconButton(
+                      onPressed: () => setState(() {
+                        _imageData = null;
+                        _imageName = null;
+                        _imageSize = null;
+                      }),
+                      icon: const Icon(
+                        Icons.delete_rounded,
+                        color: Colors.white,
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.red.withOpacity(0.8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Row(
+              children: [
+                _buildImageButton(
+                  'Gallery',
+                  Icons.photo_library_rounded,
+                  _pickImage,
+                  colorScheme,
+                ),
+                const SizedBox(width: 12),
+                _buildImageButton(
+                  'Camera',
+                  Icons.camera_alt_rounded,
+                  _takePhoto,
+                  colorScheme,
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageButton(
+    String label,
+    IconData icon,
+    VoidCallback onTap,
+    ColorScheme colorScheme,
+  ) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: widget.accentColor),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -428,374 +637,107 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
     );
   }
 
-  Widget _buildTitleInput() {
+  Widget _buildVoiceSection(ColorScheme colorScheme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Title',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _titleController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Enter note title',
-              hintStyle: TextStyle(color: Colors.grey[600]),
-              filled: true,
-              fillColor: const Color(0xFF1C1C1E),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.all(16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContentSection() {
-    switch (_selectedType) {
-      case 'image':
-        return _buildImageSection();
-      case 'voice':
-        return _buildVoiceSection();
-      case 'text':
-      default:
-        return _buildTextSection();
-    }
-  }
-
-  Widget _buildTextSection() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Content',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _textController,
-            maxLines: 6,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Write your note here...',
-              hintStyle: TextStyle(color: Colors.grey[600]),
-              filled: true,
-              fillColor: const Color(0xFF1C1C1E),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.all(16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageSection() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Image',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (_imageData != null)
-            Container(
-              width: double.infinity,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: widget.accentColor.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.memory(
-                      _imageData!,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _imageData = null;
-                          _imageName = null;
-                          _imageSize = null;
-                        });
-                      },
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            Column(
-              children: [
-                _buildImageButton(
-                  'Pick from Gallery',
-                  Icons.photo_library,
-                  _pickImage,
-                ),
-                const SizedBox(height: 8),
-                _buildImageButton('Take Photo', Icons.camera_alt, _takePhoto),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageButton(String label, IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[700]!, width: 1),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: widget.accentColor),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVoiceSection() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Voice Recording',
             style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
-              borderRadius: BorderRadius.circular(12),
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: _isRecording
-                    ? Colors.red.withOpacity(0.5)
-                    : Colors.grey[700]!,
+                    ? Colors.red.withOpacity(0.3)
+                    : colorScheme.outline.withOpacity(0.1),
                 width: 2,
               ),
             ),
             child: Column(
               children: [
-                if (_isRecording)
-                  Column(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.red.withOpacity(0.2),
-                        ),
-                        child: const Icon(
-                          Icons.mic,
-                          color: Colors.red,
-                          size: 40,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _formatDuration(_recordingDuration),
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Recording...',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ],
-                  )
-                else if (_audioPath != null)
-                  Column(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: widget.accentColor.withOpacity(0.2),
-                        ),
-                        child: Icon(
-                          Icons.check_circle,
-                          color: widget.accentColor,
-                          size: 40,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _formatDuration(_recordingDuration),
-                        style: TextStyle(
-                          color: widget.accentColor,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Recording saved',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ],
-                  )
-                else
-                  Column(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey[800],
-                        ),
-                        child: Icon(
-                          Icons.mic_none,
-                          color: Colors.grey[400],
-                          size: 40,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Ready to record',
-                        style: TextStyle(color: Colors.grey[400], fontSize: 16),
-                      ),
-                    ],
+                if (_isRecording) ...[
+                  _buildPulseIcon(Colors.red),
+                  const SizedBox(height: 24),
+                  Text(
+                    _formatDuration(_recordingDuration),
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                const SizedBox(height: 24),
+                ] else if (_audioPath != null) ...[
+                  _buildPulseIcon(
+                    widget.accentColor,
+                    icon: Icons.check_circle_rounded,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    _formatDuration(_recordingDuration),
+                    style: TextStyle(
+                      color: widget.accentColor,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ] else ...[
+                  _buildPulseIcon(
+                    colorScheme.onSurfaceVariant,
+                    icon: Icons.mic_none_rounded,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Ready to record',
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (_audioPath != null && !_isRecording)
-                      ElevatedButton.icon(
+                      IconButton.filledTonal(
                         onPressed: _deleteRecording,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.delete, color: Colors.white),
-                        label: const Text(
-                          'Delete',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        icon: const Icon(Icons.delete_rounded),
+                        padding: const EdgeInsets.all(16),
+                        style: IconButton.styleFrom(
+                          backgroundColor: colorScheme.errorContainer,
+                          foregroundColor: colorScheme.error,
                         ),
                       ),
-                    if (_audioPath == null || _isRecording)
-                      ElevatedButton.icon(
-                        onPressed: _isRecording
-                            ? _stopRecording
-                            : _startRecording,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isRecording
-                              ? Colors.red
-                              : widget.accentColor,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: Icon(
-                          _isRecording ? Icons.stop : Icons.mic,
-                          color: _isRecording ? Colors.white : Colors.black,
-                        ),
-                        label: Text(
-                          _isRecording ? 'Stop' : 'Start Recording',
-                          style: TextStyle(
-                            color: _isRecording ? Colors.white : Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                    if (_audioPath != null && !_isRecording)
+                      const SizedBox(width: 16),
+                    FloatingActionButton.extended(
+                      onPressed: _isRecording
+                          ? _stopRecording
+                          : _startRecording,
+                      backgroundColor: _isRecording
+                          ? Colors.red
+                          : widget.accentColor,
+                      foregroundColor: _isRecording
+                          ? Colors.white
+                          : Colors.black,
+                      icon: Icon(
+                        _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
                       ),
+                      label: Text(_isRecording ? 'Stop' : 'Start Recording'),
+                      elevation: 0,
+                    ),
                   ],
                 ),
               ],
@@ -806,53 +748,35 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildPulseIcon(Color color, {IconData icon = Icons.mic_rounded}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: color, size: 48),
+    );
+  }
+
+  Widget _buildActionButtons(ColorScheme colorScheme) {
     return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.grey[700]!),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+      padding: const EdgeInsets.all(24),
+      child: ElevatedButton(
+        onPressed: _saveNote,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: widget.accentColor,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _saveNote,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.accentColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Save Note',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
+          elevation: 0,
+        ),
+        child: const Text(
+          'Save Note',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

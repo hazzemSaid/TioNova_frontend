@@ -39,7 +39,7 @@ class ChapterDetailActionCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(isLarge ? 32 : 28),
       decoration: BoxDecoration(
-        color: backgroundColor ?? colorScheme.surfaceContainerHighest,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colorScheme.outline, width: 1),
       ),
@@ -55,7 +55,7 @@ class ChapterDetailActionCard extends StatelessWidget {
             ),
             child: Icon(
               icon,
-              color: iconColor ?? colorScheme.onSurface,
+              color: colorScheme.onSurface,
               size: isLarge ? 32 : 28,
             ),
           ),
@@ -63,7 +63,7 @@ class ChapterDetailActionCard extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: textColor ?? colorScheme.onSurface,
+              color: colorScheme.onSurface,
               fontSize: isLarge ? 22 : 20,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
@@ -73,7 +73,7 @@ class ChapterDetailActionCard extends StatelessWidget {
           Text(
             description,
             style: TextStyle(
-              color: subtitleColor ?? colorScheme.onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant,
               fontSize: 14,
               height: 1.6,
             ),
@@ -85,11 +85,8 @@ class ChapterDetailActionCard extends StatelessWidget {
             child: OutlinedButton(
               onPressed: isLoading ? null : onAction,
               style: OutlinedButton.styleFrom(
-                foregroundColor: textColor ?? colorScheme.onSurface,
-                side: BorderSide(
-                  color: iconColor ?? colorScheme.outline,
-                  width: 1,
-                ),
+                foregroundColor: colorScheme.onSurface,
+                side: BorderSide(color: colorScheme.outline, width: 1),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),

@@ -553,7 +553,13 @@ class ChapterCubit extends Cubit<ChapterState> {
         print('✅ [ChapterCubit] updateChapter success - refreshing chapters');
         safeEmit(UpdateChapterSuccess(chapters: chapters));
         // Refresh the chapters list to get updated data
-        getChapters(folderId: folderId);
+        if (folderId.isNotEmpty) {
+          getChapters(folderId: folderId);
+        } else {
+          debugPrint(
+            '⚠️ [ChapterCubit] Skipping getChapters: empty folderId for standalone chapter',
+          );
+        }
       },
     );
   }
@@ -575,9 +581,26 @@ class ChapterCubit extends Cubit<ChapterState> {
       },
       (_) {
         print('✅ [ChapterCubit] deleteChapter success - refreshing chapters');
-        safeEmit(DeleteChapterSuccess(chapters: chapters));
+        // Optimistically remove the deleted chapter from the current list for immediate UI update
+        List<ChapterModel>? updatedChapters = chapters;
+        if (chapters != null) {
+          updatedChapters = chapters
+              .where((c) => c.id != chapterId)
+              .toList(growable: false);
+        }
+        safeEmit(DeleteChapterSuccess(chapters: updatedChapters));
+        // Also emit a loaded state to ensure builders relying on ChapterLoaded update
+        if (updatedChapters != null) {
+          safeEmit(ChapterLoaded(updatedChapters));
+        }
         // Refresh the chapters list to get updated data
-        getChapters(folderId: folderId);
+        if (folderId.isNotEmpty) {
+          getChapters(folderId: folderId);
+        } else {
+          debugPrint(
+            '⚠️ [ChapterCubit] Skipping getChapters after delete: empty folderId for standalone chapter',
+          );
+        }
       },
     );
   }

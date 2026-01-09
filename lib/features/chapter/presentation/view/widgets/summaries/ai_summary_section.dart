@@ -110,10 +110,10 @@ class _AISummarySectionState extends State<AISummarySection> {
                 ],
               ),
               const SizedBox(height: 24),
-              if (widget.isSummaryAvailable)
-                _buildViewSummaryButton()
-              else if (widget.isSummaryLoading)
+              if (widget.isSummaryLoading)
                 _buildLoadingButton()
+              else if (widget.isSummaryAvailable)
+                _buildViewSummaryButton()
               else
                 _buildGenerateButton(),
             ],

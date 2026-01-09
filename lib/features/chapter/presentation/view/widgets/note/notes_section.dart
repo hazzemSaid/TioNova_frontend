@@ -152,7 +152,7 @@ class _NotesSectionState extends State<NotesSection> {
                                 );
                               } else {
                                 context.pushNamed(
-                                  'chapter-notes-quick',
+                                  'chapter-notes',
                                   pathParameters: {'chapterId': chapterId},
                                   extra: {
                                     'chapterTitle': widget.chapterTitle,
@@ -161,6 +161,7 @@ class _NotesSectionState extends State<NotesSection> {
                                         colorScheme.primary,
                                     'chapterCubit': chapterCubit,
                                     'folderOwnerId': widget.folderOwnerId,
+                                    'folderId': widget.folderId,
                                   },
                                 );
                               }

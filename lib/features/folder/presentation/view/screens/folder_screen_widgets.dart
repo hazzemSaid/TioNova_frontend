@@ -36,6 +36,7 @@ class FolderGridItem extends StatelessWidget {
         color: color,
         sharedWith: folder.sharedWith,
         icon: icon,
+        ownerUsername: folder.owner.username,
       ),
     );
   }

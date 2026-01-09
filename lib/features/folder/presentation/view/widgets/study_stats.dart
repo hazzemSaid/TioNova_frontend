@@ -17,7 +17,7 @@ class StudyStats extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.outlineVariant,
+        color: colorScheme.onSurface,
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
@@ -61,12 +61,12 @@ class StudyStats extends StatelessWidget {
       children: [
         Text(
           count,
-          style: textTheme.titleLarge?.copyWith(color: colorScheme.onSurface),
+          style: textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
+          style: TextStyle(color: colorScheme.onPrimary, fontSize: 14),
         ),
       ],
     );
@@ -89,12 +89,12 @@ class StudyStatItem extends StatelessWidget {
       children: [
         Text(
           count,
-          style: textTheme.titleLarge?.copyWith(color: colorScheme.onSurface),
+          style: textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
+          style: TextStyle(color: colorScheme.onPrimary, fontSize: 14),
         ),
       ],
     );

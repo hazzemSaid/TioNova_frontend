@@ -314,8 +314,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 800;
     final effectiveIsDark = kIsWeb ? true : isDark;
 
     return BlocListener<AuthCubit, AuthState>(

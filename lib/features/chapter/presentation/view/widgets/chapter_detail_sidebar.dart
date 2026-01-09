@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 
 class ChapterDetailSidebar extends StatelessWidget {
   final ChapterModel chapter;
@@ -77,7 +79,10 @@ class ChapterDetailSidebar extends StatelessWidget {
                   : '/chapters/${chapter.id}/pdf';
               context.push(
                 path,
-                extra: {'chapterTitle': chapter.title ?? 'Chapter'},
+                extra: {
+                  'chapterTitle': chapter.title ?? 'Chapter',
+                  'chapterCubit': context.read<ChapterCubit>(),
+                },
               );
             },
             child: MouseRegion(

@@ -4,14 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/chapter/data/models/NoteModel.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/note/add_note_bottom_sheet.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/note/note_card.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/note/note_detail_dialog.dart';
+import 'package:tionova/utils/widgets/dot_painter.dart';
 
 class NotesScreen extends StatefulWidget {
   final String chapterId;
+  final String? folderId;
   final String chapterTitle;
   final Color? accentColor;
   final String? folderOwnerId;
@@ -19,6 +22,7 @@ class NotesScreen extends StatefulWidget {
   const NotesScreen({
     super.key,
     required this.chapterId,
+    this.folderId,
     required this.chapterTitle,
     this.accentColor,
     this.folderOwnerId,
@@ -31,7 +35,7 @@ class NotesScreen extends StatefulWidget {
 class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
   String _selectedFilter = 'all';
   String _sortOption = 'time'; // 'time' or 'alpha'
-  bool _showFilterSort = false; // Toggle for filter/sort visibility
+  bool _showFilterSort = false;
   List<Notemodel> _filteredNotes = [];
   List<Notemodel> _allNotes = [];
 
@@ -39,11 +43,6 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
   void initState() {
     super.initState();
     _loadNotes();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   Future<void> _loadNotes() async {
@@ -57,21 +56,17 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
   void _filterNotes(List<Notemodel> notes) {
     setState(() {
       _allNotes = notes;
-      // Filter by type
       var filtered = notes.where((note) {
         return _selectedFilter == 'all' ||
             (note.rawData['type'] as String?) == _selectedFilter;
       }).toList();
 
-      // Sort notes
       if (_sortOption == 'time') {
-        filtered.sort(
-          (a, b) => b.createdAt.compareTo(a.createdAt),
-        ); // Newest first
+        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       } else {
         filtered.sort(
           (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-        ); // A-Z
+        );
       }
 
       _filteredNotes = filtered;
@@ -88,7 +83,8 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
         value: chapterCubit,
         child: AddNoteBottomSheet(
           chapterId: widget.chapterId,
-          accentColor: widget.accentColor ?? const Color(0xFF00D9A0),
+          accentColor:
+              widget.accentColor ?? Theme.of(context).colorScheme.primary,
           onNoteAdded: () {
             _loadNotes();
           },
@@ -105,7 +101,8 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
         value: chapterCubit,
         child: NoteDetailDialog(
           note: note,
-          accentColor: widget.accentColor ?? const Color(0xFF00D9A0),
+          accentColor:
+              widget.accentColor ?? Theme.of(context).colorScheme.primary,
           onDelete: () async {
             chapterCubit.deleteNote(
               noteId: note.id,
@@ -117,375 +114,364 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
     );
   }
 
-  Color get _accentColor => widget.accentColor ?? const Color(0xFF00D9A0);
+  Color get _accentColor =>
+      widget.accentColor ?? Theme.of(context).colorScheme.primary;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isWeb = size.width > 900;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Custom App Bar
-            _buildAppBar(),
-
-            // Search and Filter Section
-            _buildSearchAndFilter(),
-
-            // Notes List
-            Expanded(
-              child: BlocConsumer<ChapterCubit, ChapterState>(
-                listener: (context, state) {
-                  if (state is GetNotesByChapterIdSuccess) {
-                    _filterNotes(state.notes);
-                  } else if (state is AddNoteSuccess) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Note added successfully'),
-                          backgroundColor: _accentColor,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      );
-                    }
-                    _loadNotes();
-                  } else if (state is DeleteNoteSuccess) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Note deleted successfully'),
-                          backgroundColor: Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      );
-                      GoRouter.of(context).pop();
-                    }
-                    _loadNotes();
-                  } else if (state is GetNotesByChapterIdError) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message.errMessage),
-                          backgroundColor: Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  }
-                },
-                builder: (context, state) {
-                  if (state is GetNotesByChapterIdLoading) {
-                    return _buildShimmerLoading();
-                  }
-
-                  if (_filteredNotes.isEmpty) {
-                    return _buildEmptyState();
-                  }
-
-                  return _buildNotesList();
-                },
+      backgroundColor: colorScheme.background,
+      body: Stack(
+        children: [
+          // Background Pattern
+          Positioned.fill(
+            child: CustomPaint(
+              painter: DotPainter(
+                colorScheme.primary.withOpacity(
+                  theme.brightness == Brightness.dark ? 0.05 : 0.03,
+                ),
               ),
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [_accentColor, _accentColor.withOpacity(0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: _accentColor.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildAppBar(context, colorScheme, isWeb),
+                _buildSearchAndFilter(colorScheme),
+                Expanded(
+                  child: BlocConsumer<ChapterCubit, ChapterState>(
+                    listener: _handleCubitState,
+                    builder: (context, state) {
+                      if (state is GetNotesByChapterIdLoading) {
+                        return _buildShimmerLoading(colorScheme, isWeb);
+                      }
+                      if (_filteredNotes.isEmpty) {
+                        return _buildEmptyState(colorScheme);
+                      }
+                      return _buildNotesContent(isWeb);
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: FloatingActionButton.extended(
-          onPressed: _showAddNoteBottomSheet,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
           ),
+        ],
+      ),
+      floatingActionButton: _buildFAB(colorScheme),
+    );
+  }
 
-          label: const Icon(Icons.add_rounded, color: Colors.black, size: 24),
-        ),
+  void _handleCubitState(BuildContext context, ChapterState state) {
+    if (state is GetNotesByChapterIdSuccess) {
+      _filterNotes(state.notes);
+    } else if (state is AddNoteSuccess) {
+      if (mounted) {
+        _showSnackBar('Note added successfully', _accentColor);
+      }
+      _loadNotes();
+    } else if (state is DeleteNoteSuccess) {
+      if (mounted) {
+        _showSnackBar('Note deleted successfully', Colors.red);
+        GoRouter.of(context).pop();
+      }
+      _loadNotes();
+    } else if (state is GetNotesByChapterIdError) {
+      if (mounted) {
+        _showSnackBar(state.message.errMessage, Colors.red);
+      }
+    }
+  }
+
+  void _showSnackBar(String message, Color backgroundColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(
+    BuildContext context,
+    ColorScheme colorScheme,
+    bool isWeb,
+  ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: isWeb ? 48 : 16, vertical: 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E10),
+        color: colorScheme.surface.withOpacity(0.8),
         border: Border(
-          bottom: BorderSide(color: _accentColor.withOpacity(0.2), width: 1),
+          bottom: BorderSide(
+            color: colorScheme.outline.withOpacity(0.1),
+            width: 1,
+          ),
         ),
       ),
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            onPressed: () => context.safePop(
+              folderId: widget.folderId,
+              chapterId: widget.chapterId,
+              fallback: '/',
+            ),
+            icon: Icon(
+              Icons.arrow_back_ios_new,
+              color: colorScheme.onSurface,
+              size: 20,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Notes',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
+                    color: colorScheme.onSurface,
+                    fontSize: isWeb ? 32 : 24,
                     fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
                   widget.chapterTitle,
-                  style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _showFilterSort = !_showFilterSort;
-              });
-            },
-            icon: Icon(
-              _showFilterSort ? Icons.close : Icons.filter_list,
-              color: _showFilterSort ? _accentColor : Colors.white,
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: _showFilterSort
-                  ? _accentColor.withOpacity(0.15)
-                  : Colors.transparent,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _accentColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                '${_filteredNotes.length}',
-                style: TextStyle(
-                  color: _accentColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
+          _buildActionButtons(colorScheme),
         ],
       ),
     );
   }
 
-  Widget _buildSearchAndFilter() {
-    return AnimatedContainer(
+  Widget _buildActionButtons(ColorScheme colorScheme) {
+    return Row(
+      children: [
+        IconButton(
+          onPressed: () => setState(() => _showFilterSort = !_showFilterSort),
+          icon: Icon(
+            _showFilterSort ? Icons.close_rounded : Icons.tune_rounded,
+            color: _showFilterSort ? _accentColor : colorScheme.onSurface,
+          ),
+          style: IconButton.styleFrom(
+            backgroundColor: _showFilterSort
+                ? _accentColor.withOpacity(0.1)
+                : colorScheme.surfaceContainerHighest,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: _accentColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _accentColor.withOpacity(0.2)),
+          ),
+          child: Center(
+            child: Text(
+              '${_filteredNotes.length}',
+              style: TextStyle(
+                color: _accentColor,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchAndFilter(ColorScheme colorScheme) {
+    return AnimatedSize(
       duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      height: _showFilterSort ? null : 0,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 300),
-        opacity: _showFilterSort ? 1.0 : 0.0,
-        child: _showFilterSort
-            ? Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0E0E10),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: _accentColor.withOpacity(0.1),
-                      width: 1,
-                    ),
+      child: _showFilterSort
+          ? Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: colorScheme.surface.withOpacity(0.5),
+                border: Border(
+                  bottom: BorderSide(
+                    color: colorScheme.outline.withOpacity(0.1),
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Filter Section
-                    Row(
-                      children: [
-                        Text(
-                          'Filter:',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _buildFilterChip('all', 'All', Icons.grid_view),
-                                _buildFilterChip(
-                                  'text',
-                                  'Text',
-                                  Icons.text_fields,
-                                ),
-                                _buildFilterChip(
-                                  'image',
-                                  'Images',
-                                  Icons.image,
-                                ),
-                                _buildFilterChip('voice', 'Voice', Icons.mic),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Sort Section
-                    Row(
-                      children: [
-                        Text(
-                          'Sort:',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        _buildSortChip('time', 'Newest', Icons.access_time),
-                        const SizedBox(width: 8),
-                        _buildSortChip('alpha', 'A-Z', Icons.sort_by_alpha),
-                      ],
-                    ),
-                  ],
-                ),
-              )
-            : const SizedBox.shrink(),
-      ),
+              ),
+              child: Wrap(
+                spacing: 24,
+                runSpacing: 24,
+                children: [
+                  _buildFilterGroup('Filter', [
+                    _buildFilterChip('all', 'All', Icons.grid_view_rounded),
+                    _buildFilterChip('text', 'Text', Icons.text_fields_rounded),
+                    _buildFilterChip('image', 'Images', Icons.image_rounded),
+                    _buildFilterChip('voice', 'Voice', Icons.mic_rounded),
+                  ], colorScheme),
+                  _buildFilterGroup('Sort', [
+                    _buildSortChip('time', 'Newest', Icons.access_time_rounded),
+                    _buildSortChip('alpha', 'A-Z', Icons.sort_by_alpha_rounded),
+                  ], colorScheme),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildFilterGroup(
+    String title,
+    List<Widget> children,
+    ColorScheme colorScheme,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(mainAxisSize: MainAxisSize.min, children: children),
+      ],
     );
   }
 
   Widget _buildFilterChip(String filter, String label, IconData icon) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isSelected = _selectedFilter == filter;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
         selected: isSelected,
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.black : Colors.white,
-            ),
-            const SizedBox(width: 6),
-            Text(label),
-          ],
+        label: Text(label),
+        avatar: Icon(
+          icon,
+          size: 16,
+          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
         ),
-        onSelected: (selected) {
-          setState(() {
-            _selectedFilter = filter;
-            _filterNotes(_allNotes);
-          });
-        },
-        backgroundColor: const Color(0xFF1C1C1E),
+        onSelected: (_) => setState(() {
+          _selectedFilter = filter;
+          _filterNotes(_allNotes);
+        }),
+        backgroundColor: colorScheme.surfaceContainerHighest,
         selectedColor: _accentColor,
+        checkmarkColor: colorScheme.onPrimary,
         labelStyle: TextStyle(
-          color: isSelected ? Colors.black : Colors.white,
+          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
           fontWeight: FontWeight.w600,
-          fontSize: 13,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: isSelected ? _accentColor : Colors.grey[700]!,
-            width: 1.5,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
   Widget _buildSortChip(String sort, String label, IconData icon) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isSelected = _sortOption == sort;
-    return FilterChip(
-      selected: isSelected,
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: isSelected ? Colors.black : Colors.white),
-          const SizedBox(width: 6),
-          Text(label),
-        ],
-      ),
-      onSelected: (selected) {
-        setState(() {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        selected: isSelected,
+        label: Text(label),
+        avatar: Icon(
+          icon,
+          size: 16,
+          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+        ),
+        onSelected: (_) => setState(() {
           _sortOption = sort;
           _filterNotes(_allNotes);
-        });
-      },
-      backgroundColor: const Color(0xFF1C1C1E),
-      selectedColor: _accentColor,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.black : Colors.white,
-        fontWeight: FontWeight.w600,
-        fontSize: 13,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: isSelected ? _accentColor : Colors.grey[700]!,
-          width: 1.5,
+        }),
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        selectedColor: _accentColor,
+        checkmarkColor: colorScheme.onPrimary,
+        labelStyle: TextStyle(
+          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
         ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     );
   }
 
-  Widget _buildNotesList() {
+  Widget _buildNotesContent(bool isWeb) {
+    if (isWeb) {
+      return GridView.builder(
+        padding: const EdgeInsets.all(48),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 400,
+          mainAxisExtent: 220,
+          crossAxisSpacing: 24,
+          mainAxisSpacing: 24,
+        ),
+        itemCount: _filteredNotes.length,
+        itemBuilder: (context, index) => _buildNoteCard(_filteredNotes[index]),
+      );
+    }
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _filteredNotes.length,
-      itemBuilder: (context, index) {
-        final note = _filteredNotes[index];
-        return NoteCard(
-          note: note,
-          accentColor: _accentColor,
-          onTap: () => _showNoteDetail(note),
-          folderOwnerId: widget.folderOwnerId,
-        );
-      },
+      itemBuilder: (context, index) => _buildNoteCard(_filteredNotes[index]),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildNoteCard(Notemodel note) {
+    return NoteCard(
+      note: note,
+      accentColor: _accentColor,
+      onTap: () => _showNoteDetail(note),
+      folderOwnerId: widget.folderOwnerId,
+    );
+  }
+
+  Widget _buildFAB(ColorScheme colorScheme) {
+    return FloatingActionButton.extended(
+      onPressed: _showAddNoteBottomSheet,
+      backgroundColor: _accentColor,
+      foregroundColor: colorScheme.onPrimary,
+      elevation: 4,
+      icon: const Icon(Icons.add_rounded),
+      label: const Text(
+        'Add Note',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
+  Widget _buildEmptyState(ColorScheme colorScheme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -494,14 +480,13 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
             'assets/animations/Empty box by partho.json',
             width: 250,
             height: 250,
-            fit: BoxFit.contain,
           ),
           const SizedBox(height: 16),
           Text(
             'No notes yet',
             style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 16,
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -510,84 +495,26 @@ class _NotesScreenState extends State<NotesScreen> with SafeContextMixin {
     );
   }
 
-  Widget _buildShimmerLoading() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 5,
-      itemBuilder: (context, index) {
-        return Shimmer.fromColors(
-          baseColor: const Color(0xFF1C1C1E),
-          highlightColor: const Color(0xFF2C2C2E),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            height: 16,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            height: 12,
-                            width: 150,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  height: 14,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  height: 14,
-                  width: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildShimmerLoading(ColorScheme colorScheme, bool isWeb) {
+    return GridView.builder(
+      padding: EdgeInsets.all(isWeb ? 48 : 16),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 400,
+        mainAxisExtent: 220,
+        crossAxisSpacing: 24,
+        mainAxisSpacing: 24,
+      ),
+      itemCount: 8,
+      itemBuilder: (context, index) => Shimmer.fromColors(
+        baseColor: colorScheme.surfaceContainerHighest,
+        highlightColor: colorScheme.surface,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

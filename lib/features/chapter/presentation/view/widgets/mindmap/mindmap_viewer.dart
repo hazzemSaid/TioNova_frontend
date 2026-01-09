@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/chapter/data/models/mindmapmodel.dart';
 import 'package:tionova/features/chapter/data/models/nodeModel.dart';
@@ -16,8 +15,15 @@ import 'package:tionova/features/chapter/presentation/view/widgets/mindmap/node_
 
 class MindmapViewer extends StatefulWidget {
   final Mindmapmodel mindmap;
+  final String? folderId;
+  final String? chapterId;
 
-  const MindmapViewer({super.key, required this.mindmap});
+  const MindmapViewer({
+    super.key,
+    required this.mindmap,
+    this.folderId,
+    this.chapterId,
+  });
 
   @override
   State<MindmapViewer> createState() => _MindmapViewerState();
@@ -407,16 +413,11 @@ class _MindmapViewerState extends State<MindmapViewer>
             backgroundColor: const Color(0xFF0A0E27),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () {
-                final pathParams = GoRouterState.of(context).pathParameters;
-                final folderId = pathParams['folderId'];
-                final chapterId = pathParams['chapterId'];
-                context.safePop(
-                  folderId: folderId,
-                  chapterId: chapterId,
-                  fallback: '/',
-                );
-              },
+              onPressed: () => context.safePop(
+                folderId: widget.folderId,
+                chapterId: widget.chapterId,
+                fallback: '/',
+              ),
             ),
             title: Row(
               children: [

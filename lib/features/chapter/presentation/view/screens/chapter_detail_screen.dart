@@ -105,7 +105,13 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
     debugPrint(
       '🔄 [ChapterDetailScreen] Fetching chapters for folder ${widget.folderId}',
     );
-    cubit.getChapters(folderId: widget.folderId);
+    if (widget.folderId.isNotEmpty) {
+      cubit.getChapters(folderId: widget.folderId);
+    } else {
+      debugPrint(
+        '⚠️ [ChapterDetailScreen] Skipping getChapters: empty folderId (standalone chapter route)',
+      );
+    }
   }
 
   @override
@@ -189,6 +195,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             'summaryData': _summaryData!,
             'chapterTitle': _chapter!.title ?? 'Chapter',
             'accentColor': widget.folderColor,
+            'folderId': folderId,
           },
         );
       } else {
@@ -198,6 +205,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             'summaryData': _summaryData!,
             'chapterTitle': _chapter!.title ?? 'Chapter',
             'accentColor': widget.folderColor,
+            'folderId': folderId,
           },
         );
       }
@@ -212,6 +220,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             'summaryText': _rawSummaryText!,
             'chapterTitle': _chapter!.title ?? 'Chapter',
             'accentColor': widget.folderColor,
+            'folderId': folderId,
           },
         );
       } else {
@@ -221,9 +230,42 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             'summaryText': _rawSummaryText!,
             'chapterTitle': _chapter!.title ?? 'Chapter',
             'accentColor': widget.folderColor,
+            'folderId': folderId,
           },
         );
       }
+    }
+  }
+
+  void _viewPDF() {
+    if (_chapter == null) return;
+
+    final folderId = _chapter!.folderId;
+    final chapterId = _chapter!.id;
+    final hasFolder = folderId != null && folderId.isNotEmpty;
+
+    final path = hasFolder
+        ? '/folders/$folderId/chapters/$chapterId/pdf'
+        : '/chapters/$chapterId/pdf';
+
+    if (kIsWeb) {
+      context.go(
+        path,
+        extra: {
+          'chapterTitle': _chapter!.title ?? 'Chapter',
+          'chapterCubit': context.read<ChapterCubit>(),
+          'folderId': folderId,
+        },
+      );
+    } else {
+      context.push(
+        path,
+        extra: {
+          'chapterTitle': _chapter!.title ?? 'Chapter',
+          'chapterCubit': context.read<ChapterCubit>(),
+          'folderId': folderId,
+        },
+      );
     }
   }
 
@@ -320,9 +362,23 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
               ? '/folders/$folderId/chapters/$chapterId/mindmap'
               : '/chapters/$chapterId/mindmap';
           if (kIsWeb) {
-            context.go(path, extra: {'mindmap': state.mindmap});
+            context.go(
+              path,
+              extra: {
+                'mindmap': state.mindmap,
+                'folderId': folderId,
+                'chapterId': chapterId,
+              },
+            );
           } else {
-            context.push(path, extra: {'mindmap': state.mindmap});
+            context.push(
+              path,
+              extra: {
+                'mindmap': state.mindmap,
+                'folderId': folderId,
+                'chapterId': chapterId,
+              },
+            );
           }
         } else if (state is CreateMindmapError) {
           setState(() {
@@ -418,7 +474,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       activeTab: _activeTab,
       summaryData: _summaryData,
       rawSummaryText: _rawSummaryText,
-      onDownloadPDF: () {},
+      onDownloadPDF: _viewPDF,
       onGenerateSummary: _generateSummary,
       onViewSummary: _viewSummary,
       onGenerateMindmap: _generateMindmap,
@@ -440,7 +496,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       activeTab: _activeTab,
       summaryData: _summaryData,
       rawSummaryText: _rawSummaryText,
-      onDownloadPDF: () {},
+      onDownloadPDF: _viewPDF,
 
       onGenerateSummary: _generateSummary,
       onViewSummary: _viewSummary,

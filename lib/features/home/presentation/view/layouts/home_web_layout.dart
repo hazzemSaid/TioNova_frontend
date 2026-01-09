@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:math';
+
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
 import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
@@ -403,7 +405,7 @@ class HomeWebLayout extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '$percentage%',
+                        '${min(int.parse(percentage), 100)}%',
                         style: textTheme.headlineSmall?.copyWith(
                           color: colorScheme.primary,
                           fontWeight: FontWeight.bold,

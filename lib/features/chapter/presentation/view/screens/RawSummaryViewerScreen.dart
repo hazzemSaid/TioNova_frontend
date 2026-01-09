@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_navigation.dart';
 
 class RawSummaryViewerScreen extends StatelessWidget {
   final String summaryText;
   final String chapterTitle;
+  final String chapterId;
+  final String? folderId;
   final Color accentColor;
 
   const RawSummaryViewerScreen({
-    Key? key,
+    super.key,
     required this.summaryText,
     required this.chapterTitle,
+    required this.chapterId,
+    this.folderId,
     this.accentColor = Colors.blue,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,14 +30,12 @@ class RawSummaryViewerScreen extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: () {
-            final pathParams = GoRouterState.of(context).pathParameters;
-            final folderId = pathParams['folderId'];
-            final chapterId = pathParams['chapterId'];
-            context.safePop(
-              folderId: folderId,
-              chapterId: chapterId,
-              fallback: '/',
-            );
+            final fId = folderId;
+            if (fId != null && fId.isNotEmpty) {
+              context.safeGo('/folders/$fId/chapters/$chapterId');
+            } else {
+              context.safePop(fallback: '/chapters/$chapterId');
+            }
           },
         ),
         title: Text(

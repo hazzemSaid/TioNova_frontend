@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizcubit.dart';
 import 'package:tionova/features/quiz/presentation/bloc/quizstate.dart';
 
 class PracticeModeScreen extends StatefulWidget {
   final String chapterId;
+  final String? folderId;
   final String? chapterTitle;
 
   const PracticeModeScreen({
     super.key,
     required this.chapterId,
+    this.folderId,
     this.chapterTitle,
   });
 
@@ -21,7 +23,9 @@ class PracticeModeScreen extends StatefulWidget {
 
 class _PracticeModeScreenState extends State<PracticeModeScreen> {
   String _extractLetterFromOption(String option) {
-    final match = RegExp(r'^([a-d])\s*\)').firstMatch(option.trim().toLowerCase());
+    final match = RegExp(
+      r'^([a-d])\s*\)',
+    ).firstMatch(option.trim().toLowerCase());
     return match?.group(1) ?? '';
   }
 
@@ -31,14 +35,21 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return BlocProvider(
-      create: (context) => getIt<QuizCubit>()..getPracticeMode(chapterId: widget.chapterId),
+      create: (context) =>
+          getIt<QuizCubit>()..getPracticeMode(chapterId: widget.chapterId),
       child: Scaffold(
         backgroundColor: colorScheme.surface,
         appBar: AppBar(
           title: Text(
             'Practice Mode',
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.safePop(
+              folderId: widget.folderId,
+              chapterId: widget.chapterId,
+              fallback: '/',
             ),
           ),
           backgroundColor: colorScheme.surface,
@@ -75,11 +86,16 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
             }
 
             if (state is PracticeModeComplete) {
-              return _buildCompletionView(context, state, colorScheme, textTheme);
+              return _buildCompletionView(
+                context,
+                state,
+                colorScheme,
+                textTheme,
+              );
             }
 
-            if (state is PracticeModeReady || 
-                state is PracticeModeAnswerSelected || 
+            if (state is PracticeModeReady ||
+                state is PracticeModeAnswerSelected ||
                 state is PracticeModeAnswerChecked) {
               return _buildQuestionView(context, state, colorScheme, textTheme);
             }
@@ -105,7 +121,7 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
     TextTheme textTheme,
   ) {
     final cubit = context.read<QuizCubit>();
-    
+
     late final quiz;
     late final currentIndex;
     late final correctCount;
@@ -157,7 +173,10 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(16),
@@ -197,7 +216,9 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: colorScheme.outline.withOpacity(0.5)),
+                    border: Border.all(
+                      color: colorScheme.outline.withOpacity(0.5),
+                    ),
                   ),
                   child: Text(
                     question.question,
@@ -215,8 +236,10 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                   final optionText = entry.value;
                   final optionLetter = _extractLetterFromOption(optionText);
                   final isSelected = selectedAnswer == optionLetter;
-                  final isCorrectOption = isAnswerChecked == true && correctAnswer == optionLetter;
-                  final isWrongSelected = isAnswerChecked == true && isSelected && !isCorrect!;
+                  final isCorrectOption =
+                      isAnswerChecked == true && correctAnswer == optionLetter;
+                  final isWrongSelected =
+                      isAnswerChecked == true && isSelected && !isCorrect!;
 
                   Color? backgroundColor;
                   Color? borderColor;
@@ -237,7 +260,9 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                       textColor = colorScheme.onSurfaceVariant;
                     }
                   } else if (isSelected) {
-                    backgroundColor = colorScheme.primaryContainer.withOpacity(0.5);
+                    backgroundColor = colorScheme.primaryContainer.withOpacity(
+                      0.5,
+                    );
                     borderColor = colorScheme.primary;
                     textColor = colorScheme.onSurface;
                   } else {
@@ -275,7 +300,8 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                                 color: colorScheme.error,
                                 size: 24,
                               ),
-                            if (isAnswerChecked == true && (isCorrectOption || isWrongSelected))
+                            if (isAnswerChecked == true &&
+                                (isCorrectOption || isWrongSelected))
                               const SizedBox(width: 12),
                             Expanded(
                               child: Text(
@@ -318,7 +344,9 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                           children: [
                             Icon(
                               isCorrect ? Icons.check_circle : Icons.cancel,
-                              color: isCorrect ? colorScheme.primary : colorScheme.error,
+                              color: isCorrect
+                                  ? colorScheme.primary
+                                  : colorScheme.error,
                               size: 28,
                             ),
                             const SizedBox(width: 12),
@@ -326,7 +354,9 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                               isCorrect ? 'Correct!' : 'Incorrect',
                               style: textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: isCorrect ? colorScheme.primary : colorScheme.error,
+                                color: isCorrect
+                                    ? colorScheme.primary
+                                    : colorScheme.error,
                               ),
                             ),
                           ],
@@ -364,9 +394,7 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
           decoration: BoxDecoration(
             color: colorScheme.surface,
             border: Border(
-              top: BorderSide(
-                color: colorScheme.outline.withOpacity(0.2),
-              ),
+              top: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
             ),
           ),
           child: SafeArea(
@@ -395,7 +423,9 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                 ),
                 child: Text(
                   isAnswerChecked == true
-                      ? (currentIndex < quiz.totalQuestions - 1 ? 'Next Question' : 'Finish Practice')
+                      ? (currentIndex < quiz.totalQuestions - 1
+                            ? 'Next Question'
+                            : 'Finish Practice')
                       : 'Check Answer',
                   style: const TextStyle(
                     fontSize: 16,
@@ -416,7 +446,8 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
     ColorScheme colorScheme,
     TextTheme textTheme,
   ) {
-    final percentage = (state.correctCount / state.totalQuestions * 100).round();
+    final percentage = (state.correctCount / state.totalQuestions * 100)
+        .round();
     final cubit = context.read<QuizCubit>();
 
     return Center(
@@ -487,7 +518,11 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   cubit.resetPracticeMode();
-                  context.pop();
+                  context.safePop(
+                    folderId: widget.folderId,
+                    chapterId: widget.chapterId,
+                    fallback: '/',
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
@@ -500,10 +535,7 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                 ),
                 child: const Text(
                   'Done',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -524,10 +556,7 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
                 ),
                 child: const Text(
                   'Practice Again',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),

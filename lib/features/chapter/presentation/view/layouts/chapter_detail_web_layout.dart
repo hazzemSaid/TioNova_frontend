@@ -10,8 +10,8 @@ import 'package:tionova/features/chapter/presentation/view/widgets/chapter_detai
 import 'package:tionova/features/chapter/presentation/view/widgets/chapter_detail_ai_summary.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/chapter_detail_sidebar.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/chapter_detail_stats_card.dart';
-import 'package:tionova/features/folder/presentation/view/widgets/chatbot_content.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/quiz/quiz_content.dart';
+import 'package:tionova/features/folder/presentation/view/widgets/chatbot_content.dart';
 
 class ChapterDetailWebLayout extends StatelessWidget {
   final ChapterModel chapter;
@@ -304,7 +304,7 @@ class ChapterDetailWebLayout extends StatelessWidget {
       );
     } else {
       context.pushNamed(
-        'chapter-notes-quick',
+        'chapter-notes',
         pathParameters: {'chapterId': chapterId},
         extra: {
           'chapterTitle': chapter.title ?? 'Chapter',

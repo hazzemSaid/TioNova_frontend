@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
+import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/utils/widgets/dot_painter.dart';
 
 class SummaryViewerScreen extends StatefulWidget {
-  final SummaryModel summaryData;
+  final SummaryModel? summaryData;
+  final String chapterId;
+  final String? folderId;
   final String chapterTitle;
   final Color accentColor;
 
   const SummaryViewerScreen({
     super.key,
-    required this.summaryData,
+    this.summaryData,
+    required this.chapterId,
+    this.folderId,
     required this.chapterTitle,
     this.accentColor = Colors.blue,
   });
@@ -23,7 +29,6 @@ class SummaryViewerScreen extends StatefulWidget {
 class _SummaryViewerScreenState extends State<SummaryViewerScreen>
     with SingleTickerProviderStateMixin, SafeContextMixin {
   late TabController _tabController;
-  bool _isGeneratingPdf = false;
   int _currentFlashcardIndex = 0;
   bool _showFlashcardAnswer = false;
 
@@ -31,6 +36,15 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+
+    // If summary data is not provided, fetch it
+    if (widget.summaryData == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<ChapterCubit>().getChapterSummary(
+          chapterId: widget.chapterId,
+        );
+      });
+    }
   }
 
   @override
@@ -38,53 +52,6 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
     _tabController.dispose();
     super.dispose();
   }
-
-  // Future<void> _downloadPdf() async {
-  //   setState(() {
-  //     _isGeneratingPdf = true;
-  //   });
-
-  //   try {
-  //     final pdfBytes = await SummaryPdfService.generateSummaryPdf(
-  //       summaryData: widget.summaryData,
-  //       chapterTitle: widget.chapterTitle,
-  //     );
-
-  //     // final fileName = DownloadService.sanitizeFileName(
-  //     //   '${widget.chapterTitle}_summary',
-  //     // );
-
-  //     // final success = await DownloadService.downloadPDF(
-  //     //   pdfBytes: pdfBytes,
-  //     //   fileName: fileName,
-  //     //   context: context,
-  //     // );
-
-  //     if (success && mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(
-  //           content: Text('Summary PDF downloaded successfully'),
-  //           backgroundColor: Colors.green,
-  //         ),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('Failed to download PDF: $e'),
-  //           backgroundColor: Colors.red,
-  //         ),
-  //       );
-  //     }
-  //   } finally {
-  //     if (mounted) {
-  //       setState(() {
-  //         _isGeneratingPdf = false;
-  //       });
-  //     }
-  //   }
-  // }
 
   Color _getTypeColor(String type) {
     switch (type.toLowerCase()) {
@@ -103,686 +70,780 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isWeb = size.width > 900;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-          onPressed: () {
-            final pathParams = GoRouterState.of(context).pathParameters;
-            final folderId = pathParams['folderId'];
-            final chapterId = pathParams['chapterId'];
-            context.safePop(
-              folderId: folderId,
-              chapterId: chapterId,
-              fallback: '/',
-            );
-          },
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: widget.accentColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.auto_awesome,
-                color: widget.accentColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
+      backgroundColor: colorScheme.background,
+      body: BlocBuilder<ChapterCubit, ChapterState>(
+        builder: (context, state) {
+          SummaryModel? currentSummary = widget.summaryData;
+          bool isLoading = false;
+
+          if (state is GenerateSummaryLoading) {
+            isLoading = true;
+          } else if (state is GenerateSummaryStructuredSuccess) {
+            currentSummary = state.summaryData;
+          } else if (state is SummaryCachedFound) {
+            currentSummary = state.summaryData;
+          } else if (state is GenerateSummaryError && currentSummary == null) {
+            return Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Icon(Icons.error_outline, size: 64, color: colorScheme.error),
+                  const SizedBox(height: 16),
                   Text(
-                    'AI Summary',
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    'Failed to load summary',
+                    style: theme.textTheme.titleLarge,
                   ),
+                  const SizedBox(height: 8),
                   Text(
-                    widget.summaryData.chapterTitle.isNotEmpty
-                        ? widget.summaryData.chapterTitle
-                        : widget.chapterTitle,
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 12,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    state.message.errMessage,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<ChapterCubit>().getChapterSummary(
+                        chapterId: widget.chapterId,
+                      );
+                    },
+                    child: const Text('Try Again'),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              onPressed: () {},
-              // onPressed: _isGeneratingPdf ? null : _downloadPdf,
-              icon: _isGeneratingPdf
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: colorScheme.onSurface,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Icon(
-                      Icons.save_alt,
-                      color: colorScheme.onSurface,
-                      size: 22,
-                    ),
-            ),
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: colorScheme.surface,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: colorScheme.onSurface,
-              unselectedLabelColor: colorScheme.onSurfaceVariant,
-              indicatorColor: widget.accentColor,
-              indicatorWeight: 3,
-              labelStyle: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+            );
+          }
+
+          if (currentSummary == null || isLoading) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading Chapter Summary...',
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                ],
               ),
-              tabs: const [
-                Tab(text: 'Overview'),
-                Tab(text: 'Key Points'),
-                Tab(text: 'Definitions'),
-                Tab(text: 'Cards'),
-              ],
-            ),
-          ),
+            );
+          }
+
+          return Stack(
+            children: [
+              // Background Pattern
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: DotPainter(
+                    colorScheme.primary.withOpacity(
+                      theme.brightness == Brightness.dark ? 0.05 : 0.03,
+                    ),
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    _buildAppBar(context, colorScheme, isWeb, currentSummary),
+                    Expanded(
+                      child: Center(
+                        child: Container(
+                          constraints: BoxConstraints(
+                            maxWidth: isWeb ? 1100 : double.infinity,
+                          ),
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _buildOverviewTab(isWeb, currentSummary),
+                              _buildKeyPointsTab(isWeb, currentSummary),
+                              _buildDefinitionsTab(isWeb, currentSummary),
+                              _buildFlashcardsTab(isWeb, currentSummary),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAppBar(
+    BuildContext context,
+    ColorScheme colorScheme,
+    bool isWeb,
+    SummaryModel? currentSummary,
+  ) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(isWeb ? 48 : 4, 8, isWeb ? 48 : 8, 0),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withOpacity(0.8),
+        border: Border(
+          bottom: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      child: Column(
         children: [
-          _buildOverviewTab(),
-          _buildKeyPointsTab(),
-          _buildDefinitionsTab(),
-          _buildFlashcardsTab(),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: colorScheme.onSurface,
+                  size: 20,
+                ),
+                onPressed: () {
+                  final fId = widget.folderId;
+                  if (fId != null && fId.isNotEmpty) {
+                    context.safeGo(
+                      '/folders/$fId/chapters/${widget.chapterId}',
+                    );
+                  } else {
+                    context.safePop(fallback: '/chapters/${widget.chapterId}');
+                  }
+                },
+                style: IconButton.styleFrom(
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AI Chapter Summary',
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: isWeb ? 28 : 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    Text(
+                      (currentSummary != null &&
+                              currentSummary.chapterTitle.isNotEmpty)
+                          ? currentSummary.chapterTitle
+                          : widget.chapterTitle,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (isWeb)
+                _buildWebActions(colorScheme)
+              else
+                _buildMobileActions(colorScheme),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildTabBar(colorScheme),
         ],
       ),
     );
   }
 
-  Widget _buildOverviewTab() {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildWebActions(ColorScheme colorScheme) {
+    return Row(
+      children: [
+        ElevatedButton.icon(
+          onPressed: () {},
+          icon: const Icon(Icons.download_rounded, size: 18),
+          label: const Text('Export PDF'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.accentColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 0,
+          ),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildMobileActions(ColorScheme colorScheme) {
+    return IconButton(
+      onPressed: () {},
+      icon: Icon(Icons.save_alt_rounded, color: colorScheme.onSurface),
+      style: IconButton.styleFrom(
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Widget _buildTabBar(ColorScheme colorScheme) {
+    return TabBar(
+      controller: _tabController,
+      labelColor: widget.accentColor,
+      unselectedLabelColor: colorScheme.onSurfaceVariant,
+      indicatorColor: widget.accentColor,
+      indicatorWeight: 4,
+      dividerColor: Colors.transparent,
+      indicatorSize: TabBarIndicatorSize.label,
+      labelStyle: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.5,
+      ),
+      tabs: const [
+        Tab(text: 'Overview'),
+        Tab(text: 'Key Points'),
+        Tab(text: 'Definitions'),
+        Tab(text: 'Flashcards'),
+      ],
+    );
+  }
+
+  Widget _buildOverviewTab(bool isWeb, SummaryModel summaryData) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isWeb ? 48 : 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Summary',
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colorScheme.outline),
+              color: colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            child: Text(
+              summaryData.chapterOverview.summary,
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontSize: 18,
+                height: 1.8,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 48),
+          if (summaryData.keyTakeaways.isNotEmpty) ...[
+            Text(
+              'Key Takeaways',
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            isWeb
+                ? LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Wrap(
+                        spacing: 24,
+                        runSpacing: 24,
+                        children: summaryData.keyTakeaways
+                            .asMap()
+                            .entries
+                            .map(
+                              (e) => SizedBox(
+                                width: (constraints.maxWidth - 24) / 2,
+                                child: _buildTakeawayCard(
+                                  e.key + 1,
+                                  e.value,
+                                  colorScheme,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                  )
+                : Column(
+                    children: summaryData.keyTakeaways
+                        .asMap()
+                        .entries
+                        .map(
+                          (e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildTakeawayCard(
+                              e.key + 1,
+                              e.value,
+                              colorScheme,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+          ],
+          const SizedBox(height: 48),
+          _buildAIBadge(colorScheme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTakeawayCard(int index, String text, ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: widget.accentColor.withOpacity(0.1)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: widget.accentColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$index',
+              style: TextStyle(
+                color: widget.accentColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKeyPointsTab(bool isWeb, SummaryModel summaryData) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (summaryData.keyPoints.isEmpty)
+      return _buildEmptyState(
+        Icons.lightbulb_outline,
+        'No key points available',
+        colorScheme,
+      );
+
+    return GridView.builder(
+      padding: EdgeInsets.all(isWeb ? 48 : 16),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 600,
+        mainAxisExtent: isWeb ? 220 : 200,
+        crossAxisSpacing: 24,
+        mainAxisSpacing: 24,
+      ),
+      itemCount: summaryData.keyPoints.length,
+      itemBuilder: (context, index) {
+        final kp = summaryData.keyPoints[index];
+        final typeColor = _getTypeColor(kp.type);
+        return Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: typeColor.withOpacity(0.2), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: typeColor.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
                   children: [
-                    Icon(
-                      Icons.description_outlined,
-                      color: widget.accentColor,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: typeColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: Text(
-                        'Chapter Overview',
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: 20,
+                        kp.type.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  widget.summaryData.chapterOverview.summary,
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 15,
-                    height: 1.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (widget.summaryData.keyTakeaways.isNotEmpty) ...[
-            Row(
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  color: widget.accentColor,
-                  size: 22,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Key Takeaways',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ...widget.summaryData.keyTakeaways.asMap().entries.map(
-              (entry) => Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: widget.accentColor.withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: widget.accentColor.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${entry.key + 1}',
-                          style: TextStyle(
-                            color: widget.accentColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        entry.value,
+                        kp.title,
                         style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          height: 1.5,
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-          ],
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.auto_awesome,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Generated by TioNova AI',
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 12,
+              const Divider(height: 1),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    kp.content,
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 32),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildKeyPointsTab() {
+  Widget _buildDefinitionsTab(bool isWeb, SummaryModel summaryData) {
     final colorScheme = Theme.of(context).colorScheme;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.summaryData.keyPoints.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.lightbulb_outline,
-                      size: 64,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No key points available',
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...widget.summaryData.keyPoints.map(
-              (keyPoint) => Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _getTypeColor(keyPoint.type).withOpacity(0.3),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: _getTypeColor(keyPoint.type).withOpacity(0.1),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getTypeColor(keyPoint.type),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              keyPoint.type.toUpperCase(),
-                              style: TextStyle(
-                                color: colorScheme.onSurface,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              keyPoint.title,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        keyPoint.content,
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          height: 1.6,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDefinitionsTab() {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.summaryData.definitions.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.menu_book_outlined,
-                      size: 64,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No definitions available',
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...widget.summaryData.definitions.map(
-              (definition) => Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colorScheme.outline),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: widget.accentColor.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.menu_book,
-                            color: widget.accentColor,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                definition.term,
-                                style: TextStyle(
-                                  color: colorScheme.onSurface,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                definition.definition,
-                                style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontSize: 14,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFlashcardsTab() {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    if (widget.summaryData.flashcards.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.style_outlined,
-              size: 64,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No flashcards available',
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
+    if (summaryData.definitions.isEmpty)
+      return _buildEmptyState(
+        Icons.menu_book_outlined,
+        'No definitions available',
+        colorScheme,
       );
-    }
 
-    final currentCard = widget.summaryData.flashcards[_currentFlashcardIndex];
-    final totalCards = widget.summaryData.flashcards.length;
+    return ListView.builder(
+      padding: EdgeInsets.all(isWeb ? 48 : 16),
+      itemCount: summaryData.definitions.length,
+      itemBuilder: (context, index) {
+        final def = summaryData.definitions[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: widget.accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.menu_book_rounded,
+                  color: widget.accentColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      def.term,
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      def.definition,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 16,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
+  Widget _buildFlashcardsTab(bool isWeb, SummaryModel summaryData) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (summaryData.flashcards.isEmpty)
+      return _buildEmptyState(
+        Icons.style_outlined,
+        'No flashcards available',
+        colorScheme,
+      );
+
+    final card = summaryData.flashcards[_currentFlashcardIndex];
+    return Padding(
+      padding: EdgeInsets.all(isWeb ? 48 : 16),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Card ${_currentFlashcardIndex + 1} of $totalCards',
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+          Text(
+            'Card ${_currentFlashcardIndex + 1} / ${summaryData.flashcards.length}',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isWeb ? 24 : 12),
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showFlashcardAnswer = !_showFlashcardAnswer;
-                });
-              },
-              child: AnimatedContainer(
+              onTap: () =>
+                  setState(() => _showFlashcardAnswer = !_showFlashcardAnswer),
+              child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: _showFlashcardAnswer
-                        ? Colors.green.withOpacity(0.5)
-                        : widget.accentColor.withOpacity(0.5),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
+                layoutBuilder:
+                    (Widget? currentChild, List<Widget> previousChildren) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: <Widget>[
+                          ...previousChildren,
+                          if (currentChild != null) currentChild,
+                        ],
+                      );
+                    },
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return RotationTransition(
+                    turns: animation,
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: Container(
+                  key: ValueKey(_showFlashcardAnswer),
+                  width: double.infinity,
+                  padding: EdgeInsets.all(isWeb ? 48 : 24),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(isWeb ? 32 : 24),
+                    border: Border.all(
                       color:
                           (_showFlashcardAnswer
                                   ? Colors.green
                                   : widget.accentColor)
-                              .withOpacity(0.2),
-                      blurRadius: 20,
-                      spreadRadius: 2,
+                              .withOpacity(0.3),
+                      width: 3,
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _showFlashcardAnswer
-                          ? Icons.check_circle_outline
-                          : Icons.help_outline,
-                      size: 48,
-                      color: _showFlashcardAnswer
-                          ? Colors.green
-                          : widget.accentColor,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      _showFlashcardAnswer ? 'Answer' : 'Question',
-                      style: TextStyle(
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            (_showFlashcardAnswer
+                                    ? Colors.green
+                                    : widget.accentColor)
+                                .withOpacity(0.1),
+                        blurRadius: 30,
+                        offset: const Offset(0, 15),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _showFlashcardAnswer
+                            ? Icons.check_circle_rounded
+                            : Icons.help_center_rounded,
+                        size: isWeb ? 64 : 48,
                         color: _showFlashcardAnswer
                             ? Colors.green
                             : widget.accentColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: Center(
-                        child: SingleChildScrollView(
-                          child: Text(
-                            _showFlashcardAnswer
-                                ? currentCard.answer
-                                : currentCard.question,
-                            style: TextStyle(
-                              color: colorScheme.onSurface,
-                              fontSize: 18,
-                              height: 1.6,
+                      SizedBox(height: isWeb ? 32 : 16),
+                      Text(
+                        _showFlashcardAnswer ? 'THE ANSWER' : 'THE QUESTION',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                      SizedBox(height: isWeb ? 24 : 12),
+                      Expanded(
+                        child: Center(
+                          child: SingleChildScrollView(
+                            child: Text(
+                              _showFlashcardAnswer
+                                  ? card.answer
+                                  : card.question,
+                              style: TextStyle(
+                                color: colorScheme.onSurface,
+                                fontSize: isWeb ? 24 : 18,
+                                fontWeight: FontWeight.w600,
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _showFlashcardAnswer
-                          ? 'Tap to see question'
-                          : 'Tap to reveal answer',
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
+                      SizedBox(height: isWeb ? 32 : 16),
+                      Text(
+                        'Click to flip',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isWeb ? 48 : 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildNavigationButton(
-                icon: Icons.arrow_back,
-                label: 'Previous',
-                onPressed: _currentFlashcardIndex > 0
-                    ? () {
-                        setState(() {
-                          _currentFlashcardIndex--;
-                          _showFlashcardAnswer = false;
-                        });
-                      }
+              _buildNavBtn(
+                Icons.arrow_back_rounded,
+                'Prev',
+                _currentFlashcardIndex > 0
+                    ? () => setState(() {
+                        _currentFlashcardIndex--;
+                        _showFlashcardAnswer = false;
+                      })
                     : null,
+                isWeb,
               ),
-              _buildNavigationButton(
-                icon: Icons.arrow_forward,
-                label: 'Next',
-                onPressed: _currentFlashcardIndex < totalCards - 1
-                    ? () {
-                        setState(() {
-                          _currentFlashcardIndex++;
-                          _showFlashcardAnswer = false;
-                        });
-                      }
+              SizedBox(width: isWeb ? 32 : 16),
+              _buildNavBtn(
+                Icons.arrow_forward_rounded,
+                'Next',
+                _currentFlashcardIndex < summaryData.flashcards.length - 1
+                    ? () => setState(() {
+                        _currentFlashcardIndex++;
+                        _showFlashcardAnswer = false;
+                      })
                     : null,
+                isWeb,
               ),
             ],
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildNavigationButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback? onPressed,
-  }) {
+  Widget _buildNavBtn(
+    IconData icon,
+    String label,
+    VoidCallback? onTap,
+    bool isWeb,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
-
-    return Opacity(
-      opacity: onPressed != null ? 1.0 : 0.3,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 20),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.surfaceContainerHighest,
-          foregroundColor: colorScheme.onSurface,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 0,
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: isWeb ? 24 : 18),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        foregroundColor: colorScheme.onSurface,
+        padding: EdgeInsets.symmetric(
+          horizontal: isWeb ? 32 : 16,
+          vertical: isWeb ? 20 : 12,
         ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 0,
+        textStyle: TextStyle(
+          fontSize: isWeb ? 16 : 14,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(IconData icon, String text, ColorScheme colorScheme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 80,
+            color: colorScheme.onSurfaceVariant.withOpacity(0.2),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            text,
+            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 18),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAIBadge(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.auto_awesome, color: widget.accentColor, size: 16),
+          const SizedBox(width: 8),
+          Text(
+            'Synthesized by TioNova AI Engine',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
