@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
@@ -262,7 +263,7 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
                       ChapterActionButtons(
                         isProcessing: isProcessing,
                         isDialogVisible: _isDialogVisible,
-                        onCancel: () => Navigator.pop(context),
+                        onCancel: () => context.pop(),
                         onCreate: _createChapter,
                       ),
                     ],
@@ -608,14 +609,13 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
             message: 'Chapter created successfully',
             onPressed: () {
               debugPrint('👈 Success dialog dismissed, navigating back');
-              // Close the dialog
-              Navigator.of(ctx).pop();
 
-              // Pop the CreateChapterScreen
               if (mounted) {
-                debugPrint('👈 Popping CreateChapterScreen');
-                // Use Navigator.pop() which works with both Navigator and GoRouter
-                Navigator.of(context).pop(true);
+                debugPrint(
+                  '👈 Popping CreateChapterScreen and returning to FolderDetailScreen',
+                );
+                // Use GoRouter's pop method to return to FolderDetailScreen
+                ctx.pop(true);
               }
             },
           );

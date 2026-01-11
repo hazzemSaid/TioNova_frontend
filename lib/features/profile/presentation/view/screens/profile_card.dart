@@ -11,11 +11,11 @@ class ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
     return Card(
-      color:
-          theme.cardTheme.color ?? (isDark ? Colors.grey[900] : Colors.white),
+      color: isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -24,52 +24,66 @@ class ProfileCard extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: 76,
-              height: 76,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.08),
-                  width: 1.2,
+                  color: colorScheme.primary.withOpacity(0.1),
+                  width: 2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: ClipOval(
-                child: profile.profilePicture != null
-                    ? Image.network(
-                        profile.profilePicture!,
-                        fit: BoxFit.cover,
-                        filterQuality: FilterQuality.high,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.person, size: 40),
-                      )
-                    : const Icon(Icons.person, size: 40),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: ClipOval(
+                  child:
+                      profile.profilePicture != null &&
+                          profile.profilePicture!.isNotEmpty
+                      ? Image.network(
+                          profile.profilePicture!,
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.high,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildDefaultAvatar(colorScheme),
+                        )
+                      : _buildDefaultAvatar(colorScheme),
+                ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               profile.username,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontSize: 20,
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+                letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              profile.universityCollege ?? 'Student',
-              style: theme.textTheme.bodySmall,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                profile.universityCollege ?? 'Student',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 24),
             SizedBox(
-              width: 200,
+              width: 220,
               child: ElevatedButton.icon(
                 onPressed: () async {
                   final profileCubit = context.read<ProfileCubit>();
@@ -83,62 +97,64 @@ class ProfileCard extends StatelessWidget {
                     } catch (_) {}
                   }
                 },
-                icon: const Icon(Icons.edit, size: 18),
+                icon: const Icon(Icons.edit_outlined, size: 18),
                 label: const Text('Edit Profile'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.surface,
-                  foregroundColor: theme.colorScheme.onSurface,
+                  backgroundColor: colorScheme.surface,
+                  foregroundColor: colorScheme.primary,
                   elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: colorScheme.primary.withOpacity(0.2),
+                    ),
                   ),
-                  textStyle: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
-            const SizedBox(height: 18),
-            // Stats grid
+            const SizedBox(height: 24),
+            // Stats section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _StatCard(
-                        icon: Icons.local_fire_department,
-                        label: 'Study Streak',
-                        value: profile.streak.toString(),
+                        icon: Icons.local_fire_department_rounded,
+                        label: 'Streak',
+                        value: '${profile.streak}',
                         sub: 'DAYS',
+                        iconColor: Colors.orange,
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       _StatCard(
-                        icon: Icons.menu_book,
+                        icon: Icons.menu_book_rounded,
                         label: 'Chapters',
-                        value: profile.totalChapters.toString(),
+                        value: '${profile.totalChapters}',
                         sub: 'TOTAL',
+                        iconColor: Colors.blue,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _StatCard(
-                        icon: Icons.quiz,
+                        icon: Icons.quiz_rounded,
                         label: 'Quizzes',
-                        value: profile.totalQuizzesTaken.toString(),
+                        value: '${profile.totalQuizzesTaken}',
                         sub: 'DONE',
+                        iconColor: Colors.purple,
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       _StatCard(
-                        icon: Icons.percent,
+                        icon: Icons.percent_rounded,
                         label: 'Score',
                         value: profile.averageQuizScore.toStringAsFixed(0),
                         sub: 'AVG',
+                        iconColor: Colors.green,
                       ),
                     ],
                   ),
@@ -150,6 +166,17 @@ class ProfileCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildDefaultAvatar(ColorScheme colorScheme) {
+    return Container(
+      color: colorScheme.primary.withOpacity(0.1),
+      child: Icon(
+        Icons.person_outline_rounded,
+        size: 40,
+        color: colorScheme.primary,
+      ),
+    );
+  }
 }
 
 class _StatCard extends StatelessWidget {
@@ -157,52 +184,56 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final String sub;
+  final Color iconColor;
+
   const _StatCard({
     required this.icon,
     required this.label,
     required this.value,
     required this.sub,
+    required this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Expanded(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: theme.cardTheme.color,
-          border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.4),
-            width: 1,
-          ),
-          borderRadius: BorderRadius.circular(14),
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.05)),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: theme.iconTheme.color, size: 26),
+            Icon(icon, color: iconColor, size: 24),
             const SizedBox(height: 8),
             Text(
               value,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               sub,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+                fontSize: 9,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               label,
-              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 10,
+              ),
             ),
           ],
         ),
