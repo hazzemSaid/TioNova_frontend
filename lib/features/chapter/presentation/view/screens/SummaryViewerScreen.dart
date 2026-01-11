@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tionova/core/navigation/helpers/navigation_helper.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
-import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/utils/widgets/dot_painter.dart';
@@ -152,7 +152,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                       child: Center(
                         child: Container(
                           constraints: BoxConstraints(
-                            maxWidth: isWeb ? 1100 : double.infinity,
+                            maxWidth: double.infinity,
                           ),
                           child: TabBarView(
                             controller: _tabController,
@@ -203,11 +203,13 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                 onPressed: () {
                   final fId = widget.folderId;
                   if (fId != null && fId.isNotEmpty) {
-                    context.safeGo(
-                      '/folders/$fId/chapters/${widget.chapterId}',
+                    NavigationHelper.navigateToChapter(
+                      context,
+                      folderId: fId,
+                      chapterId: widget.chapterId,
                     );
                   } else {
-                    context.safePop(fallback: '/chapters/${widget.chapterId}');
+                    NavigationHelper.navigateToFoldersList(context);
                   }
                 },
                 style: IconButton.styleFrom(
@@ -661,7 +663,6 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                 child: Container(
                   key: ValueKey(_showFlashcardAnswer),
                   width: double.infinity,
-                  padding: EdgeInsets.all(isWeb ? 48 : 24),
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainer,
                     borderRadius: BorderRadius.circular(isWeb ? 32 : 24),
@@ -692,7 +693,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
                         _showFlashcardAnswer
                             ? Icons.check_circle_rounded
                             : Icons.help_center_rounded,
-                        size: isWeb ? 64 : 48,
+                        size: 48,
                         color: _showFlashcardAnswer
                             ? Colors.green
                             : widget.accentColor,

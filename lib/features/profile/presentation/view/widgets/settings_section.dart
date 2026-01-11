@@ -49,7 +49,6 @@ class _SettingsSectionState extends State<SettingsSection> {
     final textTheme = theme.textTheme;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.surface,

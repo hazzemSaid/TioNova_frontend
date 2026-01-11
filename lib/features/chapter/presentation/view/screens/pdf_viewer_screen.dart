@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:tionova/core/navigation/helpers/navigation_helper.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
@@ -162,6 +163,84 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
     }
   }
 
+  /// Check if the file bytes represent a valid PDF file
+  /// PDF files start with the signature "%PDF-" (0x25 0x50 0x44 0x46 0x2D)
+  bool _isValidPDF(Uint8List bytes) {
+    if (bytes.length < 5) {
+      return false;
+    }
+
+    // Check for PDF signature: %PDF-
+    return bytes[0] == 0x25 && // %
+        bytes[1] == 0x50 && // P
+        bytes[2] == 0x44 && // D
+        bytes[3] == 0x46 && // F
+        bytes[4] == 0x2D; // -
+  }
+
+  /// Show alert dialog for non-PDF files
+  void _showNotPdfAlert() {
+    if (!mounted || !_isInitialized) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Not a PDF File',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'The uploaded file is not a valid PDF document. Only PDF files can be displayed in the PDF viewer.\n\nPlease upload a PDF file to view the content.',
+          style: TextStyle(color: Color(0xFF8E8E93), fontSize: 16, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(); // Close dialog
+              final fId = widget.folderId;
+              if (fId != null && fId.isNotEmpty) {
+                NavigationHelper.navigateToChapter(
+                  context,
+                  folderId: fId,
+                  chapterId: widget.chapterId,
+                );
+              } else {
+                NavigationHelper.navigateToFoldersList(context);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Go Back',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Future<void> _downloadPDF() async {
   //   // On web, download directly using pdfBytes
   //   if (kIsWeb && pdfBytes != null) {
@@ -233,6 +312,27 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
 
           print('BlocListener: forDownload = ${state.forDownload}');
 
+          // Validate that the file is actually a PDF
+          if (!_isValidPDF(state.pdfData)) {
+            print('⚠️ File is not a valid PDF! Showing alert...');
+
+            // Reset state
+            if (mounted) {
+              setState(() {
+                pdfBytes = null;
+                localPath = null;
+                isReady = false;
+                _showNoPdfView = true;
+              });
+            }
+
+            // Show alert dialog
+            _showNotPdfAlert();
+            return; // Don't proceed with loading
+          }
+
+          print('✅ File is a valid PDF, proceeding with loading...');
+
           // Only cache if this is a download operation
           if (state.forDownload) {
             // DownloadService.cachePDF(
@@ -303,11 +403,18 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => context.safePop(
-              folderId: widget.folderId,
-              chapterId: widget.chapterId,
-              fallback: '/',
-            ),
+            onPressed: () {
+              final fId = widget.folderId;
+              if (fId != null && fId.isNotEmpty) {
+                NavigationHelper.navigateToChapter(
+                  context,
+                  folderId: fId,
+                  chapterId: widget.chapterId,
+                );
+              } else {
+                NavigationHelper.navigateToFoldersList(context);
+              }
+            },
           ),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class ChapterDetailStatsCard extends StatelessWidget {
   final int passed;
   final int attempted;
+  final bool isEmbedded;
 
   const ChapterDetailStatsCard({
     super.key,
     required this.passed,
     required this.attempted,
+    this.isEmbedded = false,
   });
 
   @override
@@ -15,21 +17,42 @@ class ChapterDetailStatsCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isEmbedded ? 20 : 32),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline, width: 1),
+        color: isEmbedded
+            ? colorScheme.surface.withOpacity(0.5)
+            : colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(isEmbedded ? 0.2 : 0.5),
+          width: 1,
+        ),
+        boxShadow: isEmbedded
+            ? []
+            : [
+                BoxShadow(
+                  color: colorScheme.shadow.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.query_stats_rounded,
-                color: colorScheme.onSurface,
-                size: 24,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.query_stats_rounded,
+                  color: colorScheme.primary,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
@@ -37,20 +60,21 @@ class ChapterDetailStatsCard extends StatelessWidget {
                 style: TextStyle(
                   color: colorScheme.onSurface,
                   fontSize: 18,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           _buildStatItem(
             colorScheme,
             'Success Rate',
-            '${attempted > 0 ? ((passed / attempted)).toStringAsFixed(0) : 0}%',
+            '${attempted > 0 ? ((passed / attempted) * 100).toStringAsFixed(0) : 0}%',
             Icons.trending_up_rounded,
             Colors.green,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _buildStatItem(
             colorScheme,
             'Quizzes Taken',
@@ -58,7 +82,7 @@ class ChapterDetailStatsCard extends StatelessWidget {
             Icons.history_rounded,
             colorScheme.primary,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _buildStatItem(
             colorScheme,
             'Quizzes Passed',
@@ -81,27 +105,38 @@ class ChapterDetailStatsCard extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withOpacity(0.2)),
           ),
-          child: Icon(icon, color: color, size: 18),
+          child: Icon(icon, color: color, size: 20),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 16),
         Expanded(
-          child: Text(
-            label,
-            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       ],

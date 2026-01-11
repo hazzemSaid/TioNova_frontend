@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' show min;
 
 import 'package:audio_waveforms/audio_waveforms.dart' as waveforms if (dart.library.html) 'package:tionova/features/folder/presentation/view/widgets/audio_waveforms_stub.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -76,7 +77,10 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
       } else {
         if (kIsWeb) {
           final cleanBase64 = audioData.contains(',') ? audioData.split(',').last : audioData;
-          audioPath = 'data:audio/m4a;base64,$cleanBase64';
+          // Get MIME type from metadata or determine from audio data
+          final meta = widget.note.rawData['meta'] as Map<String, dynamic>?;
+          final mimeType = meta?['mimeType'] as String? ?? _detectMimeType(cleanBase64);
+          audioPath = 'data:$mimeType;base64,$cleanBase64';
         } else {
           audioPath = audioData;
         }
@@ -87,10 +91,20 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
         _webAudioPlayer!.onPlayerStateChanged.listen((s) => setState(() => _isPlaying = s == PlayerState.playing));
         _webAudioPlayer!.onDurationChanged.listen((d) => setState(() => _duration = d));
         _webAudioPlayer!.onPositionChanged.listen((p) => setState(() => _position = p));
-        await _webAudioPlayer!.setSource(UrlSource(audioPath));
+        
+        // Use BytesSource for base64 data on web for better Safari compatibility
+        if (audioPath.startsWith('data:')) {
+          // Decode base64 for direct playback
+          final base64Data = audioPath.split(',').last;
+          final bytes = base64Decode(base64Data);
+          await _webAudioPlayer!.setSourceBytes(bytes);
+        } else {
+          await _webAudioPlayer!.setSource(UrlSource(audioPath));
+        }
+        
         final d = await _webAudioPlayer!.getDuration();
         if (d != null) setState(() { _duration = d; _isInitialized = true; });
-      } else {
+      } else {  
         _playerController = waveforms.PlayerController();
         await _playerController!.preparePlayer(path: audioPath, volume: 1.0);
         await Future.delayed(const Duration(milliseconds: 500));
@@ -104,6 +118,41 @@ class _NoteDetailDialogState extends State<NoteDetailDialog> {
     } catch (e) {
       debugPrint('Error: $e');
     }
+  }
+
+  /// Detect MIME type from base64 data header
+  String _detectMimeType(String base64Data) {
+    try {
+      final bytes = base64Decode(base64Data.substring(0, min(100, base64Data.length)));
+      
+      // Check for common audio file signatures
+      if (bytes.length >= 4) {
+        // WebM signature: 0x1A45DFA3
+        if (bytes[0] == 0x1A && bytes[1] == 0x45 && bytes[2] == 0xDF && bytes[3] == 0xA3) {
+          return 'audio/webm';
+        }
+        // AAC/M4A signature: 0x00000020 or 0x00000018 followed by 'ftyp'
+        if (bytes.length >= 12 && 
+            bytes[4] == 0x66 && bytes[5] == 0x74 && 
+            bytes[6] == 0x79 && bytes[7] == 0x70) {
+          return 'audio/mp4';
+        }
+        // OGG signature: 'OggS'
+        if (bytes[0] == 0x4F && bytes[1] == 0x67 && bytes[2] == 0x67 && bytes[3] == 0x53) {
+          return 'audio/ogg';
+        }
+        // MP3 signature: 'ID3' or 0xFF 0xFB
+        if ((bytes[0] == 0x49 && bytes[1] == 0x44 && bytes[2] == 0x33) ||
+            (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0)) {
+          return 'audio/mpeg';
+        }
+      }
+    } catch (e) {
+      debugPrint('Error detecting MIME type: $e');
+    }
+    
+    // Default to webm for web recordings
+    return 'audio/webm';
   }
 
   Future<void> _togglePlayPause() async {

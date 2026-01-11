@@ -1,18 +1,20 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:tionova/core/utils/platform_utils.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 
 import 'voice_file_stub.dart'
     if (dart.library.io) 'voice_file_io.dart'
     as voice_fs;
+import 'web_audio_recorder_stub.dart'
+    if (dart.library.html) 'web_audio_recorder.dart';
 
 class AddNoteBottomSheet extends StatefulWidget {
   final String chapterId;
@@ -41,7 +43,10 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
   int? _imageSize;
   bool _isRecording = false;
   FlutterSoundRecorder? _audioRecorder;
+  WebAudioRecorder? _webAudioRecorder;
   String? _audioPath;
+  String? _webAudioBase64;
+  String? _webAudioMimeType;
   Duration _recordingDuration = Duration.zero;
   DateTime? _recordingStartTime;
 
@@ -58,13 +63,17 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
     _textController.dispose();
     _stopRecording();
     _audioRecorder?.closeRecorder();
+    _webAudioRecorder?.dispose();
     super.dispose();
   }
 
   Future<void> _initAudioRecorder() async {
-    if (isWeb) return;
-    _audioRecorder = FlutterSoundRecorder();
-    await _audioRecorder!.openRecorder();
+    if (kIsWeb) {
+      _webAudioRecorder = WebAudioRecorder();
+    } else {
+      _audioRecorder = FlutterSoundRecorder();
+      await _audioRecorder!.openRecorder();
+    }
   }
 
   Future<void> _pickImage() async {
@@ -106,16 +115,47 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
   }
 
   Future<void> _startRecording() async {
-    if (isWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Voice recording is not supported on Web yet'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+    if (kIsWeb) {
+      // Web recording
+      if (!WebAudioRecorder.isSupported) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Audio recording is not supported in this browser'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      try {
+        await _webAudioRecorder!.startRecording();
+
+        setState(() {
+          _isRecording = true;
+          _recordingStartTime = DateTime.now();
+          _recordingDuration = Duration.zero;
+        });
+
+        // Listen to duration updates
+        _webAudioRecorder!.onDurationChanged?.listen((duration) {
+          if (mounted) {
+            setState(() {
+              _recordingDuration = duration;
+            });
+          }
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start recording: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
+    // Mobile recording
     final status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -168,7 +208,23 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
   }
 
   Future<void> _stopRecording() async {
-    if (isWeb) return;
+    if (kIsWeb) {
+      if (_isRecording && _webAudioRecorder != null) {
+        try {
+          final result = await _webAudioRecorder!.stopRecording();
+          setState(() {
+            _isRecording = false;
+            _webAudioBase64 = result.base64Data;
+            _webAudioMimeType = result.mimeType;
+            _recordingDuration = result.duration;
+          });
+        } catch (e) {
+          debugPrint('Error stopping recording: $e');
+        }
+      }
+      return;
+    }
+
     if (_isRecording && _audioRecorder != null) {
       await _audioRecorder!.stopRecorder();
       setState(() => _isRecording = false);
@@ -176,9 +232,18 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
   }
 
   Future<void> _deleteRecording() async {
+    if (kIsWeb) {
+      setState(() {
+        _webAudioBase64 = null;
+        _webAudioMimeType = null;
+        _recordingDuration = Duration.zero;
+      });
+      return;
+    }
+
     if (_audioPath != null) {
       try {
-        if (!isWeb) await voice_fs.deleteFile(_audioPath!);
+        await voice_fs.deleteFile(_audioPath!);
       } catch (e) {
         debugPrint('Error deleting recording: $e');
       }
@@ -233,21 +298,38 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
       rawData['data'] = base64Encode(_imageData!);
       rawData['meta'] = {'fileName': _imageName, 'size': _imageSize};
     } else if (_selectedType == 'voice') {
-      if (_audioPath == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please record some audio'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
+      if (kIsWeb) {
+        if (_webAudioBase64 == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please record some audio'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        rawData['data'] = _webAudioBase64!;
+        rawData['meta'] = {
+          'duration': _formatDuration(_recordingDuration),
+          'mimeType': _webAudioMimeType,
+        };
+      } else {
+        if (_audioPath == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please record some audio'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        final bytes = await voice_fs.readFileBytes(_audioPath!);
+        rawData['data'] = base64Encode(bytes);
+        rawData['meta'] = {
+          'duration': _formatDuration(_recordingDuration),
+          'size': bytes.length,
+        };
       }
-      final bytes = await voice_fs.readFileBytes(_audioPath!);
-      rawData['data'] = base64Encode(bytes);
-      rawData['meta'] = {
-        'duration': _formatDuration(_recordingDuration),
-        'size': bytes.length,
-      };
     }
 
     if (mounted) {
@@ -678,7 +760,7 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ] else if (_audioPath != null) ...[
+                ] else if (_audioPath != null || _webAudioBase64 != null) ...[
                   _buildPulseIcon(
                     widget.accentColor,
                     icon: Icons.check_circle_rounded,
@@ -710,7 +792,8 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (_audioPath != null && !_isRecording)
+                    if ((_audioPath != null || _webAudioBase64 != null) &&
+                        !_isRecording)
                       IconButton.filledTonal(
                         onPressed: _deleteRecording,
                         icon: const Icon(Icons.delete_rounded),
@@ -720,7 +803,8 @@ class _AddNoteBottomSheetState extends State<AddNoteBottomSheet> {
                           foregroundColor: colorScheme.error,
                         ),
                       ),
-                    if (_audioPath != null && !_isRecording)
+                    if ((_audioPath != null || _webAudioBase64 != null) &&
+                        !_isRecording)
                       const SizedBox(width: 16),
                     FloatingActionButton.extended(
                       onPressed: _isRecording

@@ -4,8 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-import 'package:tionova/features/folder/data/models/foldermodel.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/folder/data/models/foldermodel.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/widgets/custom_dialogs.dart';
@@ -21,6 +22,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
     with SafeContextMixin {
   Foldermodel? _selectedFolder;
   String? _selectedChapterId; // Only allow single chapter selection
+  ChapterModel? _selectedChapter; // Store complete chapter context
   bool _showChapters = false;
   String? _firstChapterTitle;
 
@@ -120,7 +122,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _green.withOpacity(0.2),
+                color: _green.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -167,10 +169,15 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
                     setState(() {
                       _selectedFolder = folder;
                       _selectedChapterId = null;
+                      _selectedChapter = null; // Reset chapter context
                       _firstChapterTitle = null;
                       _showChapters = true;
                     });
-                    if (!mounted) return;
+                    if (!mounted) {
+                      return;
+                    }
+
+                    // Use ChapterCubit properly to fetch chapters
                     context.read<ChapterCubit>().getChapters(
                       folderId: folder.id,
                     );
@@ -235,9 +242,44 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
         }
         if (state is ChapterError) {
           return Center(
-            child: Text(
-              'Failed to load chapters',
-              style: TextStyle(color: _textSecondary),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, color: _textSecondary, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to load chapters',
+                  style: TextStyle(
+                    color: _textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  state.message.errMessage,
+                  style: TextStyle(color: _textSecondary, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_selectedFolder != null) {
+                      context.read<ChapterCubit>().getChapters(
+                        folderId: _selectedFolder!.id,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
           );
         }
@@ -245,9 +287,26 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
           final chapters = state.chapters;
           if (chapters.isEmpty) {
             return Center(
-              child: Text(
-                'No chapters',
-                style: TextStyle(color: _textSecondary),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.folder_open, color: _textSecondary, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No chapters found',
+                    style: TextStyle(
+                      color: _textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'This folder doesn\'t contain any chapters yet.',
+                    style: TextStyle(color: _textSecondary, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             );
           }
@@ -266,8 +325,11 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
                     setState(() {
                       if (selected) {
                         _selectedChapterId = null;
+                        _selectedChapter = null;
                       } else {
                         _selectedChapterId = chapterId;
+                        _selectedChapter =
+                            chapter; // Store complete chapter context
                       }
                       _firstChapterTitle ??= chapter.title;
                     });
@@ -310,12 +372,28 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
   }
 
   Widget _buildContinueButton() {
-    final canContinue = _selectedFolder != null && _selectedChapterId != null;
+    final canContinue =
+        _selectedFolder != null &&
+        _selectedChapterId != null &&
+        _selectedChapter != null;
+
     return BlocConsumer<ChallengeCubit, ChallengeState>(
       listener: (context, state) {
         if (state is ChallengeCreated) {
           // Navigate to Share Challenge screen with the generated code
           if (!contextIsValid) return;
+
+          // Validate inviteCode before navigation
+          if (state.inviteCode.isEmpty) {
+            safeContext((ctx) {
+              CustomDialogs.showErrorDialog(
+                ctx,
+                title: 'Challenge Creation Failed',
+                message: 'Failed to generate challenge code. Please try again.',
+              );
+            });
+            return;
+          }
 
           // Store cubit references before navigation
           safeContext((ctx) {
@@ -332,20 +410,24 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
                 'authCubit': authCubit,
                 'challengeCubit': challengeCubit,
                 'inviteCode': state.inviteCode,
-                'chapterName': _selectedFolder!.title,
+                'chapterName':
+                    _selectedChapter?.title ?? _selectedFolder!.title,
                 'challengeName': state.challengeName,
                 'questionsCount': state.questionsCount,
                 'durationMinutes': state.durationMinutes,
+                'chapterContext':
+                    state.chapterContext, // Pass complete chapter context
+                'selectedFolder': _selectedFolder, // Pass folder context
               },
             );
           });
         } else if (state is ChallengeError) {
-          // Show error dialog
+          // Show enhanced error dialog
           safeContext((ctx) {
             CustomDialogs.showErrorDialog(
               ctx,
-              title: 'Error!',
-              message: state.message,
+              title: 'Challenge Creation Failed',
+              message: _getErrorMessage(state.message),
             );
           });
         }
@@ -360,21 +442,7 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
             height: 52,
             child: ElevatedButton(
               onPressed: (canContinue && !isLoading)
-                  ? () async {
-                      if (_selectedFolder == null ||
-                          _selectedChapterId == null ||
-                          !contextIsValid)
-                        return;
-
-                      // Get the selected chapter ID
-                      final firstChapterId = _selectedChapterId!;
-
-                      // Create challenge via API (Step 1)
-                      await context.read<ChallengeCubit>().createChallenge(
-                        chapterId: firstChapterId,
-                        title: _firstChapterTitle ?? 'Challenge',
-                      );
-                    }
+                  ? () => _createChallengeWithChapter()
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: canContinue ? _green : _divider,
@@ -412,5 +480,105 @@ class _SelectChapterScreenState extends State<SelectChapterScreen>
         );
       },
     );
+  }
+
+  /// Create challenge with proper chapter context integration
+  Future<void> _createChallengeWithChapter() async {
+    // Validate all required data is present
+    if (_selectedFolder == null ||
+        _selectedChapterId == null ||
+        _selectedChapter == null ||
+        !contextIsValid) {
+      _showValidationError();
+      return;
+    }
+
+    try {
+      // Validate chapter has sufficient content for quiz generation
+      if (!_validateChapterContent(_selectedChapter!)) {
+        _showInsufficientContentError();
+        return;
+      }
+
+      // Create challenge with complete chapter context
+      await context.read<ChallengeCubit>().createChallenge(
+        chapterId: _selectedChapterId!,
+        title: _selectedChapter!.title ?? 'Challenge',
+        chapterContext: _selectedChapter!, // Pass complete chapter context
+      );
+    } catch (e) {
+      // Handle unexpected errors
+      if (contextIsValid) {
+        safeContext((ctx) {
+          CustomDialogs.showErrorDialog(
+            ctx,
+            title: 'Unexpected Error',
+            message:
+                'An unexpected error occurred while creating the challenge. Please try again.',
+          );
+        });
+      }
+    }
+  }
+
+  /// Validate chapter has sufficient content for quiz generation
+  bool _validateChapterContent(ChapterModel chapter) {
+    // Basic validation - chapter should have title and description
+    if (chapter.title == null || chapter.title!.trim().isEmpty) {
+      return false;
+    }
+
+    // Additional validation can be added here based on business requirements
+    // For example, checking if chapter has summary, minimum content length, etc.
+
+    return true;
+  }
+
+  /// Show validation error when required data is missing
+  void _showValidationError() {
+    if (contextIsValid) {
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Selection Required',
+          message:
+              'Please select both a folder and a chapter before creating a challenge.',
+        );
+      });
+    }
+  }
+
+  /// Show error when chapter doesn't have sufficient content
+  void _showInsufficientContentError() {
+    if (contextIsValid) {
+      safeContext((ctx) {
+        CustomDialogs.showErrorDialog(
+          ctx,
+          title: 'Insufficient Content',
+          message:
+              'The selected chapter doesn\'t have enough content to generate a quiz. Please select a different chapter.',
+        );
+      });
+    }
+  }
+
+  /// Get user-friendly error message from API error
+  String _getErrorMessage(String originalMessage) {
+    // Map common API errors to user-friendly messages
+    if (originalMessage.toLowerCase().contains('network')) {
+      return 'Network connection failed. Please check your internet connection and try again.';
+    } else if (originalMessage.toLowerCase().contains('timeout')) {
+      return 'The request timed out. Please try again.';
+    } else if (originalMessage.toLowerCase().contains('unauthorized')) {
+      return 'You don\'t have permission to create challenges. Please log in again.';
+    } else if (originalMessage.toLowerCase().contains('chapter not found')) {
+      return 'The selected chapter could not be found. Please try selecting a different chapter.';
+    } else if (originalMessage.toLowerCase().contains('insufficient content')) {
+      return 'The selected chapter doesn\'t have enough content to generate quiz questions.';
+    } else {
+      return originalMessage.isNotEmpty
+          ? originalMessage
+          : 'Failed to create challenge. Please try again.';
+    }
   }
 }

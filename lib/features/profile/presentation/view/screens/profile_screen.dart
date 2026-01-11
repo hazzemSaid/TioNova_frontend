@@ -39,6 +39,7 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
   late TabController _tabController;
   bool _processingImage = false;
   bool _uploadingImage = false;
+  String _activeWebTab = 'Overview';
 
   @override
   void initState() {
@@ -360,93 +361,129 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
   Widget _buildWebTabs(BuildContext context, Profile profile) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tabs = ['Overview', 'Activity', 'Achievements', 'Settings'];
 
-    return DefaultTabController(
-      length: 4,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: colorScheme.outlineVariant.withOpacity(0.5),
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withOpacity(0.5),
             ),
-            child: TabBar(
-              labelColor: colorScheme.primary,
-              unselectedLabelColor: colorScheme.onSurfaceVariant,
-              indicatorColor: colorScheme.primary,
-              indicatorWeight: 3,
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 15,
-              ),
-              tabs: const [
-                Tab(text: 'Overview'),
-                Tab(text: 'Activity'),
-                Tab(text: 'Achievements'),
-                Tab(text: 'Settings'),
-              ],
-            ),
+            ],
           ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 800,
-            child: TabBarView(
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                SingleChildScrollView(
-                  child: OverviewTab(
-                    screenHeight: MediaQuery.of(context).size.height,
-                    profile: profile,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: tabs.map((tab) {
+              final isActive = _activeWebTab == tab;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: InkWell(
+                  onTap: () => setState(() => _activeWebTab = tab),
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? colorScheme.primary
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      tab,
+                      style: TextStyle(
+                        color: isActive
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurfaceVariant,
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
-                SingleChildScrollView(
-                  child: ActivityTab(
-                    screenHeight: MediaQuery.of(context).size.height,
-                    profile: profile,
-                  ),
-                ),
-                SingleChildScrollView(
-                  child: AchievementsSection(achievements: _getAchievements()),
-                ),
-                SingleChildScrollView(
-                  child: SettingsSection(
-                    notificationsEnabled: true,
-                    darkModeEnabled:
-                        context.read<ThemeCubit>().state == ThemeMode.dark,
-                    changeTheme: () {
-                      final themeCubit = context.read<ThemeCubit>();
-                      if (themeCubit.state == ThemeMode.light) {
-                        themeCubit.setTheme(ThemeMode.dark);
-                      } else {
-                        themeCubit.setTheme(ThemeMode.light);
-                      }
-                    },
-                    onNotificationsToggle: () {},
-                    onDarkModeToggle: () {},
-                    onExportData: () {},
-                    onShareProgress: () {},
-                    onHelpSupport: () {},
-                    onSignOut: () {
-                      context.read<AuthCubit>().signOut();
-                    },
-                  ),
-                ),
-              ],
-            ),
+              );
+            }).toList(),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 32),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.02),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Container(
+            key: ValueKey(_activeWebTab),
+            child: _buildTabContentByName(_activeWebTab, profile),
+          ),
+        ),
+      ],
     );
+  }
+
+  Widget _buildTabContentByName(String tabName, Profile profile) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    switch (tabName) {
+      case 'Overview':
+        return OverviewTab(screenHeight: screenHeight, profile: profile);
+      case 'Activity':
+        return ActivityTab(screenHeight: screenHeight, profile: profile);
+      case 'Achievements':
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: AchievementsSection(achievements: _getAchievements()),
+        );
+      case 'Settings':
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SettingsSection(
+            notificationsEnabled: true,
+            darkModeEnabled: context.read<ThemeCubit>().state == ThemeMode.dark,
+            changeTheme: () {
+              final themeCubit = context.read<ThemeCubit>();
+              if (themeCubit.state == ThemeMode.light) {
+                themeCubit.setTheme(ThemeMode.dark);
+              } else {
+                themeCubit.setTheme(ThemeMode.light);
+              }
+            },
+            onNotificationsToggle: () {},
+            onDarkModeToggle: () {},
+            onExportData: () {},
+            onShareProgress: () {},
+            onHelpSupport: () {},
+            onSignOut: () {
+              context.read<AuthCubit>().signOut();
+            },
+          ),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   // Mobile Layout
@@ -567,40 +604,46 @@ class _ProfileScreenContentState extends State<_ProfileScreenContent>
   }
 
   Widget _buildTabContent(int index, double screenHeight, Profile profile) {
+    Widget content;
     switch (index) {
       case 0:
-        return OverviewTab(screenHeight: screenHeight, profile: profile);
+        content = OverviewTab(screenHeight: screenHeight, profile: profile);
+        break;
       case 1:
-        return ActivityTab(screenHeight: screenHeight, profile: profile);
+        content = ActivityTab(screenHeight: screenHeight, profile: profile);
+        break;
       case 2:
-        return SingleChildScrollView(
-          child: AchievementsSection(achievements: _getAchievements()),
-        );
+        content = AchievementsSection(achievements: _getAchievements());
+        break;
       case 3:
-        return SingleChildScrollView(
-          child: SettingsSection(
-            notificationsEnabled: true,
-            darkModeEnabled: context.read<ThemeCubit>().state == ThemeMode.dark,
-            changeTheme: () {
-              final themeCubit = context.read<ThemeCubit>();
-              if (themeCubit.state == ThemeMode.light) {
-                themeCubit.setTheme(ThemeMode.dark);
-              } else {
-                themeCubit.setTheme(ThemeMode.light);
-              }
-            },
-            onNotificationsToggle: () {},
-            onDarkModeToggle: () {},
-            onExportData: () {},
-            onShareProgress: () {},
-            onHelpSupport: () {},
-            onSignOut: () {
-              context.read<AuthCubit>().signOut();
-            },
-          ),
+        content = SettingsSection(
+          notificationsEnabled: true,
+          darkModeEnabled: context.read<ThemeCubit>().state == ThemeMode.dark,
+          changeTheme: () {
+            final themeCubit = context.read<ThemeCubit>();
+            if (themeCubit.state == ThemeMode.light) {
+              themeCubit.setTheme(ThemeMode.dark);
+            } else {
+              themeCubit.setTheme(ThemeMode.light);
+            }
+          },
+          onNotificationsToggle: () {},
+          onDarkModeToggle: () {},
+          onExportData: () {},
+          onShareProgress: () {},
+          onHelpSupport: () {},
+          onSignOut: () {
+            context.read<AuthCubit>().signOut();
+          },
         );
+        break;
       default:
-        return const Center(child: Text("Content Not Found"));
+        content = const Center(child: Text("Content Not Found"));
     }
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: content,
+    );
   }
 }

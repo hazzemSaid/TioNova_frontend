@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,6 +22,9 @@ class _EntercodeScreenState extends State<EntercodeScreen>
   final TextEditingController _codeController = TextEditingController();
   final FocusNode _codeFocus = FocusNode();
   bool _hasNavigated = false; // Track if we've already navigated
+  bool _isJoining = false; // Track joining state separately from cubit loading
+  String?
+  _lastAttemptedCode; // Track last attempted code for better error handling
 
   // Colors aligned with the app's dark theme
   Color get _bg => const Color(0xFF000000);
@@ -30,6 +34,7 @@ class _EntercodeScreenState extends State<EntercodeScreen>
   Color get _textSecondary => const Color(0xFF8E8E93);
   Color get _divider => const Color(0xFF2C2C2E);
   Color get _blue => const Color(0xFF007AFF);
+  Color get _red => const Color(0xFFFF3B30);
 
   // Mock recent challenges (replace with real data when wired)
   final List<Map<String, String>> _recentChallenges = const [
@@ -47,6 +52,10 @@ class _EntercodeScreenState extends State<EntercodeScreen>
   void dispose() {
     _codeController.dispose();
     _codeFocus.dispose();
+    // Reset navigation flag and joining state on disposal
+    _hasNavigated = false;
+    _isJoining = false;
+    _lastAttemptedCode = null;
     super.dispose();
   }
 
@@ -77,17 +86,23 @@ class _EntercodeScreenState extends State<EntercodeScreen>
         // Prevent multiple navigations or actions after disposal
         if (_hasNavigated || !contextIsValid) return;
 
-        print('EnterCodeScreen - BlocListener state: $state');
+        if (kDebugMode) {
+          print('EnterCodeScreen - BlocListener state: $state');
+        }
 
         // Use SafeContextMixin to prevent "deactivated widget" errors
         if (state is ChallengeJoined) {
           // Navigate to waiting lobby after successfully joining
-          print('ChallengeJoined detected - navigating to waiting lobby');
+          if (kDebugMode) {
+            print('ChallengeJoined detected - navigating to waiting lobby');
+          }
 
           _hasNavigated = true; // Mark as navigated
+          _isJoining = false; // Reset joining state
+
           safeContext((ctx) {
             GoRouter.of(ctx).pushReplacementNamed(
-              'challenge-waiting',
+              'challenge-lobby',
               pathParameters: {'code': _codeController.text.trim()},
               extra: {
                 'challengeName': state.challengeName,
@@ -97,24 +112,36 @@ class _EntercodeScreenState extends State<EntercodeScreen>
             );
           });
         } else if (state is ChallengeError) {
-          // Show error dialog
-          print('ChallengeError detected: ${state.message}');
+          // Reset joining state on error
+          setState(() {
+            _isJoining = false;
+          });
+
+          // Show enhanced error dialog with specific error messages
+          if (kDebugMode) {
+            print('ChallengeError detected: ${state.message}');
+          }
 
           safeContext((ctx) {
-            CustomDialogs.showErrorDialog(
-              ctx,
-              title: 'Error!',
-              message: state.message,
-            );
+            _showEnhancedErrorDialog(ctx, state.message);
           });
+        } else if (state is ChallengeLoading) {
+          // Update joining state when loading starts
+          if (!_isJoining) {
+            setState(() {
+              _isJoining = true;
+            });
+          }
         }
       },
       child: PopScope(
         canPop: true, // Allow normal pop behavior for stack navigation
-        onPopInvoked: (didPop) {
+        onPopInvokedWithResult: (didPop, result) {
           if (didPop) {
-            // Reset navigation flag when popping
+            // Reset navigation flag and state when popping
             _hasNavigated = false;
+            _isJoining = false;
+            _lastAttemptedCode = null;
           }
         },
         child: Scaffold(
@@ -213,7 +240,7 @@ class _EntercodeScreenState extends State<EntercodeScreen>
         width: 68,
         height: 68,
         decoration: BoxDecoration(
-          color: _blue.withOpacity(0.12),
+          color: _blue.withValues(alpha: 0.12),
           shape: BoxShape.circle,
           border: Border.all(color: _divider),
         ),
@@ -253,7 +280,7 @@ class _EntercodeScreenState extends State<EntercodeScreen>
   Widget _buildCodeInputCard(BuildContext context) {
     return BlocBuilder<ChallengeCubit, ChallengeState>(
       builder: (context, state) {
-        final isLoading = state is ChallengeLoading;
+        final isLoading = _isJoining || state is ChallengeLoading;
 
         return Container(
           decoration: BoxDecoration(
@@ -303,8 +330,16 @@ class _EntercodeScreenState extends State<EntercodeScreen>
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: _blue),
                   ),
+                  disabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: _divider.withValues(alpha: 0.5),
+                    ),
+                  ),
                   filled: true,
-                  fillColor: _panelBg,
+                  fillColor: isLoading
+                      ? _panelBg.withValues(alpha: 0.5)
+                      : _panelBg,
                 ),
                 keyboardType: TextInputType.visiblePassword,
                 textInputAction: TextInputAction.done,
@@ -339,7 +374,7 @@ class _EntercodeScreenState extends State<EntercodeScreen>
                         }),
                       ),
                     )
-                  : SizedBox.shrink(),
+                  : const SizedBox.shrink(),
               const SizedBox(height: 16),
               Align(
                 child: SizedBox(
@@ -362,7 +397,7 @@ class _EntercodeScreenState extends State<EntercodeScreen>
                           )
                         : const Icon(Icons.bolt, size: 18),
                     label: Text(
-                      isLoading ? 'Joining...' : 'Join Challenge',
+                      _getJoinButtonText(isLoading),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -380,6 +415,17 @@ class _EntercodeScreenState extends State<EntercodeScreen>
                   ),
                 ),
               ),
+              // Show validation feedback
+              if (_codeController.text.isNotEmpty &&
+                  _codeController.text.length < 6)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Code must be exactly 6 characters',
+                    style: TextStyle(color: _textSecondary, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
             ],
           ),
         );
@@ -429,9 +475,22 @@ class _EntercodeScreenState extends State<EntercodeScreen>
 
   void _onJoinPressed() async {
     final code = _codeController.text.trim();
-    print('_onJoinPressed called with code: $code');
+    if (kDebugMode) {
+      print('_onJoinPressed called with code: $code');
+    }
+
+    // Validate code length
     if (code.length != 6) {
-      print('Code length invalid: ${code.length}');
+      if (kDebugMode) {
+        print('Code length invalid: ${code.length}');
+      }
+      _showValidationError('Please enter a 6-character code');
+      return;
+    }
+
+    // Validate code format (alphanumeric with allowed symbols)
+    if (!RegExp(r'^[a-zA-Z0-9@#/]{6}$').hasMatch(code)) {
+      _showValidationError('Code contains invalid characters');
       return;
     }
 
@@ -441,16 +500,117 @@ class _EntercodeScreenState extends State<EntercodeScreen>
     // Check if widget is still mounted before accessing context
     if (!contextIsValid) return;
 
-    // Get auth token
-    print('Calling joinChallenge with token and code: $code');
+    // Set joining state and track attempted code
+    setState(() {
+      _isJoining = true;
+      _lastAttemptedCode = code;
+    });
+
+    if (kDebugMode) {
+      print('Calling joinChallenge with code: $code');
+    }
+
     // Call join challenge API
     await context.read<ChallengeCubit>().joinChallenge(challengeCode: code);
-    print('joinChallenge call completed');
+
+    if (kDebugMode) {
+      print('joinChallenge call completed');
+    }
   }
 
   void _onTapRecent(String code) {
+    if (_isJoining) return; // Prevent action while joining
+
     _codeController.text = code;
     _onJoinPressed();
+  }
+
+  /// Get appropriate button text based on loading state
+  String _getJoinButtonText(bool isLoading) {
+    if (isLoading) {
+      return 'Joining...';
+    }
+
+    final codeLength = _codeController.text.trim().length;
+    if (codeLength == 0) {
+      return 'Enter Code';
+    } else if (codeLength < 6) {
+      return 'Enter ${6 - codeLength} More';
+    } else {
+      return 'Join Challenge';
+    }
+  }
+
+  /// Show validation error as a snackbar
+  void _showValidationError(String message) {
+    if (!contextIsValid) return;
+
+    safeContext((ctx) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: _red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    });
+  }
+
+  /// Show enhanced error dialog with specific error messages
+  void _showEnhancedErrorDialog(BuildContext context, String errorMessage) {
+    String title = 'Unable to Join Challenge';
+    String message = errorMessage;
+    String buttonText = 'Try Again';
+
+    // Customize error messages based on error type
+    if (errorMessage.toLowerCase().contains('not found') ||
+        errorMessage.toLowerCase().contains('invalid') ||
+        errorMessage.toLowerCase().contains('does not exist')) {
+      title = 'Challenge Not Found';
+      message = _lastAttemptedCode != null
+          ? 'The challenge code "$_lastAttemptedCode" is not valid. Please check the code and try again.'
+          : 'The challenge code you entered is not valid. Please check the code and try again.';
+    } else if (errorMessage.toLowerCase().contains('full') ||
+        errorMessage.toLowerCase().contains('capacity')) {
+      title = 'Challenge Full';
+      message =
+          'This challenge has reached its maximum number of participants. Please try joining a different challenge.';
+    } else if (errorMessage.toLowerCase().contains('ended') ||
+        errorMessage.toLowerCase().contains('finished') ||
+        errorMessage.toLowerCase().contains('completed')) {
+      title = 'Challenge Ended';
+      message =
+          'This challenge has already ended. Please try joining a different challenge.';
+    } else if (errorMessage.toLowerCase().contains('network') ||
+        errorMessage.toLowerCase().contains('connection') ||
+        errorMessage.toLowerCase().contains('timeout')) {
+      title = 'Connection Problem';
+      message =
+          'Unable to connect to the challenge server. Please check your internet connection and try again.';
+      buttonText = 'Retry';
+    } else if (errorMessage.toLowerCase().contains('already joined') ||
+        errorMessage.toLowerCase().contains('duplicate')) {
+      title = 'Already Joined';
+      message =
+          'You have already joined this challenge. Please wait for the host to start the challenge.';
+      buttonText = 'OK';
+    }
+
+    CustomDialogs.showErrorDialog(
+      context,
+      title: title,
+      message: message,
+      buttonText: buttonText,
+      onPressed: () {
+        // Clear the code field if it's an invalid code error
+        if (title == 'Challenge Not Found') {
+          _codeController.clear();
+          _codeFocus.requestFocus();
+        }
+      },
+    );
   }
 }
 
@@ -594,7 +754,7 @@ class _EmptyKey extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0E0E10),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: border.withOpacity(0.35)),
+        border: Border.all(color: border.withValues(alpha: 0.35)),
       ),
       child: const SizedBox(width: 8, height: 14),
     );

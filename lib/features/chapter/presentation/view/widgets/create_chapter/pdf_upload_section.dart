@@ -152,7 +152,7 @@ class PdfUploadSection extends StatelessWidget {
     required ColorScheme colorScheme,
   }) {
     return Text(
-      selectedFile != null ? 'File Selected' : 'Upload PDF Files',
+      selectedFile != null ? 'File Selected' : 'Upload PDF or PPTX Files',
       style: TextStyle(
         color: colorScheme.onSurface,
         fontSize: isDesktop
@@ -175,7 +175,7 @@ class PdfUploadSection extends StatelessWidget {
       child: Text(
         selectedFile != null
             ? selectedFileName ?? ''
-            : 'Click to browse or drag and drop\nPDF files here',
+            : 'Click to browse or drag and drop\nPDF or PPTX files here',
         style: TextStyle(
           color: colorScheme.onSurfaceVariant,
           fontSize: isDesktop
@@ -207,7 +207,7 @@ class PdfUploadSection extends StatelessWidget {
         size: isDesktop ? 20 : 18,
       ),
       label: Text(
-        selectedFile == null ? 'Choose PDF Files' : 'Rechange PDF Files',
+        selectedFile == null ? 'Choose Files' : 'Change File',
         style: TextStyle(
           fontSize: isDesktop
               ? 16

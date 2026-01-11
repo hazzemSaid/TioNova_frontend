@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class ChapterDetailAISummaryCard extends StatelessWidget {
+class ChapterDetailAISummaryCard extends StatefulWidget {
   final bool isDesktop;
   final bool isLoading;
   final bool hasSummary;
@@ -17,51 +17,68 @@ class ChapterDetailAISummaryCard extends StatelessWidget {
   });
 
   @override
+  State<ChapterDetailAISummaryCard> createState() =>
+      _ChapterDetailAISummaryCardState();
+}
+
+class _ChapterDetailAISummaryCardState
+    extends State<ChapterDetailAISummaryCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (isDesktop) {
-      return Container(
-        padding: const EdgeInsets.all(28),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.all(widget.isDesktop ? 28 : 20),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outline, width: 1),
-        ),
-        child: Row(
-          children: [
-            _buildIconContainer(colorScheme, 64, 32),
-            const SizedBox(width: 20),
-            Expanded(child: _buildTextContent(colorScheme, 20, 14)),
-            const SizedBox(width: 20),
-            _buildButtons(colorScheme),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _isHovered
+                ? colorScheme.primary.withOpacity(0.5)
+                : colorScheme.outline.withOpacity(0.5),
+            width: _isHovered ? 1.5 : 1,
+          ),
+          boxShadow: [
+            if (_isHovered)
+              BoxShadow(
+                color: colorScheme.primary.withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
           ],
         ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              _buildIconContainer(colorScheme, 48, 24),
-              const SizedBox(width: 16),
-              Expanded(child: _buildTitle(colorScheme, 18)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildSubtitle(colorScheme, 13),
-          const SizedBox(height: 16),
-          _buildButtons(colorScheme),
-        ],
+        child: widget.isDesktop
+            ? Row(
+                children: [
+                  _buildIconContainer(colorScheme, 64, 32),
+                  const SizedBox(width: 20),
+                  Expanded(child: _buildTextContent(colorScheme, 22, 14)),
+                  const SizedBox(width: 20),
+                  _buildButtons(colorScheme),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _buildIconContainer(colorScheme, 48, 24),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildTitle(colorScheme, 18)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildSubtitle(colorScheme, 13),
+                  const SizedBox(height: 20),
+                  _buildButtons(colorScheme),
+                ],
+              ),
       ),
     );
   }
@@ -71,16 +88,28 @@ class ChapterDetailAISummaryCard extends StatelessWidget {
     double size,
     double iconSize,
   ) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(size * 0.22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+        ),
+        borderRadius: BorderRadius.circular(size * 0.25),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withOpacity(0.3),
+            blurRadius: _isHovered ? 12 : 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Icon(
         Icons.auto_awesome_rounded,
-        color: colorScheme.primary,
+        color: colorScheme.onPrimary,
         size: iconSize,
       ),
     );
@@ -95,7 +124,7 @@ class ChapterDetailAISummaryCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildTitle(colorScheme, titleSize),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         _buildSubtitle(colorScheme, subtitleSize),
       ],
     );
@@ -107,8 +136,8 @@ class ChapterDetailAISummaryCard extends StatelessWidget {
       style: TextStyle(
         color: colorScheme.onSurface,
         fontSize: size,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.3,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.5,
       ),
     );
   }
@@ -119,7 +148,7 @@ class ChapterDetailAISummaryCard extends StatelessWidget {
       style: TextStyle(
         color: colorScheme.onSurfaceVariant,
         fontSize: size,
-        height: 1.5,
+        height: 1.6,
       ),
     );
   }
@@ -129,59 +158,72 @@ class ChapterDetailAISummaryCard extends StatelessWidget {
       spacing: 12,
       runSpacing: 12,
       children: [
-        ElevatedButton(
-          onPressed: isLoading ? null : onAction,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          child: ElevatedButton(
+            onPressed: widget.isLoading ? null : widget.onAction,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              elevation: _isHovered ? 4 : 0,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isLoading) ...[
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.isLoading) ...[
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ] else
+                  const Icon(Icons.auto_awesome_rounded, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  widget.isLoading
+                      ? 'Generating...'
+                      : (widget.hasSummary
+                            ? 'View Summary'
+                            : 'Generate Summary'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 10),
-              ] else
-                const Icon(Icons.auto_awesome_rounded, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                isLoading
-                    ? 'Generating...'
-                    : (hasSummary ? 'View Summary' : 'Generate Summary'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         OutlinedButton(
-          onPressed: onDownload,
+          onPressed: widget.onDownload,
           style: OutlinedButton.styleFrom(
             foregroundColor: colorScheme.onSurface,
-            side: BorderSide(color: colorScheme.outline, width: 1),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+            side: BorderSide(
+              color: _isHovered
+                  ? colorScheme.primary.withOpacity(0.5)
+                  : colorScheme.outline,
+              width: 1.5,
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: _isHovered
+                ? colorScheme.primary.withOpacity(0.05)
+                : Colors.transparent,
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.download_rounded, size: 18),
+              Icon(Icons.download_rounded, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Download',

@@ -13,12 +13,32 @@ class ChallengeCode extends IChallengeCode implements Equatable {
     return 'ChallengeCode(challengeCode: $challengeCode, qr: $qr)';
   }
 
+  /// Factory constructor with null safety and validation
   factory ChallengeCode.fromJson(Map<String, dynamic> json) {
+    final challengeCode = json['challengeCode'];
+    final qr = json['qr'];
+
+    // Validate challengeCode is not null or empty
+    if (challengeCode == null ||
+        (challengeCode is String && challengeCode.isEmpty)) {
+      throw FormatException(
+        'Invalid challenge code: challengeCode is null or empty',
+      );
+    }
+
+    // Validate qr is not null or empty
+    if (qr == null || (qr is String && qr.isEmpty)) {
+      throw FormatException('Invalid challenge code: qr is null or empty');
+    }
+
     return ChallengeCode(
-      challengeCode: json['challengeCode'] as String,
-      qr: json['qr'] as String,
+      challengeCode: challengeCode as String,
+      qr: qr as String,
     );
   }
+
+  /// Check if the challenge code is valid
+  bool get isValid => challengeCode.isNotEmpty && qr.isNotEmpty;
 
   @override
   bool? get stringify => true;

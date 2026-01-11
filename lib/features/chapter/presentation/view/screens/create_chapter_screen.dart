@@ -331,10 +331,10 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
       FilePickerResult? result;
 
       try {
-        print('Trying custom type with PDF extension...');
+        print('Trying custom type with PDF and PPTX extensions...');
         result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
-          allowedExtensions: ['pdf'],
+          allowedExtensions: ['pdf', 'pptx'],
           allowMultiple: false,
         );
         print('Custom type result: $result');
@@ -355,9 +355,12 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
 
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
+        final fileExtension = file.extension?.toLowerCase();
+        final fileName = file.name.toLowerCase();
 
-        if (file.extension?.toLowerCase() == 'pdf' ||
-            file.name.toLowerCase().endsWith('.pdf')) {
+        // Check if file is PDF or PPTX
+        if ((fileExtension == 'pdf' || fileName.endsWith('.pdf')) ||
+            (fileExtension == 'pptx' || fileName.endsWith('.pptx'))) {
           Uint8List? fileBytes = file.bytes;
 
           if (fileBytes == null && file.path != null) {
@@ -370,11 +373,20 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
           }
 
           if (fileBytes != null) {
+            // Determine MIME type based on extension
+            String mimeType;
+            if (fileExtension == 'pdf' || fileName.endsWith('.pdf')) {
+              mimeType = 'application/pdf';
+            } else {
+              mimeType =
+                  'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+            }
+
             setState(() {
               _selectedFile = FileData(
                 bytes: fileBytes!,
                 filename: file.name,
-                mimeType: 'application/pdf',
+                mimeType: mimeType,
               );
               _selectedFileName = file.name;
             });
@@ -395,7 +407,7 @@ class _CreateChapterScreenState extends State<CreateChapterScreen>
           CustomDialogs.showErrorDialog(
             context,
             title: 'Error!',
-            message: 'Please select a PDF file only.',
+            message: 'Please select a PDF or PowerPoint (.pptx) file only.',
           );
         }
       }

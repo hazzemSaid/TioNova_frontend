@@ -15,11 +15,11 @@ import 'package:tionova/features/auth/presentation/view/screens/register_screen.
 import 'package:tionova/features/auth/presentation/view/screens/reset_password_screen.dart';
 import 'package:tionova/features/auth/presentation/view/screens/verify_reset_code_screen.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
-import 'package:tionova/features/challenges/presentation/view/screens/EnterCode_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challange_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challenge_completion_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/challenge_waiting_lobby_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/create_challenge_screen.dart';
+import 'package:tionova/features/challenges/presentation/view/screens/enter_code_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/live_question_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/qr_scanner_screen.dart';
 import 'package:tionova/features/challenges/presentation/view/screens/select_chapter_screen.dart';
@@ -487,7 +487,7 @@ class AppRouter {
                       builder: (context, state) {
                         final folderId = state.pathParameters['folderId']!;
                         final chapterId = state.pathParameters['chapterId']!;
-                        final extra = state.extra as Map<String, dynamic>?;
+                        // extra is available for future use if needed
                         return BlocProvider<QuizCubit>(
                           create: (context) => getIt<QuizCubit>(),
                           child: QuizScreen(
@@ -767,6 +767,115 @@ class AppRouter {
                     );
                   },
                 ),
+
+                // Quiz: /chapters/:chapterId/quiz
+                GoRoute(
+                  path: 'quiz',
+                  name: 'chapter-quiz',
+                  builder: (context, state) {
+                    final chapterId = state.pathParameters['chapterId']!;
+                    final extra = state.extra as Map<String, dynamic>?;
+                    final folderId = extra?['folderId'] as String? ?? '';
+                    return BlocProvider<QuizCubit>(
+                      create: (context) => getIt<QuizCubit>(),
+                      child: QuizScreen(
+                        chapterId: chapterId,
+                        folderId: folderId,
+                      ),
+                    );
+                  },
+                  routes: [
+                    // Quiz Questions: /chapters/:chapterId/quiz/questions
+                    GoRoute(
+                      path: 'questions',
+                      name: 'chapter-quiz-questions',
+                      builder: (context, state) {
+                        final extra = state.extra as Map<String, dynamic>;
+                        final chapterId =
+                            state.pathParameters['chapterId']!;
+                        return BlocProvider<QuizCubit>(
+                          create: (context) => getIt<QuizCubit>(),
+                          child: QuizQuestionsScreen(
+                            quiz: extra['quiz'],
+                            answers: extra['answers'] as List<String?>,
+                            chapterId: chapterId,
+                            folderId: '',
+                          ),
+                        );
+                      },
+                    ),
+
+                    // Quiz Results: /chapters/:chapterId/quiz/results
+                    GoRoute(
+                      path: 'results',
+                      name: 'chapter-quiz-results',
+                      builder: (context, state) {
+                        final extra = state.extra as Map<String, dynamic>;
+                        final chapterId =
+                            state.pathParameters['chapterId']!;
+                        return BlocProvider<QuizCubit>(
+                          create: (context) => getIt<QuizCubit>(),
+                          child: QuizResultsScreen(
+                            quiz: extra['quiz'],
+                            userAnswers:
+                                extra['userAnswers'] as List<String?>,
+                            chapterId: chapterId,
+                            timeTaken: extra['timeTaken'] as int,
+                          ),
+                        );
+                      },
+                    ),
+
+                    // Quiz History: /chapters/:chapterId/quiz/history
+                    GoRoute(
+                      path: 'history',
+                      name: 'chapter-quiz-history',
+                      builder: (context, state) {
+                        final chapterId =
+                            state.pathParameters['chapterId']!;
+                        final extra = state.extra as Map<String, dynamic>?;
+                        return BlocProvider<QuizCubit>(
+                          create: (context) => getIt<QuizCubit>(),
+                          child: QuizHistoryScreen(
+                            chapterId: chapterId,
+                            folderId: '',
+                            quizTitle: extra?['quizTitle'] as String?,
+                          ),
+                        );
+                      },
+                    ),
+
+                    // Quiz Review: /chapters/:chapterId/quiz/review
+                    GoRoute(
+                      path: 'review',
+                      name: 'chapter-quiz-review',
+                      builder: (context, state) {
+                        final extra = state.extra as Map<String, dynamic>;
+                        return BlocProvider<QuizCubit>(
+                          create: (context) => getIt<QuizCubit>(),
+                          child: QuizReviewScreen(
+                            attempt: extra['attempt'] as Attempt,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+
+                // Practice Mode: /chapters/:chapterId/practice
+                GoRoute(
+                  path: 'practice',
+                  name: 'chapter-practice',
+                  builder: (context, state) {
+                    final chapterId = state.pathParameters['chapterId']!;
+                    final extra = state.extra as Map<String, dynamic>?;
+                    return PracticeModeScreen(
+                      chapterId: chapterId,
+                      folderId: '',
+                      chapterTitle: extra?['chapterTitle'] as String?,
+                    );
+                  },
+                ),
               ],
             ),
 
@@ -933,6 +1042,73 @@ class AppRouter {
               name: 'challenge-create',
               builder: (context, state) {
                 final extra = state.extra as Map<String, dynamic>?;
+
+                // Validate inviteCode - don't use hardcoded fallback
+                final inviteCode = extra?['inviteCode'] as String?;
+                if (inviteCode == null || inviteCode.isEmpty) {
+                  // Return error screen if no valid invite code
+                  return Scaffold(
+                    backgroundColor: const Color(0xFF000000),
+                    body: SafeArea(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Color(0xFF8E8E93),
+                                size: 64,
+                              ),
+                              const SizedBox(height: 24),
+                              const Text(
+                                'Challenge Creation Failed',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Unable to create challenge. Please try again.',
+                                style: TextStyle(
+                                  color: Color(0xFF8E8E93),
+                                  fontSize: 16,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 32),
+                              ElevatedButton(
+                                onPressed: () => GoRouter.of(context).pop(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color.fromRGBO(
+                                    0,
+                                    153,
+                                    102,
+                                    1,
+                                  ),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 32,
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text('Go Back'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
                 final challengeCubit =
                     extra?['challengeCubit'] as ChallengeCubit?;
                 final folderCubit = extra?['folderCubit'] as FolderCubit?;
@@ -942,7 +1118,7 @@ class AppRouter {
                   challengeName: extra?['challengeName'] as String?,
                   questionsCount: extra?['questionsCount'] as int? ?? 10,
                   durationMinutes: extra?['durationMinutes'] as int? ?? 15,
-                  inviteCode: extra?['inviteCode'] as String? ?? 'Q4DRE9',
+                  inviteCode: inviteCode,
                   chapterName: extra?['chapterName'] as String?,
                   chapterDescription: extra?['chapterDescription'] as String?,
                 );

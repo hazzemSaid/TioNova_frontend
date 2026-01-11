@@ -264,7 +264,7 @@ class _QuizScreenState extends State<QuizScreen> {
                                 final hasFolder = widget.folderId.isNotEmpty;
                                 final path = hasFolder
                                     ? '/folders/${widget.folderId}/chapters/${widget.chapterId}/quiz/questions'
-                                    : '/chapters/${widget.chapterId}/quiz/questions';
+                                    : '/folders/';
                                 context.push(
                                   path,
                                   extra: {
@@ -515,7 +515,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       final hasFolder = widget.folderId.isNotEmpty;
                       final path = hasFolder
                           ? '/folders/${widget.folderId}/chapters/${widget.chapterId}/quiz/questions'
-                          : '/chapters/${widget.chapterId}/quiz/questions';
+                          : '/folders/';
                       context.push(
                         path,
                         extra: {

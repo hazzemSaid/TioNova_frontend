@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/quiz/data/models/QuizModel.dart';
 import 'package:tionova/features/quiz/presentation/widgets/quiz_header.dart';
 import 'package:tionova/features/quiz/presentation/widgets/quiz_review_answers.dart';
@@ -257,7 +258,8 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
     final hasFolder = widget.folderId.isNotEmpty;
     final path = hasFolder
         ? '/folders/${widget.folderId}/chapters/${widget.chapterId}/quiz/results'
-        : '/chapters/${widget.chapterId}/quiz/results';
+        : '/folders/';
+
     context.pushReplacement(
       path,
       extra: {

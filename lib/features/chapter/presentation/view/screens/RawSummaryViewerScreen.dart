@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tionova/core/utils/safe_navigation.dart';
+import 'package:tionova/core/navigation/helpers/navigation_helper.dart';
 
 class RawSummaryViewerScreen extends StatelessWidget {
   final String summaryText;
@@ -32,9 +32,13 @@ class RawSummaryViewerScreen extends StatelessWidget {
           onPressed: () {
             final fId = folderId;
             if (fId != null && fId.isNotEmpty) {
-              context.safeGo('/folders/$fId/chapters/$chapterId');
+              NavigationHelper.navigateToChapter(
+                context,
+                folderId: fId,
+                chapterId: chapterId,
+              );
             } else {
-              context.safePop(fallback: '/chapters/$chapterId');
+              NavigationHelper.navigateToFoldersList(context);
             }
           },
         ),

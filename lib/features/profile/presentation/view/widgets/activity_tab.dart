@@ -13,34 +13,32 @@ class ActivityTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SectionCard(
-              title: 'Recent Activity',
-              icon: Icons.bolt,
-              children: profile.activityLogs.isEmpty
-                  ? [
-                      const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text('No recent activity'),
-                      ),
-                    ]
-                  : profile.activityLogs.take(5).map((log) {
-                      return _ActivityItem(
-                        title: 'Study Session',
-                        subtitle:
-                            '${log.chaptersStudied.length} chapters, ${log.quizzesCompleted} quizzes',
-                        timeAgo: _formatDate(log.date),
-                        icon: Icons.history,
-                      );
-                    }).toList(),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionCard(
+            title: 'Recent Activity',
+            icon: Icons.bolt,
+            children: profile.activityLogs.isEmpty
+                ? [
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('No recent activity'),
+                    ),
+                  ]
+                : profile.activityLogs.take(5).map((log) {
+                    return _ActivityItem(
+                      title: 'Study Session',
+                      subtitle:
+                          '${log.chaptersStudied.length} chapters, ${log.quizzesCompleted} quizzes',
+                      timeAgo: _formatDate(log.date),
+                      icon: Icons.history,
+                    );
+                  }).toList(),
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
+import 'package:tionova/core/navigation/helpers/navigation_helper.dart';
 import 'package:tionova/features/chapter/data/models/mindmapmodel.dart';
 import 'package:tionova/features/chapter/presentation/bloc/mindmap/mindmap_cubit.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/mindmap/mindmap_viewer.dart';
@@ -68,7 +69,22 @@ class _MindmapScreenContentState extends State<_MindmapScreenContent> {
               backgroundColor: const Color(0xFF0A0E27),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  final fId = widget.folderId;
+                  final cId = widget.chapterId;
+                  if (fId != null &&
+                      fId.isNotEmpty &&
+                      cId != null &&
+                      cId.isNotEmpty) {
+                    NavigationHelper.navigateToChapter(
+                      context,
+                      folderId: fId,
+                      chapterId: cId,
+                    );
+                  } else {
+                    NavigationHelper.navigateToFoldersList(context);
+                  }
+                },
               ),
               title: const Text(
                 'Mind Map',
@@ -99,7 +115,22 @@ class _MindmapScreenContentState extends State<_MindmapScreenContent> {
               backgroundColor: const Color(0xFF0A0E27),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  final fId = widget.folderId;
+                  final cId = widget.chapterId;
+                  if (fId != null &&
+                      fId.isNotEmpty &&
+                      cId != null &&
+                      cId.isNotEmpty) {
+                    NavigationHelper.navigateToChapter(
+                      context,
+                      folderId: fId,
+                      chapterId: cId,
+                    );
+                  } else {
+                    NavigationHelper.navigateToFoldersList(context);
+                  }
+                },
               ),
               title: const Text(
                 'Mind Map',
@@ -154,7 +185,22 @@ class _MindmapScreenContentState extends State<_MindmapScreenContent> {
               backgroundColor: const Color(0xFF0A0E27),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  final fId = widget.folderId;
+                  final cId = widget.chapterId;
+                  if (fId != null &&
+                      fId.isNotEmpty &&
+                      cId != null &&
+                      cId.isNotEmpty) {
+                    NavigationHelper.navigateToChapter(
+                      context,
+                      folderId: fId,
+                      chapterId: cId,
+                    );
+                  } else {
+                    NavigationHelper.navigateToFoldersList(context);
+                  }
+                },
               ),
               title: const Text(
                 'Mind Map',
@@ -215,7 +261,20 @@ class MindmapScreenWithExistingCubit extends StatelessWidget {
           backgroundColor: const Color(0xFF0A0E27),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              if (folderId != null &&
+                  folderId!.isNotEmpty &&
+                  chapterId != null &&
+                  chapterId!.isNotEmpty) {
+                NavigationHelper.navigateToChapter(
+                  context,
+                  folderId: folderId!,
+                  chapterId: chapterId!,
+                );
+              } else {
+                NavigationHelper.navigateToFoldersList(context);
+              }
+            },
           ),
           title: const Text('Mind Map', style: TextStyle(color: Colors.white)),
         ),

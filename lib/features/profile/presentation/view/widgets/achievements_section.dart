@@ -27,7 +27,6 @@ class AchievementsSection extends StatelessWidget {
     final textTheme = theme.textTheme;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colorScheme.surface,

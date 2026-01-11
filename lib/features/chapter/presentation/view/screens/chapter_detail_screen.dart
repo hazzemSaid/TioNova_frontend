@@ -40,7 +40,6 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
         SafeContextMixin {
   bool _isSummaryLoading = false;
   bool _isMindmapLoading = false;
-  String _activeTab = "";
   SummaryModel? _summaryData;
   String? _rawSummaryText;
   late AnimationController _animationController;
@@ -187,7 +186,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
     if (_summaryData != null) {
       final path = hasFolder
           ? '/folders/$folderId/chapters/$chapterId/summary'
-          : '/chapters/$chapterId/summary';
+          : '/folders';
       if (kIsWeb) {
         context.go(
           path,
@@ -212,7 +211,8 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
     } else if (_rawSummaryText != null) {
       final path = hasFolder
           ? '/folders/$folderId/chapters/$chapterId/raw-summary'
-          : '/chapters/$chapterId/raw-summary';
+          : '/folders';
+
       if (kIsWeb) {
         context.go(
           path,
@@ -246,7 +246,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
 
     final path = hasFolder
         ? '/folders/$folderId/chapters/$chapterId/pdf'
-        : '/chapters/$chapterId/pdf';
+        : '/folders';
 
     if (kIsWeb) {
       context.go(
@@ -263,6 +263,70 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
         extra: {
           'chapterTitle': _chapter!.title ?? 'Chapter',
           'chapterCubit': context.read<ChapterCubit>(),
+          'folderId': folderId,
+        },
+      );
+    }
+  }
+
+  void _viewNotes() {
+    if (_chapter == null) return;
+
+    final folderId = _chapter!.folderId;
+    final chapterId = _chapter!.id;
+    final hasFolder = folderId != null && folderId.isNotEmpty;
+
+    final path = hasFolder
+        ? '/folders/$folderId/chapters/$chapterId/notes'
+        : '/folders';
+
+    if (kIsWeb) {
+      context.go(
+        path,
+        extra: {
+          'chapterTitle': _chapter!.title ?? 'Chapter',
+          'accentColor': widget.folderColor,
+          'folderId': folderId,
+          'folderOwnerId': widget.folderOwnerId,
+        },
+      );
+    } else {
+      context.push(
+        path,
+        extra: {
+          'chapterTitle': _chapter!.title ?? 'Chapter',
+          'accentColor': widget.folderColor,
+          'folderId': folderId,
+          'folderOwnerId': widget.folderOwnerId,
+        },
+      );
+    }
+  }
+
+  void _viewQuiz() {
+    if (_chapter == null) return;
+
+    final folderId = _chapter!.folderId;
+    final chapterId = _chapter!.id;
+    final hasFolder = folderId != null && folderId.isNotEmpty;
+
+    final path = hasFolder
+        ? '/folders/$folderId/chapters/$chapterId/quiz'
+        : '/folders';
+
+    if (kIsWeb) {
+      context.go(
+        path,
+        extra: {
+          'chapterTitle': _chapter!.title ?? 'Chapter',
+          'folderId': folderId,
+        },
+      );
+    } else {
+      context.push(
+        path,
+        extra: {
+          'chapterTitle': _chapter!.title ?? 'Chapter',
           'folderId': folderId,
         },
       );
@@ -360,7 +424,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           final hasFolder = folderId != null && folderId.isNotEmpty;
           final path = hasFolder
               ? '/folders/$folderId/chapters/$chapterId/mindmap'
-              : '/chapters/$chapterId/mindmap';
+              : '/folders';
           if (kIsWeb) {
             context.go(
               path,
@@ -471,18 +535,12 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       folderColor: widget.folderColor,
       isSummaryLoading: _isSummaryLoading,
       isMindmapLoading: _isMindmapLoading,
-      activeTab: _activeTab,
       summaryData: _summaryData,
       rawSummaryText: _rawSummaryText,
       onDownloadPDF: _viewPDF,
       onGenerateSummary: _generateSummary,
       onViewSummary: _viewSummary,
       onGenerateMindmap: _generateMindmap,
-      onTabChanged: (tab) {
-        setState(() {
-          _activeTab = tab;
-        });
-      },
       folderOwnerId: widget.folderOwnerId,
     );
   }
@@ -493,7 +551,6 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       folderColor: widget.folderColor,
       isSummaryLoading: _isSummaryLoading,
       isMindmapLoading: _isMindmapLoading,
-      activeTab: _activeTab,
       summaryData: _summaryData,
       rawSummaryText: _rawSummaryText,
       onDownloadPDF: _viewPDF,
@@ -501,11 +558,6 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       onGenerateSummary: _generateSummary,
       onViewSummary: _viewSummary,
       onGenerateMindmap: _generateMindmap,
-      onTabChanged: (tab) {
-        setState(() {
-          _activeTab = tab;
-        });
-      },
       folderOwnerId: widget.folderOwnerId,
     );
   }

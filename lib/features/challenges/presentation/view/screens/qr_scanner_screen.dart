@@ -5,7 +5,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
 import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
@@ -76,7 +75,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           print('QR Scanner - Successfully joined challenge');
           safeContext((ctx) {
             ctx.pushReplacementNamed(
-              'challenge-waiting',
+              'challenge-lobby',
               pathParameters: {'code': _scannedCode ?? ''},
               extra: {
                 'challengeName': state.challengeName,

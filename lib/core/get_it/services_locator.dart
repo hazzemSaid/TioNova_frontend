@@ -133,13 +133,7 @@ Future<void> setupServiceLocator() async {
   //   box = await Hive.openBox('auth_box');
   // }
 
-  final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: AppConstants.baseUrl,
-      connectTimeout: Duration(milliseconds: AppConstants.connectTimeout),
-      receiveTimeout: Duration(milliseconds: AppConstants.receiveTimeout),
-    ),
-  );
+  final Dio dio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
   final logger = PrettyDioLogger(
     requestHeader: true,
     requestBody: true,
