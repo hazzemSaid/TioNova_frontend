@@ -179,14 +179,11 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   void _viewSummary() {
     if (_chapter == null) return;
 
-    final folderId = _chapter!.folderId;
+    final folderId = _chapter!.folderId ?? widget.folderId;
     final chapterId = _chapter!.id;
-    final hasFolder = folderId != null && folderId.isNotEmpty;
 
     if (_summaryData != null) {
-      final path = hasFolder
-          ? '/folders/$folderId/chapters/$chapterId/summary'
-          : '/folders';
+      final path = '/folders/$folderId/chapters/$chapterId/summary';
       if (kIsWeb) {
         context.go(
           path,
@@ -205,13 +202,12 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             'chapterTitle': _chapter!.title ?? 'Chapter',
             'accentColor': widget.folderColor,
             'folderId': folderId,
+            'chapterCubit': context.read<ChapterCubit>(),
           },
         );
       }
     } else if (_rawSummaryText != null) {
-      final path = hasFolder
-          ? '/folders/$folderId/chapters/$chapterId/raw-summary'
-          : '/folders';
+      final path = '/folders/$folderId/chapters/$chapterId/raw-summary';
 
       if (kIsWeb) {
         context.go(
@@ -231,6 +227,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
             'chapterTitle': _chapter!.title ?? 'Chapter',
             'accentColor': widget.folderColor,
             'folderId': folderId,
+            'chapterCubit': context.read<ChapterCubit>(),
           },
         );
       }
@@ -240,13 +237,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   void _viewPDF() {
     if (_chapter == null) return;
 
-    final folderId = _chapter!.folderId;
+    final folderId = _chapter!.folderId ?? widget.folderId;
     final chapterId = _chapter!.id;
-    final hasFolder = folderId != null && folderId.isNotEmpty;
-
-    final path = hasFolder
-        ? '/folders/$folderId/chapters/$chapterId/pdf'
-        : '/folders';
+    final path = '/folders/$folderId/chapters/$chapterId/pdf';
 
     if (kIsWeb) {
       context.go(
@@ -272,13 +265,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   void _viewNotes() {
     if (_chapter == null) return;
 
-    final folderId = _chapter!.folderId;
+    final folderId = _chapter!.folderId ?? widget.folderId;
     final chapterId = _chapter!.id;
-    final hasFolder = folderId != null && folderId.isNotEmpty;
-
-    final path = hasFolder
-        ? '/folders/$folderId/chapters/$chapterId/notes'
-        : '/folders';
+    final path = '/folders/$folderId/chapters/$chapterId/notes';
 
     if (kIsWeb) {
       context.go(
@@ -306,13 +295,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
   void _viewQuiz() {
     if (_chapter == null) return;
 
-    final folderId = _chapter!.folderId;
+    final folderId = _chapter!.folderId ?? widget.folderId;
     final chapterId = _chapter!.id;
-    final hasFolder = folderId != null && folderId.isNotEmpty;
-
-    final path = hasFolder
-        ? '/folders/$folderId/chapters/$chapterId/quiz'
-        : '/folders';
+    final path = '/folders/$folderId/chapters/$chapterId/quiz';
 
     if (kIsWeb) {
       context.go(
@@ -370,9 +355,6 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       );
     }
 
-    final size = MediaQuery.of(context).size;
-    final isWeb = size.width > 900;
-
     // If chapter is null, show loading or error
     if (_chapter == null) {
       return BlocListener<ChapterCubit, ChapterState>(
@@ -419,12 +401,9 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
           setState(() {
             _isMindmapLoading = false;
           });
-          final folderId = _chapter!.folderId;
+          final folderId = _chapter!.folderId ?? widget.folderId;
           final chapterId = _chapter!.id;
-          final hasFolder = folderId != null && folderId.isNotEmpty;
-          final path = hasFolder
-              ? '/folders/$folderId/chapters/$chapterId/mindmap'
-              : '/folders';
+          final path = '/folders/$folderId/chapters/$chapterId/mindmap';
           if (kIsWeb) {
             context.go(
               path,
@@ -523,7 +502,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       child: Scaffold(
         body: FadeTransition(
           opacity: _fadeAnimation,
-          child: isWeb ? _buildWebLayout() : _buildMobileLayout(),
+          child: kIsWeb ? _buildWebLayout() : _buildMobileLayout(),
         ),
       ),
     );
@@ -541,6 +520,7 @@ class _ChapterDetailScreenState extends State<ChapterDetailScreen>
       onGenerateSummary: _generateSummary,
       onViewSummary: _viewSummary,
       onGenerateMindmap: _generateMindmap,
+      onViewNotes: _viewNotes,
       folderOwnerId: widget.folderOwnerId,
     );
   }

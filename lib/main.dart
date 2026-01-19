@@ -6,7 +6,7 @@ import 'package:tionova/core/init/app_initializer.dart';
 import 'package:tionova/core/presentation/view/screens/app_error_screen.dart';
 
 Future<void> main() async {
-  // Configure URL strategy for web (removes # from URLs)
+  //    afdConfigure URL strategy for web (removes # from URLs)
   if (kIsWeb) {
     usePathUrlStrategy();
   }

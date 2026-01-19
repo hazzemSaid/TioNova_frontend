@@ -229,8 +229,8 @@ class FolderDetailWebLayout extends StatelessWidget {
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 90,
-                crossAxisSpacing: 90,
+                mainAxisSpacing: 24,
+                crossAxisSpacing: 24,
                 childAspectRatio: childAspectRatio,
               ),
               delegate: SliverChildBuilderDelegate((ctx, idx) {
@@ -245,11 +245,13 @@ class FolderDetailWebLayout extends StatelessWidget {
             ),
           );
         } else if (state is ChapterError) {
-          return SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: effectivePadding),
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: effectivePadding,
+                vertical: 48,
+              ),
+              child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -292,11 +294,13 @@ class FolderDetailWebLayout extends StatelessWidget {
             ),
           );
         } else {
-          return SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: effectivePadding),
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: effectivePadding,
+                vertical: 48,
+              ),
+              child: Center(
                 child: Text(
                   'No chapters found',
                   style: TextStyle(

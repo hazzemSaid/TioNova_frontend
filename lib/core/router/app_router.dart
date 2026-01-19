@@ -48,6 +48,7 @@ import 'package:tionova/features/quiz/presentation/view/practice_mode_screen.dar
 import 'package:tionova/features/quiz/presentation/view/quiz_history_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_questions_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_results_screen.dart';
+import 'package:tionova/features/quiz/presentation/view/quiz_review_screen.dart';
 import 'package:tionova/features/quiz/presentation/view/quiz_screen.dart';
 import 'package:tionova/features/start/presentation/view/screens/TioNovaspalsh.dart';
 import 'package:tionova/features/start/presentation/view/screens/onboarding_screen.dart';
@@ -791,8 +792,7 @@ class AppRouter {
                       name: 'chapter-quiz-questions',
                       builder: (context, state) {
                         final extra = state.extra as Map<String, dynamic>;
-                        final chapterId =
-                            state.pathParameters['chapterId']!;
+                        final chapterId = state.pathParameters['chapterId']!;
                         return BlocProvider<QuizCubit>(
                           create: (context) => getIt<QuizCubit>(),
                           child: QuizQuestionsScreen(
@@ -811,14 +811,12 @@ class AppRouter {
                       name: 'chapter-quiz-results',
                       builder: (context, state) {
                         final extra = state.extra as Map<String, dynamic>;
-                        final chapterId =
-                            state.pathParameters['chapterId']!;
+                        final chapterId = state.pathParameters['chapterId']!;
                         return BlocProvider<QuizCubit>(
                           create: (context) => getIt<QuizCubit>(),
                           child: QuizResultsScreen(
                             quiz: extra['quiz'],
-                            userAnswers:
-                                extra['userAnswers'] as List<String?>,
+                            userAnswers: extra['userAnswers'] as List<String?>,
                             chapterId: chapterId,
                             timeTaken: extra['timeTaken'] as int,
                           ),
@@ -831,8 +829,7 @@ class AppRouter {
                       path: 'history',
                       name: 'chapter-quiz-history',
                       builder: (context, state) {
-                        final chapterId =
-                            state.pathParameters['chapterId']!;
+                        final chapterId = state.pathParameters['chapterId']!;
                         final extra = state.extra as Map<String, dynamic>?;
                         return BlocProvider<QuizCubit>(
                           create: (context) => getIt<QuizCubit>(),

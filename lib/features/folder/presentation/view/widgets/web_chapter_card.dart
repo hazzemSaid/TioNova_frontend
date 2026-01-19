@@ -40,24 +40,13 @@ class WebChapterCard extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
-            final effectiveFolderId = folderId.isNotEmpty
-                ? folderId
-                : 'unknown';
-            print(
-              'Debug: folderId=$folderId, chapterId=$chapterId, effectiveFolderId=$effectiveFolderId',
-            );
-            // Use go() to ensure URL updates properly in web browser
             context.goNamed(
               'folder-chapter-detail',
-              pathParameters: {
-                'folderId': effectiveFolderId,
-                'chapterId': chapterId,
-              },
+              pathParameters: {'folderId': folderId, 'chapterId': chapterId},
               extra: {
                 'chapter': chapter,
                 'folderColor': folderColor,
                 'folderOwnerId': ownerId,
-                'folderId': folderId, // Optional for quiz routes
               },
             );
           },

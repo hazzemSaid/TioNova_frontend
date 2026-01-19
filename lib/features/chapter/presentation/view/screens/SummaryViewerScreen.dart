@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/core/navigation/helpers/navigation_helper.dart';
+import 'package:tionova/core/services/SummaryPdfService.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
@@ -31,6 +32,7 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
   late TabController _tabController;
   int _currentFlashcardIndex = 0;
   bool _showFlashcardAnswer = false;
+  bool _isExportingPdf = false;
 
   @override
   void initState() {
@@ -265,9 +267,18 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
     return Row(
       children: [
         ElevatedButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.download_rounded, size: 18),
-          label: const Text('Export PDF'),
+          onPressed: _isExportingPdf ? null : _exportPdf,
+          icon: _isExportingPdf
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.download_rounded, size: 18),
+          label: Text(_isExportingPdf ? 'Exporting...' : 'Export PDF'),
           style: ElevatedButton.styleFrom(
             backgroundColor: widget.accentColor,
             foregroundColor: Colors.white,
@@ -284,13 +295,76 @@ class _SummaryViewerScreenState extends State<SummaryViewerScreen>
 
   Widget _buildMobileActions(ColorScheme colorScheme) {
     return IconButton(
-      onPressed: () {},
-      icon: Icon(Icons.save_alt_rounded, color: colorScheme.onSurface),
+      onPressed: _isExportingPdf ? null : _exportPdf,
+      icon: _isExportingPdf
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.onSurface,
+              ),
+            )
+          : Icon(Icons.save_alt_rounded, color: colorScheme.onSurface),
       style: IconButton.styleFrom(
         backgroundColor: colorScheme.surfaceContainerHighest,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+  }
+
+  Future<void> _exportPdf() async {
+    // Get current summary data from state or widget
+    SummaryModel? summaryData = widget.summaryData;
+    final state = context.read<ChapterCubit>().state;
+    if (state is GenerateSummaryStructuredSuccess) {
+      summaryData = state.summaryData;
+    } else if (state is SummaryCachedFound) {
+      summaryData = state.summaryData;
+    }
+
+    if (summaryData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No summary data available to export'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isExportingPdf = true);
+
+    try {
+      await SummaryPdfService.exportSummaryPdf(
+        summaryData: summaryData,
+        chapterTitle: summaryData.chapterTitle.isNotEmpty
+            ? summaryData.chapterTitle
+            : widget.chapterTitle,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('PDF exported successfully!'),
+            backgroundColor: widget.accentColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to export PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingPdf = false);
+      }
+    }
   }
 
   Widget _buildTabBar(ColorScheme colorScheme) {

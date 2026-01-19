@@ -1,10 +1,42 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
 
 class SummaryPdfService {
+  /// Generates and downloads/shares a PDF from the summary data.
+  /// Works on iOS, Android, Web, and Safari.
+  static Future<void> exportSummaryPdf({
+    required SummaryModel summaryData,
+    required String chapterTitle,
+  }) async {
+    final pdfBytes = await generateSummaryPdf(
+      summaryData: summaryData,
+      chapterTitle: chapterTitle,
+    );
+
+    // Sanitize filename - remove special characters
+    final sanitizedTitle = chapterTitle
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .replaceAll(RegExp(r'\s+'), '_')
+        .toLowerCase();
+
+    final filename =
+        'summary_${sanitizedTitle}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+    if (kIsWeb) {
+      // Web: Downloads the PDF file directly
+      await Printing.sharePdf(bytes: pdfBytes, filename: filename);
+    } else {
+      // iOS/Android: Opens share sheet to save or share the PDF
+      await Printing.sharePdf(bytes: pdfBytes, filename: filename);
+    }
+  }
+
+  /// Generates PDF bytes from summary data
   static Future<Uint8List> generateSummaryPdf({
     required SummaryModel summaryData,
     required String chapterTitle,

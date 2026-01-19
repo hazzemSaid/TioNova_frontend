@@ -187,6 +187,7 @@ class FolderDetailMobileLayout extends StatelessWidget {
               return FolderChapterCard(
                 chapter: chapter,
                 folderColor: color,
+                folderId: folderId,
                 folderOwnerId: ownerId,
               );
             }, childCount: chapters.length),

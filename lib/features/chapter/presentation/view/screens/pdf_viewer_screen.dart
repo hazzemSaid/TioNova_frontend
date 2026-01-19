@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:tionova/core/navigation/helpers/navigation_helper.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
-import 'package:tionova/core/utils/safe_navigation.dart';
 import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/pdf_viewer/file_helper.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/pdf_viewer/web_pdf_viewer.dart';
@@ -209,15 +207,8 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
           TextButton(
             onPressed: () {
               Navigator.of(dialogContext).pop(); // Close dialog
-              final fId = widget.folderId;
-              if (fId != null && fId.isNotEmpty) {
-                NavigationHelper.navigateToChapter(
-                  context,
-                  folderId: fId,
-                  chapterId: widget.chapterId,
-                );
-              } else {
-                NavigationHelper.navigateToFoldersList(context);
+              if (context.mounted) {
+                Navigator.of(context).pop(); // Go back
               }
             },
             child: Container(
@@ -404,15 +395,8 @@ class _PDFViewerScreenState extends State<PDFViewerScreen>
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () {
-              final fId = widget.folderId;
-              if (fId != null && fId.isNotEmpty) {
-                NavigationHelper.navigateToChapter(
-                  context,
-                  folderId: fId,
-                  chapterId: widget.chapterId,
-                );
-              } else {
-                NavigationHelper.navigateToFoldersList(context);
+              if (context.mounted) {
+                Navigator.of(context).pop();
               }
             },
           ),

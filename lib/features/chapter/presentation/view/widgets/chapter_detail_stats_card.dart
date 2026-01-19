@@ -70,7 +70,7 @@ class ChapterDetailStatsCard extends StatelessWidget {
           _buildStatItem(
             colorScheme,
             'Success Rate',
-            '${attempted > 0 ? ((passed / attempted) * 100).toStringAsFixed(0) : 0}%',
+            '${attempted > 0 ? ((passed / attempted)).toStringAsFixed(0) : 0}%',
             Icons.trending_up_rounded,
             Colors.green,
           ),
@@ -83,13 +83,6 @@ class ChapterDetailStatsCard extends StatelessWidget {
             colorScheme.primary,
           ),
           const SizedBox(height: 20),
-          _buildStatItem(
-            colorScheme,
-            'Quizzes Passed',
-            passed.toString(),
-            Icons.check_circle_outline_rounded,
-            Colors.blue,
-          ),
         ],
       ),
     );

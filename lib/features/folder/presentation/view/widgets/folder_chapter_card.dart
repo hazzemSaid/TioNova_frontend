@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
-import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
-import 'package:tionova/features/folder/presentation/view/utils/folder_detail_view_helper.dart';
 import 'package:tionova/features/chapter/presentation/view/widgets/chapter_action_button.dart';
+import 'package:tionova/features/folder/presentation/view/utils/folder_detail_view_helper.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_options_bottom_sheet.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_status_chip.dart';
 
@@ -12,12 +10,14 @@ import 'package:tionova/features/folder/presentation/view/widgets/chapter_status
 class FolderChapterCard extends StatelessWidget {
   final ChapterModel chapter;
   final Color folderColor;
+  final String folderId;
   final String? folderOwnerId;
 
   const FolderChapterCard({
     super.key,
     required this.chapter,
     required this.folderColor,
+    required this.folderId,
     this.folderOwnerId,
   });
 
@@ -31,24 +31,13 @@ class FolderChapterCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        final chapterCubit = context.read<ChapterCubit>();
         final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
-        final folderId = chapter.folderId ?? '';
-        final effectiveFolderId = folderId.isNotEmpty ? folderId : 'unknown';
-        print(
-          'Debug: folderId=$folderId, chapterId=$chapterId, effectiveFolderId=$effectiveFolderId',
-        );
-        // Use go() to ensure URL updates properly in web browser
         context.goNamed(
           'folder-chapter-detail',
-          pathParameters: {
-            'folderId': effectiveFolderId,
-            'chapterId': chapterId,
-          },
+          pathParameters: {'folderId': folderId, 'chapterId': chapterId},
           extra: {
             'chapter': chapter,
             'folderColor': folderColor,
-            'chapterCubit': chapterCubit,
             'folderOwnerId': folderOwnerId,
           },
         );
@@ -56,7 +45,7 @@ class FolderChapterCard extends StatelessWidget {
       onLongPress: () {
         ChapterOptionsBottomSheet(
           chapter: chapter,
-          folderId: chapter.folderId ?? '',
+          folderId: folderId,
           folderOwnerId: folderOwnerId ?? '',
         ).show(context);
       },
