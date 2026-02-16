@@ -1,12 +1,12 @@
 # ──────────────────────────────────────────────────────────────
-# Packets Mobile — iOS Build for Appetize.io
+# Packets Mobile — Android APK Build
 # ──────────────────────────────────────────────────────────────
 # Triggers on pushes & PRs to main/develop.
-# Builds an iOS Simulator .app bundle and zips it so it can be
-# uploaded directly to Appetize.io — no signing needed!
+# Produces a release APK (debug-signed) and uploads it as
+# a workflow artifact.
 # ──────────────────────────────────────────────────────────────
 
-name: Build iOS (Appetize)
+name: Build Android APK
 
 on:
   push:
@@ -16,40 +16,42 @@ on:
   workflow_dispatch: # allow manual trigger
 
 concurrency:
-  group: ios-${{ github.ref }}
+  group: android-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-ios:
-    name: 🍎 Build iOS for Appetize
-    runs-on: macos-latest
-    timeout-minutes: 45
+  build-apk:
+    name: 🤖 Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       # ── 1. Checkout ────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Flutter SDK ─────────────────────────────────────
+      # ── 2. Java (needed by Gradle) ─────────────────────────
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      # ── 3. Flutter SDK ─────────────────────────────────────
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      # ── 3. Verify toolchain ────────────────────────────────
+      # ── 4. Verify toolchain ────────────────────────────────
       - name: Flutter doctor
         run: flutter doctor -v
 
-      # ── 4. Install dependencies ────────────────────────────
+      # ── 5. Install dependencies ────────────────────────────
       - name: Get dependencies
         run: flutter pub get
-
-      # ── 5. Install CocoaPods dependencies ──────────────────
-      - name: Install CocoaPods
-        run: |
-          cd ios
-          pod install --repo-update || echo "No Podfile found – skipping"
 
       # ── 6. Static analysis ─────────────────────────────────
       - name: Analyze code
@@ -61,24 +63,15 @@ jobs:
         run: flutter test
         continue-on-error: true
 
-      # ── 8. Build iOS Simulator app ─────────────────────────
-      #    Appetize.io requires a Simulator build (.app zipped).
-      #    This does NOT need any code-signing certificates.
-      - name: Build iOS Simulator app
-        run: flutter build ios --debug --simulator
+      # ── 8. Build APK ───────────────────────────────────────
+      - name: Build release APK
+        run: flutter build apk --release
 
-      # ── 9. Zip the .app for Appetize ───────────────────────
-      - name: Zip .app bundle for Appetize
-        run: |
-          cd build/ios/iphonesimulator
-          zip -r Runner.app.zip Runner.app
-
-      # ── 10. Upload Appetize-ready artifact ─────────────────
-      - name: Upload iOS Simulator build
+      # ── 9. Upload APK artifact ─────────────────────────────
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: packets-ios-appetize-${{ github.sha }}
-          path: build/ios/iphonesimulator/Runner.app.zip
+          name: packets-apk-${{ github.sha }}
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
           if-no-files-found: error
-
