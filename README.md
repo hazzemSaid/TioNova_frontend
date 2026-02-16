@@ -1,170 +1,120 @@
-<div align="center">
+<!-- Minimal README for maintainers and contributors -->
+# TioNova
 
-# 🎓 TioNova
+Lightweight cross-platform learning app — Flutter frontend.
 
-### AI-Powered Educational Platform
+## Quick start
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.9+-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.9+-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-Realtime-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com)
-[![BLoC](https://img.shields.io/badge/BLoC-State_Management-8B5CF6?style=for-the-badge)](https://bloclibrary.dev)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+Requirements
 
-**Transform your learning experience with AI-driven summaries, quizzes, and real-time challenges**
+- Flutter >= 3.38.0
+- Dart >= 3.9.0
 
-[🚀 Live Demo](https://tionova-c566b.web.app/) • [📦 Backend Repo](https://github.com/hazzemSaid/TioNova_backend) • [📖 Documentation](#-documentation)
+Setup
 
----
-
-</div>
-
-## 📋 Table of Contents
-
-- [Overview](#-overview)
-- [Features](#-features)
-- [Screenshots](#-screenshots)
-- [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [Getting Started](#-getting-started)
-- [Project Structure](#-project-structure)
-- [Configuration](#-configuration)
-- [Testing](#-testing)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
-- [License](#-license)
-
----
-
-## 🌟 Overview
-
-**TioNova** is a cutting-edge educational platform that leverages artificial intelligence to revolutionize the way students learn. By combining PDF processing, AI-powered content generation, and real-time multiplayer challenges, TioNova creates an engaging and personalized learning experience.
-
-### Why TioNova?
-
-| Feature | Description |
-|---------|-------------|
-| 🧠 **AI-Powered** | Automatic summarization, quiz generation, and intelligent chatbots |
-| ⚡ **Real-Time** | Live multiplayer challenges with Firebase Realtime Database |
-| 📱 **Cross-Platform** | Web, Android, and iOS from a single codebase |
-| 🎨 **Modern UI** | Beautiful design with dark/light theme support |
-| 🔒 **Secure** | Google Authentication and secure data storage |
-
----
-
-## ✨ Features
-
-### 🔐 Authentication Module (`features/auth/`)
-
-Complete authentication system with multiple providers and secure token management.
-
-| Use Case | Description |
-|----------|-------------|
-| `LoginUseCase` | Email/password authentication |
-| `RegisterUseCase` | New user registration |
-| `GoogleAuthUseCase` | OAuth2 Google Sign-In |
-| `ForgetPasswordUseCase` | Password recovery flow |
-| `ResetPasswordUseCase` | Password reset with token |
-| `VerifyEmailUseCase` | Email verification |
-| `VerifyCodeUseCase` | OTP code verification |
-
-**Key Components:**
-- `AuthCubit` - State management for auth flows
-- `TokenStorage` - Secure token persistence with `flutter_secure_storage`
-- `UserModel` - Hive-persisted user data with streak tracking
-
-```dart
-// User Model Structure
-UserModel {
-  String id, email, username, profilePicture;
-  int streak;
-  bool verified;
-}
+```bash
+git clone https://github.com/hazzemSaid/TioNova_frontend.git
+cd TioNova_frontend
+flutter pub get
 ```
 
----
+Add Firebase config for mobile builds:
 
-### 📂 Folder & Content Management (`features/folder/`)
+- `android/app/google-services.json`
+- `ios/Runner/GoogleService-Info.plist`
 
-Comprehensive content organization with AI-powered features.
+Run (examples)
 
-| Use Case | Description |
-|----------|-------------|
-| `CreateFolderUseCase` | Create new study folders |
-| `CreateChapterUseCase` | Add chapters to folders |
-| `GetAllFolderUseCase` | Retrieve user's folders |
-| `GetChaptersUserCase` | Fetch chapters in a folder |
-| `GetChaperContentPdfUseCase` | Load PDF content |
-| `GenerateSummaryUseCase` | AI-powered chapter summaries |
-| `CreateMindmapUseCase` | Generate visual mind maps |
-| `GetMindmapUseCase` | Retrieve saved mind maps |
-| `SaveMindmapUseCase` | Persist mind map data |
-| `GenerateSmartNodeUseCase` | AI smart node generation |
-| `AddNoteUseCase` | Add notes to chapters |
-| `GetNotesByChapterIdUseCase` | Retrieve chapter notes |
-| `UpdateNoteUseCase` / `DeleteNoteUseCase` | Note management |
-| `GetPublicFoldersUseCase` | Browse shared folders |
-| `GetAvailableUsersForShareUseCase` | User sharing permissions |
+```bash
+# Debug
+flutter run
 
-**AI Features:**
-- **Summary Generation** - BART-CNN powered chapter summarization
-- **Mind Map Creation** - Visual learning aids
-- **Smart Nodes** - AI-generated knowledge nodes
+# Web
+flutter run -d chrome
 
----
-
-### 📝 Quiz System (`features/quiz/`)
-
-AI-generated quizzes with multiple modes and progress tracking.
-
-| Use Case | Description |
-|----------|-------------|
-| `CreateQuizUseCase` | Generate AI-powered quiz from chapter |
-| `GetHistoryUseCase` | Retrieve quiz attempt history |
-| `UserQuizStatusUseCase` | Track user's quiz progress |
-| `GetPracticeModeQuestionsUseCase` | Load practice mode questions |
-
-**Quiz Modes:**
-- **Standard Mode** - Timed quiz with scoring
-- **Practice Mode** - Learn at your own pace with instant feedback
-- **Review Mode** - Review past attempts and answers
-
-**State Management:**
-```dart
-// Quiz States
-QuizInitial → CreateQuizLoading → CreateQuizSuccess
-                                → CreateQuizFailure
-PracticeModeLoading → PracticeModeReady → PracticeModeAnswerSelected
+# Build web
+flutter build web --release
 ```
 
+## Project notes
+
+- Main entry: `lib/main.dart` (uses `AppInitializer`).
+- Routing: `go_router`. State: `flutter_bloc`/Cubit.
+- Core code: `lib/core/`; features: `lib/features/`.
+- Dependencies: see `pubspec.yaml`.
+
+## Useful commands
+
+```bash
+flutter analyze
+flutter test
+flutter pub run build_runner build --delete-conflicting-outputs
+```
+
+## License
+
+MIT — see `LICENSE`.
+
+Live demo: https://tionova-c566b.web.app/ · Backend: https://github.com/hazzemSaid/TioNova_backend
+# TioNova
+
+A minimal, focused README for the TioNova Flutter app.
+
+## Quick start
+
+Requirements
+
+- Flutter >= 3.38.0
+- Dart >= 3.9.0
+
+Clone and install
+
+```bash
+git clone https://github.com/hazzemSaid/TioNova_frontend.git
+cd TioNova_frontend
+flutter pub get
+```
+
+Firebase
+
+- Place `google-services.json` in `android/app/` and `GoogleService-Info.plist` in `ios/Runner/` when building for mobile.
+
+Run
+
+```bash
+# Debug
+flutter run
+
+# Web
+flutter run -d chrome
+
+# Web production build
+flutter build web --release
+```
+
+## What you need to know
+
+- Core code lives in `lib/` (see `lib/features/` and `lib/core/`).
+- Routing uses `go_router`; state management uses `flutter_bloc`.
+- Backend features (AI summaries, quizzes) are powered by the companion backend; realtime features use Firebase Realtime Database.
+- See `pubspec.yaml` for full dependency versions.
+
+## Useful commands
+
+```bash
+flutter analyze
+flutter test
+flutter pub run build_runner build --delete-conflicting-outputs
+```
+
+## License
+
+MIT — see `LICENSE`.
+
 ---
 
-### 🏆 Real-Time Challenges (`features/challenges/`)
+Live demo: https://tionova-c566b.web.app/ · Backend: https://github.com/hazzemSaid/TioNova_backend
 
-Live multiplayer challenges with Firebase Realtime Database.
-
-| Use Case | Description |
-|----------|-------------|
-| `CreateLiveChallengeUseCase` | Host a new challenge room |
-| `JoinLiveChallengeUseCase` | Join via invite code |
-| `StartLiveChallengeUseCase` | Begin the challenge |
-| `SubmitLiveAnswerUseCase` | Submit answers in real-time |
-| `CheckAndAdvanceUseCase` | Progress to next question |
-| `DisconnectFromLiveChallengeUseCase` | Leave challenge gracefully |
-
-**Real-Time Features:**
-- **Firebase Listeners** - Live status, questions, rankings, participants
-- **Polling Service** - Background challenge state synchronization
-- **Sound Service** - Audio feedback for actions
-- **Vibration Service** - Haptic feedback
-- **Question Timer Manager** - Synchronized countdown timers
-
-**Challenge Flow:**
-```
-Create/Join → Waiting Room → Challenge Active → Live Leaderboard → Results
-     ↓              ↓              ↓                 ↓
-  QR Code      Participants    Questions        Rankings
-  Sharing       Syncing       Broadcasting      Real-time
-```
 
 **State Machine:**
 ```dart

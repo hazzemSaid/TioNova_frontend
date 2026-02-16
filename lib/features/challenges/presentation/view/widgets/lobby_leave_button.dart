@@ -58,7 +58,7 @@ class LobbyLeaveButton extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext); // Close dialog
-              context.go('/challenges'); // Navigate back to challenges screen
+              context.go('/'); // Navigate back to home screen
             },
             child: const Text('Leave', style: TextStyle(color: Colors.red)),
           ),
