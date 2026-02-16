@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/validators.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
+import 'package:tionova/features/auth/presentation/utils/auth_error_handler.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/auth_background.dart';
 
@@ -177,11 +178,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         if (state is ForgetPasswordEmailSent) {
           context.go('/auth/verify-reset-code', extra: state.email);
         } else if (state is ForgetPasswordFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.failure.errMessage),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          AuthErrorHandler.showErrorDialog(
+            context,
+            title: 'Password Reset Failed',
+            errorMessage: state.failure.errMessage,
           );
         }
       },

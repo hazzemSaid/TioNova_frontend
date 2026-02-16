@@ -188,25 +188,51 @@ Future<void> setupServiceLocator() async {
       onError: (DioException error, ErrorInterceptorHandler handler) async {
         // Check if error is due to unauthorized (token expired)
         if (error.response?.statusCode == 401) {
+          final requestPath = error.requestOptions.path;
+
+          // IMPORTANT: If this 401 is from the refresh-token endpoint itself,
+          // don't try to refresh again - just sign out immediately
+          if (requestPath.contains('/auth/refresh-token')) {
+            print(
+              '❌ [Token Interceptor] Refresh token endpoint returned 401 - Token expired',
+            );
+            print(
+              '🚪 [Token Interceptor] Clearing tokens and signing out user',
+            );
+            final tokenStorage = getIt<TokenStorage>();
+            await tokenStorage.clearTokens();
+            final authCubit = getIt<AuthCubit>();
+            authCubit.signOut(isTokenExpired: true);
+            return handler.next(error);
+          }
+
+          print(
+            '🔄 [Token Interceptor] 401 Unauthorized - Attempting token refresh',
+          );
           final tokenStorage = getIt<TokenStorage>();
           final refreshToken = await tokenStorage.getRefreshToken();
 
           if (refreshToken != null) {
             try {
-              final refreshResponse = await dio.post(
+              print('🔄 [Token Interceptor] Sending refresh token request...');
+              // Use a separate Dio instance without interceptors for refresh request
+              final refreshDio = Dio(BaseOptions(baseUrl: dio.options.baseUrl));
+              final refreshResponse = await refreshDio.post(
                 '/auth/refresh-token',
                 data: {'refreshToken': refreshToken},
               );
 
               if (refreshResponse.statusCode == 200) {
+                print('✅ [Token Interceptor] Refresh token request successful');
                 final responseData = refreshResponse.data;
                 final newAccessToken = responseData['token']?.toString();
-                final newRefreshToken = responseData['refreshToken']
+                final newRefreshToken = refreshResponse.data['refreshToken']
                     ?.toString();
                 final expiresIn = responseData['expiresIn'] as int? ?? 3600;
 
                 if (newAccessToken != null && newRefreshToken != null) {
                   // Save both tokens
+                  print('💾 [Token Interceptor] Saving new tokens...');
                   await tokenStorage.saveTokens(
                     newAccessToken,
                     newRefreshToken,
@@ -214,14 +240,31 @@ Future<void> setupServiceLocator() async {
                   );
 
                   // Retry the original request with new token
+                  print('🔄 [Token Interceptor] Retrying original request...');
                   final opts = error.requestOptions;
                   opts.headers['Authorization'] = 'Bearer $newAccessToken';
                   final cloneReq = await dio.fetch(opts);
                   return handler.resolve(cloneReq);
                 }
+              } else {
+                // Refresh token endpoint returned non-200 (e.g., 401 - refresh token expired)
+                print(
+                  '❌ [Token Interceptor] Refresh token endpoint returned ${refreshResponse.statusCode}',
+                );
+                print(
+                  '🚪 [Token Interceptor] Clearing tokens and signing out user (token expired)',
+                );
+                await tokenStorage.clearTokens();
+                final authCubit = getIt<AuthCubit>();
+                authCubit.signOut(isTokenExpired: true);
+                return handler.next(error);
               }
             } catch (e) {
-              // If refresh fails, sign out the user with token expired flag
+              // If refresh fails (exception or error), sign out the user with token expired flag
+              print('❌ [Token Interceptor] Refresh token request failed: $e');
+              print(
+                '🚪 [Token Interceptor] Clearing tokens and signing out user',
+              );
               await tokenStorage.clearTokens();
               final authCubit = getIt<AuthCubit>();
               authCubit.signOut(isTokenExpired: true);
@@ -229,6 +272,8 @@ Future<void> setupServiceLocator() async {
             }
           } else {
             // No refresh token found, sign out the user with token expired flag
+            print('⚠️ [Token Interceptor] No refresh token found');
+            print('🚪 [Token Interceptor] Signing out user');
             await tokenStorage.clearTokens();
             final authCubit = getIt<AuthCubit>();
             authCubit.signOut(isTokenExpired: true);

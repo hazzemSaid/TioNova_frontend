@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
+import 'package:tionova/features/auth/presentation/utils/auth_error_handler.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/auth_background.dart';
 
 class VerifyResetCodeScreen extends StatefulWidget {
@@ -324,11 +325,10 @@ class _VerifyResetCodeScreenState extends State<VerifyResetCodeScreen> {
             extra: {'email': state.email, 'code': state.code},
           );
         } else if (state is VerifyCodeFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.failure.errMessage),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          AuthErrorHandler.showErrorDialog(
+            context,
+            title: 'Verification Failed',
+            errorMessage: state.failure.errMessage,
           );
         }
       },

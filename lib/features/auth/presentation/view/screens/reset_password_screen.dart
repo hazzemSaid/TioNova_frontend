@@ -6,6 +6,7 @@ import 'package:tionova/core/theme/app_theme.dart';
 import 'package:tionova/core/utils/validators.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
+import 'package:tionova/features/auth/presentation/utils/auth_error_handler.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/auth_background.dart';
 
@@ -327,11 +328,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           );
           context.go('/');
         } else if (state is ResetPasswordFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.failure.errMessage),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          AuthErrorHandler.showErrorDialog(
+            context,
+            title: 'Password Reset Failed',
+            errorMessage: state.failure.errMessage,
           );
         }
       },

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tionova/core/get_it/services_locator.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
+import 'package:tionova/features/auth/presentation/utils/auth_error_handler.dart';
 
 class AuthLandingScreen extends StatelessWidget {
   const AuthLandingScreen({super.key});
@@ -240,24 +241,14 @@ class AuthLandingScreen extends StatelessWidget {
                                   if (state is AuthFailure) {
                                     WidgetsBinding.instance
                                         .addPostFrameCallback((_) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                state.failure.errMessage,
-                                              ),
-                                              backgroundColor: Theme.of(
-                                                context,
-                                              ).colorScheme.error,
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                          );
+                                          if (context.mounted) {
+                                            AuthErrorHandler.showErrorDialog(
+                                              context,
+                                              title: 'Google Sign-In Failed',
+                                              errorMessage:
+                                                  state.failure.errMessage,
+                                            );
+                                          }
                                         });
                                   }
                                   final isLoading = state is AuthLoading;
@@ -514,18 +505,13 @@ class AuthLandingScreen extends StatelessWidget {
                         builder: (context, state) {
                           if (state is AuthFailure) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(state.failure.errMessage),
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.error,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
+                              if (context.mounted) {
+                                AuthErrorHandler.showErrorDialog(
+                                  context,
+                                  title: 'Google Sign-In Failed',
+                                  errorMessage: state.failure.errMessage,
+                                );
+                              }
                             });
                           }
                           final isLoading = state is AuthLoading;
