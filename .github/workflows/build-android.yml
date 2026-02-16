@@ -49,25 +49,35 @@ jobs:
       - name: Flutter doctor
         run: flutter doctor -v
 
-      # ── 5. Install dependencies ────────────────────────────
+      # ── 5. Install dependencies & resolve conflicts ──────────────
       - name: Get dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          flutter pub deps
+      
+      # ── 5.1. Validate dependency resolution ──────────────────
+      - name: Check for dependency conflicts
+        run: flutter pub deps --no-dev
+        
+      # ── 6. Clean previous builds ─────────────────────────────
+      - name: Clean previous builds
+        run: flutter clean
 
-      # ── 6. Static analysis ─────────────────────────────────
+      # ── 7. Static analysis ─────────────────────────────────
       - name: Analyze code
         run: flutter analyze --no-fatal-infos
         continue-on-error: true
 
-      # ── 7. Run tests ───────────────────────────────────────
+      # ── 8. Run tests ───────────────────────────────────────
       - name: Run tests
         run: flutter test
         continue-on-error: true
 
-      # ── 8. Build APK ───────────────────────────────────────
+      # ── 9. Build APK ───────────────────────────────────────
       - name: Build release APK
         run: flutter build apk --release
 
-      # ── 9. Upload APK artifact ─────────────────────────────
+      # ── 10. Upload APK artifact ─────────────────────────────
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

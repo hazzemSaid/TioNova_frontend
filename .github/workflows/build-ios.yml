@@ -41,39 +41,53 @@ jobs:
       - name: Flutter doctor
         run: flutter doctor -v
 
-      # ── 4. Install dependencies ────────────────────────────
+      # ── 4. Install dependencies & resolve conflicts ────────
       - name: Get dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          flutter pub deps
+      
+      # ── 4.1. Validate dependency resolution ──────────────────
+      - name: Check for dependency conflicts
+        run: flutter pub deps --no-dev
+        
+      # ── 4.2. Clean previous builds ─────────────────────────
+      - name: Clean previous builds
+        run: flutter clean
 
       # ── 5. Install CocoaPods dependencies ──────────────────
       - name: Install CocoaPods
         run: |
           cd ios
           pod install --repo-update || echo "No Podfile found – skipping"
+      
+      # ── 6. Re-install dependencies after CocoaPods ─────────
+      - name: Re-install Flutter dependencies 
+        run: flutter pub get
 
-      # ── 6. Static analysis ─────────────────────────────────
+      # ── 7. Static analysis ─────────────────────────────────
       - name: Analyze code
         run: flutter analyze --no-fatal-infos
         continue-on-error: true
 
-      # ── 7. Run tests ───────────────────────────────────────
+      # ── 8. Run tests ───────────────────────────────────────
       - name: Run tests
         run: flutter test
         continue-on-error: true
 
-      # ── 8. Build iOS Simulator app ─────────────────────────
+      # ── 9. Build iOS Simulator app ─────────────────────────
       #    Appetize.io requires a Simulator build (.app zipped).
       #    This does NOT need any code-signing certificates.
       - name: Build iOS Simulator app
         run: flutter build ios --debug --simulator
 
-      # ── 9. Zip the .app for Appetize ───────────────────────
+      # ── 10. Zip the .app for Appetize ───────────────────────
       - name: Zip .app bundle for Appetize
         run: |
           cd build/ios/iphonesimulator
           zip -r Runner.app.zip Runner.app
 
-      # ── 10. Upload Appetize-ready artifact ─────────────────
+      # ── 11. Upload Appetize-ready artifact ─────────────────
       - name: Upload iOS Simulator build
         uses: actions/upload-artifact@v4
         with:
