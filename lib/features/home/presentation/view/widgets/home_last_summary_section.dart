@@ -41,18 +41,17 @@ class HomeLastSummarySection extends StatelessWidget {
             textTheme: textTheme,
             onTap: () {
               // Navigate to summary viewer
-              // The passed summaryModel should be valid as checked by caller or this null check
-              // We need to access model which is in the map
-              final summaryModel =
-                  lastSummary!['summaryModel']; // This logic was inside onTap in home_screen.dart
-              context.push(
-                '/summary-viewer',
-                extra: {
-                  'summaryData': summaryModel,
-                  'chapterTitle': lastSummary!['title'],
-                  'accentColor': colorScheme.primary,
-                },
-              );
+              final summaryModel = lastSummary!['summaryModel'];
+              if (summaryModel != null) {
+                context.push(
+                  '/summary-viewer',
+                  extra: {
+                    'summaryData': summaryModel,
+                    'chapterTitle': lastSummary!['title'],
+                    'accentColor': colorScheme.primary,
+                  },
+                );
+              }
             },
           ),
           SizedBox(height: verticalSpacing * 2),

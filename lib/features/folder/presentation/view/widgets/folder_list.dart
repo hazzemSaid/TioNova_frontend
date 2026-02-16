@@ -149,7 +149,7 @@ class FolderList extends StatelessWidget {
                           icon: icon,
                           onLongPress: () =>
                               onFolderLongPress(context, folder, color),
-                          onTap: () => context.push(
+                          onTap: () => context.go(
                             '/folders/${folder.id}',
                             extra: {
                               'title': folder.title,

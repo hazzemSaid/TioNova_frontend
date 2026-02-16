@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/validators.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
+import 'package:tionova/features/auth/presentation/utils/auth_error_handler.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/SecondaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/auth_background.dart';
@@ -285,12 +286,14 @@ class _LoginScreenState extends State<LoginScreen> {
           }
           // On non-web platforms, router's refreshListenable handles navigation
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.failure.errMessage),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          // Show error dialog instead of snackbar for better visibility
+          if (context.mounted) {
+            AuthErrorHandler.showErrorDialog(
+              context,
+              title: 'Login Failed',
+              errorMessage: state.failure.errMessage,
+            );
+          }
         }
       },
       child: Scaffold(

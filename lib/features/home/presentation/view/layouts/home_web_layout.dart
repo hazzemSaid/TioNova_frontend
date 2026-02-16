@@ -1,8 +1,10 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:math';
+
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/features/folder/data/models/ChapterModel.dart';
-import 'package:tionova/features/folder/data/models/SummaryModel.dart';
-import 'package:tionova/features/folder/data/models/mindmapmodel.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/data/models/SummaryModel.dart';
+import 'package:tionova/features/chapter/data/models/mindmapmodel.dart';
 import 'package:tionova/features/home/data/models/analysisModel.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 
@@ -403,7 +405,7 @@ class HomeWebLayout extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '$percentage%',
+                        '${min(int.parse(percentage), 100)}%',
                         style: textTheme.headlineSmall?.copyWith(
                           color: colorScheme.primary,
                           fontWeight: FontWeight.bold,
@@ -705,12 +707,13 @@ class HomeWebLayout extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
+                  final folderId = chapter.folderId ?? '';
                   context.push(
-                    '/chapters/${chapter.id}',
+                    '/folders/$folderId/chapters/${chapter.id}',
                     extra: {
                       'chapter': chapter,
                       'folderColor': colorScheme.primary,
-                      'folderId': chapter.folderId ?? '',
+                      'folderId': folderId,
                     },
                   );
                 },
@@ -903,6 +906,7 @@ class HomeWebLayout extends StatelessWidget {
                       extra: {
                         'summaryData': summaryModel,
                         'chapterTitle': chapterTitle,
+                        'accentColor': colorScheme.primary,
                       },
                     );
                   }

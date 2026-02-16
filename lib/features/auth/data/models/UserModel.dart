@@ -1,25 +1,13 @@
-import 'package:hive/hive.dart';
-
-part 'UserModel.g.dart';
-
-@HiveType(typeId: 1)
 class UserModel {
-  @HiveField(0)
   final String id;
 
-  @HiveField(1)
   final String email;
 
-  @HiveField(2)
   final String username;
 
-  @HiveField(3)
   final String profilePicture;
 
-  @HiveField(4)
   final int streak;
-
-  @HiveField(5)
   final bool verified;
 
   UserModel({
@@ -40,12 +28,34 @@ class UserModel {
     'verified': verified,
   };
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-    id: json['user_id'],
-    email: json['email'],
-    username: json['username'],
-    profilePicture: json['profilePicture'],
-    streak: json['streak'],
-    verified: json['verified'],
-  );
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    // Debug logging to check what we're receiving
+    print('🔍 [UserModel.fromJson] Parsing user data:');
+    print('  - Raw JSON keys: ${json.keys.toList()}');
+    print('  - user_id: ${json['user_id']}');
+    print('  - _id: ${json['_id']}');
+    print('  - id: ${json['id']}');
+
+    // Try multiple possible ID fields from the API
+    final userId =
+        json['user_id']?.toString() ??
+        json['_id']?.toString() ??
+        json['id']?.toString() ??
+        '';
+
+    print('  - Final userId: "$userId"');
+
+    return UserModel(
+      id: userId,
+      email: json['email']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+      profilePicture: json['profilePicture']?.toString() ?? '',
+      streak: json['streak'] is int
+          ? json['streak']
+          : (int.tryParse(json['streak']?.toString() ?? '0') ?? 0),
+      verified: json['verified'] is bool
+          ? json['verified']
+          : (json['verified']?.toString().toLowerCase() == 'true'),
+    );
+  }
 }

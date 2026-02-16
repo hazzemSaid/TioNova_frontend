@@ -8,14 +8,15 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:tionova/core/errors/failure.dart' hide ServerFailure;
 import 'package:tionova/core/errors/server_failure.dart';
 import 'package:tionova/features/auth/data/models/UserModel.dart';
-import 'package:tionova/features/auth/data/services/Tokenstorage.dart';
+import 'package:tionova/features/auth/data/services/token_storage.dart';
 
 class AuthService {
   final Dio dio;
+  final TokenStorage tokenStorage;
 
   late final GoogleSignIn _googleSignIn;
 
-  AuthService({required this.dio}) {
+  AuthService({required this.dio, required this.tokenStorage}) {
     // ✅ Configure Google Sign-In for each platform with correct client IDs
     if (kIsWeb) {
       // Web: CANNOT use serverClientId - it's not supported on web!
@@ -159,7 +160,7 @@ class AuthService {
 
         print('✅ [Tokens] Saving access and refresh tokens...');
         // IMPORTANT: Await token saving to ensure it completes (fixes Safari issue)
-        await TokenStorage.saveTokens(token, refreshToken);
+        await tokenStorage.saveTokens(token, refreshToken);
         print('✅ [Tokens] Saved successfully');
 
         if (responseData['user'] is Map<String, dynamic>) {

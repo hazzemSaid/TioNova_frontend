@@ -18,12 +18,14 @@ class ChallengeCreated extends ChallengeState {
   final String challengeName;
   final int questionsCount;
   final int durationMinutes;
+  final ChapterModel? chapterContext; // Added chapter context
 
   const ChallengeCreated({
     required this.inviteCode,
     required this.challengeName,
     required this.questionsCount,
     required this.durationMinutes,
+    this.chapterContext,
   });
 
   @override
@@ -32,6 +34,7 @@ class ChallengeCreated extends ChallengeState {
     challengeName,
     questionsCount,
     durationMinutes,
+    chapterContext,
   ];
 }
 
@@ -189,15 +192,22 @@ class ParticipantsUpdated extends ChallengeState {
   final String challengeId;
   final List<String> participants;
   final int participantCount;
+  final bool canStartChallenge; // Added validation flag
 
   const ParticipantsUpdated({
     required this.challengeId,
     required this.participants,
     required this.participantCount,
+    required this.canStartChallenge,
   });
 
   @override
-  List<Object?> get props => [challengeId, participants, participantCount];
+  List<Object?> get props => [
+    challengeId,
+    participants,
+    participantCount,
+    canStartChallenge,
+  ];
 }
 
 class LeaderboardUpdated extends ChallengeState {

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
-import 'package:tionova/features/folder/data/models/ChapterModel.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/bloc/folder/folder_cubit.dart';
-import 'package:tionova/features/folder/presentation/view/screens/EditChapterDialog.dart';
-import 'package:tionova/features/folder/presentation/view/widgets/delete_chapter_confirmation_dialog.dart';
+import 'package:tionova/features/chapter/presentation/view/screens/EditChapterDialog.dart';
+import 'package:tionova/features/chapter/presentation/view/widgets/delete_chapter_confirmation_dialog.dart';
 
 class ChapterOptionsBottomSheet {
   final ChapterModel chapter;
@@ -35,164 +35,158 @@ class ChapterOptionsBottomSheet {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (bottomSheetContext) => Container(
-        padding: EdgeInsets.all(isTablet ? 28 : 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Drag handle
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(2),
-              ),
+      isScrollControlled: true,
+      builder: (bottomSheetContext) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              isTablet ? 28 : 24,
+              isTablet ? 28 : 24,
+              isTablet ? 28 : 24,
+              MediaQuery.of(bottomSheetContext).viewInsets.bottom +
+                  MediaQuery.of(bottomSheetContext).padding.bottom,
             ),
-
-            // Header with icon, title, and status
-            Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Document icon
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant,
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.article_outlined,
-                    size: isTablet ? 28 : 24,
-                    color: colorScheme.onSurface,
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(width: 16),
-
-                // Title and status
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        chapter.title ?? 'Untitled Chapter',
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: isTablet ? 18 : 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      // Status badge
-                      _buildStatusBadge(
-                        chapter.quizStatus ?? 'Not Taken',
-                        colorScheme,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: isTablet ? 32 : 28),
-
-            // Action buttons - Only show for owners
-            if (isOwner) ...[
-              _buildActionListItem(
-                context: context,
-                icon: Icons.edit_outlined,
-                label: 'Edit Chapter',
-                colorScheme: colorScheme,
-                isTablet: isTablet,
-                onTap: () {
-                  Navigator.pop(bottomSheetContext);
-                  _showEditChapterDialog(chapter, context);
-                },
-              ),
-
-              SizedBox(height: isTablet ? 14 : 12),
-
-              _buildActionListItem(
-                context: context,
-                icon: Icons.delete_outline,
-                label: 'Delete Chapter',
-                colorScheme: colorScheme,
-                isTablet: isTablet,
-                isDestructive: true,
-                onTap: () {
-                  Navigator.pop(bottomSheetContext);
-                  _showDeleteChapterDialog(chapter, context);
-                },
-              ),
-
-              SizedBox(height: isTablet ? 24 : 20),
-            ],
-
-            // Show message for non-owners
-            if (!isOwner) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
+                Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: colorScheme.onPrimaryContainer,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'You can only view this chapter. Only the folder owner can edit or delete.',
-                        style: TextStyle(
-                          color: colorScheme.onPrimaryContainer,
-                          fontSize: 13,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant,
+                          width: 1,
                         ),
+                      ),
+                      child: Icon(
+                        Icons.article_outlined,
+                        size: isTablet ? 28 : 24,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            chapter.title ?? 'Untitled Chapter',
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontSize: isTablet ? 18 : 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          _buildStatusBadge(
+                            chapter.quizStatus ?? 'Not Taken',
+                            colorScheme,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-              SizedBox(height: isTablet ? 24 : 20),
-            ],
-
-            // Cancel button
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () => Navigator.pop(bottomSheetContext),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: isTablet ? 16 : 14),
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                SizedBox(height: isTablet ? 32 : 28),
+                if (isOwner) ...[
+                  _buildActionListItem(
+                    context: context,
+                    icon: Icons.edit_outlined,
+                    label: 'Edit Chapter',
+                    colorScheme: colorScheme,
+                    isTablet: isTablet,
+                    onTap: () {
+                      Navigator.pop(bottomSheetContext);
+                      _showEditChapterDialog(chapter, context);
+                    },
+                  ),
+                  SizedBox(height: isTablet ? 14 : 12),
+                  _buildActionListItem(
+                    context: context,
+                    icon: Icons.delete_outline,
+                    label: 'Delete Chapter',
+                    colorScheme: colorScheme,
+                    isTablet: isTablet,
+                    isDestructive: true,
+                    onTap: () {
+                      Navigator.pop(bottomSheetContext);
+                      _showDeleteChapterDialog(chapter, context);
+                    },
+                  ),
+                  SizedBox(height: isTablet ? 24 : 20),
+                ],
+                if (!isOwner) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: colorScheme.onPrimaryContainer,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'You can only view this chapter. Only the folder owner can edit or delete.',
+                            style: TextStyle(
+                              color: colorScheme.onPrimaryContainer,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 24 : 20),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(bottomSheetContext),
+                    style: TextButton.styleFrom(
+                      padding:
+                          EdgeInsets.symmetric(vertical: isTablet ? 16 : 14),
+                      backgroundColor: colorScheme.surfaceContainerHighest,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: isTablet ? 16 : 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: isTablet ? 16 : 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+              ],
             ),
-
-            SizedBox(height: MediaQuery.of(context).padding.bottom),
-          ],
+          ),
         ),
       ),
     );

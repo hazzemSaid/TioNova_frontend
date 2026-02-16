@@ -1,6 +1,6 @@
 // features/folder/presentation/view/widgets/folder_card.dart
 import 'package:flutter/material.dart';
-import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
+import 'package:tionova/features/chapter/data/models/ShareWithmodel.dart';
 
 class FolderCard extends StatelessWidget {
   final String title;
@@ -13,6 +13,7 @@ class FolderCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final List<ShareWithmodel>? sharedWith;
+  final String? ownerUsername;
 
   const FolderCard({
     super.key,
@@ -26,6 +27,7 @@ class FolderCard extends StatelessWidget {
     this.onTap,
     this.onLongPress,
     this.sharedWith,
+    this.ownerUsername,
   });
 
   // Responsive breakpoints
@@ -157,6 +159,8 @@ class FolderCard extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (privacy.isNotEmpty) _buildPrivacyTag(context, isTablet),
+              if (ownerUsername != null && ownerUsername!.isNotEmpty)
+                _buildOwnerTag(context, isTablet),
             ],
           ),
         ),
@@ -500,6 +504,24 @@ class FolderCard extends StatelessWidget {
       config['bgColor'],
       config['textColor'],
       config['icon'],
+      isTablet,
+    );
+  }
+
+  // Owner tag widget
+  Widget _buildOwnerTag(BuildContext context, bool isTablet) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = colorScheme.primaryContainer.withOpacity(
+      isDark ? 0.25 : 0.55,
+    );
+    final textColor = colorScheme.onPrimaryContainer;
+    return _buildTag(
+      context,
+      'Owner: ${ownerUsername!}',
+      bgColor,
+      textColor,
+      Icons.person_outline,
       isTablet,
     );
   }

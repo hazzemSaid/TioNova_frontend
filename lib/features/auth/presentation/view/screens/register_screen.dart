@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tionova/core/utils/validators.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
+import 'package:tionova/features/auth/presentation/utils/auth_error_handler.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/SecondaryBtn.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/ThemedTextFormField.dart';
 import 'package:tionova/features/auth/presentation/view/widgets/auth_background.dart';
@@ -319,15 +320,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           final failure = state is AuthFailure
               ? state.failure
               : (state as RegisterFailure).failure;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                failure.errMessage.isNotEmpty
-                    ? failure.errMessage
-                    : 'Registration failed',
-              ),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          AuthErrorHandler.showErrorDialog(
+            context,
+            title: 'Registration Failed',
+            errorMessage: failure.errMessage.isNotEmpty
+                ? failure.errMessage
+                : 'Registration failed',
           );
         }
       },

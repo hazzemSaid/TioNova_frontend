@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tionova/core/errors/failure.dart';
 import 'package:tionova/core/utils/error_handling_utils.dart';
+import 'package:tionova/features/chapter/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/data/models/foldermodel.dart';
-import 'package:tionova/features/folder/data/models/ShareWithmodel.dart';
 import 'package:tionova/features/folder/domain/repo/IFolderRepository.dart';
 
 class FolderRemoteDataSource implements IFolderRepository {
@@ -20,9 +21,22 @@ class FolderRemoteDataSource implements IFolderRepository {
       return ErrorHandlingUtils.handleApiResponse<List<Foldermodel>>(
         response: response,
         onSuccess: (data) {
-          return (data['folders'] as List)
-              .map((folderJson) => Foldermodel.fromJson(folderJson))
-              .toList();
+          if (data is Map<String, dynamic> && data['folders'] is List) {
+            return (data['folders'] as List)
+                .where(
+                  (folderJson) =>
+                      folderJson != null && folderJson is Map<String, dynamic>,
+                )
+                .map(
+                  (folderJson) =>
+                      Foldermodel.fromJson(folderJson as Map<String, dynamic>),
+                )
+                .toList();
+          }
+          debugPrint(
+            '⚠️ [FolderRemoteDataSource] getPublicFolders: Unexpected data format',
+          );
+          return [];
         },
       );
     } catch (e) {
@@ -116,7 +130,7 @@ class FolderRemoteDataSource implements IFolderRepository {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      
+
       return ErrorHandlingUtils.handleApiResponse<Foldermodel>(
         response: response,
         onSuccess: (data) {
@@ -146,9 +160,22 @@ class FolderRemoteDataSource implements IFolderRepository {
       return ErrorHandlingUtils.handleApiResponse<List<ShareWithmodel>>(
         response: response,
         onSuccess: (data) {
-          return (data['results'] as List)
-              .map((userJson) => ShareWithmodel.fromJson(userJson))
-              .toList();
+          if (data is Map<String, dynamic> && data['results'] is List) {
+            return (data['results'] as List)
+                .where(
+                  (userJson) =>
+                      userJson != null && userJson is Map<String, dynamic>,
+                )
+                .map(
+                  (userJson) =>
+                      ShareWithmodel.fromJson(userJson as Map<String, dynamic>),
+                )
+                .toList();
+          }
+          debugPrint(
+            '⚠️ [FolderRemoteDataSource] getAvailableUsersForShare: Unexpected data format',
+          );
+          return [];
         },
       );
     } catch (error) {

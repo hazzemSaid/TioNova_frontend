@@ -5,10 +5,11 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "TioNova_frontend",
-			"request": "launch",
-			"type": "dart"
-		},
+        "name": "Flutter",
+        "request": "launch",
+        "type": "dart",
+        "args": ["-d", "web-server","--web-port", "3000"],
+    },
 		{
 			"name": "TioNova_frontend (profile mode)",
 			"request": "launch",

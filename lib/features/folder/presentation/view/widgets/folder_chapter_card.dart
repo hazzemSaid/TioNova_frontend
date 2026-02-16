@@ -1,11 +1,8 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tionova/features/folder/data/models/ChapterModel.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/chapter/data/models/ChapterModel.dart';
+import 'package:tionova/features/chapter/presentation/view/widgets/chapter_action_button.dart';
 import 'package:tionova/features/folder/presentation/view/utils/folder_detail_view_helper.dart';
-import 'package:tionova/features/folder/presentation/view/widgets/chapter_action_button.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_options_bottom_sheet.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/chapter_status_chip.dart';
 
@@ -13,12 +10,14 @@ import 'package:tionova/features/folder/presentation/view/widgets/chapter_status
 class FolderChapterCard extends StatelessWidget {
   final ChapterModel chapter;
   final Color folderColor;
+  final String folderId;
   final String? folderOwnerId;
 
   const FolderChapterCard({
     super.key,
     required this.chapter,
     required this.folderColor,
+    required this.folderId,
     this.folderOwnerId,
   });
 
@@ -32,38 +31,21 @@ class FolderChapterCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        final chapterCubit = context.read<ChapterCubit>();
         final chapterId = chapter.id.isNotEmpty ? chapter.id : 'temp';
-        final folderId = chapter.folderId ?? '';
-        // Use go() on web to ensure URL updates in browser
-        if (kIsWeb) {
-          context.goNamed(
-            'chapter-detail',
-            pathParameters: {'folderId': folderId, 'chapterId': chapterId},
-            extra: {
-              'chapter': chapter,
-              'folderColor': folderColor,
-              'chapterCubit': chapterCubit,
-              'folderOwnerId': folderOwnerId,
-            },
-          );
-        } else {
-          context.pushNamed(
-            'chapter-detail',
-            pathParameters: {'folderId': folderId, 'chapterId': chapterId},
-            extra: {
-              'chapter': chapter,
-              'folderColor': folderColor,
-              'chapterCubit': chapterCubit,
-              'folderOwnerId': folderOwnerId,
-            },
-          );
-        }
+        context.goNamed(
+          'folder-chapter-detail',
+          pathParameters: {'folderId': folderId, 'chapterId': chapterId},
+          extra: {
+            'chapter': chapter,
+            'folderColor': folderColor,
+            'folderOwnerId': folderOwnerId,
+          },
+        );
       },
       onLongPress: () {
         ChapterOptionsBottomSheet(
           chapter: chapter,
-          folderId: chapter.folderId ?? '',
+          folderId: folderId,
           folderOwnerId: folderOwnerId ?? '',
         ).show(context);
       },

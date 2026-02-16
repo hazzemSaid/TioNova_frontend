@@ -8,8 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:tionova/core/utils/safe_context_mixin.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
-import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
 import 'package:tionova/features/challenges/presentation/bloc/challenge_cubit.dart';
+import 'package:tionova/features/challenges/presentation/services/firebase_challenge_helper.dart';
 import 'package:tionova/utils/no_glow_scroll_behavior.dart';
 import 'package:tionova/utils/widgets/custom_dialogs.dart';
 
@@ -43,7 +43,6 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
   String? _selectedChapterTitle; // for UI header and preview
 
   // Firebase real-time listeners
-  DatabaseReference? _participantsRef;
   StreamSubscription<DatabaseEvent>? _participantsSubscription;
   int _participantCount = 0;
   List<Map<String, dynamic>> _participants = [];
@@ -61,96 +60,110 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
   }
 
   void _setupFirebaseListeners() {
+    // Validate inviteCode before setting up listeners
+    if (widget.inviteCode.isEmpty) {
+      print(
+        'CreateChallengeScreen - ERROR: inviteCode is empty, cannot setup Firebase listeners',
+      );
+      if (mounted) {
+        setState(() {
+          _participantCount = 0;
+          _participants = [];
+        });
+      }
+      return;
+    }
+
     final path = 'liveChallenges/${widget.inviteCode}/participants';
     print('CreateChallengeScreen - Setting up Firebase listener at: $path');
 
-    // Listen to participants updates
-    _participantsRef = FirebaseDatabase.instance.ref(path);
-
-    _participantsSubscription = _participantsRef!.onValue.listen(
-      (event) {
-        print('CreateChallengeScreen - Firebase event received');
-        print(
-          'CreateChallengeScreen - Snapshot exists: ${event.snapshot.exists}',
-        );
-        print(
-          'CreateChallengeScreen - Snapshot value type: ${event.snapshot.value.runtimeType}',
-        );
-        print(
-          'CreateChallengeScreen - Snapshot value: ${event.snapshot.value}',
-        );
-
-        if (!mounted) return;
-
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
-        if (data != null) {
+    try {
+      // Use Safari-compatible helper with enhanced error handling
+      _participantsSubscription = FirebaseChallengeHelper.listenToValue(
+        path,
+        onData: (snapshot) {
+          print('CreateChallengeScreen - Firebase event received');
+          print('CreateChallengeScreen - Snapshot exists: ${snapshot.exists}');
           print(
-            'CreateChallengeScreen - Processing ${data.length} participants',
+            'CreateChallengeScreen - Snapshot value type: ${snapshot.value.runtimeType}',
           );
-          final participants = <Map<String, dynamic>>[];
-          int activeCount = 0;
+          print('CreateChallengeScreen - Snapshot value: ${snapshot.value}');
 
-          data.forEach((userId, userData) {
-            print(
-              'CreateChallengeScreen - Processing userId: $userId, data: $userData',
+          if (!mounted) return;
+
+          try {
+            // Use helper's parsing method for consistent data handling
+            final participants = FirebaseChallengeHelper.parseParticipants(
+              snapshot,
             );
-            final participantData = Map<String, dynamic>.from(userData as Map);
-            final isActive = participantData['active'] == true;
-            final username = participantData['username'] ?? 'Unknown Player';
-
-            print(
-              'CreateChallengeScreen - Username: $username, Active: $isActive',
+            final activeCount = FirebaseChallengeHelper.countActiveParticipants(
+              snapshot,
             );
 
-            if (isActive) {
-              participants.add({
-                'userId': userId,
-                'username': username,
-                'active': true,
-                'joinedAt': participantData['joinedAt'],
-                'score': participantData['score'] ?? 0,
+            print(
+              'CreateChallengeScreen - Participants updated: $activeCount active, names: ${participants.where((p) => p['active'] == true).map((p) => p['username']).toList()}',
+            );
+
+            setState(() {
+              _participantCount = activeCount;
+              _participants = participants
+                  .where((p) => p['active'] == true)
+                  .toList();
+            });
+
+            // Notify cubit of participant updates with validation
+            final usernames = _participants
+                .map((p) => p['username'] as String? ?? 'Unknown')
+                .toList();
+            context.read<ChallengeCubit>().updateParticipants(
+              challengeId: widget.inviteCode,
+              participants: usernames,
+            );
+          } catch (parseError) {
+            print(
+              'CreateChallengeScreen - Error parsing participants: $parseError',
+            );
+            // Don't crash, just log and continue with empty state
+            if (mounted) {
+              setState(() {
+                _participantCount = 0;
+                _participants = [];
               });
-              activeCount++;
             }
-          });
+          }
+        },
+        onError: (error) {
+          print('CreateChallengeScreen - Firebase listener ERROR: $error');
+          print('CreateChallengeScreen - Error type: ${error.runtimeType}');
 
-          setState(() {
-            _participantCount = activeCount;
-            _participants = participants;
-          });
+          if (error.toString().contains('permission') ||
+              error.toString().contains('PERMISSION_DENIED')) {
+            print(
+              'CreateChallengeScreen - PERMISSION DENIED! Check Firebase Security Rules!',
+            );
+          }
 
-          print(
-            'CreateChallengeScreen - Participants updated: $activeCount active, names: ${participants.map((p) => p['username']).toList()}',
-          );
-
-          // Notify cubit of participant updates
-          final usernames = participants
-              .map((p) => p['username'] as String)
-              .toList();
-          context.read<ChallengeCubit>().updateParticipants(
-            challengeId: widget.inviteCode,
-            participants: usernames,
-          );
-        } else {
-          print('CreateChallengeScreen - No participants data found');
-          setState(() {
-            _participantCount = 0;
-            _participants = [];
-          });
-        }
-      },
-      onError: (error) {
-        print('CreateChallengeScreen - Firebase listener ERROR: $error');
-        print('CreateChallengeScreen - Error type: ${error.runtimeType}');
-        if (error.toString().contains('permission') ||
-            error.toString().contains('PERMISSION_DENIED')) {
-          print(
-            'CreateChallengeScreen - PERMISSION DENIED! Check Firebase Security Rules!',
-          );
-        }
-      },
-      cancelOnError: false,
-    );
+          // Handle Safari-specific errors gracefully
+          if (mounted) {
+            setState(() {
+              _participantCount = 0;
+              _participants = [];
+            });
+          }
+        },
+      );
+    } catch (e) {
+      print(
+        'CreateChallengeScreen - Exception setting up Firebase listener: $e',
+      );
+      // Don't crash the app, just log the error
+      if (mounted) {
+        setState(() {
+          _participantCount = 0;
+          _participants = [];
+        });
+      }
+    }
   }
 
   @override
@@ -198,11 +211,16 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
         } else if (state is ChallengeError) {
           print('CreateChallengeScreen - Error: ${state.message}');
           safeContext((ctx) {
-            CustomDialogs.showErrorDialog(
-              ctx,
-              title: 'Error!',
-              message: state.message,
-            );
+            // Show specific error message for insufficient participants
+            if (state.message.contains('Need at least 2 participants')) {
+              _showMinimumParticipantsError();
+            } else {
+              CustomDialogs.showErrorDialog(
+                ctx,
+                title: 'Error!',
+                message: state.message,
+              );
+            }
           });
         }
       },
@@ -714,8 +732,10 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
     return BlocBuilder<ChallengeCubit, ChallengeState>(
       builder: (context, state) {
         final isLoading = state is ChallengeLoading;
-        final canStart =
-            _participantCount >= 1; // At least 1 participant (owner)
+
+        // Require at least 2 participants (admin + 1 other)
+        final canStart = _participantCount >= 2 && !isLoading;
+        final buttonText = _getStartButtonText();
 
         return Padding(
           padding: const EdgeInsets.all(16),
@@ -723,30 +743,7 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: (canStart && !isLoading)
-                  ? () async {
-                      print(
-                        'CreateChallengeScreen - Start Challenge button pressed',
-                      );
-                      print(
-                        'CreateChallengeScreen - Participant count: $_participantCount',
-                      );
-                      print(
-                        'CreateChallengeScreen - Challenge code: ${widget.inviteCode}',
-                      );
-
-                      print(
-                        'CreateChallengeScreen - Calling startChallenge on cubit...',
-                      );
-                      // Start the challenge (Step 4)
-                      await context.read<ChallengeCubit>().startChallenge(
-                        challengeCode: widget.inviteCode,
-                      );
-                      print(
-                        'CreateChallengeScreen - startChallenge call completed',
-                      );
-                    }
-                  : null,
+              onPressed: canStart ? _startChallenge : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: canStart ? _green : _divider,
                 foregroundColor: Colors.white,
@@ -766,12 +763,12 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Icon(Icons.play_arrow_rounded, size: 22),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'Start Challenge',
-                          style: TextStyle(
+                          buttonText,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -785,13 +782,54 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
     );
   }
 
+  String _getStartButtonText() {
+    if (_participantCount < 2) {
+      return 'Waiting for participants...';
+    }
+    return 'Start Challenge';
+  }
+
+  Future<void> _startChallenge() async {
+    if (_participantCount < 2) {
+      _showMinimumParticipantsError();
+      return;
+    }
+
+    print('CreateChallengeScreen - Start Challenge button pressed');
+    print('CreateChallengeScreen - Participant count: $_participantCount');
+    print('CreateChallengeScreen - Challenge code: ${widget.inviteCode}');
+
+    print('CreateChallengeScreen - Calling startChallenge on cubit...');
+    await context.read<ChallengeCubit>().startChallenge(
+      challengeCode: widget.inviteCode,
+    );
+    print('CreateChallengeScreen - startChallenge call completed');
+  }
+
+  void _showMinimumParticipantsError() {
+    CustomDialogs.showErrorDialog(
+      context,
+      title: 'Cannot Start Challenge',
+      message:
+          'You need at least one other participant to start the challenge.',
+    );
+  }
+
   Widget _buildParticipantCountCard() {
+    final isWaitingForParticipants = _participantCount < 2;
+    final statusText = isWaitingForParticipants
+        ? 'waiting for more players'
+        : 'joined and ready';
+    final statusColor = isWaitingForParticipants ? _textSecondary : _green;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _cardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _green.withOpacity(0.3)),
+        border: Border.all(
+          color: isWaitingForParticipants ? _divider : _green.withOpacity(0.3),
+        ),
       ),
       child: Column(
         children: [
@@ -801,10 +839,16 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: _green.withOpacity(0.15),
+                  color: isWaitingForParticipants
+                      ? _textSecondary.withOpacity(0.15)
+                      : _green.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.people_rounded, color: _green, size: 24),
+                child: Icon(
+                  Icons.people_rounded,
+                  color: isWaitingForParticipants ? _textSecondary : _green,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -821,13 +865,24 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'joined and ready',
-                      style: TextStyle(color: _textSecondary, fontSize: 14),
+                      statusText,
+                      style: TextStyle(color: statusColor, fontSize: 14),
                     ),
+                    if (isWaitingForParticipants) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Need at least 2 players to start',
+                        style: TextStyle(
+                          color: _textSecondary.withOpacity(0.8),
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              if (_participantCount > 0)
+              if (_participantCount > 0 && !isWaitingForParticipants)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -849,7 +904,7 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Live',
+                        'Ready',
                         style: TextStyle(
                           color: _green,
                           fontSize: 12,

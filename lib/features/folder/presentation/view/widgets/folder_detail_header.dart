@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tionova/core/utils/safe_navigation.dart';
 
 class FolderDetailHeader extends StatelessWidget {
   final String title;
@@ -28,7 +29,7 @@ class FolderDetailHeader extends StatelessWidget {
           _buildActionButton(
             context,
             icon: Icons.arrow_back_ios_new,
-            onTap: () => Navigator.pop(context),
+            onTap: () => context.safePop(fallback: '/folders'),
             colorScheme: colorScheme,
           ),
           const SizedBox(width: 16),
@@ -114,17 +115,17 @@ class FolderDetailWebHeader extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 32,
+        top: MediaQuery.of(context).padding.top + 20,
         left: effectivePadding,
         right: effectivePadding,
-        bottom: 32,
+        bottom: 20,
       ),
       child: Row(
         children: [
           _buildActionButton(
             context,
             icon: Icons.arrow_back_ios_new,
-            onTap: () => Navigator.pop(context),
+            onTap: () => context.safePop(fallback: '/folders'),
             colorScheme: colorScheme,
           ),
           const SizedBox(width: 24),

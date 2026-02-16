@@ -2,64 +2,68 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AppTheme {
-  // Core Colors - محسّنة لتكون أكثر راحة
-  static const Color softBlack = Color(0xFF1A1A1A); // بدلاً من الأسود النقي
-  static const Color softWhite = Color(0xFFF8F8F8); // بدلاً من الأبيض النقي
+  // New Color Palette
+  static const Color spaceDark = Color(0xFF222831);
+  static const Color slateGray = Color(0xFF393E46);
+  static const Color cyanBrand = Color(0xFF00ADB5);
+  static const Color cloudWhite = Color(0xFFEEEEEE);
 
-  // Grayscale Palette - مسافات أقل بين الدرجات
-  static const Color gray900 = Color(0xFF1A1A1A);
-  static const Color gray850 = Color(0xFF222222);
-  static const Color gray800 = Color(0xFF2A2A2A);
-  static const Color gray700 = Color(0xFF383838);
-  static const Color gray600 = Color(0xFF4F4F4F);
-  static const Color gray500 = Color(0xFF757575);
-  static const Color gray400 = Color(0xFF9E9E9E);
-  static const Color gray300 = Color(0xFFBDBDBD);
-  static const Color gray200 = Color(0xFFD4D4D4);
+  // Aliases for retro-compatibility
+  static const Color accentGreen = cyanBrand;
+  static const Color softBlack = spaceDark;
+  static const Color softWhite = cloudWhite;
+
+  // Grayscale Palette (Legacy/Support)
+  static const Color gray900 = Color(0xFF222831);
+  static const Color gray850 = Color(0xFF2A2E35);
+  static const Color gray800 = Color(0xFF393E46);
+  static const Color gray700 = Color(0xFF4B535B);
+  static const Color gray600 = Color(0xFF5C656F);
+  static const Color gray500 = Color(0xFF717D8A);
+  static const Color gray400 = Color(0xFF9EABB8);
+  static const Color gray300 = Color(0xFFBDC8D3);
+  static const Color gray200 = Color(0xFFDDE6ED);
   static const Color gray100 = Color(0xFFEEEEEE);
-
-  // Accent Color - أقل حدة
-  static const Color accentGreen = Color(0xFF66BB6A);
 
   // ===== DARK THEME =====
   static ThemeData get darkTheme => ThemeData(
     useMaterial3: true,
     fontFamily: 'Inter',
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: gray900,
-    primaryColor: softWhite,
+    scaffoldBackgroundColor: spaceDark,
+    primaryColor: cyanBrand,
     colorScheme: const ColorScheme(
       brightness: Brightness.dark,
-      primary: softWhite,
-      onPrimary: softBlack,
-      primaryContainer: gray700,
-      onPrimaryContainer: gray100,
+      primary: cyanBrand,
+      onPrimary: spaceDark,
+      primaryContainer: slateGray,
+      onPrimaryContainer: cloudWhite,
       secondary: gray400,
-      onSecondary: gray900,
+      onSecondary: spaceDark,
       surface: gray850,
-      onSurface: gray100,
-      background: gray900,
-      onBackground: gray100,
+      onSurface: cloudWhite,
+      background: spaceDark,
+      onBackground: cloudWhite,
       error: Color(0xFFEF5350),
-      onError: gray900,
+      onError: spaceDark,
       outline: gray600,
       outlineVariant: gray700,
       surfaceVariant: gray800,
-      onSurfaceVariant: gray400,
-      inverseSurface: gray100,
-      inversePrimary: gray900,
+      onSurfaceVariant: gray300,
+      inverseSurface: cloudWhite,
+      inversePrimary: spaceDark,
       shadow: Color(0xFF000000),
       surfaceTint: Colors.transparent,
       scrim: Color(0xFF000000),
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: gray900,
-      foregroundColor: softWhite,
+      backgroundColor: spaceDark,
+      foregroundColor: cloudWhite,
       elevation: 0,
       systemOverlayStyle: SystemUiOverlayStyle.light,
       titleTextStyle: TextStyle(
         fontFamily: 'Inter',
-        color: softWhite,
+        color: cloudWhite,
         fontSize: 18,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.2,
@@ -71,14 +75,14 @@ class AppTheme {
       shadowColor: Colors.black.withOpacity(0.18),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: gray700, width: 1),
+        side: const BorderSide(color: slateGray, width: 1),
       ),
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: gray100,
-        foregroundColor: gray900,
+        backgroundColor: cyanBrand,
+        foregroundColor: spaceDark,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -92,7 +96,7 @@ class AppTheme {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: gray300,
+        foregroundColor: cyanBrand,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         textStyle: const TextStyle(
           fontFamily: 'Inter',
@@ -103,27 +107,27 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: gray800,
+      fillColor: gray850,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: gray600),
+        borderSide: const BorderSide(color: slateGray),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: gray300, width: 1.5),
+        borderSide: const BorderSide(color: cyanBrand, width: 1.5),
       ),
       hintStyle: const TextStyle(color: gray500, fontFamily: 'Inter'),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
     dividerTheme: const DividerThemeData(
-      color: gray700,
+      color: slateGray,
       thickness: 1.2,
       space: 1,
     ),
-    iconTheme: const IconThemeData(color: gray100, size: 26),
+    iconTheme: const IconThemeData(color: cloudWhite, size: 26),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: gray900,
-      selectedItemColor: gray100,
+      backgroundColor: spaceDark,
+      selectedItemColor: cyanBrand,
       unselectedItemColor: gray500,
       selectedIconTheme: IconThemeData(size: 28),
       unselectedIconTheme: IconThemeData(size: 24),
@@ -132,12 +136,29 @@ class AppTheme {
       showSelectedLabels: true,
       elevation: 8,
     ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: slateGray,
+      elevation: 10,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      contentTextStyle: const TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: cloudWhite,
+      ),
+      actionTextColor: cyanBrand,
+    ),
     textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: gray100, fontSize: 16, fontFamily: 'Inter'),
+      bodyLarge: TextStyle(
+        color: cloudWhite,
+        fontSize: 16,
+        fontFamily: 'Inter',
+      ),
       bodyMedium: TextStyle(color: gray300, fontSize: 14, fontFamily: 'Inter'),
       bodySmall: TextStyle(color: gray500, fontSize: 12, fontFamily: 'Inter'),
       titleMedium: TextStyle(
-        color: gray100,
+        color: cloudWhite,
         fontSize: 16,
         fontWeight: FontWeight.w600,
         fontFamily: 'Inter',
@@ -150,48 +171,49 @@ class AppTheme {
     useMaterial3: true,
     fontFamily: 'Inter',
     brightness: Brightness.light,
-    scaffoldBackgroundColor: softWhite,
-    primaryColor: softBlack,
+    scaffoldBackgroundColor: cloudWhite,
+    primaryColor: spaceDark,
     colorScheme: const ColorScheme(
       brightness: Brightness.light,
-      primary: softBlack,
-      onPrimary: softWhite,
+      primary: cyanBrand,
+      onPrimary: cloudWhite,
       primaryContainer: gray200,
-      onPrimaryContainer: gray900,
-      secondary: gray700,
-      onSecondary: softWhite,
-      surface: softWhite,
-      onSurface: gray900,
-      background: softWhite,
-      onBackground: gray900,
+      onPrimaryContainer: spaceDark,
+      secondary: slateGray,
+      onSecondary: cloudWhite,
+      surface: Color(0xFFF5F5F5), // Softer surface color
+      onSurface: spaceDark,
+      background: cloudWhite,
+      onBackground: spaceDark,
       error: Color(0xFFE53935),
-      onError: softWhite,
+      onError: cloudWhite,
       outline: gray300,
       outlineVariant: gray400,
       surfaceVariant: gray100,
       onSurfaceVariant: gray600,
-      inverseSurface: gray900,
+      inverseSurface: spaceDark,
       inversePrimary: gray100,
       shadow: gray700,
       surfaceTint: Colors.transparent,
-      scrim: gray900,
+      scrim: spaceDark,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: softWhite,
-      foregroundColor: softBlack,
+      backgroundColor: cloudWhite,
+      foregroundColor: spaceDark,
       elevation: 0,
       systemOverlayStyle: SystemUiOverlayStyle.dark,
       titleTextStyle: TextStyle(
         fontFamily: 'Inter',
-        color: softBlack,
+        color: spaceDark,
         fontSize: 18,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.2,
       ),
     ),
     cardTheme: CardThemeData(
-      color: softWhite,
-      elevation: 1,
+      color: const Color(0xFFF8F8F8), // Softer card color
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: gray200, width: 1),
@@ -199,8 +221,8 @@ class AppTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: gray900,
-        foregroundColor: gray100,
+        backgroundColor: cyanBrand,
+        foregroundColor: cloudWhite,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -214,7 +236,7 @@ class AppTheme {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: gray700,
+        foregroundColor: cyanBrand,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         textStyle: const TextStyle(
           fontFamily: 'Inter',
@@ -225,32 +247,49 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: gray100,
+      fillColor: const Color(0xFFF5F5F5), // Softer input background
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: gray300),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: gray700, width: 1.5),
+        borderSide: const BorderSide(color: cyanBrand, width: 1.5),
       ),
       hintStyle: const TextStyle(color: gray500, fontFamily: 'Inter'),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
     dividerTheme: const DividerThemeData(color: gray200, thickness: 1),
-    iconTheme: const IconThemeData(color: gray900, size: 24),
+    iconTheme: const IconThemeData(color: spaceDark, size: 24),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: softWhite,
-      selectedItemColor: gray900,
+      backgroundColor: cloudWhite,
+      selectedItemColor: cyanBrand,
       unselectedItemColor: gray500,
       type: BottomNavigationBarType.fixed,
     ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: spaceDark,
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      contentTextStyle: const TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: cloudWhite,
+      ),
+      actionTextColor: cyanBrand,
+    ),
     textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: gray900, fontSize: 16, fontFamily: 'Inter'),
-      bodyMedium: TextStyle(color: gray700, fontSize: 14, fontFamily: 'Inter'),
+      bodyLarge: TextStyle(color: spaceDark, fontSize: 16, fontFamily: 'Inter'),
+      bodyMedium: TextStyle(
+        color: slateGray,
+        fontSize: 14,
+        fontFamily: 'Inter',
+      ),
       bodySmall: TextStyle(color: gray500, fontSize: 12, fontFamily: 'Inter'),
       titleMedium: TextStyle(
-        color: gray900,
+        color: spaceDark,
         fontSize: 16,
         fontWeight: FontWeight.w600,
         fontFamily: 'Inter',

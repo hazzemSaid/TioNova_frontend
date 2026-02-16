@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authcubit.dart';
 import 'package:tionova/features/auth/presentation/bloc/Authstate.dart';
-import 'package:tionova/features/folder/presentation/bloc/chapter/chapter_cubit.dart';
+import 'package:tionova/features/chapter/presentation/bloc/chapter/chapter_cubit.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/DashedBorderPainter.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_chapter_card.dart';
 import 'package:tionova/features/folder/presentation/view/widgets/folder_chapter_shimmer.dart';
@@ -21,6 +21,7 @@ class FolderDetailMobileLayout extends StatelessWidget {
   final Color color;
   final String ownerId;
   final double horizontalPadding;
+  final String? currentUserIdParam;
 
   const FolderDetailMobileLayout({
     super.key,
@@ -33,6 +34,7 @@ class FolderDetailMobileLayout extends StatelessWidget {
     required this.color,
     required this.ownerId,
     required this.horizontalPadding,
+    this.currentUserIdParam,
   });
 
   @override
@@ -90,10 +92,29 @@ class FolderDetailMobileLayout extends StatelessWidget {
   Widget _buildAddChapterButton(BuildContext context, ColorScheme colorScheme) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
-        final currentUserId = authState is AuthSuccess
-            ? authState.user.id
-            : null;
-        final isOwner = currentUserId != null && currentUserId == ownerId;
+        // Priority: AuthState user ID > Local storage > Parameter > Empty
+        String? currentUserId;
+
+        if (authState is AuthSuccess && authState.user.id.isNotEmpty) {
+          // Primary source: Current auth state
+          currentUserId = authState.user.id;
+          debugPrint('✅ [Mobile] UserId from AuthState: $currentUserId');
+        } else if (currentUserIdParam != null &&
+            currentUserIdParam!.isNotEmpty) {
+          // Fallback: Parameter passed from parent
+          currentUserId = currentUserIdParam;
+          debugPrint('⚠️ [Mobile] UserId from param: $currentUserId');
+        }
+
+        // Validate both IDs
+        final isOwner =
+            currentUserId != null &&
+            currentUserId.isNotEmpty &&
+            currentUserId.trim() == ownerId.trim();
+
+        debugPrint(
+          '📱 [Mobile] Current: "$currentUserId" | Owner: "$ownerId" | IsOwner: $isOwner',
+        );
 
         if (!isOwner) {
           return SliverToBoxAdapter(child: SizedBox(height: horizontalPadding));
@@ -166,6 +187,7 @@ class FolderDetailMobileLayout extends StatelessWidget {
               return FolderChapterCard(
                 chapter: chapter,
                 folderColor: color,
+                folderId: folderId,
                 folderOwnerId: ownerId,
               );
             }, childCount: chapters.length),

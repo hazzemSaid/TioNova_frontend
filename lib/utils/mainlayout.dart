@@ -3,14 +3,60 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class MainLayout extends StatelessWidget {
+class MainLayout extends StatefulWidget {
   final Widget child;
 
   const MainLayout({super.key, required this.child});
 
   @override
+  State<MainLayout> createState() => _MainLayoutState();
+}
+
+class _MainLayoutState extends State<MainLayout> {
+  @override
   Widget build(BuildContext context) {
+    final currentPath = GoRouterState.of(context).uri.path;
+
+    if (!_shouldShowLayout(currentPath)) {
+      return widget.child;
+    }
+
     return kIsWeb ? _buildWebLayout(context) : _buildMobileLayout(context);
+  }
+
+  bool _shouldShowLayout(String path) {
+    // 1. Distraction-free screens (Exclusion for BOTH Web and Mobile)
+    final distractionFreePaths = [
+      '/auth',
+      '/quiz/',
+      '/challenges/live/',
+      '/challenges/lobby/',
+      '/challenges/results/',
+      '/pdf',
+      '/practice',
+      '/mindmap',
+      '/notes',
+      '/summary',
+      '/create',
+      '/edit',
+    ];
+
+    if (distractionFreePaths.any((segment) => path.contains(segment))) {
+      return false;
+    }
+
+    // 2. Mobile-specific navigation rules
+    if (!kIsWeb) {
+      // On mobile, the bottom nav should only be visible on the main tab roots.
+      // Any deep "pushed" screen (folder detail, chapter detail, etc.) hides it.
+      final mainTabs = ['/', '/folders', '/challenges', '/profile'];
+
+      // We check for exact matches to ensure bottom nav only shows on root tab views
+      return mainTabs.contains(path);
+    }
+
+    // 3. Web: sidebar/header is usually persistent on all non-distraction-free screens.
+    return true;
   }
 
   // Mobile layout with bottom navigation
@@ -20,19 +66,28 @@ class MainLayout extends StatelessWidget {
     final currentPath = GoRouterState.of(context).uri.path;
 
     return Scaffold(
-      backgroundColor: colorScheme.onPrimary,
-      body: child,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _DotPainter(
+                colorScheme.primary.withValues(
+                  alpha: theme.brightness == Brightness.dark ? 0.05 : 0.03,
+                ),
+              ),
+            ),
+          ),
+          widget.child,
+        ],
+      ),
       bottomNavigationBar: _customBottomNavigationBar(context, currentPath),
     );
   }
 
   // Web/Desktop layout with permanent sidebar
   Widget _buildWebLayout(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final currentPath = GoRouterState.of(context).uri.path;
-
-    return _WebLayoutWrapper(currentPath: currentPath, child: child);
+    return _WebLayoutWrapper(child: widget.child);
   }
 
   // Custom Bottom Navigation Bar
@@ -117,22 +172,22 @@ class MainLayout extends StatelessWidget {
 
 // Stateful wrapper for web layout sidebar state
 class _WebLayoutWrapper extends StatefulWidget {
-  final String currentPath;
   final Widget child;
 
-  const _WebLayoutWrapper({required this.currentPath, required this.child});
+  const _WebLayoutWrapper({required this.child});
 
   @override
   State<_WebLayoutWrapper> createState() => _WebLayoutWrapperState();
 }
 
 class _WebLayoutWrapperState extends State<_WebLayoutWrapper> {
-  bool _isSidebarClosed = false;
+  bool _isSidebarClosed = true;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final currentPath = GoRouterState.of(context).uri.path;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -146,7 +201,7 @@ class _WebLayoutWrapperState extends State<_WebLayoutWrapper> {
             : maxDrawerWidth;
 
         return Scaffold(
-          backgroundColor: colorScheme.onPrimary,
+          backgroundColor: colorScheme.background,
           body: Column(
             children: [
               Container(
@@ -203,7 +258,7 @@ class _WebLayoutWrapperState extends State<_WebLayoutWrapper> {
                             child: _buildSidebar(
                               context,
                               sidebarWidth,
-                              widget.currentPath,
+                              currentPath,
                             ),
                           ),
                         ),
@@ -220,8 +275,23 @@ class _WebLayoutWrapperState extends State<_WebLayoutWrapper> {
                         },
                         behavior: HitTestBehavior.translucent,
                         child: Container(
-                          color: colorScheme.onPrimary,
-                          child: widget.child,
+                          color: colorScheme.background,
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: CustomPaint(
+                                  painter: _DotPainter(
+                                    colorScheme.primary.withValues(
+                                      alpha: theme.brightness == Brightness.dark
+                                          ? 0.05
+                                          : 0.03,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              widget.child,
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -368,7 +438,9 @@ class _WebLayoutWrapperState extends State<_WebLayoutWrapper> {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isSelected = currentPath == route;
+    final isSelected = route == '/'
+        ? currentPath == '/'
+        : currentPath.startsWith(route);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -436,7 +508,9 @@ class _BottomNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isSelected = currentPath == route;
+    final isSelected = route == '/'
+        ? currentPath == '/'
+        : currentPath.startsWith(route);
 
     return InkWell(
       onTap: onTap,
@@ -469,4 +543,23 @@ class _BottomNavItem extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DotPainter extends CustomPainter {
+  final Color color;
+  _DotPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    const double spacing = 30.0;
+    for (double i = 0; i < size.width; i += spacing) {
+      for (double j = 0; j < size.height; j += spacing) {
+        canvas.drawCircle(Offset(i, j), 1, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
