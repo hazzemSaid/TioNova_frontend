@@ -22,7 +22,6 @@ Future<void> main() async {
       options.tracesSampleRate = 1.0;
     }, appRunner: () => _runApp());
     // TODO: Remove this line after sending the first sample event to sentry.
-    await Sentry.captureException(Exception('This is a sample exception.'));
   } else {
     // Debug mode: run app without Sentry
     _runApp();
