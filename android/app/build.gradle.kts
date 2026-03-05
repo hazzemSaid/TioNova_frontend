@@ -11,7 +11,7 @@ plugins {
 android {
     namespace ="com.example.tionova"
     compileSdk = 36
-    ndkVersion = "28.0.13004108"
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true

@@ -1,17 +1,35 @@
 // // main.dart
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tionova/core/init/app_initializer.dart';
 import 'package:tionova/core/presentation/view/screens/app_error_screen.dart';
 
 Future<void> main() async {
-  //    afdConfigure URL strategy for web (removes # from URLs)
+  // Configure URL strategy for web (removes # from URLs)
   if (kIsWeb) {
     usePathUrlStrategy();
   }
 
-  // Initialize and run the app
+  // Initialize Sentry only in release mode
+  if (kReleaseMode) {
+    await SentryFlutter.init((options) {
+      options.dsn =
+          'https://eb7964b3446851eca39197ee93936244@o4510990565244928.ingest.de.sentry.io/4510990566752336';
+      // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+      // We recommend adjusting this value in production.
+      options.tracesSampleRate = 1.0;
+    }, appRunner: () => _runApp());
+    // TODO: Remove this line after sending the first sample event to sentry.
+    await Sentry.captureException(Exception('This is a sample exception.'));
+  } else {
+    // Debug mode: run app without Sentry
+    _runApp();
+  }
+}
+
+Future<void> _runApp() async {
   try {
     await AppInitializer.initializeApp();
     // App is now running - do not add any code after this
@@ -19,35 +37,21 @@ Future<void> main() async {
     print('❌ Critical error during app initialization: $e');
     print('Stack trace: $stackTrace');
 
-    // Send error to backend for debugging
-    try {
-      // Dio dio = Dio();
-      // await dio.post(
-      //   '$baseUrl/error-log',
-      //   data: {'message': e.toString() + " during app initialization"},
-      // );
-      print('✅ Error sent to backend');
-    } catch (logError) {
-      print('⚠️ Failed to send error to backend: $logError');
-    }
-
-    // Run error app
-    runApp(
-      MaterialApp(
-        home: AppErrorScreen(
-          details: FlutterErrorDetails(exception: e, stack: stackTrace),
-          onRetry: () {
-            // Hard reload logic if needed, or re-run main
-            if (kIsWeb) {
-              // Reload page
-              // ignore: unsafe_html
-              // html.window.location.reload();
-              // Since we can't import html here easily, we rely on user action
-            }
-            main();
-          },
-        ),
+    // Show error screen
+    Widget errorApp = MaterialApp(
+      home: AppErrorScreen(
+        details: FlutterErrorDetails(exception: e, stack: stackTrace),
+        onRetry: () {
+          main();
+        },
       ),
     );
+
+    // Wrap with SentryWidget if in release mode
+    if (kReleaseMode) {
+      errorApp = SentryWidget(child: errorApp);
+    }
+
+    runApp(errorApp);
   }
 }
