@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 
@@ -10,6 +11,8 @@ class FirebaseChallengeHelper {
   static FirebaseDatabase? _database;
   static bool? _isSafari;
   static bool _isInitialized = false;
+  static bool _initializationFailed = false;
+  static String? _lastError;
 
   /// Internal logging utility for Firebase operations
   static void _log(String level, String message, [Object? error]) {
@@ -50,12 +53,78 @@ class FirebaseChallengeHelper {
     return _isSafari!;
   }
 
+  /// Check if Firebase Realtime Database is available
+  /// Returns true if Firebase is properly initialized and database is accessible
+  static bool get isAvailable {
+    // If already successfully initialized, return true
+    if (_isInitialized && _database != null) {
+      return true;
+    }
+
+    // If initialization previously failed, return false without retrying
+    if (_initializationFailed) {
+      return false;
+    }
+
+    // Check if Firebase Core is initialized
+    if (Firebase.apps.isEmpty) {
+      _log('WARN', 'Firebase Core is not initialized');
+      return false;
+    }
+
+    // Check if databaseURL is configured
+    final app = Firebase.app();
+    if (app.options.databaseURL == null || app.options.databaseURL!.isEmpty) {
+      _log('WARN', 'Firebase databaseURL is not configured');
+      return false;
+    }
+
+    // Try to initialize
+    try {
+      _initialize();
+      return _database != null;
+    } catch (e) {
+      _log('WARN', 'Firebase Database availability check failed', e);
+      return false;
+    }
+  }
+
+  /// Get the last initialization error message (if any)
+  static String? get lastError => _lastError;
+
+  /// Reset initialization state (useful for retrying after error)
+  static void reset() {
+    _database = null;
+    _isInitialized = false;
+    _initializationFailed = false;
+    _lastError = null;
+    _log('INFO', 'FirebaseChallengeHelper reset');
+  }
+
   /// Initialize Firebase with platform-specific settings
   static void _initialize() {
-    if (_isInitialized) return;
-    _isInitialized = true;
+    if (_isInitialized && _database != null) return;
+
+    // Reset failed state for retry
+    _initializationFailed = false;
+    _lastError = null;
 
     try {
+      // Check Firebase Core first
+      if (Firebase.apps.isEmpty) {
+        throw StateError(
+          'Firebase Core is not initialized. Call Firebase.initializeApp() first.',
+        );
+      }
+
+      // Check databaseURL is configured
+      final app = Firebase.app();
+      if (app.options.databaseURL == null || app.options.databaseURL!.isEmpty) {
+        throw StateError(
+          'Firebase databaseURL is not configured in FirebaseOptions.',
+        );
+      }
+
       _database = FirebaseDatabase.instance;
 
       if (kIsWeb) {
@@ -73,10 +142,17 @@ class FirebaseChallengeHelper {
         }
       }
 
+      _isInitialized = true;
       _log('INFO', 'Firebase Challenge Helper initialized successfully');
     } catch (e) {
+      _initializationFailed = true;
+      _lastError = e.toString();
       _log('ERROR', 'Failed to initialize Firebase Challenge Helper', e);
-      rethrow;
+
+      // On web, don't rethrow - allow graceful degradation
+      if (!kIsWeb) {
+        rethrow;
+      }
     }
   }
 

@@ -44,70 +44,118 @@ class _ChallengeWaitingLobbyScreenState
   }
 
   void _setupFirebaseListeners() {
-    // Use Safari-compatible Firebase helper with enhanced error handling
-
-    // 1. Listen to challenge status to know when owner starts
-    final statusPath = 'liveChallenges/${widget.challengeCode}/meta/status';
-
-    // Initial check in case challenge already started
-    FirebaseChallengeHelper.getOnce(statusPath).then((snapshot) {
-      if (mounted && snapshot != null) {
-        final status = snapshot.value as String?;
-        if (status == 'in-progress' || status == 'progress') {
-          _navigateToQuestions();
-        }
-      }
-    });
-
-    _statusSubscription = FirebaseChallengeHelper.listenToValue(
-      statusPath,
-      onData: (snapshot) {
-        if (!mounted) return;
-        final status = snapshot.value as String?;
-        if (status == 'in-progress' || status == 'progress') {
-          _navigateToQuestions();
-        }
-      },
-      onError: (error) {
-        print('ChallengeWaitingLobby - Status listener error: $error');
-      },
-    );
-
-    // 2. Listen to participants for live count using helper's parsing methods
-    final participantsPath =
-        'liveChallenges/${widget.challengeCode}/participants';
-
-    _participantsSubscription = FirebaseChallengeHelper.listenToValue(
-      participantsPath,
-      onData: (snapshot) {
-        if (!mounted) return;
-
-        // Use helper's parsing methods for consistent data handling
-        final participants = FirebaseChallengeHelper.parseParticipants(
-          snapshot,
-        );
-        final activeCount = FirebaseChallengeHelper.countActiveParticipants(
-          snapshot,
-        );
-
-        setState(() {
-          _participants = participants
-              .where((p) => p['active'] == true)
-              .toList();
-          _participantCount = activeCount;
-        });
-      },
-      onError: (error) {
-        print('ChallengeWaitingLobby - Participants listener error: $error');
-        // Handle error gracefully by resetting participant data
+    // Check if Firebase is available before setting up listeners
+    if (!FirebaseChallengeHelper.isAvailable) {
+      debugPrint('ChallengeWaitingLobby - Firebase Database not available');
+      // Show error message to user
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          setState(() {
-            _participants = [];
-            _participantCount = 0;
-          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Real-time features are currently unavailable. Please try again later.',
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 5),
+            ),
+          );
         }
-      },
-    );
+      });
+      return;
+    }
+
+    try {
+      // Use Safari-compatible Firebase helper with enhanced error handling
+
+      // 1. Listen to challenge status to know when owner starts
+      final statusPath = 'liveChallenges/${widget.challengeCode}/meta/status';
+
+      // Initial check in case challenge already started
+      FirebaseChallengeHelper.getOnce(statusPath)
+          .then((snapshot) {
+            if (mounted && snapshot != null) {
+              final status = snapshot.value as String?;
+              if (status == 'in-progress' || status == 'progress') {
+                _navigateToQuestions();
+              }
+            }
+          })
+          .catchError((error) {
+            debugPrint(
+              'ChallengeWaitingLobby - Error checking initial status: $error',
+            );
+          });
+
+      _statusSubscription = FirebaseChallengeHelper.listenToValue(
+        statusPath,
+        onData: (snapshot) {
+          if (!mounted) return;
+          final status = snapshot.value as String?;
+          if (status == 'in-progress' || status == 'progress') {
+            _navigateToQuestions();
+          }
+        },
+        onError: (error) {
+          debugPrint('ChallengeWaitingLobby - Status listener error: $error');
+        },
+      );
+
+      // 2. Listen to participants for live count using helper's parsing methods
+      final participantsPath =
+          'liveChallenges/${widget.challengeCode}/participants';
+
+      _participantsSubscription = FirebaseChallengeHelper.listenToValue(
+        participantsPath,
+        onData: (snapshot) {
+          if (!mounted) return;
+
+          // Use helper's parsing methods for consistent data handling
+          final participants = FirebaseChallengeHelper.parseParticipants(
+            snapshot,
+          );
+          final activeCount = FirebaseChallengeHelper.countActiveParticipants(
+            snapshot,
+          );
+
+          setState(() {
+            _participants = participants
+                .where((p) => p['active'] == true)
+                .toList();
+            _participantCount = activeCount;
+          });
+        },
+        onError: (error) {
+          debugPrint(
+            'ChallengeWaitingLobby - Participants listener error: $error',
+          );
+          // Handle error gracefully by resetting participant data
+          if (mounted) {
+            setState(() {
+              _participants = [];
+              _participantCount = 0;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint(
+        'ChallengeWaitingLobby - Error setting up Firebase listeners: $e',
+      );
+      // Show error to user
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Unable to connect to real-time features. Please try again.',
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      });
+    }
   }
 
   void _navigateToQuestions() {

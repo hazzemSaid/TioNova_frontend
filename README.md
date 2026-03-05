@@ -1,103 +1,301 @@
-<!-- Minimal README for maintainers and contributors -->
-# TioNova
+# 🎓 TioNova
 
-Lightweight cross-platform learning app — Flutter frontend.
+**TioNova** is a modern Flutter-based educational platform that delivers interactive learning experiences through real-time challenges, comprehensive quizzes, organized content folders, and seamless user authentication. Built with Clean Architecture principles and powered by Firebase for real-time features.
 
-## Quick start
+## 🌟 Features
 
-Requirements
+### 📚 Core Learning Features
+- **Real-time Challenges** - Multiplayer quiz competitions with live leaderboards
+- **Interactive Quizzes** - Individual quiz system with history and detailed review
+- **Content Folders** - Organized chapter and PDF management with AI-powered summaries
+- **Progress Tracking** - Comprehensive learning analytics and user statistics
 
-- Flutter >= 3.38.0
-- Dart >= 3.9.0
+### 🔐 Authentication & User Management
+- **Multi-platform Auth** - Email/password and Google Sign-In integration
+- **User Profiles** - Customizable profiles with avatars and achievement tracking
+- **Secure Storage** - Encrypted local data storage for sensitive information
 
-Setup
+### 🎨 User Experience
+- **Adaptive Themes** - Beautiful dark/light theme switching
+- **Cross-platform** - Runs seamlessly on iOS, Android, and Web
+- **Real-time Updates** - Live synchronization across all devices
+- **Offline Support** - Local caching for uninterrupted learning
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Flutter SDK** >= 3.9.2
+- **Dart** >= 3.9.0
+- **Firebase Project** (for real-time features)
+- **Node.js** (for additional tooling)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/hazzemSaid/TioNova_frontend.git
+   cd TioNova_frontend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   flutter clean && flutter pub get
+   ```
+
+3. **Firebase Configuration**
+   
+   For mobile builds, add your Firebase configuration files:
+   - Android: `android/app/google-services.json`
+   - iOS: `ios/Runner/GoogleService-Info.plist`
+   
+   For web builds, Firebase is configured in `lib/firebase_options.dart`
+
+4. **Generate required files** (for Hive models)
+   ```bash
+   flutter pub run build_runner build --delete-conflicting-outputs
+   ```
+
+### Running the App
 
 ```bash
-git clone https://github.com/hazzemSaid/TioNova_frontend.git
-cd TioNova_frontend
-flutter pub get
-```
-
-Add Firebase config for mobile builds:
-
-- `android/app/google-services.json`
-- `ios/Runner/GoogleService-Info.plist`
-
-Run (examples)
-
-```bash
-# Debug
+# Development (Debug mode)
 flutter run
 
-# Web
+# Web Development
 flutter run -d chrome
 
-# Build web
+# Production Web Build
 flutter build web --release
+
+# Production Mobile Builds
+flutter build apk --release        # Android
+flutter build ipa --release        # iOS
 ```
 
-## Project notes
+## 🏗️ Architecture
 
-- Main entry: `lib/main.dart` (uses `AppInitializer`).
-- Routing: `go_router`. State: `flutter_bloc`/Cubit.
-- Core code: `lib/core/`; features: `lib/features/`.
-- Dependencies: see `pubspec.yaml`.
+TioNova follows **Clean Architecture** principles with clear separation of concerns:
 
-## Useful commands
+```
+lib/
+├── core/                   # Shared infrastructure
+│   ├── API/               # HTTP clients and endpoints
+│   ├── errors/            # Error handling system
+│   ├── get_it/            # Dependency injection
+│   ├── hive/             # Local database configuration
+│   ├── models/           # Core shared models
+│   ├── router/           # GoRouter navigation setup
+│   ├── services/         # Core services (download, cache)
+│   ├── theme/            # App theme configuration
+│   ├── utils/            # Utility functions
+│   └── widgets/          # Reusable UI components
+├── features/              # Feature modules
+│   ├── auth/             # Authentication system
+│   ├── challenges/       # Real-time challenges
+│   ├── folder/           # Content management
+│   ├── home/             # Dashboard & home
+│   ├── profile/          # User profiles
+│   ├── quiz/             # Quiz system
+│   ├── start/            # Onboarding & splash
+│   └── theme/            # Theme switcher
+└── main.dart             # App entry point
+```
+
+### Feature Module Structure
+Each feature follows a consistent pattern:
+```
+feature_name/
+├── data/
+│   ├── datasources/      # Remote & local data sources
+│   ├── models/           # Data models with serialization
+│   └── repositories/     # Repository implementations
+├── domain/
+│   ├── entities/         # Business entities
+│   ├── repositories/     # Repository contracts
+│   └── usecases/         # Business logic
+└── presentation/
+    ├── bloc/             # BLoC state management
+    └── view/
+        ├── screens/      # Full-page screens
+        └── widgets/      # Feature-specific widgets
+```
+
+## 🛠️ Technology Stack
+
+### Core Framework
+- **Flutter** ^3.9.2 - Cross-platform UI framework
+- **Dart** ^3.9.0 - Programming language
+
+### State Management & Architecture
+- **flutter_bloc** ^8.1.3 - Predictable state management
+- **Provider** ^6.1.1 - Dependency injection
+- **Equatable** - Value equality for states
+
+### Navigation & Routing
+- **go_router** ^16.2.1 - Declarative routing solution
+
+### Backend & Real-time Features
+- **Firebase Core** - Firebase infrastructure
+- **Firebase Realtime Database** - Live data synchronization
+- **Firebase Auth** - User authentication
+
+### Local Storage & Caching
+- **Hive** ^2.2.3 - Fast, lightweight local database
+- **flutter_secure_storage** ^9.2.4 - Encrypted storage
+- **Shared Preferences** - Simple key-value storage
+
+### Network & API
+- **Dio** ^5.9.0 - Powerful HTTP client
+- **http** ^1.2.0 - Standard HTTP requests
+
+### Authentication
+- **Google Sign-In** ^6.3.0 - Google OAuth integration
+
+### Multimedia & Documents
+- **PDF Viewer** - PDF document display
+- **Audio Recording** - Voice recording capabilities
+- **Image Picker** - Photo selection and capture
+- **QR Code Generator** - QR code creation
+
+### Development & Build Tools
+- **build_runner** - Code generation
+- **json_serializable** - JSON serialization
+- **Mockito** - Testing framework
+
+## 🔥 Firebase Integration
+
+### Realtime Database Structure
+```javascript
+challenges/
+  ├── {challengeCode}/
+      ├── name: string
+      ├── status: 'waiting' | 'active' | 'completed'
+      ├── currentIndex: number
+      ├── currentStartTime: timestamp
+      ├── questions: Array<Question>
+      ├── participants: Map<userId, ParticipantData>
+      ├── leaderboard: Array<LeaderboardEntry>
+      └── answers: Map<questionIndex, Map<userId, Answer>>
+```
+
+### Authentication Methods
+- Email/Password authentication
+- Google Sign-In integration
+- Anonymous authentication for guest users
+- Account linking and management
+
+## 🧪 Development
+
+### Code Style & Conventions
+- **File Naming**: snake_case (e.g., `live_question_screen.dart`)
+- **Classes**: PascalCase (e.g., `LiveQuestionScreen`)
+- **Variables/Functions**: camelCase (e.g., `challengeCode`, `getUserData()`)
+- **Constants**: lowerCamelCase with `const`
+- **Private Members**: Underscore prefix (e.g., `_questionsRef`)
+
+### State Management Pattern
+```dart
+class FeatureCubit extends Cubit<FeatureState> {
+  FeatureCubit() : super(FeatureInitial());
+  
+  Future<void> performAction() async {
+    emit(FeatureLoading());
+    try {
+      final result = await repository.fetchData();
+      emit(FeatureSuccess(result));
+    } catch (e) {
+      emit(FeatureError(e.toString()));
+    }
+  }
+}
+```
+
+### Useful Commands
 
 ```bash
+# Code Analysis
 flutter analyze
+
+# Testing
 flutter test
+flutter test --coverage
+
+# Code Generation
 flutter pub run build_runner build --delete-conflicting-outputs
+
+# Dependency Management
+flutter pub deps
+flutter pub outdated
+flutter pub upgrade
+
+# Build Commands
+flutter build apk --release           # Android APK
+flutter build appbundle --release     # Android App Bundle
+flutter build ipa --release           # iOS App Store
+flutter build web --release           # Web Production
+
+# Clean Build
+flutter clean && flutter pub get
 ```
 
-## License
-
-MIT — see `LICENSE`.
-
-Live demo: https://tionova-c566b.web.app/ · Backend: https://github.com/hazzemSaid/TioNova_backend
-# TioNova
-
-A minimal, focused README for the TioNova Flutter app.
-
-## Quick start
-
-Requirements
-
-- Flutter >= 3.38.0
-- Dart >= 3.9.0
-
-Clone and install
-
+### Testing
 ```bash
-git clone https://github.com/hazzemSaid/TioNova_frontend.git
-cd TioNova_frontend
-flutter pub get
+# Run all tests
+flutter test
+
+# Run tests with coverage
+flutter test --coverage
+
+# Run specific test file
+flutter test test/features/auth/auth_test.dart
 ```
 
-Firebase
+## 🚀 Deployment
 
-- Place `google-services.json` in `android/app/` and `GoogleService-Info.plist` in `ios/Runner/` when building for mobile.
+### Web Deployment
+- **Live Demo**: [tionova-c566b.web.app](https://tionova-c566b.web.app/)
+- **Hosting**: Firebase Hosting
+- **Build**: Automated via GitHub Actions
 
-Run
+### Mobile Deployment
+- **Android**: Google Play Store ready
+- **iOS**: App Store ready
+- **CI/CD**: CodeMagic integration
 
-```bash
-# Debug
-flutter run
+## 🔗 Related Repositories
 
-# Web
-flutter run -d chrome
+- **Backend API**: [TioNova_backend](https://github.com/hazzemSaid/TioNova_backend)
+- **Documentation**: Additional setup guides in repository
 
-# Web production build
-flutter build web --release
-```
+## 🤝 Contributing
 
-## What you need to know
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Follow** the established code style and architecture patterns
+4. **Write** tests for new functionality
+5. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+6. **Push** to the branch (`git push origin feature/amazing-feature`)
+7. **Open** a Pull Request
 
-- Core code lives in `lib/` (see `lib/features/` and `lib/core/`).
-- Routing uses `go_router`; state management uses `flutter_bloc`.
-- Backend features (AI summaries, quizzes) are powered by the companion backend; realtime features use Firebase Realtime Database.
-- See `pubspec.yaml` for full dependency versions.
+### Development Setup
+1. Follow the installation steps above
+2. Ensure all tests pass: `flutter test`
+3. Run code analysis: `flutter analyze`
+4. Format code: `dart format .`
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- **Issues**: [GitHub Issues](https://github.com/hazzemSaid/TioNova_frontend/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/hazzemSaid/TioNova_frontend/discussions)
+- **Documentation**: Check the `/docs` folder for detailed guides
+
+---
+
+**Built with ❤️ using Flutter** | **Educational Platform for the Modern Learner**
 
 ## Useful commands
 

@@ -185,206 +185,240 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
 
   void _setupFirebaseListeners() {
     print('LiveQuestionScreen - Setting up Firebase listeners');
-    // Use Safari-compatible helper for Firebase operations
 
-    // 1. Listen to questions list
-    final questionsPath = 'liveChallenges/${widget.challengeCode}/questions';
-    _questionsRef = FirebaseChallengeHelper.getRef(questionsPath);
-
-    _questionsSubscription = _questionsRef!.onValue.listen(
-      (event) {
-        if (!mounted) return;
-
-        final data = event.snapshot.value;
-        if (data != null) {
-          final questions = <Map<String, dynamic>>[];
-
-          if (data is List) {
-            for (var item in data) {
-              if (item != null) {
-                questions.add(Map<String, dynamic>.from(item as Map));
-              }
-            }
-          } else if (data is Map) {
-            data.forEach((key, value) {
-              if (value != null) {
-                questions.add(Map<String, dynamic>.from(value as Map));
-              }
-            });
-          }
-
-          setState(() {
-            _questions = questions;
-            if (_currentQuestionIndex < _questions.length) {
-              _currentQuestion = _questions[_currentQuestionIndex];
-
-              // Trigger animations for first question if not already animated
-              if (_questionSlideController.isDismissed) {
-                _questionSlideController.forward();
-                Future.delayed(const Duration(milliseconds: 200), () {
-                  if (mounted && _optionsController.isDismissed) {
-                    _optionsController.forward();
-                  }
-                });
-              }
-            }
-          });
-        }
-      },
-      onError: (error) {
-        print('LiveQuestionScreen - Questions listener ERROR: $error');
-      },
-    );
-
-    // 2. Listen to current question index
-    final currentIndexPath =
-        'liveChallenges/${widget.challengeCode}/current/index';
-    _currentIndexRef = FirebaseChallengeHelper.getRef(currentIndexPath);
-
-    _currentIndexSubscription = _currentIndexRef!.onValue.listen(
-      (event) {
-        if (!mounted) return;
-
-        final index = event.snapshot.value as int?;
-        if (index != null && index != _currentQuestionIndex) {
-          setState(() {
-            _currentQuestionIndex = index;
-            _selectedAnswer = null;
-            _hasAnswered = false;
-            _isWaitingForOthers = false;
-            _showingFeedback = false;
-            _wasCorrect = null;
-            _currentRank = null;
-            _correctAnswer = null;
-            _totalAnsweredPlayers = 0;
-            _checkAdvanceCalled = false; // Reset debounce flag for new question
-
-            if (_currentQuestionIndex < _questions.length) {
-              _currentQuestion = _questions[_currentQuestionIndex];
-            }
-          });
-
-          // Trigger animations for new question
-          _questionSlideController.reset();
-          _optionsController.reset();
-          _questionSlideController.forward();
-          Future.delayed(const Duration(milliseconds: 200), () {
-            if (mounted) _optionsController.forward();
-          });
-
-          // Setup new answers listener for this question
-          _setupAnswersListener();
-        }
-      },
-      onError: (error) {
-        print('LiveQuestionScreen - Index listener ERROR: $error');
-      },
-    );
-
-    // 3. Listen to current question start time
-    final startTimePath =
-        'liveChallenges/${widget.challengeCode}/current/startTime';
-    _currentStartTimeRef = FirebaseChallengeHelper.getRef(startTimePath);
-
-    _currentStartTimeSubscription = _currentStartTimeRef!.onValue.listen(
-      (event) {
-        if (!mounted) return;
-
-        final startTime = event.snapshot.value as int?;
-        if (startTime != null && startTime != _questionStartTime) {
-          _questionStartTime = startTime;
-          _startQuestionTimer(startTime);
-        }
-      },
-      onError: (error) {
-        print('LiveQuestionScreen - StartTime listener ERROR: $error');
-      },
-    );
-
-    // 3b. Listen to current question END time (canonical from backend)
-    final endTimePath =
-        'liveChallenges/${widget.challengeCode}/current/endTime';
-    _currentEndTimeRef = FirebaseChallengeHelper.getRef(endTimePath);
-
-    _currentEndTimeSubscription = _currentEndTimeRef!.onValue.listen(
-      (event) {
-        if (!mounted) return;
-
-        final endTime = event.snapshot.value as int?;
-        if (endTime != null && endTime != _questionEndTime) {
-          _questionEndTime = endTime;
-          // Re-sync timer with the canonical end time
-          if (_questionStartTime != null) {
-            _startQuestionTimer(_questionStartTime);
-          }
-        }
-      },
-      onError: (error) {
-        print('LiveQuestionScreen - EndTime listener ERROR: $error');
-      },
-    );
-
-    // 4. Listen to challenge status (to detect completion)
-    final statusPath = 'liveChallenges/${widget.challengeCode}/meta/status';
-    _statusRef = FirebaseChallengeHelper.getRef(statusPath);
-
-    _statusSubscription = _statusRef!.onValue.listen(
-      (event) {
-        if (!mounted) return;
-
-        final status = event.snapshot.value as String?;
-        if (status == 'completed') {
-          _navigateToCompletion();
-        }
-      },
-      onError: (error) {
-        print('LiveQuestionScreen - Status listener ERROR: $error');
-      },
-    );
-
-    // 5. Listen to leaderboard updates
-    final leaderboardPath = 'liveChallenges/${widget.challengeCode}/rankings';
-    _leaderboardRef = FirebaseChallengeHelper.getRef(leaderboardPath);
-
-    _leaderboardSubscription = _leaderboardRef!.onValue.listen(
-      (event) {
-        if (!mounted) return;
-
-        final data = event.snapshot.value;
-        if (data != null) {
-          final rankings = <Map<String, dynamic>>[];
-
-          if (data is List) {
-            for (var item in data) {
-              if (item != null) {
-                rankings.add(Map<String, dynamic>.from(item as Map));
-              }
-            }
-          } else if (data is Map) {
-            data.forEach((key, value) {
-              if (value != null) {
-                rankings.add(Map<String, dynamic>.from(value as Map));
-              }
-            });
-          }
-
-          setState(() {
-            _leaderboard = rankings;
-          });
-
-          context.read<ChallengeCubit>().updateLeaderboard(
-            challengeId: widget.challengeCode,
-            leaderboard: rankings,
+    // Check if Firebase is available before setting up listeners
+    if (!FirebaseChallengeHelper.isAvailable) {
+      print('LiveQuestionScreen - Firebase Database not available');
+      // Show error message to user
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          CustomDialogs.showErrorDialog(
+            title: 'Error',
+            context,
+            message:
+                'Real-time features are currently unavailable. Please try again later.',
           );
         }
-      },
-      onError: (error) {
-        print('LiveQuestionScreen - Leaderboard listener ERROR: $error');
-      },
-    );
+      });
+      return;
+    }
 
-    // 6. Listen to answers for current question (wait for all players)
-    _setupAnswersListener();
+    try {
+      // Use Safari-compatible helper for Firebase operations
+
+      // 1. Listen to questions list
+      final questionsPath = 'liveChallenges/${widget.challengeCode}/questions';
+      _questionsRef = FirebaseChallengeHelper.getRef(questionsPath);
+
+      _questionsSubscription = _questionsRef!.onValue.listen(
+        (event) {
+          if (!mounted) return;
+
+          final data = event.snapshot.value;
+          if (data != null) {
+            final questions = <Map<String, dynamic>>[];
+
+            if (data is List) {
+              for (var item in data) {
+                if (item != null) {
+                  questions.add(Map<String, dynamic>.from(item as Map));
+                }
+              }
+            } else if (data is Map) {
+              data.forEach((key, value) {
+                if (value != null) {
+                  questions.add(Map<String, dynamic>.from(value as Map));
+                }
+              });
+            }
+
+            setState(() {
+              _questions = questions;
+              if (_currentQuestionIndex < _questions.length) {
+                _currentQuestion = _questions[_currentQuestionIndex];
+
+                // Trigger animations for first question if not already animated
+                if (_questionSlideController.isDismissed) {
+                  _questionSlideController.forward();
+                  Future.delayed(const Duration(milliseconds: 200), () {
+                    if (mounted && _optionsController.isDismissed) {
+                      _optionsController.forward();
+                    }
+                  });
+                }
+              }
+            });
+          }
+        },
+        onError: (error) {
+          print('LiveQuestionScreen - Questions listener ERROR: $error');
+        },
+      );
+
+      // 2. Listen to current question index
+      final currentIndexPath =
+          'liveChallenges/${widget.challengeCode}/current/index';
+      _currentIndexRef = FirebaseChallengeHelper.getRef(currentIndexPath);
+
+      _currentIndexSubscription = _currentIndexRef!.onValue.listen(
+        (event) {
+          if (!mounted) return;
+
+          final index = event.snapshot.value as int?;
+          if (index != null && index != _currentQuestionIndex) {
+            setState(() {
+              _currentQuestionIndex = index;
+              _selectedAnswer = null;
+              _hasAnswered = false;
+              _isWaitingForOthers = false;
+              _showingFeedback = false;
+              _wasCorrect = null;
+              _currentRank = null;
+              _correctAnswer = null;
+              _totalAnsweredPlayers = 0;
+              _checkAdvanceCalled =
+                  false; // Reset debounce flag for new question
+
+              if (_currentQuestionIndex < _questions.length) {
+                _currentQuestion = _questions[_currentQuestionIndex];
+              }
+            });
+
+            // Trigger animations for new question
+            _questionSlideController.reset();
+            _optionsController.reset();
+            _questionSlideController.forward();
+            Future.delayed(const Duration(milliseconds: 200), () {
+              if (mounted) _optionsController.forward();
+            });
+
+            // Setup new answers listener for this question
+            _setupAnswersListener();
+          }
+        },
+        onError: (error) {
+          print('LiveQuestionScreen - Index listener ERROR: $error');
+        },
+      );
+
+      // 3. Listen to current question start time
+      final startTimePath =
+          'liveChallenges/${widget.challengeCode}/current/startTime';
+      _currentStartTimeRef = FirebaseChallengeHelper.getRef(startTimePath);
+
+      _currentStartTimeSubscription = _currentStartTimeRef!.onValue.listen(
+        (event) {
+          if (!mounted) return;
+
+          final startTime = event.snapshot.value as int?;
+          if (startTime != null && startTime != _questionStartTime) {
+            _questionStartTime = startTime;
+            _startQuestionTimer(startTime);
+          }
+        },
+        onError: (error) {
+          print('LiveQuestionScreen - StartTime listener ERROR: $error');
+        },
+      );
+
+      // 3b. Listen to current question END time (canonical from backend)
+      final endTimePath =
+          'liveChallenges/${widget.challengeCode}/current/endTime';
+      _currentEndTimeRef = FirebaseChallengeHelper.getRef(endTimePath);
+
+      _currentEndTimeSubscription = _currentEndTimeRef!.onValue.listen(
+        (event) {
+          if (!mounted) return;
+
+          final endTime = event.snapshot.value as int?;
+          if (endTime != null && endTime != _questionEndTime) {
+            _questionEndTime = endTime;
+            // Re-sync timer with the canonical end time
+            if (_questionStartTime != null) {
+              _startQuestionTimer(_questionStartTime);
+            }
+          }
+        },
+        onError: (error) {
+          print('LiveQuestionScreen - EndTime listener ERROR: $error');
+        },
+      );
+
+      // 4. Listen to challenge status (to detect completion)
+      final statusPath = 'liveChallenges/${widget.challengeCode}/meta/status';
+      _statusRef = FirebaseChallengeHelper.getRef(statusPath);
+
+      _statusSubscription = _statusRef!.onValue.listen(
+        (event) {
+          if (!mounted) return;
+
+          final status = event.snapshot.value as String?;
+          if (status == 'completed') {
+            _navigateToCompletion();
+          }
+        },
+        onError: (error) {
+          print('LiveQuestionScreen - Status listener ERROR: $error');
+        },
+      );
+
+      // 5. Listen to leaderboard updates
+      final leaderboardPath = 'liveChallenges/${widget.challengeCode}/rankings';
+      _leaderboardRef = FirebaseChallengeHelper.getRef(leaderboardPath);
+
+      _leaderboardSubscription = _leaderboardRef!.onValue.listen(
+        (event) {
+          if (!mounted) return;
+
+          final data = event.snapshot.value;
+          if (data != null) {
+            final rankings = <Map<String, dynamic>>[];
+
+            if (data is List) {
+              for (var item in data) {
+                if (item != null) {
+                  rankings.add(Map<String, dynamic>.from(item as Map));
+                }
+              }
+            } else if (data is Map) {
+              data.forEach((key, value) {
+                if (value != null) {
+                  rankings.add(Map<String, dynamic>.from(value as Map));
+                }
+              });
+            }
+
+            setState(() {
+              _leaderboard = rankings;
+            });
+
+            context.read<ChallengeCubit>().updateLeaderboard(
+              challengeId: widget.challengeCode,
+              leaderboard: rankings,
+            );
+          }
+        },
+        onError: (error) {
+          print('LiveQuestionScreen - Leaderboard listener ERROR: $error');
+        },
+      );
+
+      // 6. Listen to answers for current question (wait for all players)
+      _setupAnswersListener();
+    } catch (e) {
+      print('LiveQuestionScreen - Error setting up Firebase listeners: $e');
+      // Show error to user
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          CustomDialogs.showErrorDialog(
+            title: 'Error',
+            context,
+            message:
+                'Unable to connect to real-time features. Please try again.',
+          );
+        }
+      });
+    }
   }
 
   /// Start polling service to check for question advances
@@ -438,71 +472,93 @@ class _LiveQuestionScreenBodyState extends State<LiveQuestionScreenBody>
   void _setupAnswersListener() {
     _answersSubscription?.cancel();
 
-    final answersPath =
-        'liveChallenges/${widget.challengeCode}/answers/$_currentQuestionIndex';
-    _answersRef = FirebaseChallengeHelper.getRef(answersPath);
+    // Check if Firebase is available
+    if (!FirebaseChallengeHelper.isAvailable) {
+      print('LiveQuestionScreen - Firebase not available for answers listener');
+      return;
+    }
 
-    _answersSubscription = _answersRef!.onValue.listen(
-      (event) {
-        if (!mounted) return;
+    try {
+      final answersPath =
+          'liveChallenges/${widget.challengeCode}/answers/$_currentQuestionIndex';
+      _answersRef = FirebaseChallengeHelper.getRef(answersPath);
 
-        final data = event.snapshot.value;
-        if (data != null) {
-          int answeredCount = 0;
+      _answersSubscription = _answersRef!.onValue.listen(
+        (event) {
+          if (!mounted) return;
 
-          if (data is Map) {
-            answeredCount = data.length;
-          } else if (data is List) {
-            answeredCount = data.where((item) => item != null).length;
+          final data = event.snapshot.value;
+          if (data != null) {
+            int answeredCount = 0;
+
+            if (data is Map) {
+              answeredCount = data.length;
+            } else if (data is List) {
+              answeredCount = data.where((item) => item != null).length;
+            }
+
+            setState(() {
+              _totalAnsweredPlayers = answeredCount;
+            });
+
+            // Check if all players have answered
+            if (_hasAnswered &&
+                answeredCount >= _totalPlayers &&
+                _totalPlayers > 0) {
+              _showAnswerFeedback();
+            }
           }
-
-          setState(() {
-            _totalAnsweredPlayers = answeredCount;
-          });
-
-          // Check if all players have answered
-          if (_hasAnswered &&
-              answeredCount >= _totalPlayers &&
-              _totalPlayers > 0) {
-            _showAnswerFeedback();
-          }
-        }
-      },
-      onError: (error) {
-        print('LiveQuestionScreen - Answers listener ERROR: $error');
-      },
-    );
+        },
+        onError: (error) {
+          print('LiveQuestionScreen - Answers listener ERROR: $error');
+        },
+      );
+    } catch (e) {
+      print('LiveQuestionScreen - Error setting up answers listener: $e');
+    }
   }
 
   void _updateTotalPlayers() {
+    // Check if Firebase is available
+    if (!FirebaseChallengeHelper.isAvailable) {
+      print(
+        'LiveQuestionScreen - Firebase not available for participant count',
+      );
+      return;
+    }
+
     final participantsPath =
         'liveChallenges/${widget.challengeCode}/participants';
-    FirebaseChallengeHelper.getOnce(participantsPath).then((snapshot) {
-      if (!mounted || snapshot == null) return;
+    FirebaseChallengeHelper.getOnce(participantsPath)
+        .then((snapshot) {
+          if (!mounted || snapshot == null) return;
 
-      final data = snapshot.value;
-      if (data != null) {
-        int count = 0;
-        if (data is Map) {
-          data.forEach((key, value) {
-            if (value is Map) {
-              final active = value['active'];
-              if (active == null || active == true) {
-                count++;
-              }
-            } else {
-              count++;
+          final data = snapshot.value;
+          if (data != null) {
+            int count = 0;
+            if (data is Map) {
+              data.forEach((key, value) {
+                if (value is Map) {
+                  final active = value['active'];
+                  if (active == null || active == true) {
+                    count++;
+                  }
+                } else {
+                  count++;
+                }
+              });
+            } else if (data is List) {
+              count = data.where((item) => item != null).length;
             }
-          });
-        } else if (data is List) {
-          count = data.where((item) => item != null).length;
-        }
 
-        setState(() {
-          _totalPlayers = count;
+            setState(() {
+              _totalPlayers = count;
+            });
+          }
+        })
+        .catchError((error) {
+          print('LiveQuestionScreen - Error getting participant count: $error');
         });
-      }
-    });
   }
 
   void _showAnswerFeedback() {

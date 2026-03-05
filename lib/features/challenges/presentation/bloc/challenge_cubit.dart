@@ -475,6 +475,14 @@ class ChallengeCubit extends Cubit<ChallengeState> {
 
   /// Get participant count for validation
   Future<int> _getParticipantCount(String challengeCode) async {
+    // Check if Firebase is available
+    if (!FirebaseChallengeHelper.isAvailable) {
+      if (kDebugMode) {
+        print('ChallengeCubit - Firebase not available for participant count');
+      }
+      return 0;
+    }
+
     try {
       final snapshot = await FirebaseChallengeHelper.getOnce(
         'liveChallenges/$challengeCode/participants',
@@ -518,137 +526,174 @@ class ChallengeCubit extends Cubit<ChallengeState> {
         'ChallengeCubit - Setting up Firebase listeners for: $challengeCode',
       );
     }
-    // Use Safari-compatible helper for Firebase operations with enhanced error handling
 
-    // 1. Listen to challenge status
-    final statusPath = 'liveChallenges/$challengeCode/meta/status';
-    _statusSubscription = FirebaseChallengeHelper.listenToValue(
-      statusPath,
-      onData: (snapshot) {
-        final status = snapshot.value as String?;
-        if (kDebugMode) {
-          print('ChallengeCubit - Status changed to: $status');
-        }
+    // Check if Firebase Database is available before setting up listeners
+    if (!FirebaseChallengeHelper.isAvailable) {
+      final errorMsg =
+          FirebaseChallengeHelper.lastError ??
+          'Firebase Realtime Database is not available';
+      if (kDebugMode) {
+        print('ChallengeCubit - Firebase Database not available: $errorMsg');
+      }
+      safeEmit(
+        ChallengeError(
+          'Real-time features are currently unavailable. Please check your connection and try again.',
+        ),
+      );
+      return;
+    }
 
-        if (status == 'completed') {
+    try {
+      // Use Safari-compatible helper for Firebase operations with enhanced error handling
+
+      // 1. Listen to challenge status
+      final statusPath = 'liveChallenges/$challengeCode/meta/status';
+      _statusSubscription = FirebaseChallengeHelper.listenToValue(
+        statusPath,
+        onData: (snapshot) {
+          final status = snapshot.value as String?;
           if (kDebugMode) {
-            print('ChallengeCubit - Challenge completed, showing results');
+            print('ChallengeCubit - Status changed to: $status');
           }
-          _handleChallengeCompletion();
-        }
-      },
-      onError: (error) {
-        if (kDebugMode) {
-          print('ChallengeCubit - Status listener error: $error');
-        }
-      },
-    );
 
-    // 2. Listen to current question index
-    final currentQuestionPath =
-        'liveChallenges/$challengeCode/current/questionIndex';
-    _currentQuestionSubscription = FirebaseChallengeHelper.listenToValue(
-      currentQuestionPath,
-      onData: (snapshot) {
-        final questionIndex = snapshot.value as int?;
-        if (questionIndex != null && questionIndex != _currentQuestionIndex) {
+          if (status == 'completed') {
+            if (kDebugMode) {
+              print('ChallengeCubit - Challenge completed, showing results');
+            }
+            _handleChallengeCompletion();
+          }
+        },
+        onError: (error) {
           if (kDebugMode) {
-            print('ChallengeCubit - Question index changed to: $questionIndex');
+            print('ChallengeCubit - Status listener error: $error');
           }
-          _currentQuestionIndex = questionIndex;
-          _updateCurrentQuestion(questionIndex);
-        }
-      },
-      onError: (error) {
-        if (kDebugMode) {
-          print('ChallengeCubit - Question index listener error: $error');
-        }
-      },
-    );
+        },
+      );
 
-    // 3. Listen to questions list
-    final questionsPath = 'liveChallenges/$challengeCode/questions';
-    _questionsSubscription = FirebaseChallengeHelper.listenToValue(
-      questionsPath,
-      onData: (snapshot) {
-        final data = snapshot.value;
-        if (data != null) {
+      // 2. Listen to current question index
+      final currentQuestionPath =
+          'liveChallenges/$challengeCode/current/questionIndex';
+      _currentQuestionSubscription = FirebaseChallengeHelper.listenToValue(
+        currentQuestionPath,
+        onData: (snapshot) {
+          final questionIndex = snapshot.value as int?;
+          if (questionIndex != null && questionIndex != _currentQuestionIndex) {
+            if (kDebugMode) {
+              print(
+                'ChallengeCubit - Question index changed to: $questionIndex',
+              );
+            }
+            _currentQuestionIndex = questionIndex;
+            _updateCurrentQuestion(questionIndex);
+          }
+        },
+        onError: (error) {
           if (kDebugMode) {
-            print('ChallengeCubit - Questions data received');
+            print('ChallengeCubit - Question index listener error: $error');
           }
-          _questions = FirebaseChallengeHelper.parseQuestions(snapshot);
+        },
+      );
+
+      // 3. Listen to questions list
+      final questionsPath = 'liveChallenges/$challengeCode/questions';
+      _questionsSubscription = FirebaseChallengeHelper.listenToValue(
+        questionsPath,
+        onData: (snapshot) {
+          final data = snapshot.value;
+          if (data != null) {
+            if (kDebugMode) {
+              print('ChallengeCubit - Questions data received');
+            }
+            _questions = FirebaseChallengeHelper.parseQuestions(snapshot);
+            if (kDebugMode) {
+              print('ChallengeCubit - Parsed ${_questions.length} questions');
+            }
+
+            // Update state with questions
+            if (state is ChallengeStarted) {
+              final currentState = state as ChallengeStarted;
+              safeEmit(currentState.copyWith(questions: _questions));
+            }
+          }
+        },
+        onError: (error) {
           if (kDebugMode) {
-            print('ChallengeCubit - Parsed ${_questions.length} questions');
+            print('ChallengeCubit - Questions listener error: $error');
           }
+        },
+      );
 
-          // Update state with questions
-          if (state is ChallengeStarted) {
-            final currentState = state as ChallengeStarted;
-            safeEmit(currentState.copyWith(questions: _questions));
+      // 4. Listen to rankings/leaderboard
+      final rankingsPath = 'liveChallenges/$challengeCode/rankings';
+      _rankingsSubscription = FirebaseChallengeHelper.listenToValue(
+        rankingsPath,
+        onData: (snapshot) {
+          final data = snapshot.value;
+          if (data != null) {
+            if (kDebugMode) {
+              print('ChallengeCubit - Rankings data received');
+            }
+            final rankings = FirebaseChallengeHelper.parseRankings(snapshot);
+            updateLeaderboard(
+              challengeId: challengeCode,
+              leaderboard: rankings,
+            );
           }
-        }
-      },
-      onError: (error) {
-        if (kDebugMode) {
-          print('ChallengeCubit - Questions listener error: $error');
-        }
-      },
-    );
-
-    // 4. Listen to rankings/leaderboard
-    final rankingsPath = 'liveChallenges/$challengeCode/rankings';
-    _rankingsSubscription = FirebaseChallengeHelper.listenToValue(
-      rankingsPath,
-      onData: (snapshot) {
-        final data = snapshot.value;
-        if (data != null) {
+        },
+        onError: (error) {
           if (kDebugMode) {
-            print('ChallengeCubit - Rankings data received');
+            print('ChallengeCubit - Rankings listener error: $error');
           }
-          final rankings = FirebaseChallengeHelper.parseRankings(snapshot);
-          updateLeaderboard(challengeId: challengeCode, leaderboard: rankings);
-        }
-      },
-      onError: (error) {
-        if (kDebugMode) {
-          print('ChallengeCubit - Rankings listener error: $error');
-        }
-      },
-    );
+        },
+      );
 
-    // 5. Listen to participants for real-time updates
-    final participantsPath = 'liveChallenges/$challengeCode/participants';
-    _participantsSubscription = FirebaseChallengeHelper.listenToValue(
-      participantsPath,
-      onData: (snapshot) {
-        final participants = FirebaseChallengeHelper.parseParticipants(
-          snapshot,
-        );
-        final activeCount = FirebaseChallengeHelper.countActiveParticipants(
-          snapshot,
-        );
+      // 5. Listen to participants for real-time updates
+      final participantsPath = 'liveChallenges/$challengeCode/participants';
+      _participantsSubscription = FirebaseChallengeHelper.listenToValue(
+        participantsPath,
+        onData: (snapshot) {
+          final participants = FirebaseChallengeHelper.parseParticipants(
+            snapshot,
+          );
+          final activeCount = FirebaseChallengeHelper.countActiveParticipants(
+            snapshot,
+          );
 
-        if (kDebugMode) {
-          print('ChallengeCubit - Participants updated: $activeCount active');
-        }
+          if (kDebugMode) {
+            print('ChallengeCubit - Participants updated: $activeCount active');
+          }
 
-        // Update participants in state
-        final usernames = participants
-            .where((p) => p['active'] == true)
-            .map((p) => p['username'] as String)
-            .toList();
+          // Update participants in state
+          final usernames = participants
+              .where((p) => p['active'] == true)
+              .map((p) => p['username'] as String)
+              .toList();
 
-        updateParticipants(challengeId: challengeCode, participants: usernames);
-      },
-      onError: (error) {
-        if (kDebugMode) {
-          print('ChallengeCubit - Participants listener error: $error');
-        }
-      },
-    );
+          updateParticipants(
+            challengeId: challengeCode,
+            participants: usernames,
+          );
+        },
+        onError: (error) {
+          if (kDebugMode) {
+            print('ChallengeCubit - Participants listener error: $error');
+          }
+        },
+      );
 
-    if (kDebugMode) {
-      print('ChallengeCubit - All Firebase listeners set up successfully');
+      if (kDebugMode) {
+        print('ChallengeCubit - All Firebase listeners set up successfully');
+      }
+    } catch (e) {
+      // Handle Firebase initialization or listener setup errors gracefully
+      if (kDebugMode) {
+        print('ChallengeCubit - Error setting up Firebase listeners: $e');
+      }
+      safeEmit(
+        ChallengeError(
+          'Unable to connect to real-time features. Please try again later.',
+        ),
+      );
     }
   }
 
@@ -663,27 +708,65 @@ class ChallengeCubit extends Cubit<ChallengeState> {
   /// Handle challenge completion
   void _handleChallengeCompletion() {
     if (_currentChallengeCode != null) {
-      // Fetch final rankings using Safari-compatible helper
-      FirebaseChallengeHelper.getOnce(
-        'liveChallenges/$_currentChallengeCode/rankings',
-      ).then((snapshot) {
-        if (snapshot == null) return;
-        final rankings = FirebaseChallengeHelper.parseRankings(snapshot);
-
-        // Find current user's rank and score
-        // This would need user ID to find their specific data
+      // Check if Firebase is available before fetching
+      if (!FirebaseChallengeHelper.isAvailable) {
+        if (kDebugMode) {
+          print('ChallengeCubit - Firebase not available for completion');
+        }
+        // Emit completion with default values
         safeEmit(
           ChallengeCompleted(
             challengeId: _currentChallengeCode!,
-            finalScore: 0, // Will be updated with actual score
+            finalScore: 0,
             correctAnswers: 0,
             totalQuestions: _questions.length,
             accuracy: 0.0,
             rank: 0,
-            leaderboard: rankings,
+            leaderboard: [],
           ),
         );
-      });
+        return;
+      }
+
+      // Fetch final rankings using Safari-compatible helper
+      FirebaseChallengeHelper.getOnce(
+            'liveChallenges/$_currentChallengeCode/rankings',
+          )
+          .then((snapshot) {
+            if (snapshot == null) return;
+            final rankings = FirebaseChallengeHelper.parseRankings(snapshot);
+
+            // Find current user's rank and score
+            // This would need user ID to find their specific data
+            safeEmit(
+              ChallengeCompleted(
+                challengeId: _currentChallengeCode!,
+                finalScore: 0, // Will be updated with actual score
+                correctAnswers: 0,
+                totalQuestions: _questions.length,
+                accuracy: 0.0,
+                rank: 0,
+                leaderboard: rankings,
+              ),
+            );
+          })
+          .catchError((error) {
+            if (kDebugMode) {
+              print('ChallengeCubit - Error fetching rankings: $error');
+            }
+            // Emit completion with default values on error
+            safeEmit(
+              ChallengeCompleted(
+                challengeId: _currentChallengeCode!,
+                finalScore: 0,
+                correctAnswers: 0,
+                totalQuestions: _questions.length,
+                accuracy: 0.0,
+                rank: 0,
+                leaderboard: [],
+              ),
+            );
+          });
     }
   }
 
@@ -693,14 +776,20 @@ class ChallengeCubit extends Cubit<ChallengeState> {
       print('ChallengeCubit - Cleaning up Firebase listeners');
     }
 
-    // Use helper's cleanup method for better error handling
-    FirebaseChallengeHelper.cancelSubscriptions([
-      _statusSubscription,
-      _currentQuestionSubscription,
-      _questionsSubscription,
-      _rankingsSubscription,
-      _participantsSubscription,
-    ]);
+    try {
+      // Use helper's cleanup method for better error handling
+      FirebaseChallengeHelper.cancelSubscriptions([
+        _statusSubscription,
+        _currentQuestionSubscription,
+        _questionsSubscription,
+        _rankingsSubscription,
+        _participantsSubscription,
+      ]);
+    } catch (e) {
+      if (kDebugMode) {
+        print('ChallengeCubit - Error canceling subscriptions: $e');
+      }
+    }
 
     _statusSubscription = null;
     _currentQuestionSubscription = null;

@@ -74,6 +74,26 @@ class _CreateChallengeScreenState extends State<CreateChallengeScreen>
       return;
     }
 
+    // Check if Firebase is available before setting up listeners
+    if (!FirebaseChallengeHelper.isAvailable) {
+      print('CreateChallengeScreen - Firebase Database not available');
+      // Show error message to user
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Real-time features are currently unavailable. Participant count may not update.',
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      });
+      return;
+    }
+
     final path = 'liveChallenges/${widget.inviteCode}/participants';
     print('CreateChallengeScreen - Setting up Firebase listener at: $path');
 
